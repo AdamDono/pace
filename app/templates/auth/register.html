@@ -2,12 +2,25 @@
 
 {% block content %}
 <div class="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow">
-    <h1 class="text-2xl font-bold mb-6">Login</h1>
-    <form>
-        <input type="email" placeholder="Email" class="w-full p-2 mb-4 border rounded">
-        <input type="password" placeholder="Password" class="w-full p-2 mb-4 border rounded">
-        <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-            Sign In
+    <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
+    <form class="space-y-4">
+        <div>
+            <label for="email" class="block mb-1">Email</label>
+            <input type="email" id="email" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <label for="password" class="block mb-1">Password</label>
+            <input type="password" id="password" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <label for="role" class="block mb-1">Role</label>
+            <select id="role" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+            </select>
+        </div>
+        <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 transition">
+            Create Account
         </button>
     </form>
 </div>
