@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow">
+    <h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
+    <p class="mb-4">Welcome, {{ current_user.email }} (Admin)</p>
+    <div class="space-y-4">
+        <div class="p-4 bg-blue-100 rounded">
+            <h2 class="font-bold">Admin Features</h2>
+            <ul class="list-disc pl-5 mt-2">
+                <li>Manage Users</li>
+                <li>Create Courses</li>
+                <li>View Reports</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

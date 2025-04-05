@@ -3,25 +3,39 @@
 {% block content %}
 <div class="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow">
     <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
-    <form class="space-y-4">
+    <form method="POST" class="space-y-4">
+        {{ form.hidden_tag() }}
         <div>
-            <label for="email" class="block mb-1">Email</label>
-            <input type="email" id="email" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {{ form.email.label(class="block mb-1") }}
+            {{ form.email(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+            {% for error in form.email.errors %}
+                <span class="text-red-500 text-sm">{{ error }}</span>
+            {% endfor %}
         </div>
         <div>
-            <label for="password" class="block mb-1">Password</label>
-            <input type="password" id="password" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {{ form.password.label(class="block mb-1") }}
+            {{ form.password(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+            {% for error in form.password.errors %}
+                <span class="text-red-500 text-sm">{{ error }}</span>
+            {% endfor %}
         </div>
         <div>
-            <label for="role" class="block mb-1">Role</label>
-            <select id="role" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-            </select>
+            {{ form.confirm.label(class="block mb-1") }}
+            {{ form.confirm(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+            {% for error in form.confirm.errors %}
+                <span class="text-red-500 text-sm">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div>
+            {{ form.role.label(class="block mb-1") }}
+            {{ form.role(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
         </div>
         <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 transition">
-            Create Account
+            Register
         </button>
     </form>
+    <div class="mt-4 text-center">
+        <a href="{{ url_for('auth.login') }}" class="text-blue-600 hover:underline">Already have an account? Login here</a>
+    </div>
 </div>
 {% endblock %}
