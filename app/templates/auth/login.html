@@ -3,18 +3,32 @@
 {% block content %}
 <div class="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow">
     <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
-    <form class="space-y-4">
+    <form method="POST" class="space-y-4">
+        {{ form.hidden_tag() }}
         <div>
-            <label for="email" class="block mb-1">Email</label>
-            <input type="email" id="email" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {{ form.email.label(class="block mb-1") }}
+            {{ form.email(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+            {% for error in form.email.errors %}
+                <span class="text-red-500 text-sm">{{ error }}</span>
+            {% endfor %}
         </div>
         <div>
-            <label for="password" class="block mb-1">Password</label>
-            <input type="password" id="password" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {{ form.password.label(class="block mb-1") }}
+            {{ form.password(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+            {% for error in form.password.errors %}
+                <span class="text-red-500 text-sm">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="flex items-center">
+            {{ form.remember(class="mr-2") }}
+            {{ form.remember.label }}
         </div>
         <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">
             Sign In
         </button>
     </form>
+    <div class="mt-4 text-center">
+        <a href="{{ url_for('auth.register') }}" class="text-blue-600 hover:underline">Need an account? Register here</a>
+    </div>
 </div>
 {% endblock %}

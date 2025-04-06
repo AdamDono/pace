@@ -1,8 +1,8 @@
-import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from dotenv import load_dotenv
+import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -12,7 +12,7 @@ def create_app():
     
     app = Flask(__name__)
     
-    # Database config
+    # Configure database
     app.config['SQLALCHEMY_DATABASE_URI'] = (
         f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@"
         f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
@@ -26,10 +26,24 @@ def create_app():
     login_manager.login_view = 'auth.login'
 
     # Import models after db initialization
-    from app.models import User
-    
-    # Import and register blueprints
+    with app.app_context():
+        from app.models import User
+        # This ensures models are registered with SQLAlchemy
+        
+        # Register blueprints
+        from app.routes.auth import auth_bp
+        app.register_blueprint(auth_bp)
+        
+        
+            # Register blueprints
     from app.routes.auth import auth_bp
-    app.register_blueprint(auth_bp)
+    from app.routes.admin import admin_bp
+    from app.routes.teacher import teacher_bp
+    from app.routes.student import student_bp
+    
+
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(teacher_bp)
+    app.register_blueprint(student_bp)
 
     return app
