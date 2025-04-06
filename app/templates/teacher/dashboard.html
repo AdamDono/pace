@@ -1,17 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-white p-6 rounded-lg shadow">
+<div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
     <h1 class="text-2xl font-bold mb-6">Teacher Dashboard</h1>
-    <p class="mb-4">Welcome, {{ current_user.email }} (Teacher)</p>
+    <p class="mb-4">Welcome, {{ user.email }} (Teacher)</p>
     <div class="space-y-4">
-        <div class="p-4 bg-green-100 rounded">
-            <h2 class="font-bold">Teacher Features</h2>
-            <ul class="list-disc pl-5 mt-2">
-                <li>Create Lessons</li>
-                <li>Grade Assignments</li>
-                <li>View Student Progress</li>
-            </ul>
+        <div class="p-4 bg-blue-100 rounded">
+            <h2 class="font-bold text-lg">Your Classes</h2>
+            <!-- Teacher-specific content here -->
         </div>
     </div>
 </div>

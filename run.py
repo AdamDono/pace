@@ -3,22 +3,28 @@ from app.models import User
 
 app = create_app()
 
-if __name__ == '__main__':
+def initialize_database():
     with app.app_context():
-        # Drop all tables first (only for development)
-        db.drop_all()
-        
-        # Create all tables
+        print("Creating database tables...")
         db.create_all()
         
-        # Add test user
-        if not User.query.filter_by(email='test@example.com').first():
-            user = User(
-                email='test@example.com',
-                password='unhashed_for_now',
-                role='student'
+        # Check if tables were created
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if 'users' not in inspector.get_table_names():
+            raise RuntimeError("Failed to create 'users' table!")
+        
+        # Create initial admin user if none exists
+        if not User.query.first():
+            admin = User(
+                email='admin@example.com',
+                password='adminpassword',  # CHANGE THIS IN PRODUCTION!
+                role='admin'
             )
-            db.session.add(user)
+            db.session.add(admin)
             db.session.commit()
-    
+            print("Created admin user: admin@example.com / adminpassword")
+
+if __name__ == '__main__':
+    initialize_database()
     app.run(debug=True)

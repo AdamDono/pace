@@ -63,4 +63,6 @@ def redirect_based_on_role():
         return redirect(url_for('admin.dashboard'))
     elif current_user.role == 'teacher':
         return redirect(url_for('teacher.dashboard'))
-    return redirect(url_for('student.dashboard'))
+    elif current_user.role == 'student':
+        return redirect(url_for('student.dashboard'))
+    return redirect(url_for('auth.login'))  # fallback

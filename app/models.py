@@ -18,18 +18,10 @@ class User(db.Model, UserMixin):
 
     @password.setter
     def password(self, password):
-        # Fallback to pbkdf2 if scrypt not available
-        if hasattr(hashlib, 'scrypt'):
-            self.password_hash = generate_password_hash(password)
-        else:
-            salt = os.urandom(16).hex()
-            self.password_hash = f"pbkdf2:sha256:150000${salt}${hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 150000).hex()}"
+        # Force use of PBKDF2-SHA256 which is universally available
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def verify_password(self, password):
-        if self.password_hash.startswith('pbkdf2:'):
-            # Handle our custom hash
-            _, algo, iterations, salt, hashval = self.password_hash.split('$')
-            return hashval == hashlib.pbkdf2_hmac(algo.split(':')[1], password.encode('utf-8'), salt.encode('utf-8'), int(iterations)).hex()
         return check_password_hash(self.password_hash, password)
 
 @login_manager.user_loader
