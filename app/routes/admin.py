@@ -5,13 +5,20 @@ from app import db
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+# Add to existing admin routes
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
     if current_user.role != 'admin':
         return redirect(url_for('auth.login'))
-    return render_template('admin/dashboard.html', user=current_user)
-
+    
+    approved_count = Course.query.filter_by(status='approved').count()
+    pending_count = Course.query.filter_by(status='pending').count()
+    
+    return render_template('admin/dashboard.html',
+                         user=current_user,
+                         approved_count=approved_count,
+                         pending_count=pending_count)
 
 @admin_bp.route('/approvals')
 @login_required
@@ -41,3 +48,17 @@ def reject_course(course_id):
     db.session.commit()
     flash('Course rejected', 'info')
     return redirect(url_for('admin.pending_approvals'))
+@admin_bp.route('/courses')
+@login_required
+def manage_courses():
+    if current_user.role != 'admin':
+        return redirect(url_for('auth.login'))
+    
+    approved_courses = Course.query.filter_by(status='approved').all()
+    return render_template('admin/courses.html', courses=approved_courses)
+
+@admin_bp.route('/course/<int:course_id>')
+@login_required
+def course_detail(course_id):
+    course = Course.query.get_or_404(course_id)
+    return render_template('admin/course_detail.html', course=course)

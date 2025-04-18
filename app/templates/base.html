@@ -14,19 +14,30 @@
                 {% if current_user.is_authenticated %}
                     <span>Welcome, {{ current_user.email }}</span>
                     <span class="bg-blue-800 px-2 py-1 rounded">{{ current_user.role|title }}</span>
+                    
+                    <!-- Admin Navigation -->
+                    {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="hover:underline">Dashboard</a>
+                        <a href="{{ url_for('admin.manage_courses') }}" class="hover:underline">Courses</a>
+                        <a href="{{ url_for('admin.pending_approvals') }}" class="hover:underline">Approvals</a>
+                    {% endif %}
+                    
+                    <!-- Teacher Navigation -->
+                    {% if current_user.role == 'teacher' %}
+                        <a href="{{ url_for('teacher.dashboard') }}" class="hover:underline">Dashboard</a>
+                        <a href="{{ url_for('teacher.create_course') }}" class="hover:underline">Create Course</a>
+                    {% endif %}
+                    
+                    <!-- Student Navigation -->
+                    {% if current_user.role == 'student' %}
+                        <a href="{{ url_for('student.dashboard') }}" class="hover:underline">My Courses</a>
+                    {% endif %}
+                    
                     <a href="{{ url_for('auth.logout') }}" class="hover:underline">Logout</a>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}" class="hover:underline">Login</a>
                     <a href="{{ url_for('auth.register') }}" class="hover:underline">Register</a>
                 {% endif %}
-                {% if current_user.is_authenticated %}
-    {% if current_user.role == 'teacher' %}
-        <a href="{{ url_for('teacher.create_course') }}" class="hover:underline">Create Course</a>
-    {% endif %}
-    {% if current_user.role == 'admin' %}
-        <a href="{{ url_for('admin.pending_approvals') }}" class="hover:underline">Approvals</a>
-    {% endif %}
-{% endif %}
             </div>
         </div>
     </nav>
