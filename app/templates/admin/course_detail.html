@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
+    <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
+    
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold">Description</h2>
+        <p class="text-gray-700">{{ course.description }}</p>
+    </div>
+    
+    {% if course.youtube_url %}
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold">Video Content</h2>
+        <div class="aspect-w-16 aspect-h-9">
+            <iframe class="w-full h-96" src="{{ course.youtube_url|replace('watch?v=','embed/') }}" 
+                    frameborder="0" allowfullscreen></iframe>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('admin.manage_courses') }}" 
+           class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Back to Courses
+        </a>
+    </div>
+</div>
+{% endblock %}

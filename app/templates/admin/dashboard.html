@@ -1,18 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-white p-6 rounded-lg shadow">
-    <h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
-    <p class="mb-4">Welcome, {{ current_user.email }} (Admin)</p>
-    <div class="space-y-4">
-        <div class="p-4 bg-blue-100 rounded">
-            <h2 class="font-bold">Admin Features</h2>
-            <ul class="list-disc pl-5 mt-2">
-                <li>Manage Users</li>
-                <li>Create Courses</li>
-                <li>View Reports</li>
-            </ul>
+<div class="container mx-auto p-6">
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h1 class="text-2xl font-bold mb-4">Admin Dashboard</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-green-100 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold">Approved Courses</h2>
+                <p class="text-3xl font-bold">{{ approved_count }}</p>
+                <a href="{{ url_for('admin.manage_courses') }}" 
+                   class="text-green-700 hover:underline mt-2 inline-block">
+                    View All
+                </a>
+            </div>
+            <div class="bg-yellow-100 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold">Pending Approvals</h2>
+                <p class="text-3xl font-bold">{{ pending_count }}</p>
+                <a href="{{ url_for('admin.pending_approvals') }}" 
+                   class="text-yellow-700 hover:underline mt-2 inline-block">
+                    Review Now
+                </a>
+            </div>
         </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+        {% if recent_activity %}
+            <ul class="space-y-2">
+                {% for activity in recent_activity %}
+                <li class="border-b pb-2">
+                    {{ activity.description }} - 
+                    <span class="text-gray-500 text-sm">{{ activity.timestamp }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-500">No recent activity</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
