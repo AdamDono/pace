@@ -9,16 +9,14 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
-    if current_user.role != 'admin':
-        return redirect(url_for('auth.login'))
-    
     approved_count = Course.query.filter_by(status='approved').count()
     pending_count = Course.query.filter_by(status='pending').count()
+    user_count = User.query.count()
     
     return render_template('admin/dashboard.html',
-                         user=current_user,
                          approved_count=approved_count,
-                         pending_count=pending_count)
+                         pending_count=pending_count,
+                         user_count=user_count)
 
 @admin_bp.route('/approvals')
 @login_required
@@ -54,8 +52,10 @@ def manage_courses():
     if current_user.role != 'admin':
         return redirect(url_for('auth.login'))
     
-    approved_courses = Course.query.filter_by(status='approved').all()
-    return render_template('admin/courses.html', courses=approved_courses)
+    courses = Course.query.filter(Course.status.in_(['approved', 'pending'])).all()
+    return render_template('admin/courses.html', 
+                        courses=courses,
+                        current_user=current_user)
 
 @admin_bp.route('/course/<int:course_id>')
 @login_required

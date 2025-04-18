@@ -1,44 +1,92 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto p-6">
-    <div class="bg-white p-6 rounded-lg shadow mb-6">
-        <h1 class="text-2xl font-bold mb-4">Admin Dashboard</h1>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-green-100 p-4 rounded-lg">
-                <h2 class="text-xl font-semibold">Approved Courses</h2>
-                <p class="text-3xl font-bold">{{ approved_count }}</p>
-                <a href="{{ url_for('admin.manage_courses') }}" 
-                   class="text-green-700 hover:underline mt-2 inline-block">
-                    View All
-                </a>
-            </div>
-            <div class="bg-yellow-100 p-4 rounded-lg">
-                <h2 class="text-xl font-semibold">Pending Approvals</h2>
-                <p class="text-3xl font-bold">{{ pending_count }}</p>
-                <a href="{{ url_for('admin.pending_approvals') }}" 
-                   class="text-yellow-700 hover:underline mt-2 inline-block">
-                    Review Now
-                </a>
-            </div>
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+        <div class="text-sm text-gray-500">
+            Welcome, {{ current_user.email }} (Admin)
         </div>
     </div>
 
-    <!-- Recent Activity Section -->
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
-        {% if recent_activity %}
-            <ul class="space-y-2">
-                {% for activity in recent_activity %}
-                <li class="border-b pb-2">
-                    {{ activity.description }} - 
-                    <span class="text-gray-500 text-sm">{{ activity.timestamp }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-gray-500">No recent activity</p>
-        {% endif %}
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Approved Courses -->
+        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Approved Courses</p>
+                    <p class="mt-1 text-3xl font-semibold text-gray-900">{{ approved_count }}</p>
+                </div>
+                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">+2.5%</span>
+            </div>
+            <a href="{{ url_for('admin.manage_courses') }}" class="mt-4 inline-flex items-center text-sm font-medium text-green-600 hover:text-green-500">
+                View all
+                <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Pending Approvals -->
+        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Pending Approvals</p>
+                    <p class="mt-1 text-3xl font-semibold text-gray-900">{{ pending_count }}</p>
+                </div>
+                <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Attention needed</span>
+            </div>
+            <a href="{{ url_for('admin.pending_approvals') }}" class="mt-4 inline-flex items-center text-sm font-medium text-yellow-600 hover:text-yellow-500">
+                Review now
+                <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Active Users -->
+        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Active Users</p>
+                    <p class="mt-1 text-3xl font-semibold text-gray-900">{{ user_count }}</p>
+                </div>
+                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">+5 new</span>
+            </div>
+            <a href="{{ url_for('admin.manage_users') }}" class="mt-4 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500">
+                Manage users
+                <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">Recent Activity</h2>
+        </div>
+        <div class="divide-y divide-gray-200">
+            <!-- Sample Activity Item -->
+            <div class="px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-100 rounded-md p-2">
+                        <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">Approved course "Python Fundamentals"</p>
+                        <p class="text-sm text-gray-500">10 minutes ago</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- More activity items would go here -->
+        </div>
     </div>
 </div>
 {% endblock %}

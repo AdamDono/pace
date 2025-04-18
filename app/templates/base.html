@@ -17,10 +17,11 @@
                     
                     <!-- Admin Navigation -->
                     {% if current_user.role == 'admin' %}
-                        <a href="{{ url_for('admin.dashboard') }}" class="hover:underline">Dashboard</a>
-                        <a href="{{ url_for('admin.manage_courses') }}" class="hover:underline">Courses</a>
-                        <a href="{{ url_for('admin.pending_approvals') }}" class="hover:underline">Approvals</a>
-                    {% endif %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="hover:underline">Dashboard</a>
+                    <a href="{{ url_for('admin.manage_courses') }}" class="hover:underline">Courses</a>
+                    <a href="{{ url_for('admin.pending_approvals') }}" class="hover:underline">Approvals</a>
+                    <a href="{{ url_for('admin.manage_users') }}" class="hover:underline">Users</a>
+                {% endif %}
                     
                     <!-- Teacher Navigation -->
                     {% if current_user.role == 'teacher' %}
