@@ -22,3 +22,20 @@ class RegistrationForm(FlaskForm):
         ('teacher', 'Teacher'),
         ('admin', 'Admin')
     ], validators=[DataRequired()])
+    
+    class CourseForm(FlaskForm):
+     title = StringField('Title', validators=[
+        validators.DataRequired(),
+        validators.Length(min=5, max=100)
+    ])
+    description = TextAreaField('Description', validators=[
+        validators.DataRequired(),
+        validators.Length(min=10)
+    ])
+    youtube_url = StringField('YouTube Video URL', validators=[
+        validators.Optional(),
+        validators.URL()
+    ])
+    pdf_upload = FileField('PDF Material', validators=[
+        FileAllowed(['pdf'], 'Only PDF files allowed!')
+    ])
