@@ -19,6 +19,14 @@
                     <a href="{{ url_for('auth.login') }}" class="hover:underline">Login</a>
                     <a href="{{ url_for('auth.register') }}" class="hover:underline">Register</a>
                 {% endif %}
+                {% if current_user.is_authenticated %}
+    {% if current_user.role == 'teacher' %}
+        <a href="{{ url_for('teacher.create_course') }}" class="hover:underline">Create Course</a>
+    {% endif %}
+    {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('admin.pending_approvals') }}" class="hover:underline">Approvals</a>
+    {% endif %}
+{% endif %}
             </div>
         </div>
     </nav>

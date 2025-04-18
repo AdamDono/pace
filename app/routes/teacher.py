@@ -24,18 +24,22 @@ def create_course():
     
     form = CourseForm()
     if form.validate_on_submit():
-        course = Course(
-            title=form.title.data,
-            description=form.description.data,
-            youtube_url=form.youtube_url.data,
-            teacher_id=current_user.id,
-            status='pending'  # Submitted for approval
-        )
-        
-        db.session.add(course)
-        db.session.commit()
-        
-        flash('Course submitted for approval!', 'success')
-        return redirect(url_for('teacher.dashboard'))
+        try:
+            course = Course(
+                title=form.title.data,
+                description=form.description.data,
+                youtube_url=form.youtube_url.data,
+                teacher_id=current_user.id,
+                status='pending'
+            )
+            db.session.add(course)
+            db.session.commit()  # This line often fails
+            flash('Course submitted!', 'success')
+            return redirect(url_for('teacher.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'danger')  # This will show the actual error
+            # Remove this in production - just for debugging
+            return f"<pre>Error: {str(e)}\n\n{repr(form.data)}</pre>", 500
     
     return render_template('teacher/create_course.html', form=form)
