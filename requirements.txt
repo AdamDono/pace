@@ -5,3 +5,4 @@ flask-wtf==1.2.1
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 werkzeug==2.3.7  # Version with reliable PBKDF2
+pyjwt>=2.0.0
