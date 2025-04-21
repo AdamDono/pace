@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
+    <h1 class="text-2xl font-bold mb-6">Edit Course: {{ course.title }}</h1>
+    
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="space-y-4">
+            <div>
+                {{ form.title.label(class="block mb-1 font-medium") }}
+                {{ form.title(class="w-full p-2 border rounded") }}
+            </div>
+            
+            <div>
+                {{ form.description.label(class="block mb-1 font-medium") }}
+                {{ form.description(class="w-full p-2 border rounded", rows=5) }}
+            </div>
+            
+            <div>
+                {{ form.youtube_url.label(class="block mb-1 font-medium") }}
+                {{ form.youtube_url(class="w-full p-2 border rounded") }}
+            </div>
+            
+            <div>
+                {{ form.pdf_upload.label(class="block mb-1 font-medium") }}
+                {{ form.pdf_upload(class="w-full p-2 border rounded") }}
+                {% if course.pdf_filename %}
+                <p class="text-sm mt-1">Current file: {{ course.pdf_filename }}</p>
+                {% endif %}
+            </div>
+            
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                Update Course
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

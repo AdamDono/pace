@@ -46,7 +46,7 @@ class Course(db.Model):
     status = db.Column(db.String(20), default='draft')  # draft/pending/approved/rejected
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     admin_feedback = db.Column(db.Text)  # For rejection comments
-    
+    pdf_filename = db.Column(db.String(120))  # Add this line
     teacher = db.relationship('User', backref='courses')
     
     def __repr__(self):
