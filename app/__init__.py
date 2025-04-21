@@ -27,6 +27,7 @@ def create_app():
      # Create upload directory if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
