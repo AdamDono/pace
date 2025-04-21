@@ -20,27 +20,30 @@ def dashboard():
     return render_template('teacher/dashboard.html', user=current_user)
 
 
-
 @teacher_bp.route('/create-course', methods=['GET', 'POST'])
 @login_required
 def create_course():
+    if current_user.role != 'teacher':
+        abort(403)
+    
     form = CourseForm()
     if form.validate_on_submit():
         try:
-            # Handle PDF upload
+            # Handle file upload
             pdf_filename = None
             if form.pdf_upload.data:
                 pdf = form.pdf_upload.data
-                # Generate unique filename
-                ext = pdf.filename.split('.')[-1]
-                pdf_filename = f"{uuid.uuid4()}.{ext}"
-                secure_name = secure_filename(pdf_filename)
-                save_path = os.path.join(
-                    current_app.config['UPLOAD_FOLDER'], 
-                    secure_name
-                )
-                pdf.save(save_path)
-                pdf_filename = secure_name  # Store the secure filename
+                # Generate secure filename
+                ext = pdf.filename.split('.')[-1].lower()
+                if ext not in current_app.config['ALLOWED_EXTENSIONS']:
+                    flash('Only PDF files are allowed', 'danger')
+                    return redirect(url_for('teacher.create_course'))
+                
+                pdf_filename = f"{uuid.uuid4().hex}.{ext}"
+                pdf.save(os.path.join(
+                    current_app.config['UPLOAD_FOLDER'],
+                    pdf_filename
+                ))
 
             # Create course
             course = Course(
@@ -59,16 +62,11 @@ def create_course():
             
         except Exception as e:
             db.session.rollback()
-            # Clean up failed upload
-            if pdf_filename and os.path.exists(
-                os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename)
-            ):
-                os.remove(os.path.join(
-                    current_app.config['UPLOAD_FOLDER'], 
-                    pdf_filename
-                ))
             flash(f'Error: {str(e)}', 'danger')
             current_app.logger.error(f"Course creation failed: {str(e)}")
+            # Clean up failed upload
+            if pdf_filename and os.path.exists(os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename)):
+                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename))
 
     return render_template('teacher/create_course.html', form=form)
 

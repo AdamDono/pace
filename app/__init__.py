@@ -22,6 +22,9 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
     app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
+    
+     # Create upload directory if it doesn't exist
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     # Initialize extensions
     db.init_app(app)
