@@ -1,55 +1,54 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort
 from flask_login import login_required, current_user
-from app.forms import CourseForm
-from app.models import Course
-from app import db
 from werkzeug.utils import secure_filename
+from app.models import Course, db
+from app.forms import CourseForm
+from app.decorators import teacher_required
 import os
 import uuid
-from werkzeug.utils import secure_filename
-from flask import current_app
-
 
 teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+
 @teacher_bp.route('/dashboard')
-@login_required
+@teacher_required
 def dashboard():
-    if current_user.role != 'teacher':
-        return redirect(url_for('auth.login'))
     return render_template('teacher/dashboard.html', user=current_user)
 
-
 @teacher_bp.route('/create-course', methods=['GET', 'POST'])
-@login_required
+@teacher_required
 def create_course():
-    if current_user.role != 'teacher':
-        abort(403)
-    
     form = CourseForm()
     if form.validate_on_submit():
         try:
-            # Handle file upload
             pdf_filename = None
             if form.pdf_upload.data:
                 pdf = form.pdf_upload.data
-                # Generate secure filename
-                ext = pdf.filename.split('.')[-1].lower()
-                if ext not in current_app.config['ALLOWED_EXTENSIONS']:
+                if not allowed_file(pdf.filename):
                     flash('Only PDF files are allowed', 'danger')
                     return redirect(url_for('teacher.create_course'))
                 
-                pdf_filename = f"{uuid.uuid4().hex}.{ext}"
-                pdf.save(os.path.join(
+                pdf_filename = f"course_{uuid.uuid4().hex}.pdf"
+                save_path = os.path.join(
                     current_app.config['UPLOAD_FOLDER'],
                     pdf_filename
-                ))
+                )
+                pdf.save(save_path)
 
-            # Create course
+            youtube_url = None
+            if form.youtube_url.data:
+                if 'youtube.com' not in form.youtube_url.data and 'youtu.be' not in form.youtube_url.data:
+                    flash('Only YouTube URLs are allowed', 'danger')
+                    return redirect(url_for('teacher.create_course'))
+                youtube_url = form.youtube_url.data
+
             course = Course(
                 title=form.title.data,
                 description=form.description.data,
-                youtube_url=form.youtube_url.data,
+                youtube_url=youtube_url,
                 teacher_id=current_user.id,
                 status='pending',
                 pdf_filename=pdf_filename
@@ -62,44 +61,58 @@ def create_course():
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
-            current_app.logger.error(f"Course creation failed: {str(e)}")
-            # Clean up failed upload
             if pdf_filename and os.path.exists(os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename)):
                 os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename))
+            flash(f'Error: {str(e)}', 'danger')
 
     return render_template('teacher/create_course.html', form=form)
 
 @teacher_bp.route('/edit-course/<int:course_id>', methods=['GET', 'POST'])
-@login_required
+@teacher_required
 def edit_course(course_id):
-    if current_user.role != 'teacher':
-        abort(403)
-    
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
+    if course.teacher_id != current_user.id or course.status == 'approved':
         abort(403)
     
     form = CourseForm(obj=course)
     
     if form.validate_on_submit():
-        form.populate_obj(course)
-        db.session.commit()
-        flash('Course updated successfully!', 'success')
-        return redirect(url_for('teacher.my_courses'))
+        try:
+            if form.pdf_upload.data:
+                if course.pdf_filename:
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], course.pdf_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                pdf = form.pdf_upload.data
+                if not allowed_file(pdf.filename):
+                    flash('Only PDF files are allowed', 'danger')
+                    return redirect(url_for('teacher.edit_course', course_id=course_id))
+                
+                pdf_filename = f"course_{uuid.uuid4().hex}.pdf"
+                save_path = os.path.join(
+                    current_app.config['UPLOAD_FOLDER'],
+                    pdf_filename
+                )
+                pdf.save(save_path)
+                course.pdf_filename = pdf_filename
+
+            form.populate_obj(course)
+            course.status = 'pending'
+            db.session.commit()
+            flash('Course updated successfully!', 'success')
+            return redirect(url_for('teacher.my_courses'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'danger')
     
     return render_template('teacher/edit_course.html', form=form, course=course)
 
-
 @teacher_bp.route('/my-courses')
-@login_required
+@teacher_required
 def my_courses():
-    if current_user.role != 'teacher':
-        abort(403)
-    
-    courses = Course.query.filter_by(teacher_id=current_user.id).all()
-    return render_template('teacher/my_courses.html', 
-                         courses=courses)
-    
-    
-    
+    courses = Course.query.filter_by(teacher_id=current_user.id)\
+               .order_by(Course.created_at.desc())\
+               .all()
+    return render_template('teacher/my_courses.html', courses=courses)
