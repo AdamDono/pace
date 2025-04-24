@@ -1,0 +1,51 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
+    <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
+    
+    <!-- Course Sections -->
+    <div class="space-y-6">
+        {% for section in course.sections|sort(attribute='order') %}
+        <div class="border p-4 rounded-lg">
+            <h2 class="text-lg font-semibold">{{ loop.index }}. {{ section.title }}</h2>
+            
+            {% if section.section_type == 'text' %}
+            <div class="prose max-w-none mt-2">
+                {{ section.content|safe }}
+            </div>
+            
+            {% elif section.section_type == 'pdf' %}
+            <div class="mt-4">
+                <a href="{{ url_for('student.view_pdf', section_id=section.id) }}"
+                   class="text-blue-600 hover:underline flex items-center">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    View PDF
+                </a>
+            </div>
+            
+            {% elif section.section_type == 'video' %}
+            <div class="mt-4 aspect-w-16 aspect-h-9">
+                <iframe class="w-full h-64" 
+                        src="{{ section.content }}" 
+                        frameborder="0" 
+                        allowfullscreen></iframe>
+            </div>
+            {% endif %}
+            
+            <div class="mt-4 pt-4 border-t">
+                <span class="text-sm text-gray-500">
+                    {% if is_enrolled %}
+                    <span class="text-green-600">✓ Completed</span>
+                    {% else %}
+                    Status: {{ section.status }}
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

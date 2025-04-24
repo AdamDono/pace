@@ -52,7 +52,10 @@ def manage_courses():
 @admin_bp.route('/course/<int:course_id>')
 @admin_required
 def course_detail(course_id):
-    course = Course.query.get_or_404(course_id)
+    course = Course.query.options(
+        db.joinedload(Course.sections)  # Eager load sections
+    ).get_or_404(course_id)
+    
     return render_template('admin/course_detail.html', course=course)
 
 @admin_bp.route('/pdf/<filename>')
