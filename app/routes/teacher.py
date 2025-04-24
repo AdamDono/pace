@@ -115,4 +115,48 @@ def my_courses():
     courses = Course.query.filter_by(teacher_id=current_user.id)\
                .order_by(Course.created_at.desc())\
                .all()
-    return render_template('teacher/my_courses.html', courses=courses)
+    return render_template('teacher/my_courses.html', 
+                         courses=courses,
+                         current_course=None)  # Add this line
+
+@teacher_bp.route('/course/<int:course_id>/add-section', methods=['GET', 'POST'])
+@teacher_required
+def create_section(course_id):
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+
+    if request.method == 'POST':
+        section = Section(
+            title=request.form['title'],
+            content=request.form['content'],
+            course_id=course.id,
+            order=len(course.sections) + 1  # Auto-increment order
+        )
+        db.session.add(section)
+        db.session.commit()
+        flash('Section added!', 'success')
+        return redirect(url_for('teacher.create_section', course_id=course.id))
+
+    return render_template('teacher/section_editor.html', course=course)
+
+@teacher_bp.route('/course/<int:course_id>/sections', methods=['GET', 'POST'])
+@teacher_required
+def manage_sections(course_id):
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+
+    if request.method == 'POST':
+        section = Section(
+            title=request.form['title'],
+            content=request.form['content'],
+            course_id=course.id,
+            order=len(course.sections) + 1
+        )
+        db.session.add(section)
+        db.session.commit()
+        flash('Section added successfully!', 'success')
+        return redirect(url_for('teacher.manage_sections', course_id=course.id))
+
+    return render_template('teacher/section_editor.html', course=course)

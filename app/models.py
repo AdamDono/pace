@@ -51,3 +51,16 @@ class Course(db.Model):
     
     def __repr__(self):
         return f'<Course {self.title}>'
+    
+    # Add after your existing Course model
+class Section(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    title = db.Column(db.String(150), nullable=False)
+    content = db.Column(db.Text)  # For text content
+    order = db.Column(db.Integer, default=0)  # Sorting position
+    section_type = db.Column(db.String(20), default='text')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Add relationship to Course model (in Course class)
+sections = db.relationship('Section', backref='course', order_by='Section.order')

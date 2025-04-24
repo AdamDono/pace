@@ -4,35 +4,60 @@
 <div class="container mx-auto p-6">
     <h1 class="text-2xl font-bold mb-6">My Courses</h1>
     
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white">
-            <thead>
-                <tr>
-                    <th class="py-2 px-4 border">Title</th>
-                    <th class="py-2 px-4 border">Status</th>
-                    <th class="py-2 px-4 border">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for course in courses %}
-                <tr>
-                    <td class="py-2 px-4 border">{{ course.title }}</td>
-                    <td class="py-2 px-4 border">
-                        <span class="px-2 py-1 rounded 
-                            {% if course.status == 'approved' %}bg-green-100 text-green-800
-                            {% elif course.status == 'pending' %}bg-yellow-100 text-yellow-800
-                            {% else %}bg-gray-100 text-gray-800{% endif %}">
-                            {{ course.status|title }}
-                        </span>
-                    </td>
-                    <td class="py-2 px-4 border">
-                     <a href="{{ url_for('teacher.edit_course', course_id=course.id) }}"
-                           class="text-blue-600 hover:underline mr-2">Edit</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% if not courses %}
+        <p class="text-gray-500">You haven't created any courses yet.</p>
+        <a href="{{ url_for('teacher.create_course') }}" 
+           class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Create Your First Course
+        </a>
+    {% else %}
+        <div class="space-y-6">
+            {% for course in courses %}
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="text-xl font-semibold">{{ course.title }}</h2>
+                        <p class="text-gray-600 mt-1">{{ course.description }}</p>
+                        <div class="mt-2 flex space-x-2">
+                            <span class="px-2 py-1 bg-{{ 'green' if course.status == 'approved' else 'yellow' }}-100 text-{{ 'green' if course.status == 'approved' else 'yellow' }}-800 text-sm rounded">
+                                {{ course.status|title }}
+                            </span>
+                            <span class="text-sm text-gray-500">
+                                {{ course.sections|length }} sections
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                    <a href="{{ url_for('teacher.manage_sections', course_id=course.id) }}"
+                           class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">
+                            Manage Sections
+                        </a>
+                        <a href="{{ url_for('teacher.edit_course', course_id=course.id) }}" 
+                           class="bg-gray-200 px-3 py-1 rounded text-sm hover:bg-gray-300">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+                
+                {% if course.sections %}
+                <div class="mt-4 border-t pt-4">
+                    <h3 class="font-medium mb-2">Sections Preview</h3>
+                    <ul class="space-y-2">
+                        {% for section in course.sections|sort(attribute='order') %}
+                        <li class="flex items-center">
+                            <span class="text-gray-500 mr-2">{{ loop.index }}.</span>
+                            {{ section.title }}
+                            <span class="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded">
+                                {{ section.section_type }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

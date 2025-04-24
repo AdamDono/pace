@@ -1,0 +1,61 @@
+{% extends "teacher/base.html" %}
+
+{% block teacher_content %}
+<div class="max-w-4xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">Manage Sections: {{ course.title }}</h2>
+    <a href="{{ url_for('teacher.my_courses') }}" class="text-blue-600 hover:underline">
+      ← Back to My Courses
+    </a>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow mb-6">
+    <h3 class="text-xl font-semibold mb-4">Add New Section</h3>
+    <form method="POST" action="{{ url_for('teacher.create_section', course_id=course.id) }}">
+      <div class="space-y-4">
+        <div>
+          <label class="block mb-1 font-medium">Section Title</label>
+          <input type="text" name="title" required 
+                 class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div>
+          <label class="block mb-1 font-medium">Content</label>
+          <textarea name="content" rows="8" required
+                    class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+        
+        <button type="submit" 
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+          Save Section
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-xl font-semibold mb-4">Current Sections ({{ course.sections|length }})</h3>
+    
+    {% if course.sections %}
+    <div class="space-y-3">
+      {% for section in course.sections|sort(attribute='order') %}
+      <div class="border p-4 rounded-lg hover:bg-gray-50">
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="font-medium">{{ loop.index }}. {{ section.title }}</h4>
+            <p class="text-sm text-gray-600 mt-1">{{ section.content|truncate(150) }}</p>
+          </div>
+          <div class="flex space-x-2">
+            <a href="#" class="text-blue-600 hover:underline text-sm">Edit</a>
+            <a href="#" class="text-red-600 hover:underline text-sm">Delete</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500">No sections added yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
