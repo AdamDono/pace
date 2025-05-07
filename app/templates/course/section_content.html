@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-2">{{ section.title }}</h1>
+  <p class="text-gray-600 mb-6">Part of: {{ section.course.title }}</p>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    {% if section.section_type == 'text' %}
+      <div class="prose max-w-none">
+        {{ section.content|safe }}
+      </div>
+    
+    {% elif section.section_type == 'pdf' %}
+      <iframe src="{{ section.get_content_url() }}" 
+              class="w-full h-screen border rounded">
+        Your browser doesn't support PDFs. 
+        <a href="{{ section.get_content_url() }}">Download instead</a>
+      </iframe>
+    
+    {% elif section.section_type == 'video' %}
+      <div class="aspect-w-16 aspect-h-9">
+        <iframe src="{{ section.content|embed_video_url }}" 
+                frameborder="0" 
+                allowfullscreen
+                class="w-full h-96 rounded-lg"></iframe>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

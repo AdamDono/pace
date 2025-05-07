@@ -2,72 +2,36 @@
 
 {% block content %}
 <div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
-    
-    <div class="mb-6">
-        <h2 class="text-lg font-semibold">Description</h2>
-        <p class="text-gray-700">{{ course.description }}</p>
-    </div>
-    
-    <!-- New Sections Preview -->
-    <div class="mb-6">
-        <h2 class="text-xl font-semibold mb-4">Course Sections</h2>
-        {% if course.sections %}
-        <div class="space-y-4">
-            {% for section in course.sections|sort(attribute='order') %}
-            <div class="border p-4 rounded-lg">
-                <h3 class="font-medium">{{ loop.index }}. {{ section.title }}</h3>
-                <div class="prose max-w-none mt-2">
-                    {{ section.content|safe }}
-                </div>
-                <div class="mt-2 text-sm text-gray-500">
-                    Type: {{ section.section_type|title }} | 
-                    Created: {{ section.created_at.strftime('%Y-%m-%d') }}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-gray-500">No sections added yet.</p>
-        {% endif %}
+  <div class="bg-white p-6 rounded-lg shadow">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">{{ course.title }}</h1>
+      <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+        Approved
+      </span>
     </div>
 
-    {% if course.youtube_url %}
     <div class="mb-6">
-        <h3 class="font-semibold mb-2">Video Content</h3>
-        {% set youtube_id = course.youtube_url.split('v=')[1].split('&')[0] if 'v=' in course.youtube_url else course.youtube_url.split('/')[-1] %}
-        <div class="aspect-w-16 aspect-h-9">
-            <iframe class="w-full h-64" 
-                    src="https://www.youtube.com/embed/{{ youtube_id }}" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen></iframe>
+      <h2 class="text-xl font-semibold mb-2">Description</h2>
+      <p class="text-gray-700">{{ course.description }}</p>
+    </div>
+
+    <div class="border-t pt-6">
+      <h2 class="text-xl font-semibold mb-4">Course Sections</h2>
+      <div class="space-y-4">
+        {% for section in course.sections %}
+        <div class="border p-4 rounded-lg">
+          <h3 class="font-bold">{{ loop.index }}. {{ section.title }}</h3>
+          <div class="prose max-w-none mt-2">{{ section.content|safe }}</div>
+          <div class="mt-2 text-sm text-gray-500">
+            <span class="mr-3">Created: {{ section.created_at.strftime('%Y-%m-%d') }}</span>
+            <span>Status: {{ 'Published' if section.is_published else 'Draft' }}</span>
+          </div>
         </div>
+        {% else %}
+        <p class="text-gray-500 py-4">No sections added yet</p>
+        {% endfor %}
+      </div>
     </div>
-    {% endif %}
-    
-    {% if course.pdf_filename %}
-    <div class="mt-6 bg-gray-50 p-4 rounded-lg">
-        <h3 class="font-semibold mb-2">Course Materials</h3>
-        <div class="flex items-center space-x-4 mb-4">
-            <a href="{{ url_for('admin.serve_pdf', filename=course.pdf_filename) }}" 
-               class="text-blue-600 hover:underline flex items-center"
-               target="_blank">
-                📄 Download PDF
-            </a>
-        </div>
-        <embed src="{{ url_for('admin.serve_pdf', filename=course.pdf_filename) }}" 
-               type="application/pdf" 
-               width="100%" 
-               height="600px">
-    </div>
-    {% endif %}
-    
-    <div class="mt-4">
-        <a href="{{ url_for('admin.manage_courses') }}" 
-           class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Back to Courses
-        </a>
-    </div>
+  </div>
 </div>
 {% endblock %}

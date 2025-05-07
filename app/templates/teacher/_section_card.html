@@ -1,0 +1,11 @@
+<!-- teacher/_section_card.html -->
+<div class="section-card" id="section-{{ section.id }}">
+    <h3>{{ section.title }}</h3>
+    <p>{{ section.content }}</p>
+    <button hx-delete="{{ url_for('teacher.delete_section', section_id=section.id) }}"
+            hx-target="#section-{{ section.id }}"
+            hx-swap="outerHTML"
+            class="text-red-500">
+      Delete
+    </button>
+  </div>

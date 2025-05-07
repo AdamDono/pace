@@ -2,89 +2,64 @@
 
 {% block content %}
 <div class="container mx-auto p-6">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Manage Sections: {{ course.title }}</h1>
-        <a href="{{ url_for('teacher.my_courses') }}" 
-           class="text-blue-600 hover:underline flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-            </svg>
-            Back to My Courses
-        </a>
-    </div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Manage Sections: {{ course.title }}</h1>
+    <a href="{{ url_for('teacher.my_courses') }}" class="text-blue-600 hover:underline">
+      ← Back to Courses
+    </a>
+  </div>
 
-    <div class="bg-white p-6 rounded-lg shadow mb-6">
-        <h2 class="text-xl font-semibold mb-4">Add New Section</h2>
-        <form method="POST" action="{{ url_for('teacher.manage_sections', course_id=course.id) }}">
-            <div class="space-y-4">
-                <div>
-                    <label class="block mb-2 font-medium">Section Title *</label>
-                    <input type="text" name="title" required 
-                           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
-                </div>
-                
-                <div>
-                    <label class="block mb-2 font-medium">Content *</label>
-                    <textarea name="content" rows="8" required
-                              class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
-                
-                <button type="submit" 
-                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-                    Add Section
-                </button>
-            </div>
-        </form>
-    </div>
+  <!-- Add Section Form -->
+  <div class="bg-white p-6 rounded-lg shadow mb-8">
+    <h2 class="text-xl font-semibold mb-4">Add New Section</h2>
+    <form hx-post="{{ url_for('teacher.add_section', course_id=course.id) }}"
+          hx-target="#sections-list"
+          hx-swap="beforeend">
+      <div class="mb-4">
+        <label class="block text-gray-700 mb-2">Title</label>
+        <input type="text" name="title" required
+               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700 mb-2">Content</label>
+        <textarea name="content" required rows="6"
+                  class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"></textarea>
+      </div>
+      <button type="submit" 
+              class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+        Add Section
+      </button>
+    </form>
+  </div>
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-semibold mb-4">Current Sections ({{ sections|length }})</h2>
-        
-        {% if sections %}
-        <div class="space-y-4">
-            {% for section in sections %}
-            <div class="border p-4 rounded-lg hover:bg-gray-50 transition">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="font-medium text-lg">{{ loop.index }}. {{ section.title }}</h3>
-                        <div class="prose max-w-none mt-2 text-gray-700">
-                            {{ section.content|safe }}
-                        </div>
-                        <div class="mt-2 flex items-center text-sm text-gray-500">
-                            <span class="bg-gray-100 px-2 py-1 rounded mr-2">
-                                {{ section.section_type|title }}
-                            </span>
-                            <span>Created: {{ section.created_at.strftime('%Y-%m-%d') }}</span>
-                        </div>
-                    </div>
-                    <!-- Add this to teacher/section_editor.html -->
-<div class="mt-4 flex items-center">
-    <input type="checkbox" id="publish-{{ section.id }}" 
-           name="publish" {{ 'checked' if section.is_published }}
-           class="mr-2">
-    <label for="publish-{{ section.id }}">Publish to students</label>
-</div>
-                    <form method="POST" 
-                          action="{{ url_for('teacher.delete_section', section_id=section.id) }}"
-                          onsubmit="return confirm('Delete this section permanently?')">
-                        <button type="submit" 
-                                class="text-red-600 hover:text-red-800 hover:underline">
-                            Delete
-                        </button>
-                    </form>
-                </div>
+  <!-- Sections List -->
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-xl font-semibold mb-4">Current Sections</h2>
+    <div id="sections-list">
+      {% for section in course.sections %}
+      <div class="border p-4 rounded-lg mb-4" id="section-{{ section.id }}">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-bold text-lg">{{ section.title }}</h3>
+            <div class="prose max-w-none mt-2">{{ section.content|safe }}</div>
+            <div class="mt-2 text-sm text-gray-500">
+              Created: {{ section.created_at.strftime('%Y-%m-%d') }}
             </div>
-            {% endfor %}
+          </div>
+          <div class="flex space-x-2">
+            <button hx-delete="{{ url_for('teacher.delete_section', section_id=section.id) }}"
+                    hx-target="#section-{{ section.id }}"
+                    hx-confirm="Delete this section permanently?"
+                    class="text-red-600 hover:text-red-800">
+              Delete
+            </button>
+          </div>
         </div>
-        {% else %}
-        <div class="text-center py-8 bg-gray-50 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 class="mt-2 text-lg font-medium text-gray-900">No sections yet</h3>
-            <p class="mt-1 text-gray-500">Add your first section using the form above.</p>
-        </div>
-        {% endif %}
+      </div>
+      {% else %}
+      <p class="text-gray-500 py-4">No sections added yet</p>
+      {% endfor %}
     </div>
+  </div>
 </div>
 {% endblock %}

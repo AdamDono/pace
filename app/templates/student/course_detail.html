@@ -49,3 +49,18 @@
     </div>
 </div>
 {% endblock %}
+
+
+<!-- student/course_detail.html -->
+<div class="sections">
+    {% for section in course.sections if section.is_published %}
+    <div class="section">
+      <h3>{{ loop.index }}. {{ section.title }}</h3>
+      {% if section.section_type == 'text' %}
+        <div>{{ section.content|safe }}</div>
+      {% elif section.section_type == 'pdf' %}
+        <a href="{{ url_for('student.view_pdf', section_id=section.id) }}">Download PDF</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>

@@ -1,14 +1,12 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import Course, db
+from app.models import Course, Section, db
 from app.forms import CourseForm
 from app.decorators import teacher_required
 import os
 import uuid
-from app.models import Course, Section  # Add Section to imports
 from datetime import datetime
-
 
 teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 
@@ -120,49 +118,21 @@ def my_courses():
                .all()
     return render_template('teacher/my_courses.html', 
                          courses=courses,
-                         current_course=None)  # Add this line
-
-@teacher_bp.route('/course/<int:course_id>/add-section', methods=['GET', 'POST'])
-@teacher_required
-def create_section(course_id):
-    course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
-        abort(403)
-
-    if request.method == 'POST':
-        section = Section(
-            title=request.form['title'],
-            content=request.form['content'],
-            course_id=course.id,
-            order=len(course.sections) + 1  # Auto-increment order
-        )
-        db.session.add(section)
-        db.session.commit()
-        flash('Section added!', 'success')
-        return redirect(url_for('teacher.create_section', course_id=course.id))
-
-    return render_template('teacher/section_editor.html', course=course)
-
-
+                         current_course=None)
 
 @teacher_bp.route('/course/<int:course_id>/sections', methods=['GET', 'POST'])
 @teacher_required
 def manage_sections(course_id):
-    # Get course or 404
     course = db.session.get(Course, course_id) or abort(404)
     
-    # Verify ownership
     if course.teacher_id != current_user.id:
         abort(403)
 
-    # Handle form submission
     if request.method == 'POST':
         try:
-            # Calculate next order number
             last_order = db.session.query(db.func.max(Section.order))\
                          .filter_by(course_id=course.id).scalar() or 0
             
-            # Create new section
             section = Section(
                 title=request.form['title'],
                 content=request.form['content'],
@@ -174,6 +144,9 @@ def manage_sections(course_id):
             
             db.session.add(section)
             db.session.commit()
+            
+            if request.headers.get('HX-Request'):
+                return render_template('teacher/_section_card.html', section=section)
             flash('Section added successfully!', 'success')
         except Exception as e:
             db.session.rollback()
@@ -181,7 +154,6 @@ def manage_sections(course_id):
         
         return redirect(url_for('teacher.manage_sections', course_id=course.id))
 
-    # Get all sections for this course
     sections = Section.query\
                .filter_by(course_id=course.id)\
                .order_by(Section.order)\
@@ -190,24 +162,24 @@ def manage_sections(course_id):
     return render_template('teacher/section_editor.html',
                          course=course,
                          sections=sections)
-    
-    
-@teacher_bp.route('/section/<int:section_id>/delete', methods=['POST'])
+
+@teacher_bp.route('/section/<int:section_id>', methods=['DELETE'])
 @teacher_required
 def delete_section(section_id):
-    section = db.session.get(Section, section_id) or abort(404)
+    section = Section.query.get_or_404(section_id)
     course_id = section.course_id
     
-    # Verify ownership
     if section.course.teacher_id != current_user.id:
         abort(403)
 
     try:
         db.session.delete(section)
         db.session.commit()
+        if request.headers.get('HX-Request'):
+            return '', 204
         flash('Section deleted successfully', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')
     
-    return redirect(url_for('teacher.manage_sections', course_id=course_id))    
+    return redirect(url_for('teacher.manage_sections', course_id=course_id))

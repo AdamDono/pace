@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PaceAcademy</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
 <body class="bg-gray-50">
     <nav class="bg-blue-600 p-4 text-white">
@@ -56,5 +57,11 @@
 
         {% block content %}{% endblock %}
     </div>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script>
+  document.body.addEventListener('htmx:configRequest', (e) => {
+    e.detail.headers['X-CSRFToken'] = "{{ csrf_token() }}";
+  });
+</script>
 </body>
 </html>
