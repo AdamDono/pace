@@ -7,12 +7,10 @@ from app.forms import LoginForm, RegistrationForm
 
 auth_bp = Blueprint('auth', __name__)
 
-
-
-# Add this root route
 @auth_bp.route('/')
 def home():
     return redirect(url_for('auth.login'))
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -65,4 +63,4 @@ def redirect_based_on_role():
         return redirect(url_for('teacher.dashboard'))
     elif current_user.role == 'student':
         return redirect(url_for('student.dashboard'))
-    return redirect(url_for('auth.login'))  # fallback
+    return redirect(url_for('auth.login'))

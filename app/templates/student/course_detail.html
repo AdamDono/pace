@@ -1,51 +1,122 @@
-{% extends "student/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-    <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
+<div class="container mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-6">{{ course.title }}</h1>
     
-    <!-- Course Sections -->
-    <div class="space-y-6">
-        {% for section in course.sections|sort(attribute='order') %}
-        <div class="border p-4 rounded-lg">
-            <h2 class="text-lg font-semibold">{{ loop.index }}. {{ section.title }}</h2>
-            
-            {% if section.section_type == 'text' %}
-            <div class="prose max-w-none mt-2">
-                {{ section.content|safe }}
-            </div>
-            
-            {% elif section.section_type == 'pdf' %}
-            <div class="mt-4">
-                <a href="{{ url_for('student.view_pdf', section_id=section.id) }}"
-                   class="text-blue-600 hover:underline flex items-center">
-                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                    </svg>
-                    View PDF
-                </a>
-            </div>
-            
-            {% elif section.section_type == 'video' %}
-            <div class="mt-4 aspect-w-16 aspect-h-9">
-                <iframe class="w-full h-64" 
-                        src="{{ section.content }}" 
-                        frameborder="0" 
-                        allowfullscreen></iframe>
-            </div>
-            {% endif %}
-            
-            <div class="mt-4 pt-4 border-t">
-                <span class="text-sm text-gray-500">
-                    {% if is_enrolled %}
-                    <span class="text-green-600">✓ Completed</span>
-                    {% else %}
-                    Status: {{ section.status }}
-                    {% endif %}
-                </span>
+    <div class="flex flex-col md:flex-row gap-6">
+        <!-- Content Viewer (Left) -->
+        <div class="w-full md:w-2/3 bg-white rounded-lg shadow p-4 bg-blue-100">
+            <div id="section-content" class="min-h-[400px]">
+                <!-- Initial content will be loaded here -->
+                <p class="text-gray-500">Select a section to start learning</p>
             </div>
         </div>
-        {% endfor %}
+        
+        <!-- Section List (Right) -->
+        <div class="w-full md:w-1/3 bg-white rounded-lg shadow p-4 bg-green-100">
+            <h2 class="text-lg font-semibold mb-4">Course Sections</h2>
+            <div class="space-y-2">
+                {% for section in sections %}
+                <div class="border rounded-lg">
+                    <button class="w-full text-left p-3 flex justify-between items-center {% if section.id in locked_sections %} opacity-50 cursor-not-allowed {% else %} hover:bg-gray-100 {% endif %}"
+                            {% if section.id not in locked_sections %}
+                            hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                            hx-target="#section-content"
+                            hx-swap="innerHTML"
+                            hx-indicator=".htmx-indicator"
+                            onclick="toggleSection(this)"
+                            {% endif %}>
+                        <div class="flex items-center">
+                            <span class="mr-2">{{ loop.index }}.</span>
+                            <span>{{ section.title }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            {% if section.duration > 0 %}
+                            <span class="text-sm text-gray-500 mr-2">{{ section.duration }} min</span>
+                            {% endif %}
+                            {% if section.id in locked_sections %}
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4m0 0v.01M12 7v.01M12 21a9 9 0 01-9-9 9 9 0 019-9 9 9 0 019 9 9 9 0 01-9 9z"></path>
+                            </svg>
+                            {% else %}
+                            <svg class="w-5 h-5 transform transition-transform toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            {% endif %}
+                        </div>
+                    </button>
+                    <div class="hidden p-3 border-t section-content">
+                        <p class="text-sm text-gray-600">Type: {{ section.section_type|title }}</p>
+                        {% set es = enrollment.sections|selectattr('section_id', 'equalto', section.id)|first %}
+                        {% if es and es.completed %}
+                        <p class="text-sm text-green-600">✓ Completed</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
+
+<script src="https://unpkg.com/htmx.org@1.9.6"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+    function toggleSection(button) {
+        const content = button.nextElementSibling;
+        const icon = button.querySelector('.toggle-icon');
+        content.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+    }
+
+    let player;
+    function onYouTubeIframeAPIReady() {
+        document.querySelectorAll('[id^="youtube-player-"]').forEach(iframe => {
+            player = new YT.Player(iframe.id, {
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        });
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            const duration = player.getDuration();
+            const currentTime = player.getCurrentTime();
+            if (duration > 0 && (currentTime / duration) >= 0.9) {
+                const sectionId = event.target.getIframe().id.split('-')[2];
+                markSectionCompleted(sectionId);
+            }
+        }
+    }
+
+    document.addEventListener('htmx:afterSwap', function(event) {
+        const contentDiv = document.querySelector(`[id^="text-content-"]`);
+        if (contentDiv) {
+            contentDiv.addEventListener('scroll', function() {
+                const scrollHeight = contentDiv.scrollHeight - contentDiv.clientHeight;
+                if (contentDiv.scrollTop >= scrollHeight) {
+                    const sectionId = contentDiv.id.split('-')[2];
+                    markSectionCompleted(sectionId);
+                }
+            });
+        }
+    });
+
+    function markSectionCompleted(sectionId) {
+        fetch(`/student/section/${sectionId}/mark-completed`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if (data.message) {
+                  location.reload();
+              }
+          });
+    }
+</script>
 {% endblock %}

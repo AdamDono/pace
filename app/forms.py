@@ -1,11 +1,9 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
-from wtforms import StringField, PasswordField, SelectField, BooleanField, TextAreaField
+from wtforms import StringField, PasswordField, SelectField, BooleanField, TextAreaField, IntegerField
 from werkzeug.utils import secure_filename
 from wtforms.validators import DataRequired, Email, EqualTo, Length, URL, Optional
-import uuid
 
-# Existing Auth Forms (keep these)
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -25,7 +23,6 @@ class RegistrationForm(FlaskForm):
         ('admin', 'Admin')
     ], validators=[DataRequired()])
 
-# Add the CourseForm (new)
 class CourseForm(FlaskForm):
     title = StringField('Title', validators=[
         DataRequired(),
@@ -40,13 +37,5 @@ class CourseForm(FlaskForm):
         URL(message='Enter a valid URL')
     ])
     pdf_upload = FileField('PDF Material', validators=[
-        FileAllowed(['pdf'], 'Only PDF files allowed!')
-    ])
-    
-    class CourseForm(FlaskForm):
-     title = StringField('Title', validators=[DataRequired()])
-    description = TextAreaField('Description', validators=[DataRequired()])
-    youtube_url = StringField('YouTube URL', validators=[Optional(), URL()])
-    pdf_upload = FileField('PDF File', validators=[
         FileAllowed(['pdf'], 'Only PDF files allowed!')
     ])

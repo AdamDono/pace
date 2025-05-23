@@ -2,29 +2,43 @@
 
 {% block content %}
 <div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-6">Pending Approvals</h1>
-    
-    {% if not courses %}
-        <p class="text-gray-500">No courses pending approval</p>
-    {% else %}
-        <div class="space-y-4">
-            {% for course in courses %}
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-xl font-semibold">{{ course.title }}</h2>
-                <p class="text-gray-600 mb-2">By: {{ course.teacher.email }}</p>
-                <p class="mb-3">{{ course.description }}</p>
+    <h1 class="text-2xl font-bold mb-6">Pending Course Approvals</h1>
+    {% if pending_courses %}
+        <div class="space-y-6">
+            {% for course in pending_courses %}
+            <div class="bg-white rounded-lg shadow p-4">
+                <h2 class="text-xl font-semibold mb-2">{{ course.title }}</h2>
+                <p class="text-gray-600 mb-4">{{ course.description }}</p>
                 
+                <!-- Section List -->
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Sections</h3>
+                    <div class="space-y-2">
+                        {% for section in course.sections|sort(attribute='order') %}
+                        <div class="border rounded-lg p-3 flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span class="mr-2">{{ loop.index }}.</span>
+                                <span>{{ section.title }}</span>
+                            </div>
+                            {% if section.duration > 0 %}
+                            <span class="text-sm text-gray-500">{{ section.duration }} min</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Approve/Reject Controls -->
                 <div class="flex space-x-3">
                     <a href="{{ url_for('admin.approve_course', course_id=course.id) }}" 
-                       class="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600">
+                       class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
                         Approve
                     </a>
-                    
                     <form method="POST" action="{{ url_for('admin.reject_course', course_id=course.id) }}" 
                           class="flex items-center space-x-2">
                         <input type="text" name="feedback" placeholder="Rejection reason" 
                                class="p-1 border rounded" required>
-                        <button type="submit" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">
+                        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
                             Reject
                         </button>
                     </form>
@@ -32,6 +46,14 @@
             </div>
             {% endfor %}
         </div>
+    {% else %}
+        <p class="text-gray-500">No pending courses for approval.</p>
     {% endif %}
+    <div class="mt-4">
+        <a href="{{ url_for('admin.manage_courses') }}" 
+           class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Back to Courses
+        </a>
+    </div>
 </div>
 {% endblock %}

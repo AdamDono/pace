@@ -53,7 +53,7 @@ def manage_courses():
 @admin_required
 def course_detail(course_id):
     course = Course.query.options(
-        db.joinedload(Course.sections)  # Eager load sections
+        db.joinedload(Course.sections)
     ).get_or_404(course_id)
     
     return render_template('admin/course_detail.html', course=course)

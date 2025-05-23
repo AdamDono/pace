@@ -24,9 +24,25 @@
                 </div>
                 
                 <div>
+                    <label class="block mb-2 font-medium">Section Type *</label>
+                    <select name="section_type" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
+                        <option value="text">Text</option>
+                        <option value="video">Video (YouTube URL)</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+                
+                <div>
                     <label class="block mb-2 font-medium">Content *</label>
                     <textarea name="content" rows="8" required
                               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"></textarea>
+                    <p class="text-sm text-gray-500 mt-1">For videos, enter a YouTube URL. For PDFs, enter the filename or upload via the course form.</p>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 font-medium">Duration (minutes)</label>
+                    <input type="number" name="duration" min="0" value="0"
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <button type="submit" 
@@ -41,9 +57,9 @@
         <h2 class="text-xl font-semibold mb-4">Current Sections ({{ sections|length }})</h2>
         
         {% if sections %}
-        <div class="space-y-4">
+        <div id="section-list" class="space-y-4">
             {% for section in sections %}
-            <div class="border p-4 rounded-lg hover:bg-gray-50 transition">
+            <div class="border p-4 rounded-lg hover:bg-gray-50 transition" data-id="{{ section.id }}">
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="font-medium text-lg">{{ loop.index }}. {{ section.title }}</h3>
@@ -54,16 +70,16 @@
                             <span class="bg-gray-100 px-2 py-1 rounded mr-2">
                                 {{ section.section_type|title }}
                             </span>
-                            <span>Created: {{ section.created_at.strftime('%Y-%m-%d') }}</span>
+                            <span>Duration: {{ section.duration }} min</span>
+                            <span class="ml-2">Created: {{ section.created_at.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="mt-4 flex items-center">
+                            <input type="checkbox" id="publish-{{ section.id }}" 
+                                   name="publish" {{ 'checked' if section.is_published }}
+                                   class="mr-2">
+                            <label for="publish-{{ section.id }}">Publish to students</label>
                         </div>
                     </div>
-                    <!-- Add this to teacher/section_editor.html -->
-<div class="mt-4 flex items-center">
-    <input type="checkbox" id="publish-{{ section.id }}" 
-           name="publish" {{ 'checked' if section.is_published }}
-           class="mr-2">
-    <label for="publish-{{ section.id }}">Publish to students</label>
-</div>
                     <form method="POST" 
                           action="{{ url_for('teacher.delete_section', section_id=section.id) }}"
                           onsubmit="return confirm('Delete this section permanently?')">
@@ -87,4 +103,27 @@
         {% endif %}
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    const sectionList = document.getElementById('section-list');
+    new Sortable(sectionList, {
+        animation: 150,
+        onEnd: function(evt) {
+            const items = Array.from(sectionList.children).map(item => item.dataset.id);
+            fetch(`{{ url_for('teacher.reorder_sections', course_id=course.id) }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(items)
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.message) {
+                      location.reload();
+                  }
+              });
+        }
+    });
+</script>
 {% endblock %}
