@@ -22,29 +22,18 @@
                             hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
                             hx-target="#section-content"
                             hx-swap="innerHTML"
-                            hx-indicator=".htmx-indicator"
-                            onclick="toggleSection(this)">
+                            hx-indicator=".htmx-indicator">
                         <div class="flex items-center">
                             <span class="mr-2">{{ loop.index }}.</span>
                             <span>{{ section.title }}</span>
                         </div>
-                        <div class="flex items-center">
-                            {% if section.duration > 0 %}
-                            <span class="text-sm text-gray-500 mr-2">{{ section.duration }} min</span>
-                            {% endif %}
-                            <svg class="w-5 h-5 transform transition-transform toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </div>
+                        {% if section.duration > 0 %}
+                        <span class="text-sm text-gray-500">{{ section.duration }} min</span>
+                        {% endif %}
                     </button>
-                    <div class="hidden p-3 border-t section-content">
-                        <p class="text-sm text-gray-600">Type: {{ section.section_type|title }}</p>
-                        <p class="text-sm text-gray-600">Created: {{ section.created_at.strftime('%Y-%m-%d') }}</p>
-                    </div>
                 </div>
                 {% endfor %}
             </div>
-            <!-- Removed Approve/Reject controls -->
             <div class="mt-4">
                 <a href="{{ url_for('admin.manage_courses') }}" 
                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center block">
@@ -58,62 +47,11 @@
 <script src="https://unpkg.com/htmx.org@1.9.6"></script>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    function toggleSection(button) {
-        const content = button.nextElementSibling;
-        const icon = button.querySelector('.toggle-icon');
-        content.classList.toggle('hidden');
-        icon.classList.toggle('rotate-180');
-    }
-
     let player;
     function onYouTubeIframeAPIReady() {
         document.querySelectorAll('[id^="youtube-player-"]').forEach(iframe => {
-            player = new YT.Player(iframe.id, {
-                events: {
-                    'onStateChange': onPlayerStateChange
-                }
-            });
+            player = new YT.Player(iframe.id, {});
         });
-    }
-
-    function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.PLAYING && "{{ current_user.role }}" === 'student') {
-            const duration = player.getDuration();
-            const currentTime = player.getCurrentTime();
-            if (duration > 0 && (currentTime / duration) >= 0.9) {
-                const sectionId = event.target.getIframe().id.split('-')[2];
-                markSectionCompleted(sectionId);
-            }
-        }
-    }
-
-    document.addEventListener('htmx:afterSwap', function(event) {
-        const contentDiv = document.querySelector(`[id^="text-content-"]`);
-        if (contentDiv && "{{ current_user.role }}" === 'student') {
-            contentDiv.addEventListener('scroll', function() {
-                const scrollHeight = contentDiv.scrollHeight - contentDiv.clientHeight;
-                if (contentDiv.scrollTop >= scrollHeight) {
-                    const sectionId = contentDiv.id.split('-')[2];
-                    markSectionCompleted(sectionId);
-                }
-            });
-        }
-    });
-
-    function markSectionCompleted(sectionId) {
-        if ("{{ current_user.role }}" === 'student') {
-            fetch(`/student/section/${sectionId}/mark-completed`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.message) {
-                      location.reload();
-                  }
-              });
-        }
     }
 </script>
 {% endblock %}

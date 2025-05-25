@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory
+from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request
 from flask_login import login_required, current_user
 from app.models import Course, Section, Enrollment, EnrollmentSection
 from app import db
@@ -49,23 +49,28 @@ def course_detail(course_id):
 @student_bp.route('/section/<int:section_id>/content')
 @login_required
 def get_section_content(section_id):
-    if current_user.role != 'student':
+    # Allow access for students and admins
+    if current_user.role not in ['student', 'admin']:
         return jsonify({"error": "Unauthorized"}), 403
     
     section = Section.query.get_or_404(section_id)
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first()
-    if not enrollment:
-        return jsonify({"error": "Not enrolled"}), 403
     
-    # Check if section is locked
-    sections = Section.query.filter_by(course_id=section.course_id).order_by(Section.order).all()
-    section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
-    if section_idx > 0:
-        prev_section = sections[section_idx - 1]
-        prev_es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=prev_section.id).first()
-        if not prev_es or not prev_es.completed:
-            return jsonify({"error": "Section locked"}), 403
-    
+    # For students, check enrollment and section locking
+    if current_user.role == 'student':
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first()
+        if not enrollment:
+            return jsonify({"error": "Not enrolled"}), 403
+        
+        # Check if section is locked
+        sections = Section.query.filter_by(course_id=section.course_id).order_by(Section.order).all()
+        section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
+        if section_idx > 0:
+            prev_section = sections[section_idx - 1]
+            prev_es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=prev_section.id).first()
+            if not prev_es or not prev_es.completed:
+                return jsonify({"error": "Section locked"}), 403
+
+    # Generate the content HTML
     content_html = ""
     if section.section_type == 'video':
         youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
@@ -80,8 +85,10 @@ def get_section_content(section_id):
             </div>
         """
     elif section.section_type == 'pdf':
+        # For admins, use the admin route to serve PDFs; for students, use the student route
+        pdf_url = url_for('admin.serve_pdf', filename=section.content) if current_user.role == 'admin' else url_for('student.view_pdf', section_id=section.id)
         content_html = f"""
-            <a href="{url_for('student.view_pdf', section_id=section.id)}" 
+            <a href="{pdf_url}" 
                class="text-blue-600 hover:underline flex items-center" target="_blank">
                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
@@ -96,11 +103,16 @@ def get_section_content(section_id):
             </div>
         """
     
-    return jsonify({
-        "content": content_html,
-        "section_type": section.section_type,
-        "section_id": section.id
-    })
+    # Return raw HTML for admins (since admin template uses hx-swap="innerHTML")
+    # Return JSON for students (since student template expects JSON)
+    if current_user.role == 'admin':
+        return content_html
+    else:
+        return jsonify({
+            "content": content_html,
+            "section_type": section.section_type,
+            "section_id": section.id
+        })
 
 @student_bp.route('/section/<int:section_id>/mark-completed', methods=['POST'])
 @login_required

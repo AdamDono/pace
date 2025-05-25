@@ -31,6 +31,7 @@
                     <!-- Teacher Navigation -->
                     {% if current_user.role == 'teacher' %}
                         <a href="{{ url_for('teacher.dashboard') }}" class="hover:underline">Dashboard</a>
+                        <a href="{{ url_for('teacher.my_courses') }}" class="hover:underline">My Courses</a>
                         <a href="{{ url_for('teacher.create_course') }}" class="hover:underline">Create Course</a>
                     {% endif %}
                     

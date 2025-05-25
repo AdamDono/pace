@@ -15,9 +15,12 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
 
 @teacher_bp.route('/dashboard')
-@teacher_required
+@login_required
 def dashboard():
-    return render_template('teacher/dashboard.html', user=current_user)
+    if current_user.role != 'teacher':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('auth.login'))
+    return render_template('teacher/dashboard.html')
 
 @teacher_bp.route('/create-course', methods=['GET', 'POST'])
 @teacher_required
