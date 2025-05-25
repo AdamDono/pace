@@ -3,17 +3,47 @@
 <div class="container mx-auto p-6">
     <h1 class="text-2xl font-bold mb-4">Teacher Courses</h1>
     <p>Welcome, {{ current_user.email }}!</p>
+
+    <!-- Filter Tabs -->
+    <div class="flex space-x-4 mb-6 border-b">
+        <a href="{{ url_for('teacher.my_courses', status='all') }}"
+           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'all' else 'text-gray-600' }} hover:text-blue-600">
+            All
+        </a>
+        <a href="{{ url_for('teacher.my_courses', status='approved') }}"
+           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'approved' else 'text-gray-600' }} hover:text-blue-600">
+            Approved
+        </a>
+        <a href="{{ url_for('teacher.my_courses', status='pending') }}"
+           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'pending' else 'text-gray-600' }} hover:text-blue-600">
+            Pending
+        </a>
+        <a href="{{ url_for('teacher.my_courses', status='rejected') }}"
+           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'rejected' else 'text-gray-600' }} hover:text-blue-600">
+            Rejected
+        </a>
+    </div>
+
     {% if courses %}
         <ul class="space-y-2 mt-4">
             {% for course in courses %}
-                <li class="border p-3 rounded">
-                    <span>{{ course.title }}</span>
-                    <a href="{{ url_for('teacher.manage_sections', course_id=course.id) }}" class="ml-4 text-blue-600 hover:underline">Manage Sections</a>
+                <li class="border p-3 rounded flex justify-between items-center">
+                    <div>
+                        <span>{{ course.title }}</span>
+                        <span class="ml-4 text-sm text-gray-500">Status: {{ course.status|title }}</span>
+                        {% if course.admin_feedback and course.status == 'rejected' %}
+                            <span class="ml-4 text-sm text-red-500">Feedback: {{ course.admin_feedback }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="space-x-2">
+                        <a href="{{ url_for('teacher.edit_course', course_id=course.id) }}" class="text-blue-600 hover:underline">Edit</a>
+                        <a href="{{ url_for('teacher.manage_sections', course_id=course.id) }}" class="text-blue-600 hover:underline">Manage Sections</a>
+                    </div>
                 </li>
             {% endfor %}
         </ul>
     {% else %}
-        <p>No courses created yet. <a href="{{ url_for('teacher.create_course') }}" class="text-blue-600 hover:underline">Create a course</a>.</p>
+        <p>No courses found. <a href="{{ url_for('teacher.create_course') }}" class="text-blue-600 hover:underline">Create a course</a>.</p>
     {% endif %}
     <a href="{{ url_for('teacher.dashboard') }}" class="mt-4 block text-blue-600 hover:underline">Back to Dashboard</a>
 </div>

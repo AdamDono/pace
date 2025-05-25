@@ -116,12 +116,19 @@ def edit_course(course_id):
 @teacher_bp.route('/my-courses')
 @teacher_required
 def my_courses():
-    courses = Course.query.filter_by(teacher_id=current_user.id)\
-               .order_by(Course.created_at.desc())\
-               .all()
-    return render_template('teacher/my_courses.html', 
-                         courses=courses,
-                         current_course=None)
+    # Get the status filter from query parameter (default to 'all')
+    status_filter = request.args.get('status', 'all')
+    
+    # Base query for courses by the current teacher
+    query = Course.query.filter_by(teacher_id=current_user.id)\
+                        .order_by(Course.created_at.desc())
+    
+    # Apply status filter if not 'all'
+    if status_filter != 'all':
+        query = query.filter_by(status=status_filter)
+    
+    courses = query.all()
+    return render_template('teacher/my_courses.html', courses=courses, status_filter=status_filter)
 
 @teacher_bp.route('/course/<int:course_id>/add-section', methods=['GET', 'POST'])
 @teacher_required
