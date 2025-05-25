@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-4">Enroll Students in {{ course.title }}</h1>
+
+    <!-- Enrollment Form -->
+    <form method="POST" class="mb-6">
+        <div class="mb-4">
+            <label for="student_email" class="block text-gray-700">Student Email</label>
+            <input type="email" name="student_email" id="student_email" class="border rounded px-3 py-2 w-full" placeholder="student@example.com" required>
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Enroll Student</button>
+    </form>
+
+    <!-- Enrolled Students List -->
+    <h2 class="text-xl font-semibold mb-2">Enrolled Students</h2>
+    {% if enrolled_students %}
+        <ul class="space-y-2">
+            {% for student in enrolled_students %}
+                <li class="border p-3 rounded">{{ student.email }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No students enrolled yet.</p>
+    {% endif %}
+
+    <a href="{{ url_for('teacher.my_courses') }}" class="mt-4 block text-blue-600 hover:underline">Back to My Courses</a>
+</div>
+{% endblock %}
