@@ -24,6 +24,9 @@ class User(db.Model, UserMixin):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    # Relationship to enrollments
+    enrollments = db.relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -45,6 +48,8 @@ class Course(db.Model):
                              back_populates='course',
                              order_by='Section.order',
                              cascade='all, delete-orphan')
+    # Relationship to enrollments
+    enrollments = db.relationship('Enrollment', back_populates='course', cascade='all, delete-orphan')
 
 class Section(db.Model):
     __tablename__ = 'sections'
@@ -59,6 +64,7 @@ class Section(db.Model):
     duration = db.Column(db.Integer, default=0)  # Duration in minutes
 
     course = db.relationship('Course', back_populates='sections')
+    enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
 
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
@@ -68,9 +74,10 @@ class Enrollment(db.Model):
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed = db.Column(db.Boolean, default=False)
     
-    student = db.relationship('User', backref='enrollments')
-    course = db.relationship('Course', backref='course_enrollments')
-    sections = db.relationship('EnrollmentSection', backref='enrollment', cascade='all, delete-orphan')
+    # Relationships
+    student = db.relationship('User', back_populates='enrollments')
+    course = db.relationship('Course', back_populates='enrollments')
+    sections = db.relationship('EnrollmentSection', back_populates='enrollment', cascade='all, delete-orphan')
 
 class EnrollmentSection(db.Model):
     __tablename__ = 'enrollment_sections'
@@ -80,4 +87,6 @@ class EnrollmentSection(db.Model):
     completed = db.Column(db.Boolean, default=False)
     completed_at = db.Column(db.DateTime)
     
-    section = db.relationship('Section', backref='enrollment_sections')
+    # Relationships
+    enrollment = db.relationship('Enrollment', back_populates='sections')
+    section = db.relationship('Section', back_populates='enrollment_sections')  # Removed redundant backref

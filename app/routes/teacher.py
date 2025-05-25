@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import Course, db, Section
+from app.models import Course, db, Section, User, Enrollment
 from app.forms import CourseForm
 from app.decorators import teacher_required
 import os
@@ -130,9 +130,6 @@ def my_courses():
     courses = query.all()
     return render_template('teacher/my_courses.html', courses=courses, status_filter=status_filter)
 
-
-# ... (previous imports and routes remain unchanged)
-
 @teacher_bp.route('/course/<int:course_id>/enroll-students', methods=['GET', 'POST'])
 @teacher_required
 def enroll_students(course_id):
@@ -148,17 +145,21 @@ def enroll_students(course_id):
             flash('Student not found or invalid email.', 'danger')
             return redirect(url_for('teacher.enroll_students', course_id=course_id))
 
-        if student in course.students:
+        # Check if the student is already enrolled
+        existing_enrollment = Enrollment.query.filter_by(student_id=student.id, course_id=course.id).first()
+        if existing_enrollment:
             flash('Student is already enrolled in this course.', 'warning')
             return redirect(url_for('teacher.enroll_students', course_id=course_id))
 
-        course.students.append(student)
+        # Create a new enrollment
+        enrollment = Enrollment(student_id=student.id, course_id=course.id)
+        db.session.add(enrollment)
         db.session.commit()
         flash(f'Student {student.email} enrolled successfully!', 'success')
         return redirect(url_for('teacher.enroll_students', course_id=course_id))
 
     # GET request: Show the form and list of enrolled students
-    enrolled_students = course.students
+    enrolled_students = User.query.join(Enrollment).filter(Enrollment.course_id == course.id).all()
     return render_template('teacher/enroll_students.html', course=course, enrolled_students=enrolled_students)
 
 @teacher_bp.route('/course/<int:course_id>/add-section', methods=['GET', 'POST'])
