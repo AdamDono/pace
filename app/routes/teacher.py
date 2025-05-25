@@ -130,6 +130,37 @@ def my_courses():
     courses = query.all()
     return render_template('teacher/my_courses.html', courses=courses, status_filter=status_filter)
 
+
+# ... (previous imports and routes remain unchanged)
+
+@teacher_bp.route('/course/<int:course_id>/enroll-students', methods=['GET', 'POST'])
+@teacher_required
+def enroll_students(course_id):
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+
+    if request.method == 'POST':
+        student_email = request.form.get('student_email')
+        student = User.query.filter_by(email=student_email, role='student').first()
+
+        if not student:
+            flash('Student not found or invalid email.', 'danger')
+            return redirect(url_for('teacher.enroll_students', course_id=course_id))
+
+        if student in course.students:
+            flash('Student is already enrolled in this course.', 'warning')
+            return redirect(url_for('teacher.enroll_students', course_id=course_id))
+
+        course.students.append(student)
+        db.session.commit()
+        flash(f'Student {student.email} enrolled successfully!', 'success')
+        return redirect(url_for('teacher.enroll_students', course_id=course_id))
+
+    # GET request: Show the form and list of enrolled students
+    enrolled_students = course.students
+    return render_template('teacher/enroll_students.html', course=course, enrolled_students=enrolled_students)
+
 @teacher_bp.route('/course/<int:course_id>/add-section', methods=['GET', 'POST'])
 @teacher_required
 def create_section(course_id):
