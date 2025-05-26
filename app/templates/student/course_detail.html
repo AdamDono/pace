@@ -1,31 +1,98 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
-    <p class="mb-4">{{ course.description }}</p>
-    {% if course.youtube_url %}
-        <iframe class="w-full h-64 mb-4" src="{{ course.youtube_url.replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
-    {% endif %}
-    <p class="mb-4">Completion: {{ completion_percentage|round }}%</p>
-    <h2 class="text-xl font-semibold mb-2">Sections</h2>
-    <ul class="space-y-2">
-        {% for section in sections %}
-            <li class="border p-3 rounded flex justify-between items-center">
-                {% if section.id in locked_sections %}
-                    <span class="text-gray-500">{{ section.title }} ({{ section.duration }} min) - Locked</span>
-                {% else %}
-                    <a href="{{ url_for('student.get_section_content', section_id=section.id) }}" 
-                       class="text-blue-600 hover:underline hx-get hx-target='#section-content' hx-swap='innerHTML'">
-                        {{ section.title }} ({{ section.duration }} min)
-                    </a>
-                    {% if enrollment_sections[section.id] and enrollment_sections[section.id].completed %}
-                        <span class="text-green-600">✔</span>
+<div class="container mx-auto p-6 flex flex-col md:flex-row gap-6">
+    <!-- Sidebar for Sections -->
+    <div class="w-full md:w-1/3 bg-gray-100 p-4 rounded-lg">
+        <h2 class="text-xl font-semibold mb-4">Course Content</h2>
+        <!-- Progress Bar -->
+        <div class="mb-4">
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ completion_percentage }}%"></div>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">{{ completion_percentage|round }}% Complete</p>
+        </div>
+        <ul class="space-y-2">
+            {% for section in sections %}
+                <li class="border p-3 rounded flex justify-between items-center {% if section.id in locked_sections %} bg-gray-200 {% else %} bg-white hover:bg-gray-50 {% endif %}">
+                    {% if section.id in locked_sections %}
+                        <span class="text-gray-500">{{ section.title }} ({{ section.duration }} min) - Locked</span>
+                    {% else %}
+                        <a href="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                           class="text-blue-600 hover:underline hx-get hx-target='#section-content' hx-swap='innerHTML' hx-indicator='#loading-indicator'">
+                            {{ section.title }} ({{ section.duration }} min)
+                        </a>
+                        {% if enrollment_sections[section.id] and enrollment_sections[section.id].completed %}
+                            <span class="text-green-600">✔</span>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-    <div id="section-content" class="mt-4"></div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="w-full md:w-2/3">
+        <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
+        <p class="mb-4">{{ course.description }}</p>
+        {% if course.youtube_url %}
+            <iframe class="w-full h-64 mb-4" src="{{ course.youtube_url.replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
+        {% endif %}
+        <div id="loading-indicator" class="hidden text-center">
+            <svg class="animate-spin h-5 w-5 text-blue-600 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <div id="section-content" class="mt-4">
+            <!-- Section content will be loaded here -->
+        </div>
+    </div>
+</div>
+<div class="container mx-auto p-6">
     <a href="{{ url_for('student.dashboard') }}" class="mt-4 block text-blue-600 hover:underline">Back to Dashboard</a>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-load the first incomplete section on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstIncompleteSection = document.querySelector('a[hx-get]:not(:has(+ span.text-green-600))');
+        if (firstIncompleteSection) {
+            firstIncompleteSection.click();
+        }
+    });
+
+    // Update the UI after marking a section as completed
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.xhr.response) {
+            const response = JSON.parse(event.detail.xhr.response);
+            if (response.message === "Section marked as completed") {
+                // Add checkmark to the section in the sidebar
+                const sectionLink = document.querySelector(`a[hx-get*="${response.section_id}"]`);
+                if (sectionLink && !sectionLink.nextElementSibling?.classList.contains('text-green-600')) {
+                    const checkmark = document.createElement('span');
+                    checkmark.className = 'text-green-600';
+                    checkmark.innerHTML = '✔';
+                    sectionLink.parentElement.appendChild(checkmark);
+                }
+                // Unlock the next section
+                const currentSectionLi = sectionLink?.parentElement;
+                const nextSectionLi = currentSectionLi?.nextElementSibling;
+                if (nextSectionLi && nextSectionLi.classList.contains('bg-gray-200')) {
+                    nextSectionLi.classList.remove('bg-gray-200');
+                    nextSectionLi.classList.add('bg-white', 'hover:bg-gray-50');
+                    const nextSectionLink = nextSectionLi.querySelector('span');
+                    if (nextSectionLink) {
+                        const newLink = document.createElement('a');
+                        newLink.href = nextSectionLink.parentElement.querySelector('a')?.href || '#';
+                        newLink.className = 'text-blue-600 hover:underline hx-get hx-target="#section-content" hx-swap="innerHTML" hx-indicator="#loading-indicator"';
+                        newLink.textContent = nextSectionLink.textContent.replace(' - Locked', '');
+                        nextSectionLink.replaceWith(newLink);
+                    }
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

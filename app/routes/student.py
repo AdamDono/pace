@@ -98,13 +98,17 @@ def get_section_content(section_id):
             enrollment_section.completed = True
             enrollment_section.completed_at = datetime.utcnow()
             db.session.commit()
-            return jsonify({"message": "Section marked as completed", "completed": True}), 200
+            return jsonify({
+                "message": "Section marked as completed",
+                "completed": True,
+                "section_id": section_id  # Added for JavaScript to identify the section
+            }), 200
 
     # Generate the content HTML
-    content_html = ""
+    content_html = f"<h2 class='text-xl font-semibold mb-2'>{section.title}</h2>"
     if section.section_type == 'video':
         youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
-        content_html = f"""
+        content_html += f"""
             <div class="aspect-w-16 aspect-h-9">
                 <iframe id="youtube-player-{section.id}" 
                         class="w-full h-64 md:h-96" 
@@ -116,7 +120,7 @@ def get_section_content(section_id):
         """
     elif section.section_type == 'pdf':
         pdf_url = url_for('admin.serve_pdf', filename=section.content) if current_user.role == 'admin' else url_for('student.view_pdf', section_id=section.id)
-        content_html = f"""
+        content_html += f"""
             <a href="{pdf_url}" 
                class="text-blue-600 hover:underline flex items-center" target="_blank">
                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +130,7 @@ def get_section_content(section_id):
             </a>
         """
     else:  # text
-        content_html = f"""
+        content_html += f"""
             <div class="prose max-w-none mt-2" id="text-content-{section.id}">
                 {section.content}
             </div>
@@ -135,7 +139,7 @@ def get_section_content(section_id):
     # Add Mark as Completed button for students
     if current_user.role == 'student':
         button_html = f"""
-            <form method="POST" class="mt-4">
+            <form method="POST" class="mt-4" hx-post="{url_for('student.get_section_content', section_id=section.id)}" hx-target="#section-content" hx-swap="innerHTML">
                 <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                         {'disabled' if enrollment_section.completed else ''}>
                     {'Completed' if enrollment_section.completed else 'Mark as Completed'}
@@ -155,7 +159,6 @@ def get_section_content(section_id):
             "section_id": section.id,
             "completed": enrollment_section.completed
         })
-
 @student_bp.route('/section/<int:section_id>/mark-completed', methods=['POST'])
 @login_required
 def mark_section_completed(section_id):
