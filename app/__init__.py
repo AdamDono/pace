@@ -4,7 +4,6 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 import os
-from app import decorators
 from werkzeug.utils import secure_filename
 from datetime import datetime
 
@@ -45,11 +44,20 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
+    # Define login_manager.user_loader here to avoid circular imports
+    from app.models import User
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    # Import decorators after app initialization
+    from .decorators import student_required, teacher_required
+
     # Register blueprints
     from app.routes.auth import auth_bp
     from app.routes.admin import admin_bp
     from app.routes.teacher import teacher_bp
-    from app.routes.student import student_bp
+    from app.routes.student import student_bp  # Corrected import path
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
