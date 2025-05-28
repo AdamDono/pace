@@ -19,14 +19,14 @@
         }
     </script>
 </head>
-<body class="bg-gray-50 font-sans">
+<body class="bg-gray-50 font-sans flex flex-col min-h-screen">
     <!-- Navigation Bar -->
     <nav class="bg-white shadow-md fixed w-full top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <!-- Logo -->
                 <div class="flex-shrink-0">
-                    <a href="/" class="text-2xl font-bold text-blue-600">Pace Academy</a>
+                    <a href="/" class="text-2xl font-bold text-blue-600">PaceAcademy</a>
                 </div>
                 <!-- Desktop Menu -->
                 <div class="hidden sm:flex sm:items-center sm:space-x-6">
@@ -154,7 +154,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="pt-16">
+    <div class="pt-16 pb-16 flex-grow">
         <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -173,8 +173,8 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-4 mt-8">
+    <!-- Fixed Footer -->
+    <footer class="bg-gray-800 text-white py-4 fixed bottom-0 w-full z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p>© 2025 PaceAcademy. All rights reserved.</p>
         </div>
