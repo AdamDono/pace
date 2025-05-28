@@ -1,9 +1,12 @@
-from werkzeug.security import generate_password_hash, check_password_hash
-from app import db, login_manager
+# app/models.py
+import os
 from datetime import datetime
 from flask_login import UserMixin
 import hashlib
-import os
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Import db directly
+from app import db
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -26,10 +29,6 @@ class User(db.Model, UserMixin):
 
     # Relationship to enrollments
     enrollments = db.relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
 class Course(db.Model):
     __tablename__ = 'courses'
@@ -89,4 +88,4 @@ class EnrollmentSection(db.Model):
     
     # Relationships
     enrollment = db.relationship('Enrollment', back_populates='sections')
-    section = db.relationship('Section', back_populates='enrollment_sections')  # Removed redundant backref
+    section = db.relationship('Section', back_populates='enrollment_sections')

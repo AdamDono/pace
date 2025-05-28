@@ -2,44 +2,57 @@
 
 {% block content %}
 <div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-6">{{ course.title }}</h1>
-    
-    <div class="flex flex-col md:flex-row gap-6">
-        <!-- Content Viewer (Left) -->
-        <div class="w-full md:w-2/3 bg-white rounded-lg shadow p-4">
-            <div id="section-content" class="min-h-[400px]">
-                <p class="text-gray-500">Select a section to view content</p>
-            </div>
-        </div>
-        
-        <!-- Section List (Right) -->
-        <div class="w-full md:w-1/3 bg-white rounded-lg shadow p-4">
-            <h2 class="text-lg font-semibold mb-4">Course Sections</h2>
+    <!-- Course Overview -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
+        <p class="mb-4">{{ course.description }}</p>
+        {% if course.youtube_url %}
+            <iframe class="w-full h-64 mb-4" src="{{ course.youtube_url.replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
+        {% endif %}
+    </div>
+
+    <!-- Sections List with Toggle -->
+    <div class="bg-white rounded-lg shadow p-4">
+        <h2 class="text-lg font-semibold mb-4">Course Sections</h2>
+        {% if course.sections %}
             <div class="space-y-2">
                 {% for section in course.sections|sort(attribute='order') %}
-                <div class="border rounded-lg">
-                    <button class="w-full text-left p-3 flex justify-between items-center hover:bg-gray-100"
-                            hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
-                            hx-target="#section-content"
-                            hx-swap="innerHTML"
-                            hx-indicator=".htmx-indicator">
-                        <div class="flex items-center">
-                            <span class="mr-2">{{ loop.index }}.</span>
-                            <span>{{ section.title }}</span>
+                    <div class="border rounded-lg">
+                        <button class="w-full text-left p-3 flex justify-between items-center hover:bg-gray-100"
+                                hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                                hx-target="#content-{{ section.id }}"
+                                hx-swap="innerHTML"
+                                hx-indicator="#loading-{{ section.id }}"
+                                onclick="this.classList.toggle('bg-blue-100'); document.getElementById('content-{{ section.id }}').classList.toggle('hidden')">
+                            <div class="flex items-center">
+                                <span class="mr-2">{{ loop.index }}.</span>
+                                <span>{{ section.title }}</span>
+                            </div>
+                            {% if section.duration > 0 %}
+                                <span class="text-sm text-gray-500">{{ section.duration }} min</span>
+                            {% endif %}
+                            <svg class="w-5 h-5 transform transition-transform" id="toggle-icon-{{ section.id }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="loading-{{ section.id }}" class="hidden text-center p-2">
+                            <svg class="animate-spin h-5 w-5 text-blue-600 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </div>
-                        {% if section.duration > 0 %}
-                        <span class="text-sm text-gray-500">{{ section.duration }} min</span>
-                        {% endif %}
-                    </button>
-                </div>
+                        <div id="content-{{ section.id }}" class="p-3 hidden"></div>
+                    </div>
                 {% endfor %}
             </div>
-            <div class="mt-4">
-                <a href="{{ url_for('admin.manage_courses') }}" 
-                   class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center block">
-                    Back to Courses
-                </a>
-            </div>
+        {% else %}
+            <p class="text-gray-500">No sections available for this course.</p>
+        {% endif %}
+        <div class="mt-4">
+            <a href="{{ url_for('admin.manage_courses') }}" 
+               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center block">
+                Back to Courses
+            </a>
         </div>
     </div>
 </div>
@@ -53,5 +66,13 @@
             player = new YT.Player(iframe.id, {});
         });
     }
+
+    // Toggle icon rotation
+    document.querySelectorAll('button[onclick]').forEach(button => {
+        button.addEventListener('click', function() {
+            const icon = this.querySelector('svg');
+            icon.classList.toggle('rotate-180');
+        });
+    });
 </script>
 {% endblock %}
