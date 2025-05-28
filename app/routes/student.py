@@ -4,6 +4,11 @@ from app.models import Course, Section, Enrollment, EnrollmentSection
 from app import db
 from datetime import datetime
 from app.decorators import student_required, student_enrolled
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 student_bp = Blueprint('student', __name__, url_prefix='/student')
 
@@ -72,6 +77,9 @@ def get_section_content(section_id):
     
     section = Section.query.get_or_404(section_id)
     
+    # Log section details for debugging
+    logger.debug(f"Fetching content for section {section.id}: title={section.title}, type={section.section_type}, content={section.content}, duration={section.duration}")
+
     # For students, check enrollment and section locking
     if current_user.role == 'student':
         if not student_enrolled(section.course_id):
@@ -103,33 +111,46 @@ def get_section_content(section_id):
             content_html = f"<div id='section-content-{section.id}'>"
             content_html += f"<p class='text-gray-600 mb-2'>Duration: {section.duration} minutes</p>"
             content_html += f"<p class='text-gray-600 mb-4'>Type: {section.section_type.capitalize()}</p>"
-            if section.section_type == 'video':
-                youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
-                content_html += f"""
-                    <div class="aspect-w-16 aspect-h-9">
-                        <iframe id="youtube-player-{section.id}" 
-                                class="w-full h-64 md:h-96" 
-                                src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen></iframe>
-                    </div>
-                """
+            if not section.content:
+                content_html += "<p class='text-red-500'>No content available for this section.</p>"
+            elif section.section_type == 'video':
+                try:
+                    youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
+                    if not youtube_id or len(youtube_id) != 11:  # Validate YouTube ID length
+                        logger.error(f"Invalid YouTube ID for section {section.id}: {section.content}")
+                        content_html += "<p class='text-red-500'>Invalid video content. Please check the URL.</p>"
+                    else:
+                        content_html += f"""
+                            <div class="aspect-w-16 aspect-h-9">
+                                <iframe id="youtube-player-{section.id}" 
+                                        class="w-full h-64 md:h-96" 
+                                        src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
+                                        frameborder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen></iframe>
+                            </div>
+                        """
+                except Exception as e:
+                    logger.error(f"Error parsing YouTube URL for section {section.id}: {section.content}, error: {str(e)}")
+                    content_html += "<p class='text-red-500'>Error loading video content. Please check the URL.</p>"
             elif section.section_type == 'pdf':
                 pdf_url = url_for('admin.serve_pdf', filename=section.content) if current_user.role == 'admin' else url_for('student.view_pdf', section_id=section.id)
-                content_html += f"""
-                    <a href="{pdf_url}" 
-                       class="text-blue-600 hover:underline flex items-center" target="_blank">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                        </svg>
-                        View PDF
-                    </a>
-                """
+                if not section.content:
+                    content_html += "<p class='text-red-500'>No PDF file associated.</p>"
+                else:
+                    content_html += f"""
+                        <a href="{pdf_url}" 
+                           class="text-blue-600 hover:underline flex items-center" target="_blank">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                            View PDF
+                        </a>
+                    """
             else:  # text
                 content_html += f"""
                     <div class="prose max-w-none mt-2" id="text-content-{section.id}">
-                        {section.content}
+                        {section.content or 'No text content available.'}
                     </div>
                 """
             # Add Mark as Completed button for students
@@ -150,33 +171,46 @@ def get_section_content(section_id):
     content_html = f"<div id='section-content-{section.id}'>"
     content_html += f"<p class='text-gray-600 mb-2'>Duration: {section.duration} minutes</p>"
     content_html += f"<p class='text-gray-600 mb-4'>Type: {section.section_type.capitalize()}</p>"
-    if section.section_type == 'video':
-        youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
-        content_html += f"""
-            <div class="aspect-w-16 aspect-h-9">
-                <iframe id="youtube-player-{section.id}" 
-                        class="w-full h-64 md:h-96" 
-                        src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen></iframe>
-            </div>
-        """
+    if not section.content:
+        content_html += "<p class='text-red-500'>No content available for this section.</p>"
+    elif section.section_type == 'video':
+        try:
+            youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
+            if not youtube_id or len(youtube_id) != 11:  # Validate YouTube ID length
+                logger.error(f"Invalid YouTube ID for section {section.id}: {section.content}")
+                content_html += "<p class='text-red-500'>Invalid video content. Please check the URL.</p>"
+            else:
+                content_html += f"""
+                    <div class="aspect-w-16 aspect-h-9">
+                        <iframe id="youtube-player-{section.id}" 
+                                class="w-full h-64 md:h-96" 
+                                src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen></iframe>
+                    </div>
+                """
+        except Exception as e:
+            logger.error(f"Error parsing YouTube URL for section {section.id}: {section.content}, error: {str(e)}")
+            content_html += "<p class='text-red-500'>Error loading video content. Please check the URL.</p>"
     elif section.section_type == 'pdf':
         pdf_url = url_for('admin.serve_pdf', filename=section.content) if current_user.role == 'admin' else url_for('student.view_pdf', section_id=section.id)
-        content_html += f"""
-            <a href="{pdf_url}" 
-               class="text-blue-600 hover:underline flex items-center" target="_blank">
-                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                </svg>
-                View PDF
-            </a>
-        """
+        if not section.content:
+            content_html += "<p class='text-red-500'>No PDF file associated.</p>"
+        else:
+            content_html += f"""
+                <a href="{pdf_url}" 
+                   class="text-blue-600 hover:underline flex items-center" target="_blank">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    View PDF
+                </a>
+            """
     else:  # text
         content_html += f"""
             <div class="prose max-w-none mt-2" id="text-content-{section.id}">
-                {section.content}
+                {section.content or 'No text content available.'}
             </div>
         """
     

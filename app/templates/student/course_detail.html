@@ -23,11 +23,10 @@
         {% if sections %}
             <div class="space-y-2">
                 {% for section in sections %}
-                    <div class="border rounded-lg">
-                        <button class="w-full text-left p-3 flex justify-between items-center hover:bg-gray-50"
+                    <div class="border rounded-lg {% if section.id in locked_sections %} bg-gray-200 {% endif %}">
+                        <button class="w-full text-left p-3 flex justify-between items-center hover:bg-gray-50 {% if section.id in locked_sections %} cursor-not-allowed text-gray-500 {% else %} {% endif %}"
                                 {% if section.id in locked_sections %}
                                     disabled
-                                    class="cursor-not-allowed text-gray-500"
                                 {% else %}
                                     hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
                                     hx-target="#content-{{ section.id }}"
@@ -37,7 +36,10 @@
                                 {% endif %}>
                             <div class="flex items-center">
                                 <span class="mr-2">{{ loop.index }}.</span>
-                                <span>{{ section.title }} ({{ section.duration }} min)</span>
+                                <span>{{ section.title }}</span>
+                                {% if section.duration > 0 %}
+                                    <span class="ml-2 text-sm text-gray-500">({{ section.duration }} min)</span>
+                                {% endif %}
                                 {% if section.id in locked_sections %}
                                     <span class="ml-2 text-gray-500"> - Locked</span>
                                 {% endif %}
