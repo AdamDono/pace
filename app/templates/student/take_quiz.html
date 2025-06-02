@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">{{ quiz.title }}</h1>
+    <form method="POST">
+        {% for question in questions %}
+        <div class="mb-4">
+            <p class="font-semibold">{{ loop.index }}. {{ question.question_text }}</p>
+            <div>
+                <input type="radio" name="q{{ question.id }}" value="a" required> {{ question.option_a }}<br>
+                <input type="radio" name="q{{ question.id }}" value="b"> {{ question.option_b }}<br>
+                {% if question.option_c %}
+                <input type="radio" name="q{{ question.id }}" value="c"> {{ question.option_c }}<br>
+                {% endif %}
+                {% if question.option_d %}
+                <input type="radio" name="q{{ question.id }}" value="d"> {{ question.option_d }}<br>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit Quiz</button>
+    </form>
+    <a href="{{ url_for('student.course_detail', course_id=section.course_id) }}" class="mt-4 block text-blue-600 hover:underline">Back to Course</a>
+</div>
+{% endblock %}

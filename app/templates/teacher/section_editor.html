@@ -79,6 +79,29 @@
                                    class="mr-2">
                             <label for="publish-{{ section.id }}">Publish to students</label>
                         </div>
+                        <div class="mt-4">
+                            <h4 class="font-medium">Assignments</h4>
+                            {% if section.assignments %}
+                                {% for assignment in section.assignments %}
+                                    <p>{{ assignment.title }} - Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
+                                {% endfor %}
+                            {% else %}
+                                <p>No assignments yet.</p>
+                            {% endif %}
+                            <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">Add Assignment</a>
+                            <a href="{{ url_for('teacher.view_submissions', course_id=course.id, section_id=section.id) }}" class="ml-4 text-blue-600 hover:underline">View Submissions</a>
+                        </div>
+                        <div class="mt-4">
+                            <h4 class="font-medium">Quizzes</h4>
+                            {% if section.quizzes %}
+                                {% for quiz in section.quizzes %}
+                                    <p>{{ quiz.title }}</p>
+                                {% endfor %}
+                            {% else %}
+                                <p>No quizzes yet.</p>
+                            {% endif %}
+                            <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">Add Quiz</a>
+                        </div>
                     </div>
                     <form method="POST" 
                           action="{{ url_for('teacher.delete_section', section_id=section.id) }}"
