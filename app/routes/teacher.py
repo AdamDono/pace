@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import Course, db, Section, User, Enrollment, Assignment, Quiz, QuizQuestion
-from app.forms import CourseForm, AssignmentForm, QuizForm
+from app.models import Course, db, Section, User, Enrollment, Assignment, Quiz, QuizQuestion, QuizAttempt, QuizAnswer
+from app.forms import CourseForm, AssignmentForm, QuizForm, QuestionForm
 from app.decorators import teacher_required
 import os
 import uuid

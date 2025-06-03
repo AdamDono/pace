@@ -130,6 +130,7 @@ class QuizQuestion(db.Model):
     option_d = db.Column(db.String(100), nullable=True)
     correct_answer = db.Column(db.String(1), nullable=False)  # 'a', 'b', 'c', or 'd'
     quiz = db.relationship('Quiz', back_populates='questions')
+    answers = db.relationship('QuizAnswer', back_populates='question', cascade='all, delete-orphan')  # Add relationship
 
 class QuizAttempt(db.Model):
     __tablename__ = 'quiz_attempts'
@@ -140,3 +141,13 @@ class QuizAttempt(db.Model):
     attempted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     quiz = db.relationship('Quiz', back_populates='attempts')
     student = db.relationship('User')
+    answers = db.relationship('QuizAnswer', back_populates='attempt', cascade='all, delete-orphan')  # Add relationship
+
+class QuizAnswer(db.Model):
+    __tablename__ = 'quiz_answers'
+    id = db.Column(db.Integer, primary_key=True)
+    attempt_id = db.Column(db.Integer, db.ForeignKey('quiz_attempts.id'), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('quiz_questions.id'), nullable=False)
+    selected_answer = db.Column(db.String(1), nullable=False)  # 'a', 'b', 'c', or 'd'
+    attempt = db.relationship('QuizAttempt', back_populates='answers')
+    question = db.relationship('QuizQuestion', back_populates='answers')
