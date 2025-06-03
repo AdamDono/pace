@@ -280,15 +280,7 @@ def view_submissions(course_id, section_id):
     assignments = Assignment.query.filter_by(section_id=section_id).all()
     submissions = []
     for assignment in assignments:
-        for submission in assignment.submissions:
-            submissions.append({
-                'assignment_title': assignment.title,
-                'student_email': submission.student.email,
-                'submission_text': submission.submission_text,
-                'submitted_at': submission.submitted_at,
-                'reviewed': submission.reviewed,
-                'feedback': submission.feedback
-            })
+        submissions.extend(assignment.submissions)  # Directly use submission objects
     return render_template('teacher/view_submissions.html', course=course, section=section, submissions=submissions)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submission/<int:submission_id>/review', methods=['POST'])

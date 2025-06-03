@@ -5,8 +5,8 @@
     {% if submissions %}
         {% for submission in submissions %}
         <div class="mb-4 p-4 border rounded">
-            <p><strong>Assignment:</strong> {{ submission.assignment_title }}</p>
-            <p><strong>Student:</strong> {{ submission.student_email }}</p>
+            <p><strong>Assignment:</strong> {{ submission.assignment.title }}</p>
+            <p><strong>Student:</strong> {{ submission.student.email }}</p>
             <p><strong>Submission:</strong> {{ submission.submission_text }}</p>
             <p><strong>Submitted At:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
             <p><strong>Status:</strong> {{ 'Reviewed' if submission.reviewed else 'Not Reviewed' }}</p>
