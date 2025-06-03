@@ -334,3 +334,32 @@ def delete_section(section_id):
         flash(f'Error: {str(e)}', 'danger')
     
     return redirect(url_for('teacher.manage_sections', course_id=course_id))
+
+
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz-attempts')
+@teacher_required
+def view_quiz_attempts(course_id, section_id):
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    if section.course_id != course_id or course.teacher_id != current_user.id:
+        abort(403)
+
+    # Get all quizzes in this section
+    quizzes = Quiz.query.filter_by(section_id=section_id).all()
+    quiz_attempts = []
+    for quiz in quizzes:
+        # Get all attempts for this quiz
+        attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
+        for attempt in attempts:
+            # Get the student and their answers
+            student = User.query.get(attempt.student_id)
+            answers = QuizAnswer.query.filter_by(attempt_id=attempt.id).all()
+            quiz_attempts.append({
+                'quiz_title': quiz.title,
+                'student_email': student.email,
+                'score': attempt.score,
+                'attempted_at': attempt.attempted_at,
+                'answers': answers
+            })
+
+    return render_template('teacher/view_quiz_attempts.html', course=course, section=section, quiz_attempts=quiz_attempts)
