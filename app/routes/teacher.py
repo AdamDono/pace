@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import Course, db, Section, User, Enrollment
-from app.forms import CourseForm
+from app.models import Course, db, Section, User, Enrollment, Assignment, Quiz, QuizQuestion
+from app.forms import CourseForm, AssignmentForm, QuizForm
 from app.decorators import teacher_required
 import os
 import uuid
@@ -116,17 +116,11 @@ def edit_course(course_id):
 @teacher_bp.route('/my-courses')
 @teacher_required
 def my_courses():
-    # Get the status filter from query parameter (default to 'all')
     status_filter = request.args.get('status', 'all')
-    
-    # Base query for courses by the current teacher
     query = Course.query.filter_by(teacher_id=current_user.id)\
                         .order_by(Course.created_at.desc())
-    
-    # Apply status filter if not 'all'
     if status_filter != 'all':
         query = query.filter_by(status=status_filter)
-    
     courses = query.all()
     return render_template('teacher/my_courses.html', courses=courses, status_filter=status_filter)
 
@@ -145,20 +139,17 @@ def enroll_students(course_id):
             flash('Student not found or invalid email.', 'danger')
             return redirect(url_for('teacher.enroll_students', course_id=course_id))
 
-        # Check if the student is already enrolled
         existing_enrollment = Enrollment.query.filter_by(student_id=student.id, course_id=course.id).first()
         if existing_enrollment:
             flash('Student is already enrolled in this course.', 'warning')
             return redirect(url_for('teacher.enroll_students', course_id=course_id))
 
-        # Create a new enrollment
         enrollment = Enrollment(student_id=student.id, course_id=course.id)
         db.session.add(enrollment)
         db.session.commit()
         flash(f'Student {student.email} enrolled successfully!', 'success')
         return redirect(url_for('teacher.enroll_students', course_id=course_id))
 
-    # GET request: Show the form and list of enrolled students
     enrolled_students = User.query.join(Enrollment).filter(Enrollment.course_id == course.id).all()
     return render_template('teacher/enroll_students.html', course=course, enrolled_students=enrolled_students)
 
@@ -229,6 +220,83 @@ def manage_sections(course_id):
     return render_template('teacher/section_editor.html',
                          course=course,
                          sections=sections)
+
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-assignment', methods=['GET', 'POST'])
+@teacher_required
+def add_assignment(course_id, section_id):
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    if section.course_id != course_id or course.teacher_id != current_user.id:
+        abort(403)
+    
+    form = AssignmentForm()
+    if form.validate_on_submit():
+        assignment = Assignment(
+            title=form.title.data,
+            description=form.description.data,
+            section_id=section_id,
+            due_date=form.due_date.data
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        flash('Assignment created successfully.', 'success')
+        return redirect(url_for('teacher.manage_sections', course_id=course_id))
+    return render_template('teacher/add_assignment.html', form=form, course=course, section=section)
+
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-quiz', methods=['GET', 'POST'])
+@teacher_required
+def add_quiz(course_id, section_id):
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    if section.course_id != course_id or course.teacher_id != current_user.id:
+        abort(403)
+    
+    form = QuizForm()
+    if form.validate_on_submit():
+        quiz = Quiz(title=form.title.data, section_id=section_id)
+        db.session.add(quiz)
+        db.session.flush()
+        for q in form.questions.data:
+            question = QuizQuestion(
+                quiz_id=quiz.id,
+                question_text=q['question'],
+                option_a=q['a'], option_b=q['b'], option_c=q['c'], option_d=q['d'],
+                correct_answer=q['correct']
+            )
+            db.session.add(question)
+        db.session.commit()
+        flash('Quiz created successfully.', 'success')
+        return redirect(url_for('teacher.manage_sections', course_id=course_id))
+    return render_template('teacher/add_quiz.html', form=form, course=course, section=section)
+
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submissions')
+@teacher_required
+def view_submissions(course_id, section_id):
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    if section.course_id != course_id or course.teacher_id != current_user.id:
+        abort(403)
+    
+    assignments = Assignment.query.filter_by(section_id=section_id).all()
+    submissions = []
+    for assignment in assignments:
+        submissions.extend(assignment.submissions)  # Directly use submission objects
+    return render_template('teacher/view_submissions.html', course=course, section=section, submissions=submissions)
+
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submission/<int:submission_id>/review', methods=['POST'])
+@teacher_required
+def review_submission(course_id, section_id, submission_id):
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    submission = AssignmentSubmission.query.get_or_404(submission_id)
+    if section.course_id != course_id or course.teacher_id != current_user.id:
+        abort(403)
+    
+    submission.feedback = request.form.get('feedback')
+    submission.reviewed = True
+    db.session.commit()
+    flash('Submission reviewed successfully.', 'success')
+    return redirect(url_for('teacher.view_submissions', course_id=course_id, section_id=section_id))
 
 @teacher_bp.route('/course/<int:course_id>/reorder-sections', methods=['POST'])
 @teacher_required

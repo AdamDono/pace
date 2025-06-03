@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from flask_session import Session  # Add this import
 
 def format_datetime(value, format='medium'):
     if format == 'full':
@@ -33,7 +34,12 @@ def create_app():
     # Configure uploads
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
+    app.config['WTF_CSRF_ENABLED'] = False
     app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
+
+    # Configure session
+    app.config['SESSION_TYPE'] = 'filesystem'  # Use filesystem-based sessions
+    Session(app)  # Initialize Flask-Session
 
     # Create upload directory if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
-from wtforms import StringField, PasswordField, SelectField, BooleanField, TextAreaField, IntegerField
+from wtforms import StringField, PasswordField, SelectField, BooleanField, TextAreaField, IntegerField, DateTimeField, FieldList, FormField, SubmitField
 from werkzeug.utils import secure_filename
 from wtforms.validators import DataRequired, Email, EqualTo, Length, URL, Optional
 
@@ -39,3 +39,24 @@ class CourseForm(FlaskForm):
     pdf_upload = FileField('PDF Material', validators=[
         FileAllowed(['pdf'], 'Only PDF files allowed!')
     ])
+
+class AssignmentForm(FlaskForm):
+    title = StringField('Assignment Title', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Description', validators=[Length(max=500), Optional()])
+    due_date = DateTimeField('Due Date (YYYY-MM-DD HH:MM)', format='%Y-%m-%d %H:%M', validators=[Optional()])
+
+class QuestionForm(FlaskForm):
+    question = StringField('Question', validators=[DataRequired(), Length(max=200)])
+    a = StringField('Option A', validators=[DataRequired(), Length(max=100)])
+    b = StringField('Option B', validators=[DataRequired(), Length(max=100)])
+    c = StringField('Option C', validators=[Length(max=100), Optional()])
+    d = StringField('Option D', validators=[Length(max=100), Optional()])
+    correct = SelectField('Correct Answer', choices=[('a', 'A'), ('b', 'B'), ('c', 'C'), ('d', 'D')], validators=[DataRequired()])
+
+class QuizForm(FlaskForm):
+    title = StringField('Quiz Title', validators=[DataRequired(), Length(max=100)])
+    questions = FieldList(FormField(QuestionForm), min_entries=1, max_entries=10)
+    submit = SubmitField('Create Quiz')
+
+class SubmissionForm(FlaskForm):
+    submission_text = TextAreaField('Your Submission', validators=[DataRequired(), Length(max=1000)])

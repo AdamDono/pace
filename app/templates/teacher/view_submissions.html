@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Submissions for {{ section.title }}</h1>
+    {% if submissions %}
+        {% for submission in submissions %}
+        <div class="mb-4 p-4 border rounded">
+            <p><strong>Assignment:</strong> {{ submission.assignment.title }}</p>
+            <p><strong>Student:</strong> {{ submission.student.email }}</p>
+            <p><strong>Submission:</strong> {{ submission.submission_text }}</p>
+            <p><strong>Submitted At:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><strong>Status:</strong> {{ 'Reviewed' if submission.reviewed else 'Not Reviewed' }}</p>
+            {% if submission.feedback %}
+                <p><strong>Feedback:</strong> {{ submission.feedback }}</p>
+            {% else %}
+                <form method="POST" action="{{ url_for('teacher.review_submission', course_id=course.id, section_id=section.id, submission_id=submission.id) }}">
+                    <div class="mb-2">
+                        <label class="block text-gray-700">Feedback</label>
+                        <textarea name="feedback" class="w-full border rounded p-2" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit Feedback</button>
+                </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No submissions yet.</p>
+    {% endif %}
+    <a href="{{ url_for('teacher.manage_sections', course_id=course.id) }}" class="mt-4 block text-blue-600 hover:underline">Back to Sections</a>
+</div>
+{% endblock %}

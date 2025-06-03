@@ -1,4 +1,3 @@
-# app/models.py
 import os
 from datetime import datetime
 from flask_login import UserMixin
@@ -47,7 +46,6 @@ class Course(db.Model):
                              back_populates='course',
                              order_by='Section.order',
                              cascade='all, delete-orphan')
-    # Relationship to enrollments
     enrollments = db.relationship('Enrollment', back_populates='course', cascade='all, delete-orphan')
 
 class Section(db.Model):
@@ -64,6 +62,8 @@ class Section(db.Model):
 
     course = db.relationship('Course', back_populates='sections')
     enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
+    assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan')
+    quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
 
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
@@ -73,7 +73,6 @@ class Enrollment(db.Model):
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed = db.Column(db.Boolean, default=False)
     
-    # Relationships
     student = db.relationship('User', back_populates='enrollments')
     course = db.relationship('Course', back_populates='enrollments')
     sections = db.relationship('EnrollmentSection', back_populates='enrollment', cascade='all, delete-orphan')
@@ -86,6 +85,58 @@ class EnrollmentSection(db.Model):
     completed = db.Column(db.Boolean, default=False)
     completed_at = db.Column(db.DateTime)
     
-    # Relationships
     enrollment = db.relationship('Enrollment', back_populates='sections')
     section = db.relationship('Section', back_populates='enrollment_sections')
+
+class Assignment(db.Model):
+    __tablename__ = 'assignments'
+    id = db.Column(db.Integer, primary_key=True)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    due_date = db.Column(db.DateTime, nullable=True)
+    section = db.relationship('Section', back_populates='assignments')
+    submissions = db.relationship('AssignmentSubmission', back_populates='assignment', cascade='all, delete-orphan')
+
+class AssignmentSubmission(db.Model):
+    __tablename__ = 'assignment_submissions'
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    submission_text = db.Column(db.Text, nullable=False)
+    submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    reviewed = db.Column(db.Boolean, default=False)
+    feedback = db.Column(db.Text, nullable=True)
+    assignment = db.relationship('Assignment', back_populates='submissions')
+    student = db.relationship('User')
+
+class Quiz(db.Model):
+    __tablename__ = 'quizzes'
+    id = db.Column(db.Integer, primary_key=True)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    section = db.relationship('Section', back_populates='quizzes')
+    questions = db.relationship('QuizQuestion', back_populates='quiz', cascade='all, delete-orphan')
+    attempts = db.relationship('QuizAttempt', back_populates='quiz', cascade='all, delete-orphan')
+
+class QuizQuestion(db.Model):
+    __tablename__ = 'quiz_questions'
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
+    question_text = db.Column(db.String(200), nullable=False)
+    option_a = db.Column(db.String(100), nullable=False)
+    option_b = db.Column(db.String(100), nullable=False)
+    option_c = db.Column(db.String(100), nullable=True)
+    option_d = db.Column(db.String(100), nullable=True)
+    correct_answer = db.Column(db.String(1), nullable=False)  # 'a', 'b', 'c', or 'd'
+    quiz = db.relationship('Quiz', back_populates='questions')
+
+class QuizAttempt(db.Model):
+    __tablename__ = 'quiz_attempts'
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    score = db.Column(db.Float, nullable=False)
+    attempted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    quiz = db.relationship('Quiz', back_populates='attempts')
+    student = db.relationship('User')
