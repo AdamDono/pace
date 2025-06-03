@@ -34,6 +34,7 @@ def create_app():
     # Configure uploads
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
+    app.config['WTF_CSRF_ENABLED'] = False
     app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
 
     # Configure session
