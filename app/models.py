@@ -59,7 +59,11 @@ class Section(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_published = db.Column(db.Boolean, default=False)
     duration = db.Column(db.Integer, default=0)  # Duration in minutes
-
+    media_type = db.Column(db.String(20), default='text')  # e.g., 'text', 'video', 'image', 'audio', 'presentation'
+    media_file = db.Column(db.String(120))  # Filename for uploaded files
+    
+    quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
+    interactive_contents = db.relationship('InteractiveContent', back_populates='section', cascade='all, delete-orphan')
     course = db.relationship('Course', back_populates='sections')
     enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
     assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan')

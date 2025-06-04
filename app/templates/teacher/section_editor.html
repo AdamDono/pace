@@ -15,7 +15,7 @@
 
     <div class="bg-white p-6 rounded-lg shadow mb-6">
         <h2 class="text-xl font-semibold mb-4">Add New Section</h2>
-        <form method="POST" action="{{ url_for('teacher.manage_sections', course_id=course.id) }}">
+        <form method="POST" action="{{ url_for('teacher.manage_sections', course_id=course.id) }}" enctype="multipart/form-data">
             <div class="space-y-4">
                 <div>
                     <label class="block mb-2 font-medium">Section Title *</label>
@@ -28,7 +28,9 @@
                     <select name="section_type" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
                         <option value="text">Text</option>
                         <option value="video">Video (YouTube URL)</option>
-                        <option value="pdf">PDF</option>
+                        <option value="image">Image</option>
+                        <option value="audio">Audio</option>
+                        <option value="presentation">Presentation (PDF)</option>
                     </select>
                 </div>
                 
@@ -36,7 +38,13 @@
                     <label class="block mb-2 font-medium">Content *</label>
                     <textarea name="content" rows="8" required
                               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"></textarea>
-                    <p class="text-sm text-gray-500 mt-1">For videos, enter a YouTube URL. For PDFs, enter the filename or upload via the course form.</p>
+                    <p class="text-sm text-gray-500 mt-1">For videos, enter a YouTube URL. For images, audio, or presentations, upload a file below.</p>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 font-medium">Upload Media (if applicable)</label>
+                    <input type="file" name="media_file" accept="image/*,audio/*,.pdf"
+                           class="w-full p-2 border rounded">
                 </div>
                 
                 <div>
@@ -66,6 +74,15 @@
                         <div class="prose max-w-none mt-2 text-gray-700">
                             {{ section.content|safe }}
                         </div>
+                        {% if section.section_type == 'video' %}
+                            <iframe src="{{ section.content }}" class="mt-2" width="560" height="315" frameborder="0" allowfullscreen></iframe>
+                        {% elif section.section_type == 'image' %}
+                            <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" alt="Section Image" class="mt-2 w-64 h-64 object-cover">
+                        {% elif section.section_type == 'audio' %}
+                            <audio controls class="mt-2"><source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg"></audio>
+                        {% elif section.section_type == 'presentation' %}
+                            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" target="_blank" class="text-blue-600 hover:underline">View Presentation (PDF)</a>
+                        {% endif %}
                         <div class="mt-2 flex items-center text-sm text-gray-500">
                             <span class="bg-gray-100 px-2 py-1 rounded mr-2">
                                 {{ section.section_type|title }}
@@ -101,7 +118,7 @@
                                 <p>No quizzes yet.</p>
                             {% endif %}
                             <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">Add Quiz</a>
-                             <a href="{{ url_for('teacher.view_quiz_attempts', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">View Quiz Attempts</a>
+                            <a href="{{ url_for('teacher.view_quiz_attempts', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">View Quiz Attempts</a>
                         </div>
                     </div>
                     <form method="POST" 
