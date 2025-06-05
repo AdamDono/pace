@@ -81,178 +81,26 @@ def get_section_content(section_id):
         section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
         if section_idx > 0:
             prev_section = sections[section_idx - 1]
-            prev_es = EnrollmentSection.query.filter_by(enrollment_id=Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first().id, section_id=prev_section.id).first()
+            prev_enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first()
+            prev_es = EnrollmentSection.query.filter_by(enrollment_id=prev_enrollment.id, section_id=prev_section.id).first()
             if not prev_es or not prev_es.completed:
                 return "Section locked", 403
 
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first()
-    enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id if enrollment else None, section_id=section_id).first()
+    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first_or_404()
+    enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
     if not enrollment_section and current_user.role == 'student':
         enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
         db.session.add(enrollment_section)
         db.session.commit()
 
-    if request.method == 'POST' and current_user.role == 'student':
-        if 'mark_completed' in request.form:
-            enrollment_section.completed = True
-            enrollment_section.completed_at = datetime.utcnow()
-            db.session.commit()
-            content_html = f"<div id='section-content-{section.id}'>"
-            content_html += f"<p class='text-gray-600 mb-2'>Duration: {section.duration} minutes</p>"
-            content_html += f"<p class='text-gray-600 mb-4'>Type: {section.section_type.capitalize()}</p>"
+    if request.method == 'POST' and 'mark_completed' in request.form and current_user.role == 'student':
+        enrollment_section.completed = True
+        enrollment_section.completed_at = datetime.utcnow()
+        db.session.commit()
+        flash('Section marked as completed.', 'success')
 
-            # Image
-            if section.media_file and section.section_type == 'image':
-                if '.' in section.media_file and any(section.media_file.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif']):
-                    content_html += f'<img src="{{ url_for(\'static\', filename=\'uploads/{section.media_file}\') }}" alt="Section Image" class="w-64 h-64 object-cover mb-4">'
-                else:
-                    content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
-            else:
-                content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
-
-            # Video
-            if section.video_url:
-                try:
-                    youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1]
-                    if youtube_id and len(youtube_id) == 11:
-                        content_html += f"""
-                            <div class="aspect-w-16 aspect-h-9 mb-4">
-                                <iframe id="youtube-player-{section.id}" 
-                                        class="w-full h-64 md:h-96" 
-                                        src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
-                                        frameborder="0" 
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                        allowfullscreen></iframe>
-                            </div>
-                        """
-                    else:
-                        content_html += '<p class="text-red-500 mb-4">Invalid video URL.</p>'
-                except Exception as e:
-                    logger.error(f"Error parsing video URL for section {section.id}: {section.video_url}, error: {str(e)}")
-                    content_html += '<p class="text-red-500 mb-4">Error loading video.</p>'
-            else:
-                content_html += '<p class="text-gray-500 mb-4">No video added yet.</p>'
-
-            # Text
-            if section.content:
-                content_html += f'<div class="prose max-w-none mb-4">{section.content|safe}</div>'
-            else:
-                content_html += '<p class="text-gray-500 mb-4">No text added yet.</p>'
-
-            # Assignments
-            content_html += "<h4 class='font-medium mt-4'>Assignments</h4>"
-            assignments = Assignment.query.filter_by(section_id=section.id).all()
-            if assignments:
-                for assignment in assignments:
-                    content_html += f"""
-                        <p><a href="{url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id)}" class="text-blue-600 hover:underline">{assignment.title}</a></p>
-                        <p>Due: {assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date'}</p>
-                    """
-            else:
-                content_html += "<p class='text-gray-500 mb-4'>No assignments added yet.</p>"
-
-            # Quizzes
-            content_html += "<h4 class='font-medium mt-4'>Quizzes</h4>"
-            quizzes = Quiz.query.filter_by(section_id=section.id).all()
-            if quizzes:
-                for quiz in quizzes:
-                    content_html += f"""
-                        <p><a href="{url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id)}" class="text-blue-600 hover:underline">{quiz.title}</a></p>
-                    """
-            else:
-                content_html += "<p class='text-gray-500 mb-4'>No quizzes added yet.</p>"
-
-            if current_user.role == 'student':
-                button_html = f"""
-                    <form method="POST" class="mt-4" hx-post="{url_for('student.get_section_content', section_id=section.id)}" hx-target="#section-content-{section.id}" hx-swap="innerHTML">
-                        <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                                {'disabled' if enrollment_section.completed else ''}>
-                            {'Completed' if enrollment_section.completed else 'Mark as Completed'}
-                        </button>
-                    </form>
-                """
-                content_html += button_html
-            content_html += "</div>"
-            return content_html
-
-    content_html = f"<div id='section-content-{section.id}'>"
-    content_html += f"<p class='text-gray-600 mb-2'>Duration: {section.duration} minutes</p>"
-    content_html += f"<p class='text-gray-600 mb-4'>Type: {section.section_type.capitalize()}</p>"
-
-    # Image
-    if section.media_file and section.section_type == 'image':
-        if '.' in section.media_file and any(section.media_file.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif']):
-            content_html += f'<img src="{{ url_for(\'static\', filename=\'uploads/{section.media_file}\') }}" alt="Section Image" class="w-64 h-64 object-cover mb-4">'
-        else:
-            content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
-    else:
-        content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
-
-    # Video
-    if section.video_url:
-        try:
-            youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1]
-            if youtube_id and len(youtube_id) == 11:
-                content_html += f"""
-                    <div class="aspect-w-16 aspect-h-9 mb-4">
-                        <iframe id="youtube-player-{section.id}" 
-                                class="w-full h-64 md:h-96" 
-                                src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen></iframe>
-                    </div>
-                """
-            else:
-                content_html += '<p class="text-red-500 mb-4">Invalid video URL.</p>'
-        except Exception as e:
-            logger.error(f"Error parsing video URL for section {section.id}: {section.video_url}, error: {str(e)}")
-            content_html += '<p class="text-red-500 mb-4">Error loading video.</p>'
-    else:
-        content_html += '<p class="text-gray-500 mb-4">No video added yet.</p>'
-
-    # Text
-    if section.content:
-        content_html += f'<div class="prose max-w-none mb-4">{section.content|safe}</div>'
-    else:
-        content_html += '<p class="text-gray-500 mb-4">No text added yet.</p>'
-
-    # Assignments
-    content_html += "<h4 class='font-medium mt-4'>Assignments</h4>"
-    assignments = Assignment.query.filter_by(section_id=section.id).all()
-    if assignments:
-        for assignment in assignments:
-            content_html += f"""
-                <p><a href="{url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id)}" class="text-blue-600 hover:underline">{assignment.title}</a></p>
-                <p>Due: {assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date'}</p>
-            """
-    else:
-        content_html += "<p class='text-gray-500 mb-4'>No assignments added yet.</p>"
-
-    # Quizzes
-    content_html += "<h4 class='font-medium mt-4'>Quizzes</h4>"
-    quizzes = Quiz.query.filter_by(section_id=section.id).all()
-    if quizzes:
-        for quiz in quizzes:
-            content_html += f"""
-                <p><a href="{url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id)}" class="text-blue-600 hover:underline">{quiz.title}</a></p>
-            """
-    else:
-        content_html += "<p class='text-gray-500 mb-4'>No quizzes added yet.</p>"
-
-    if current_user.role == 'student':
-        button_html = f"""
-            <form method="POST" class="mt-4" hx-post="{url_for('student.get_section_content', section_id=section.id)}" hx-target="#section-content-{section.id}" hx-swap="innerHTML">
-                <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                        {'disabled' if enrollment_section.completed else ''}>
-                    {'Completed' if enrollment_section.completed else 'Mark as Completed'}
-                </button>
-            </form>
-        """
-        content_html += button_html
-
-    content_html += "</div>"
-    return content_html
+    course = Course.query.get_or_404(section.course_id)
+    return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)
 
 @student_bp.route('/section/<int:section_id>/assignment/<int:assignment_id>/submit', methods=['GET', 'POST'])
 @login_required

@@ -65,7 +65,7 @@
     {% if section.quizzes %}
         {% for quiz in section.quizzes %}
             <p>
-                <a href="{{ url_for('student.take_quiz', course_id=course.id, section_id=section.id, quiz_id=quiz.id) }}" class="text-blue-600 hover:underline">
+                <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" class="text-blue-600 hover:underline">
                     {{ quiz.title }}
                 </a>
             </p>
@@ -76,7 +76,7 @@
 
     <!-- Mark as Complete Button -->
     {% if not enrollment_section.completed %}
-        <form method="POST" class="mt-4" hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}" hx-target="#section-content-{{ section.id }}" hx-swap="innerHTML">
+        <form method="POST" class="mt-4" hx-post="{{ url_for('student.get_section_content_new', section_id=section.id) }}" hx-target="#section-content-{{ section.id }}" hx-swap="innerHTML">
             <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 Mark as Completed
             </button>
