@@ -20,12 +20,12 @@ def dashboard():
         .filter(Enrollment.student_id == current_user.id)\
         .filter(Course.status == 'approved')\
         .all()
-
+    for course in enrolled_courses:
+        logger.debug(f"Course ID: {course.id}, Title: {course.title}, intro_text: {course.intro_text}")
     new_enrollments = [c for c in enrolled_courses if not hasattr(current_user, 'last_seen') or c.created_at > getattr(current_user, 'last_seen', None)]
     if new_enrollments:
         flash(f"You’ve been enrolled in {', '.join(c.title for c in new_enrollments)}!", 'success')
-
-    return render_template('student/dashboard.html', courses=enrolled_courses)
+    return render_template('student/courses.html', courses=enrolled_courses)
 
 @student_bp.route('/course/<int:course_id>')
 @login_required
@@ -63,6 +63,7 @@ def course_detail(course_id):
                          locked_sections=locked_sections,
                          completion_percentage=completion_percentage)
 
+
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required
 def get_section_content(section_id):
@@ -99,17 +100,23 @@ def get_section_content(section_id):
             content_html = f"<div id='section-content-{section.id}'>"
             content_html += f"<p class='text-gray-600 mb-2'>Duration: {section.duration} minutes</p>"
             content_html += f"<p class='text-gray-600 mb-4'>Type: {section.section_type.capitalize()}</p>"
-            if not section.content:
-                content_html += "<p class='text-red-500'>No content available for this section.</p>"
-            elif section.section_type == 'video':
+
+            # Image
+            if section.media_file and section.section_type == 'image':
+                if '.' in section.media_file and any(section.media_file.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif']):
+                    content_html += f'<img src="{{ url_for(\'static\', filename=\'uploads/{section.media_file}\') }}" alt="Section Image" class="w-64 h-64 object-cover mb-4">'
+                else:
+                    content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
+            else:
+                content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
+
+            # Video
+            if section.video_url:
                 try:
-                    youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
-                    if not youtube_id or len(youtube_id) != 11:
-                        logger.error(f"Invalid YouTube ID for section {section.id}: {section.content}")
-                        content_html += "<p class='text-red-500'>Invalid video content. Please check the URL.</p>"
-                    else:
+                    youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1]
+                    if youtube_id and len(youtube_id) == 11:
                         content_html += f"""
-                            <div class="aspect-w-16 aspect-h-9">
+                            <div class="aspect-w-16 aspect-h-9 mb-4">
                                 <iframe id="youtube-player-{section.id}" 
                                         class="w-full h-64 md:h-96" 
                                         src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
@@ -118,29 +125,21 @@ def get_section_content(section_id):
                                         allowfullscreen></iframe>
                             </div>
                         """
+                    else:
+                        content_html += '<p class="text-red-500 mb-4">Invalid video URL.</p>'
                 except Exception as e:
-                    logger.error(f"Error parsing YouTube URL for section {section.id}: {section.content}, error: {str(e)}")
-                    content_html += "<p class='text-red-500'>Error loading video content. Please check the URL.</p>"
-            elif section.section_type == 'pdf':
-                pdf_url = url_for('admin.serve_pdf', filename=section.content) if current_user.role == 'admin' else url_for('student.view_pdf', section_id=section.id)
-                if not section.content:
-                    content_html += "<p class='text-red-500'>No PDF file associated.</p>"
-                else:
-                    content_html += f"""
-                        <a href="{pdf_url}" 
-                           class="text-blue-600 hover:underline flex items-center" target="_blank">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                            </svg>
-                            View PDF
-                        </a>
-                    """
+                    logger.error(f"Error parsing video URL for section {section.id}: {section.video_url}, error: {str(e)}")
+                    content_html += '<p class="text-red-500 mb-4">Error loading video.</p>'
             else:
-                content_html += f"""
-                    <div class="prose max-w-none mt-2" id="text-content-{section.id}">
-                        {section.content or 'No text content available.'}
-                    </div>
-                """
+                content_html += '<p class="text-gray-500 mb-4">No video added yet.</p>'
+
+            # Text
+            if section.content:
+                content_html += f'<div class="prose max-w-none mb-4">{section.content|safe}</div>'
+            else:
+                content_html += '<p class="text-gray-500 mb-4">No text added yet.</p>'
+
+            # Assignments
             content_html += "<h4 class='font-medium mt-4'>Assignments</h4>"
             assignments = Assignment.query.filter_by(section_id=section.id).all()
             if assignments:
@@ -150,30 +149,9 @@ def get_section_content(section_id):
                         <p>Due: {assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date'}</p>
                     """
             else:
-                content_html += "<p>No assignments available.</p>"
-            
-            content_html += "<h4 class='font-medium mt-4'>Video</h4>"
-            if section.section_type == 'video' and section.content:
-                try:
-                    youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
-                    if not youtube_id or len(youtube_id) != 11:
-                        content_html += "<p class='text-red-500'>Invalid video content.</p>"
-                    else:
-                        content_html += f"""
-                            <div class="aspect-w-16 aspect-h-9">
-                                <iframe id="youtube-player-{section.id}" 
-                                        class="w-full h-64 md:h-96" 
-                                        src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
-                                        frameborder="0" 
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                        allowfullscreen></iframe>
-                            </div>
-                        """
-                except:
-                    content_html += "<p class='text-red-500'>Error loading video.</p>"
-            else:
-                content_html += "<p>No video available.</p>"
-            
+                content_html += "<p class='text-gray-500 mb-4'>No assignments added yet.</p>"
+
+            # Quizzes
             content_html += "<h4 class='font-medium mt-4'>Quizzes</h4>"
             quizzes = Quiz.query.filter_by(section_id=section.id).all()
             if quizzes:
@@ -182,7 +160,7 @@ def get_section_content(section_id):
                         <p><a href="{url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id)}" class="text-blue-600 hover:underline">{quiz.title}</a></p>
                     """
             else:
-                content_html += "<p>No quizzes available.</p>"
+                content_html += "<p class='text-gray-500 mb-4'>No quizzes added yet.</p>"
 
             if current_user.role == 'student':
                 button_html = f"""
@@ -200,17 +178,23 @@ def get_section_content(section_id):
     content_html = f"<div id='section-content-{section.id}'>"
     content_html += f"<p class='text-gray-600 mb-2'>Duration: {section.duration} minutes</p>"
     content_html += f"<p class='text-gray-600 mb-4'>Type: {section.section_type.capitalize()}</p>"
-    if not section.content:
-        content_html += "<p class='text-red-500'>No content available for this section.</p>"
-    elif section.section_type == 'video':
+
+    # Image
+    if section.media_file and section.section_type == 'image':
+        if '.' in section.media_file and any(section.media_file.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif']):
+            content_html += f'<img src="{{ url_for(\'static\', filename=\'uploads/{section.media_file}\') }}" alt="Section Image" class="w-64 h-64 object-cover mb-4">'
+        else:
+            content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
+    else:
+        content_html += '<p class="text-gray-500 mb-4">No image added yet.</p>'
+
+    # Video
+    if section.video_url:
         try:
-            youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
-            if not youtube_id or len(youtube_id) != 11:
-                logger.error(f"Invalid YouTube ID for section {section.id}: {section.content}")
-                content_html += "<p class='text-red-500'>Invalid video content. Please check the URL.</p>"
-            else:
+            youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1]
+            if youtube_id and len(youtube_id) == 11:
                 content_html += f"""
-                    <div class="aspect-w-16 aspect-h-9">
+                    <div class="aspect-w-16 aspect-h-9 mb-4">
                         <iframe id="youtube-player-{section.id}" 
                                 class="w-full h-64 md:h-96" 
                                 src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
@@ -219,30 +203,21 @@ def get_section_content(section_id):
                                 allowfullscreen></iframe>
                     </div>
                 """
+            else:
+                content_html += '<p class="text-red-500 mb-4">Invalid video URL.</p>'
         except Exception as e:
-            logger.error(f"Error parsing YouTube URL for section {section.id}: {section.content}, error: {str(e)}")
-            content_html += "<p class='text-red-500'>Error loading video content. Please check the URL.</p>"
-    elif section.section_type == 'pdf':
-        pdf_url = url_for('admin.serve_pdf', filename=section.content) if current_user.role == 'admin' else url_for('student.view_pdf', section_id=section.id)
-        if not section.content:
-            content_html += "<p class='text-red-500'>No PDF file associated.</p>"
-        else:
-            content_html += f"""
-                <a href="{pdf_url}" 
-                   class="text-blue-600 hover:underline flex items-center" target="_blank">
-                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                    </svg>
-                    View PDF
-                </a>
-            """
+            logger.error(f"Error parsing video URL for section {section.id}: {section.video_url}, error: {str(e)}")
+            content_html += '<p class="text-red-500 mb-4">Error loading video.</p>'
     else:
-        content_html += f"""
-            <div class="prose max-w-none mt-2" id="text-content-{section.id}">
-                {section.content or 'No text content available.'}
-            </div>
-        """
-    
+        content_html += '<p class="text-gray-500 mb-4">No video added yet.</p>'
+
+    # Text
+    if section.content:
+        content_html += f'<div class="prose max-w-none mb-4">{section.content|safe}</div>'
+    else:
+        content_html += '<p class="text-gray-500 mb-4">No text added yet.</p>'
+
+    # Assignments
     content_html += "<h4 class='font-medium mt-4'>Assignments</h4>"
     assignments = Assignment.query.filter_by(section_id=section.id).all()
     if assignments:
@@ -252,30 +227,9 @@ def get_section_content(section_id):
                 <p>Due: {assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date'}</p>
             """
     else:
-        content_html += "<p>No assignments available.</p>"
-    
-    content_html += "<h4 class='font-medium mt-4'>Video</h4>"
-    if section.section_type == 'video' and section.content:
-        try:
-            youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1]
-            if not youtube_id or len(youtube_id) != 11:
-                content_html += "<p class='text-red-500'>Invalid video content.</p>"
-            else:
-                content_html += f"""
-                    <div class="aspect-w-16 aspect-h-9">
-                        <iframe id="youtube-player-{section.id}" 
-                                class="w-full h-64 md:h-96" 
-                                src="https://www.youtube.com/embed/{youtube_id}?enablejsapi=1" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen></iframe>
-                    </div>
-                """
-        except:
-            content_html += "<p class='text-red-500'>Error loading video.</p>"
-    else:
-        content_html += "<p>No video available.</p>"
-    
+        content_html += "<p class='text-gray-500 mb-4'>No assignments added yet.</p>"
+
+    # Quizzes
     content_html += "<h4 class='font-medium mt-4'>Quizzes</h4>"
     quizzes = Quiz.query.filter_by(section_id=section.id).all()
     if quizzes:
@@ -284,7 +238,7 @@ def get_section_content(section_id):
                 <p><a href="{url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id)}" class="text-blue-600 hover:underline">{quiz.title}</a></p>
             """
     else:
-        content_html += "<p>No quizzes available.</p>"
+        content_html += "<p class='text-gray-500 mb-4'>No quizzes added yet.</p>"
 
     if current_user.role == 'student':
         button_html = f"""
@@ -458,3 +412,18 @@ def get_section_content_new(section_id):
         flash('Section marked as completed.', 'success')
 
     return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)
+
+
+@student_bp.route('/course/<int:course_id>/review', methods=['POST'])
+@login_required
+@student_required
+def submit_review(course_id):
+    if not student_enrolled(course_id):
+        return "Unauthorized", 403
+    rating = int(request.form['rating'])
+    review = request.form['review']
+    new_rating = Rating(user_id=current_user.id, course_id=course_id, rating=rating, review=review)
+    db.session.add(new_rating)
+    db.session.commit()
+    flash('Review submitted successfully!', 'success')
+    return redirect(url_for('student.course_detail', course_id=course_id))

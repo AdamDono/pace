@@ -38,7 +38,14 @@
                     <label class="block mb-2 font-medium">Content *</label>
                     <textarea name="content" rows="8" required
                               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"></textarea>
-                    <p class="text-sm text-gray-500 mt-1">For videos, enter a YouTube URL. For images, audio, or presentations, upload a file below.</p>
+                    <p class="text-sm text-gray-500 mt-1">For videos, enter text or leave blank if using Video URL below.</p>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 font-medium">Video URL (Optional)</label>
+                    <input type="text" name="video_url" 
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=xyz)">
                 </div>
                 
                 <div>
@@ -63,7 +70,6 @@
 
     <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-xl font-semibold mb-4">Current Sections ({{ sections|length }})</h2>
-        
         {% if sections %}
         <div id="section-list" class="space-y-4">
             {% for section in sections %}
@@ -75,8 +81,8 @@
                             {{ section.content|safe }}
                         </div>
                         <!-- Updated Media Rendering -->
-                        {% if section.section_type == 'video' and section.content %}
-                            {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
+                        {% if section.section_type == 'video' and section.video_url %}
+                            {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
                             {% if youtube_id and youtube_id|length == 11 %}
                                 <div class="aspect-w-16 aspect-h-9 mt-2">
                                     <iframe id="youtube-player-{{ section.id }}" 

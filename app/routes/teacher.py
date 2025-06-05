@@ -184,42 +184,37 @@ def create_section(course_id):
 @teacher_bp.route('/course/<int:course_id>/sections', methods=['GET', 'POST'])
 @teacher_required
 def manage_sections(course_id):
-    course = db.session.get(Course, course_id) or abort(404)
-    if course.teacher_id != current_user.id:
-        abort(403)
-
+    course = Course.query.get_or_404(course_id)
     if request.method == 'POST':
-        try:
-            last_order = db.session.query(db.func.max(Section.order))\
-                         .filter_by(course_id=course.id).scalar() or 0
-            
-            section = Section(
-                title=request.form['title'],
-                content=request.form['content'],
-                course_id=course.id,
-                order=last_order + 1,
-                section_type=request.form['section_type'],
-                duration=int(request.form.get('duration', 0)),
-                created_at=datetime.utcnow()
-            )
-            
-            db.session.add(section)
-            db.session.commit()
-            flash('Section added successfully!', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
-        
-        return redirect(url_for('teacher.manage_sections', course_id=course.id))
+        title = request.form['title']
+        section_type = request.form['section_type']
+        content = request.form['content']
+        video_url = request.form.get('video_url')  # New field
+        duration = int(request.form.get('duration', 0))
 
-    sections = Section.query\
-               .filter_by(course_id=course.id)\
-               .order_by(Section.order)\
-               .all()
-    
-    return render_template('teacher/section_editor.html',
-                         course=course,
-                         sections=sections)
+        section = Section(
+            course_id=course_id,
+            title=title,
+            section_type=section_type,
+            content=content if section_type != 'video' else '',  # Only set content for non-video types
+            video_url=video_url if section_type == 'video' else None,
+            duration=duration
+        )
+
+        if 'media_file' in request.files and request.files['media_file'].filename:
+            file = request.files['media_file']
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                section.media_file = filename
+
+        db.session.add(section)
+        db.session.commit()
+        flash('Section added successfully!', 'success')
+        return redirect(url_for('teacher.manage_sections', course_id=course_id))
+
+    sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    return render_template('teacher/section_editor.html', course=course, sections=sections)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-assignment', methods=['GET', 'POST'])
 @teacher_required

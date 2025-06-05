@@ -41,7 +41,7 @@ class Course(db.Model):
     admin_feedback = db.Column(db.Text)
     pdf_filename = db.Column(db.String(120))
     banner_image = db.Column(db.String(120))  # Thumbnail for preview
-    intro_text = db.Column(db.Text)  # Short intro for preview
+    intro_text = db.Column(db.Text, nullable=True)  # Ensure this is nullable
     intro_video = db.Column(db.String(255))  # YouTube URL for full view
     description = db.Column(db.Text, nullable=True)  # Detailed overview
     teacher_bio = db.Column(db.Text, nullable=True)  # Instructor bio
