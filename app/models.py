@@ -40,6 +40,13 @@ class Course(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     admin_feedback = db.Column(db.Text)
     pdf_filename = db.Column(db.String(120))
+    banner_image = db.Column(db.String(120))  # Thumbnail for preview
+    intro_text = db.Column(db.Text)  # Short intro for preview
+    intro_video = db.Column(db.String(255))  # YouTube URL for full view
+    description = db.Column(db.Text, nullable=True)  # Detailed overview
+    teacher_bio = db.Column(db.Text, nullable=True)  # Instructor bio
+    teacher_contact = db.Column(db.String(120), nullable=True)  # Instructor contact
+    resources = db.Column(db.Text, nullable=True)  # JSON for filenames
     
     teacher = db.relationship('User', backref='courses')
     sections = db.relationship('Section', 
@@ -61,6 +68,7 @@ class Section(db.Model):
     duration = db.Column(db.Integer, default=0)  # Duration in minutes
     media_type = db.Column(db.String(20), default='text')  # e.g., 'text', 'video', 'image', 'audio', 'presentation'
     media_file = db.Column(db.String(120))  # Filename for uploaded files
+    video_url = db.Column(db.String(255), nullable=True)  # Optional YouTube URL
     
     quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
     # interactive_contents = db.relationship('InteractiveContent', back_populates='section', cascade='all, delete-orphan')
@@ -145,6 +153,18 @@ class QuizAttempt(db.Model):
     quiz = db.relationship('Quiz', back_populates='attempts')
     student = db.relationship('User')
     answers = db.relationship('QuizAnswer', back_populates='attempt', cascade='all, delete-orphan')  # Add relationship
+    
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+    id = db.Column(db.Integer, primary_key=True)  # Add this line
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    rating = db.Column(db.Integer)  # 1-5
+    review = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='ratings')
+    course = db.relationship('Course', backref='ratings')
 
 class QuizAnswer(db.Model):
     __tablename__ = 'quiz_answers'
@@ -154,3 +174,6 @@ class QuizAnswer(db.Model):
     selected_answer = db.Column(db.String(1), nullable=False)  # 'a', 'b', 'c', or 'd'
     attempt = db.relationship('QuizAttempt', back_populates='answers')
     question = db.relationship('QuizQuestion', back_populates='answers')
+    
+    
+
