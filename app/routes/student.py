@@ -421,3 +421,40 @@ def view_pdf(section_id):
     
     db.session.commit()
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], section.content)
+
+# Added new get_section_content route with unique endpoint to avoid conflict
+@student_bp.route('/section/<int:section_id>/content_new', methods=['GET', 'POST'])
+@student_required
+def get_section_content_new(section_id):
+    section = Section.query.get_or_404(section_id)
+    course = Course.query.get_or_404(section.course_id)
+    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
+
+    # Section locking logic
+    sections = Section.query.filter_by(course_id=section.course_id).order_by(Section.order).all()
+    section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
+    if section_idx > 0:
+        prev_section = sections[section_idx - 1]
+        prev_es = EnrollmentSection.query.filter_by(
+            enrollment_id=enrollment.id, section_id=prev_section.id
+        ).first()
+        if not prev_es or not prev_es.completed:
+            return "Section locked", 403
+
+    # Create EnrollmentSection if it doesn't exist
+    enrollment_section = EnrollmentSection.query.filter_by(
+        enrollment_id=enrollment.id, section_id=section_id
+    ).first()
+    if not enrollment_section:
+        enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+        db.session.add(enrollment_section)
+        db.session.commit()
+
+    # Handle marking as complete
+    if request.method == 'POST' and 'mark_completed' in request.form:
+        enrollment_section.completed = True
+        enrollment_section.completed_at = datetime.utcnow()
+        db.session.commit()
+        flash('Section marked as completed.', 'success')
+
+    return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)

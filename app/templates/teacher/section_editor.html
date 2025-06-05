@@ -74,14 +74,30 @@
                         <div class="prose max-w-none mt-2 text-gray-700">
                             {{ section.content|safe }}
                         </div>
-                        {% if section.section_type == 'video' %}
-                            <iframe src="{{ section.content }}" class="mt-2" width="560" height="315" frameborder="0" allowfullscreen></iframe>
-                        {% elif section.section_type == 'image' %}
+                        <!-- Updated Media Rendering -->
+                        {% if section.section_type == 'video' and section.content %}
+                            {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
+                            {% if youtube_id and youtube_id|length == 11 %}
+                                <div class="aspect-w-16 aspect-h-9 mt-2">
+                                    <iframe id="youtube-player-{{ section.id }}" 
+                                            class="w-full h-64 md:h-96" 
+                                            src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
+                                            frameborder="0" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowfullscreen></iframe>
+                                </div>
+                            {% else %}
+                                <p class="text-red-500 mt-2">Invalid YouTube URL.</p>
+                            {% endif %}
+                        {% elif section.section_type == 'image' and section.media_file %}
                             <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" alt="Section Image" class="mt-2 w-64 h-64 object-cover">
-                        {% elif section.section_type == 'audio' %}
-                            <audio controls class="mt-2"><source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg"></audio>
-                        {% elif section.section_type == 'presentation' %}
-                            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" target="_blank" class="text-blue-600 hover:underline">View Presentation (PDF)</a>
+                        {% elif section.section_type == 'audio' and section.media_file %}
+                            <audio controls class="mt-2">
+                                <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% elif section.section_type == 'presentation' and section.media_file %}
+                            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" target="_blank" class="text-blue-600 hover:underline mt-2">View Presentation (PDF)</a>
                         {% endif %}
                         <div class="mt-2 flex items-center text-sm text-gray-500">
                             <span class="bg-gray-100 px-2 py-1 rounded mr-2">

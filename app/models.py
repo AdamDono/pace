@@ -63,11 +63,10 @@ class Section(db.Model):
     media_file = db.Column(db.String(120))  # Filename for uploaded files
     
     quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
-    interactive_contents = db.relationship('InteractiveContent', back_populates='section', cascade='all, delete-orphan')
+    # interactive_contents = db.relationship('InteractiveContent', back_populates='section', cascade='all, delete-orphan')
     course = db.relationship('Course', back_populates='sections')
     enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
     assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan')
-    quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
 
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
