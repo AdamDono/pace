@@ -1,167 +1,168 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container mx-auto p-6">
-    <!-- Banner Image -->
-    {% if course.banner_image %}
-        <img src="{{ url_for('static', filename='uploads/' + course.banner_image) }}"
-             alt="{{ course.title }}" class="w-full h-96 object-cover rounded-lg mb-6">
-    {% endif %}
-
-    <!-- Intro and Title -->
-    <h1 class="text-3xl font-bold mb-4">{{ course.title }}</h1>
-    <div class="prose mb-4">{{ course.intro_text|safe }}</div>
-
-    <!-- Intro Video -->
-    {% if course.intro_video %}
-        {% set youtube_id = course.intro_video.split('v=')[1].split('&')[0] if 'v=' in course.intro_video else course.intro_video.split('/')[-1] %}
-        {% if youtube_id and youtube_id|length == 11 %}
-            <div class="aspect-w-16 aspect-h-9 mb-6">
-                <iframe class="w-full h-96"
-                        src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1"
-                        frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen></iframe>
-            </div>
-        {% endif %}
-    {% endif %}
-
-    <!-- Description -->
-    <div class="prose mb-6">{{ course.description|safe }}</div>
-
-    <!-- Teacher Bio/Contact -->
-    <div class="mb-6 p-4 bg-gray-100 rounded-lg">
-        <h2 class="text-xl font-semibold">Instructor</h2>
-        <p>{{ course.teacher.email.split('@')[0] }}</p>
-        <p>{{ course.teacher_bio|default('No bio available') }}</p>
-        <p>Contact: {{ course.teacher_contact|default('Not provided') }}</p>
-    </div>
-
-    <!-- Downloadable Resources -->
-    <div class="mb-6">
-        <h2 class="text-xl font-semibold">Resources</h2>
-        {% if course.resources %}
-            {% set resource_list = course.resources|from_json %}
-            <ul>
-                {% for resource in resource_list %}
-                    <li><a href="{{ url_for('static', filename='uploads/' + resource) }}"
-                           class="text-blue-600 hover:underline">{{ resource }}</a></li>
-                {% endfor %}
-            </ul>
+    <!-- Course Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">{{ course.title }}</h1>
+        <p class="text-gray-600 mb-4">{{ course.description }}</p>
+        
+        <!-- Banner Image -->
+        {% if course.banner_image %}
+            <img src="{{ url_for('static', filename='uploads/' + course.banner_image) }}" 
+                 alt="{{ course.title }}" 
+                 class="w-full h-64 object-cover rounded-lg mb-4">
         {% else %}
-            <p>No resources available.</p>
+            <img src="{{ url_for('static', filename='default_course.jpg') }}" 
+                 alt="{{ course.title }}" 
+                 class="w-full h-64 object-cover rounded-lg mb-4">
         {% endif %}
     </div>
 
-    <!-- Ratings and Reviews -->
-    <div class="mb-6">
-        <h2 class="text-xl font-semibold">Ratings & Reviews</h2>
-        {% set avg_rating = course.ratings|map(attribute='rating')|average|default(0) %}
-        <div class="flex items-center text-yellow-500 mb-2">
-            {% for i in range(5) %}
-                <span>{{ '★' if i < avg_rating else '☆' }}</span>
-            {% endfor %}
-            <span class="ml-2">{{ avg_rating|round(1) }} ({{ course.ratings|length }} reviews)</span>
-        </div>
-        <form method="POST" action="{{ url_for('student.submit_review', course_id=course.id) }}" class="mb-4">
-            <label class="block">Rate this course (1-5):</label>
-            <input type="number" name="rating" min="1" max="5" required class="border p-2 rounded w-16 mb-2">
-            <label class="block">Your Review:</label>
-            <textarea name="review" rows="3" class="w-full border p-2 rounded mb-2"></textarea>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Submit Review</button>
-        </form>
-        {% for rating in course.ratings %}
-            <div class="border-t pt-2 mt-2">
-                <div class="flex items-center">
-                    {% for i in range(5) %}
-                        <span class="text-yellow-500">{{ '★' if i < rating.rating else '☆' }}</span>
-                    {% endfor %}
-                    <span class="ml-2 text-gray-600">{{ rating.created_at.strftime('%Y-%m-%d') }}</span>
+    <!-- Course Materials -->
+    <div class="mb-8">
+        <!-- Intro Video -->
+        {% if course.intro_video %}
+            {% set youtube_id = course.intro_video.split('v=')[1].split('&')[0] if 'v=' in course.intro_video else course.intro_video.split('/')[-1] %}
+            {% if youtube_id and youtube_id|length == 11 %}
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold mb-2">Course Intro Video</h2>
+                    <div class="aspect-w-16 aspect-h-9">
+                        <iframe class="w-full h-64 md:h-96" 
+                                src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
+                                frameborder="0" 
+                                allowfullscreen></iframe>
+                    </div>
                 </div>
-                <p>{{ rating.review }}</p>
+            {% else %}
+                <p class="text-red-500 mb-4">Invalid intro video URL.</p>
+            {% endif %}
+        {% endif %}
+
+        <!-- Preview Video (youtube_url) -->
+        {% if course.youtube_url %}
+            {% set youtube_id = course.youtube_url.split('v=')[1].split('&')[0] if 'v=' in course.youtube_url else course.youtube_url.split('/')[-1] %}
+            {% if youtube_id and youtube_id|length == 11 %}
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold mb-2">Course Preview Video</h2>
+                    <div class="aspect-w-16 aspect-h-9">
+                        <iframe class="w-full h-64 md:h-96" 
+                                src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
+                                frameborder="0" 
+                                allowfullscreen></iframe>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-red-500 mb-4">Invalid preview video URL.</p>
+            {% endif %}
+        {% endif %}
+
+        <!-- PDF Material -->
+        {% if course.pdf_filename %}
+            <div class="mb-6">
+                <h2 class="text-xl font-bold mb-2">Course Material (PDF)</h2>
+                <a href="{{ url_for('static', filename='uploads/' + course.pdf_filename) }}" 
+                   class="text-blue-600 hover:underline" 
+                   target="_blank">
+                   View/Download PDF Material
+                </a>
             </div>
-        {% endfor %}
+        {% else %}
+            <p class="text-gray-500 mb-4">No PDF material available.</p>
+        {% endif %}
     </div>
 
-    <!-- Progress -->
-    <div class="mb-6">
-        <h2 class="text-xl font-semibold">Your Progress</h2>
-        <div class="w-full bg-gray-200 rounded-full h-2.5">
-            <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ completion_percentage }}%"></div>
-        </div>
-        <p class="text-sm text-gray-600 mt-1">{{ completion_percentage|round }}% Complete</p>
-    </div>
-
-    <!-- Sections List with Toggle (Unchanged Structure) -->
-    <div class="bg-gray-100 p-4 rounded-lg">
-        <h2 class="text-xl font-semibold mb-4">Course Content</h2>
-        {% if sections %}
-            <div class="space-y-2">
-                {% for section in sections %}
-                    <div class="border rounded-lg {% if section.id in locked_sections %} bg-gray-200 {% endif %}">
-                        <button class="w-full text-left p-3 flex justify-between items-center hover:bg-gray-50 {% if section.id in locked_sections %} cursor-not-allowed text-gray-500 {% endif %}"
-                                {% if section.id in locked_sections %}
-                                    disabled
-                                {% else %}
-                                    hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
-                                    hx-target="#content-{{ section.id }}"
-                                    hx-swap="innerHTML"
-                                    hx-indicator="#loading-{{ section.id }}"
-                                    onclick="this.classList.toggle('bg-blue-100'); document.getElementById('content-{{ section.id }}').classList.toggle('hidden')"
-                                {% endif %}>
-                            <div class="flex items-center">
-                                <span class="mr-2">{{ loop.index }}.</span>
-                                <span>{{ section.title }}</span>
-                                {% if section.duration > 0 %}
-                                    <span class="ml-2 text-sm text-gray-500">({{ section.duration }} min)</span>
-                                {% endif %}
-                                {% if section.id in locked_sections %}
-                                    <span class="ml-2 text-gray-500"> - Locked</span>
-                                {% endif %}
-                            </div>
-                            {% if enrollment_sections[section.id] and enrollment_sections[section.id].completed %}
-                                <span class="text-green-600">✔</span>
-                            {% endif %}
-                            <svg class="w-5 h-5 transform transition-transform" id="toggle-icon-{{ section.id }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+    <!-- Sections -->
+    <div>
+        <h2 class="text-2xl font-bold mb-4">Course Sections</h2>
+        {% if course.sections %}
+            <div class="space-y-4">
+                {% for section in course.sections|sort(attribute='order') %}
+                    <div class="border rounded-lg">
+                        <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center"
+                                onclick="toggleSection('section-{{ section.id }}')">
+                            <span class="font-medium">{{ section.title }}</span>
+                            <span class="text-gray-500">▼</span>
                         </button>
-                        <div id="loading-{{ section.id }}" class="hidden text-center p-2">
-                            <svg class="animate-spin h-5 w-5 text-blue-600 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </div>
-                        <div id="content-{{ section.id }}" class="p-3 hidden">
-                            <!-- Content will load here -->
+                        <div id="section-{{ section.id }}" class="p-4 hidden">
+                            {% if section.section_type == 'text' %}
+                                <p>{{ section.content|safe }}</p>
+                            {% elif section.section_type == 'video' and section.video_url %}
+                                {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
+                                {% if youtube_id and youtube_id|length == 11 %}
+                                    <div class="aspect-w-16 aspect-h-9 mb-4">
+                                        <iframe class="w-full h-64 md:h-96" 
+                                                src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
+                                                frameborder="0" 
+                                                allowfullscreen></iframe>
+                                    </div>
+                                {% else %}
+                                    <p class="text-red-500">Invalid section video URL.</p>
+                                {% endif %}
+                            {% elif section.section_type == 'image' and section.media_file %}
+                                <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
+                                     alt="{{ section.title }}" 
+                                     class="w-full h-auto mb-4">
+                            {% elif section.section_type == 'audio' and section.media_file %}
+                                <audio controls class="w-full mb-4">
+                                    <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            {% elif section.section_type == 'presentation' and section.media_file %}
+                                <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
+                                   class="text-blue-600 hover:underline" 
+                                   target="_blank">
+                                   View Presentation (PDF)
+                                </a>
+                            {% endif %}
+
+                            <!-- Assignments -->
+                            {% if section.assignments %}
+                                <div class="mt-4">
+                                    <h3 class="text-lg font-bold mb-2">Assignments</h3>
+                                    {% for assignment in section.assignments %}
+                                        <div class="mb-2">
+                                            <p><strong>{{ assignment.title }}</strong></p>
+                                            <p>{{ assignment.description }}</p>
+                                            <p class="text-sm text-gray-500">Due: {{ assignment.due_date }}</p>
+                                            <!-- Add submission form if needed -->
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <!-- Quizzes -->
+                            {% if section.quizzes %}
+                                <div class="mt-4">
+                                    <h3 class="text-lg font-bold mb-2">Quizzes</h3>
+                                    {% for quiz in section.quizzes %}
+                                        <div class="mb-2">
+                                            <p><strong>{{ quiz.title }}</strong></p>
+                                            <a href="{{ url_for('student.take_quiz', course_id=course.id, section_id=section.id, quiz_id=quiz.id) }}" 
+                                               class="text-blue-600 hover:underline">
+                                               Take Quiz
+                                            </a>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 {% endfor %}
             </div>
         {% else %}
-            <p class="text-gray-500">No sections available for this course.</p>
+            <p class="text-gray-500">No sections available.</p>
         {% endif %}
     </div>
-
-    <a href="{{ url_for('student.dashboard') }}" class="mt-4 block text-blue-600 hover:underline">Back to Dashboard</a>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script src="https://unpkg.com/htmx.org@1.9.6"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    let player;
-    function onYouTubeIframeAPIReady() {
-        document.querySelectorAll('[id^="youtube-player-"]').forEach(iframe => {
-            player = new YT.Player(iframe.id, {});
-        });
-    }
-
-    document.querySelectorAll('button[onclick]').forEach(button => {
-        button.addEventListener('click', function() {
-            const icon = this.querySelector('svg');
-            icon.classList.toggle('rotate-180');
-        });
-    });
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    section.classList.toggle('hidden');
+    const button = section.previousElementSibling;
+    const arrow = button.querySelector('span:last-child');
+    arrow.textContent = section.classList.contains('hidden') ? '▼' : '▲';
+}
 </script>
 {% endblock %}

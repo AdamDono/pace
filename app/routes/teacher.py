@@ -69,6 +69,7 @@ def create_course():
                     flash('Only YouTube URLs are allowed for intro video', 'danger')
                     return redirect(url_for('teacher.create_course'))
                 intro_video = intro_video_url
+            print(f"intro_video: {intro_video}")  # Debug
 
             # Validate YouTube URL for youtube_url field
             youtube_url = None
@@ -77,6 +78,8 @@ def create_course():
                     flash('Only YouTube URLs are allowed', 'danger')
                     return redirect(url_for('teacher.create_course'))
                 youtube_url = form.youtube_url.data
+            print(f"youtube_url: {youtube_url}")  # Debug
+            print(f"pdf_filename: {pdf_filename}")  # Debug
 
             # Create the course
             course = Course(
