@@ -10,9 +10,10 @@ from datetime import datetime
 
 teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+def allowed_file(filename, allowed_extensions=None):
+    if allowed_extensions is None:
+        allowed_extensions = current_app.config['ALLOWED_EXTENSIONS']
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 @teacher_bp.route('/dashboard')
 @login_required
@@ -29,6 +30,10 @@ def create_course():
     if form.validate_on_submit():
         try:
             pdf_filename = None
+            banner_image = None
+            intro_video = None
+
+            # Handle PDF upload
             if form.pdf_upload.data:
                 pdf = form.pdf_upload.data
                 if not allowed_file(pdf.filename):
@@ -42,20 +47,50 @@ def create_course():
                 )
                 pdf.save(save_path)
 
+            # Handle banner image upload
+            banner_file = request.files.get('banner_image')
+            if banner_file and banner_file.filename:
+                if not allowed_file(banner_file.filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif'}):
+                    flash('Only image files (PNG, JPG, JPEG, GIF) are allowed for banner', 'danger')
+                    return redirect(url_for('teacher.create_course'))
+                
+                banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
+                banner_save_path = os.path.join(
+                    current_app.config['UPLOAD_FOLDER'],
+                    banner_filename
+                )
+                banner_file.save(banner_save_path)
+                banner_image = banner_filename
+
+            # Handle intro video URL
+            intro_video_url = request.form.get('intro_video')
+            if intro_video_url:
+                if 'youtube.com' not in intro_video_url and 'youtu.be' not in intro_video_url:
+                    flash('Only YouTube URLs are allowed for intro video', 'danger')
+                    return redirect(url_for('teacher.create_course'))
+                intro_video = intro_video_url
+            print(f"intro_video: {intro_video}")  # Debug
+
+            # Validate YouTube URL for youtube_url field
             youtube_url = None
             if form.youtube_url.data:
                 if 'youtube.com' not in form.youtube_url.data and 'youtu.be' not in form.youtube_url.data:
                     flash('Only YouTube URLs are allowed', 'danger')
                     return redirect(url_for('teacher.create_course'))
                 youtube_url = form.youtube_url.data
+            print(f"youtube_url: {youtube_url}")  # Debug
+            print(f"pdf_filename: {pdf_filename}")  # Debug
 
+            # Create the course
             course = Course(
                 title=form.title.data,
                 description=form.description.data,
                 youtube_url=youtube_url,
                 teacher_id=current_user.id,
                 status='pending',
-                pdf_filename=pdf_filename
+                pdf_filename=pdf_filename,
+                banner_image=banner_image,
+                intro_video=intro_video
             )
             
             db.session.add(course)
@@ -65,8 +100,11 @@ def create_course():
             
         except Exception as e:
             db.session.rollback()
+            # Clean up uploaded files on error
             if pdf_filename and os.path.exists(os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename)):
                 os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename))
+            if banner_image and os.path.exists(os.path.join(current_app.config['UPLOAD_FOLDER'], banner_image)):
+                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], banner_image))
             flash(f'Error: {str(e)}', 'danger')
 
     return render_template('teacher/create_course.html', form=form)
@@ -82,6 +120,7 @@ def edit_course(course_id):
     
     if form.validate_on_submit():
         try:
+            # Handle PDF upload
             if form.pdf_upload.data:
                 if course.pdf_filename:
                     old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], course.pdf_filename)
@@ -101,6 +140,37 @@ def edit_course(course_id):
                 pdf.save(save_path)
                 course.pdf_filename = pdf_filename
 
+            # Handle banner image upload
+            banner_file = request.files.get('banner_image')
+            if banner_file and banner_file.filename:
+                if course.banner_image:
+                    old_banner_path = os.path.join(current_app.config['UPLOAD_FOLDER'], course.banner_image)
+                    if os.path.exists(old_banner_path):
+                        os.remove(old_banner_path)
+                
+                if not allowed_file(banner_file.filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif'}):
+                    flash('Only image files (PNG, JPG, JPEG, GIF) are allowed for banner', 'danger')
+                    return redirect(url_for('teacher.edit_course', course_id=course_id))
+                
+                banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
+                banner_save_path = os.path.join(
+                    current_app.config['UPLOAD_FOLDER'],
+                    banner_filename
+                )
+                banner_file.save(banner_save_path)
+                course.banner_image = banner_filename
+
+            # Handle intro video URL
+            intro_video_url = request.form.get('intro_video')
+            if intro_video_url:
+                if 'youtube.com' not in intro_video_url and 'youtu.be' not in intro_video_url:
+                    flash('Only YouTube URLs are allowed for intro video', 'danger')
+                    return redirect(url_for('teacher.edit_course', course_id=course_id))
+                course.intro_video = intro_video_url
+            else:
+                course.intro_video = None
+
+            # Update other fields
             form.populate_obj(course)
             course.status = 'pending'
             db.session.commit()
@@ -182,44 +252,58 @@ def create_section(course_id):
     return render_template('teacher/section_editor.html', course=course)
 
 @teacher_bp.route('/course/<int:course_id>/sections', methods=['GET', 'POST'])
+@login_required
 @teacher_required
 def manage_sections(course_id):
-    course = db.session.get(Course, course_id) or abort(404)
+    course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id:
-        abort(403)
+        flash('You are not authorized to manage this course.', 'danger')
+        return redirect(url_for('teacher.my_courses'))
 
     if request.method == 'POST':
-        try:
-            last_order = db.session.query(db.func.max(Section.order))\
-                         .filter_by(course_id=course.id).scalar() or 0
-            
-            section = Section(
-                title=request.form['title'],
-                content=request.form['content'],
-                course_id=course.id,
-                order=last_order + 1,
-                section_type=request.form['section_type'],
-                duration=int(request.form.get('duration', 0)),
-                created_at=datetime.utcnow()
-            )
-            
-            db.session.add(section)
-            db.session.commit()
-            flash('Section added successfully!', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
-        
-        return redirect(url_for('teacher.manage_sections', course_id=course.id))
+        title = request.form.get('title')
+        content = request.form.get('content')
+        section_type = request.form.get('section_type', 'text')
+        duration = request.form.get('duration', type=int, default=0)
+        media_file = request.files.get('media_file')
+        video_url = request.form.get('video_url')
 
-    sections = Section.query\
-               .filter_by(course_id=course.id)\
-               .order_by(Section.order)\
-               .all()
-    
-    return render_template('teacher/section_editor.html',
-                         course=course,
-                         sections=sections)
+        if not title:
+            flash('Title is required.', 'danger')
+            return redirect(url_for('teacher.manage_sections', course_id=course_id))
+
+        section = Section(
+            course_id=course_id,
+            title=title,
+            content=content,
+            section_type=section_type,
+            duration=duration,
+            is_published=False,
+            created_at=datetime.utcnow()
+        )
+
+        if media_file and section_type in ['image', 'audio', 'presentation']:
+            if not allowed_file(media_file.filename, allowed_extensions={'jpg', 'jpeg', 'png', 'gif', 'mp3', 'pdf'}):
+                flash('Only images (JPG, JPEG, PNG, GIF), audio (MP3), or PDFs are allowed', 'danger')
+                return redirect(url_for('teacher.manage_sections', course_id=course_id))
+            
+            filename = secure_filename(media_file.filename)
+            media_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+            section.media_file = filename
+
+        if video_url and section_type == 'video':
+            if 'youtube.com' not in video_url and 'youtu.be' not in video_url:
+                flash('Only YouTube URLs are allowed for video sections', 'danger')
+                return redirect(url_for('teacher.manage_sections', course_id=course_id))
+            section.video_url = video_url
+
+        db.session.add(section)
+        db.session.commit()
+        flash('Section created successfully!', 'success')
+        return redirect(url_for('teacher.manage_sections', course_id=course_id))
+
+    sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    return render_template('teacher/section_editor.html', course=course, sections=sections)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-assignment', methods=['GET', 'POST'])
 @teacher_required
@@ -334,7 +418,6 @@ def delete_section(section_id):
         flash(f'Error: {str(e)}', 'danger')
     
     return redirect(url_for('teacher.manage_sections', course_id=course_id))
-
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz-attempts')
 @teacher_required

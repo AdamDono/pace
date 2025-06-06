@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-6">Your Courses</h1>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for course in courses %}
+        <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
+           class="block border rounded-lg shadow hover:shadow-lg">
+            <div class="flex">
+                <!-- Thumbnail -->
+                <img src="{{ url_for('static', filename='uploads/' + course.banner_image) if course.banner_image else '/static/default_course.jpg' }}"
+                     alt="{{ course.title }}" class="w-40 h-24 object-cover">
+                <!-- Details -->
+                <div class="p-4 flex-1">
+                    <h3 class="text-lg font-semibold">{{ course.title }}</h3>
+                    <p class="text-sm text-gray-600">Instructor: {{ course.teacher.email.split('@')[0] }}</p>
+                    <!-- Rating -->
+                    {% set avg_rating = course.ratings|map(attribute='rating')|average|default(0) %}
+                    {% set review_count = course.ratings|length %}
+                    <div class="flex items-center text-sm text-yellow-500">
+                        {% for i in range(5) %}
+                            <span>{{ '★' if i < avg_rating else '☆' }}</span>
+                        {% endfor %}
+                        <span class="ml-1 text-gray-600">{{ avg_rating|round(1) }} ({{ review_count }})</span>
+                    </div>
+                    <!-- Description -->
+                    <p class="text-sm text-gray-700 mt-1">
+                        {{ course.intro_text|default('No intro text available')|truncate(100) if course.intro_text is not none else 'No intro text available'|truncate(100) }}
+                    </p>
+                    <!-- Duration/Sections -->
+                    {% set total_duration = course.sections|map(attribute='duration')|sum %}
+                    <p class="text-sm text-gray-600 mt-1">{{ total_duration }} minutes • {{ course.sections|length }} sections</p>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

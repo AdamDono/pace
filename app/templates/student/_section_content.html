@@ -1,0 +1,87 @@
+<div id="section-content-{{ section.id }}">
+    <p class="text-gray-600 mb-2">Duration: {{ section.duration }} minutes</p>
+    <p class="text-gray-600 mb-4">Type: {{ section.section_type.capitalize() }}</p>
+
+    <!-- Content Rendering -->
+    {% if not section.content %}
+        <p class="text-red-500">No content available for this section.</p>
+    {% elif section.section_type == 'video' %}
+        {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
+        {% if youtube_id and youtube_id|length == 11 %}
+            <div class="aspect-w-16 aspect-h-9">
+                <iframe id="youtube-player-{{ section.id }}" 
+                        class="w-full h-64 md:h-96" 
+                        src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen></iframe>
+            </div>
+        {% else %}
+            <p class="text-red-500">Invalid video content. Please check the URL.</p>
+        {% endif %}
+    {% elif section.section_type == 'image' %}
+        <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" alt="Section Image" class="mt-2 w-64 h-64 object-cover">
+    {% elif section.section_type == 'audio' %}
+        <audio controls class="mt-2">
+            <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg">
+        </audio>
+    {% elif section.section_type == 'presentation' %}
+        <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" target="_blank" class="text-blue-600 hover:underline">View Presentation (PDF)</a>
+    {% elif section.section_type == 'pdf' %}
+        {% set pdf_url = url_for('student.view_pdf', section_id=section.id) %}
+        {% if section.content %}
+            <a href="{{ pdf_url }}" class="text-blue-600 hover:underline flex items-center" target="_blank">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                View PDF
+            </a>
+        {% else %}
+            <p class="text-red-500">No PDF file associated.</p>
+        {% endif %}
+    {% else %}
+        <div class="prose max-w-none mt-2">
+            {{ section.content|safe }}
+        </div>
+    {% endif %}
+
+    <!-- Assignments -->
+    <h4 class="font-medium mt-4">Assignments</h4>
+    {% if section.assignments %}
+        {% for assignment in section.assignments %}
+            <p>
+                <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" class="text-blue-600 hover:underline">
+                    {{ assignment.title }}
+                </a>
+            </p>
+            <p>Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
+        {% endfor %}
+    {% else %}
+        <p>No assignments available.</p>
+    {% endif %}
+
+    <!-- Quizzes -->
+    <h4 class="font-medium mt-4">Quizzes</h4>
+    {% if section.quizzes %}
+        {% for quiz in section.quizzes %}
+            <p>
+                <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" class="text-blue-600 hover:underline">
+                    {{ quiz.title }}
+                </a>
+            </p>
+        {% endfor %}
+    {% else %}
+        <p>No quizzes available.</p>
+    {% endif %}
+
+    <!-- Mark as Complete Button -->
+    {% if not enrollment_section.completed %}
+        <form method="POST" class="mt-4" hx-post="{{ url_for('student.get_section_content_new', section_id=section.id) }}" hx-target="#section-content-{{ section.id }}" hx-swap="innerHTML">
+            <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Mark as Completed
+            </button>
+        </form>
+    {% else %}
+        <p class="mt-4 text-green-600">Completed ✔</p>
+    {% endif %}
+</div>

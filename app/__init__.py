@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
-from flask_session import Session  # Add this import
+from flask_session import Session
+from jinja2 import Environment
 
 def format_datetime(value, format='medium'):
     if format == 'full':
@@ -25,6 +26,19 @@ def create_app():
 
     app = Flask(__name__)
     app.jinja_env.filters['datetimeformat'] = format_datetime
+
+    # Register custom Jinja filter for average
+    def average_filter(items):
+        if not items:
+            return 0
+        # Convert generator to list to get length and sum
+        items_list = list(items)
+        if not items_list:  # Check if the list is empty after conversion
+            return 0
+        return sum(items_list) / len(items_list)
+
+    app.jinja_env.filters['average'] = average_filter
+
     # Configure database
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -38,8 +52,8 @@ def create_app():
     app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
 
     # Configure session
-    app.config['SESSION_TYPE'] = 'filesystem'  # Use filesystem-based sessions
-    Session(app)  # Initialize Flask-Session
+    app.config['SESSION_TYPE'] = 'filesystem'
+    Session(app)
 
     # Create upload directory if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -63,7 +77,7 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.admin import admin_bp
     from app.routes.teacher import teacher_bp
-    from app.routes.student import student_bp  # Corrected import path
+    from app.routes.student import student_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
