@@ -182,40 +182,51 @@ def create_section(course_id):
     return render_template('teacher/section_editor.html', course=course)
 
 @teacher_bp.route('/course/<int:course_id>/sections', methods=['GET', 'POST'])
+@login_required
 @teacher_required
 def manage_sections(course_id):
     course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        flash('You are not authorized to manage this course.', 'danger')
+        return redirect(url_for('teacher.my_courses'))
+
     if request.method == 'POST':
-        title = request.form['title']
-        section_type = request.form['section_type']
-        content = request.form['content']
-        video_url = request.form.get('video_url')  # New field
-        duration = int(request.form.get('duration', 0))
+        title = request.form.get('title')
+        content = request.form.get('content')
+        section_type = request.form.get('section_type', 'text')
+        duration = request.form.get('duration', type=int, default=0)
+        media_file = request.files.get('media_file')
+        video_url = request.form.get('video_url')
+
+        if not title:
+            flash('Title is required.', 'danger')
+            return redirect(url_for('teacher.manage_sections', course_id=course_id))
 
         section = Section(
             course_id=course_id,
             title=title,
+            content=content,
             section_type=section_type,
-            content=content if section_type != 'video' else '',  # Only set content for non-video types
-            video_url=video_url if section_type == 'video' else None,
-            duration=duration
+            duration=duration,
+            is_published=False,
+            created_at=datetime.utcnow()
         )
 
-        if 'media_file' in request.files and request.files['media_file'].filename:
-            file = request.files['media_file']
-            if file and file.filename:
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                section.media_file = filename
+        if media_file and section_type in ['image', 'audio', 'presentation']:
+            filename = secure_filename(media_file.filename)
+            media_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+            section.media_file = filename
+
+        if video_url and section_type == 'video':
+            section.video_url = video_url
 
         db.session.add(section)
         db.session.commit()
-        flash('Section added successfully!', 'success')
+        flash('Section created successfully!', 'success')
         return redirect(url_for('teacher.manage_sections', course_id=course_id))
 
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
     return render_template('teacher/section_editor.html', course=course, sections=sections)
-
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-assignment', methods=['GET', 'POST'])
 @teacher_required
 def add_assignment(course_id, section_id):
