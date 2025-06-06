@@ -4,11 +4,15 @@
     <h1 class="text-2xl font-bold mb-4">Submit Assignment: {{ assignment.title }}</h1>
     <p>{{ assignment.description }}</p>
     <p>Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         <div class="mb-4">
             <label class="block text-gray-700">{{ form.submission_text.label }}</label>
             {{ form.submission_text(class="w-full border rounded p-2", rows=6) }}
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700" for="file">Upload File (PDF, DOC, DOCX)</label>
+            <input type="file" name="file" id="file" accept=".pdf,.doc,.docx" class="w-full p-2 border rounded">
         </div>
         <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit</button>
     </form>

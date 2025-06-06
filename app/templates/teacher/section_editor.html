@@ -15,7 +15,7 @@
 
     <div class="bg-white p-6 rounded-lg shadow mb-6">
         <h2 class="text-xl font-semibold mb-4">Add New Section</h2>
-        <form method="POST" action="{{ url_for('teacher.manage_sections', course_id=course.id) }}">
+        <form method="POST" action="{{ url_for('teacher.manage_sections', course_id=course.id) }}" enctype="multipart/form-data">
             <div class="space-y-4">
                 <div>
                     <label class="block mb-2 font-medium">Section Title *</label>
@@ -28,7 +28,9 @@
                     <select name="section_type" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
                         <option value="text">Text</option>
                         <option value="video">Video (YouTube URL)</option>
-                        <option value="pdf">PDF</option>
+                        <option value="image">Image</option>
+                        <option value="audio">Audio</option>
+                        <option value="presentation">Presentation (PDF)</option>
                     </select>
                 </div>
                 
@@ -36,7 +38,20 @@
                     <label class="block mb-2 font-medium">Content *</label>
                     <textarea name="content" rows="8" required
                               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"></textarea>
-                    <p class="text-sm text-gray-500 mt-1">For videos, enter a YouTube URL. For PDFs, enter the filename or upload via the course form.</p>
+                    <p class="text-sm text-gray-500 mt-1">For videos, enter text or leave blank if using Video URL below.</p>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 font-medium">Video URL (Optional)</label>
+                    <input type="text" name="video_url" 
+                           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=xyz)">
+                </div>
+                
+                <div>
+                    <label class="block mb-2 font-medium">Upload Media (if applicable)</label>
+                    <input type="file" name="media_file" accept="image/*,audio/*,.pdf"
+                           class="w-full p-2 border rounded">
                 </div>
                 
                 <div>
@@ -55,7 +70,6 @@
 
     <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-xl font-semibold mb-4">Current Sections ({{ sections|length }})</h2>
-        
         {% if sections %}
         <div id="section-list" class="space-y-4">
             {% for section in sections %}
@@ -66,6 +80,31 @@
                         <div class="prose max-w-none mt-2 text-gray-700">
                             {{ section.content|safe }}
                         </div>
+                        <!-- Updated Media Rendering -->
+                        {% if section.section_type == 'video' and section.video_url %}
+                            {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
+                            {% if youtube_id and youtube_id|length == 11 %}
+                                <div class="aspect-w-16 aspect-h-9 mt-2">
+                                    <iframe id="youtube-player-{{ section.id }}" 
+                                            class="w-full h-64 md:h-96" 
+                                            src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
+                                            frameborder="0" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowfullscreen></iframe>
+                                </div>
+                            {% else %}
+                                <p class="text-red-500 mt-2">Invalid YouTube URL.</p>
+                            {% endif %}
+                        {% elif section.section_type == 'image' and section.media_file %}
+                            <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" alt="Section Image" class="mt-2 w-64 h-64 object-cover">
+                        {% elif section.section_type == 'audio' and section.media_file %}
+                            <audio controls class="mt-2">
+                                <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% elif section.section_type == 'presentation' and section.media_file %}
+                            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" target="_blank" class="text-blue-600 hover:underline mt-2">View Presentation (PDF)</a>
+                        {% endif %}
                         <div class="mt-2 flex items-center text-sm text-gray-500">
                             <span class="bg-gray-100 px-2 py-1 rounded mr-2">
                                 {{ section.section_type|title }}
@@ -101,7 +140,7 @@
                                 <p>No quizzes yet.</p>
                             {% endif %}
                             <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">Add Quiz</a>
-                             <a href="{{ url_for('teacher.view_quiz_attempts', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">View Quiz Attempts</a>
+                            <a href="{{ url_for('teacher.view_quiz_attempts', course_id=course.id, section_id=section.id) }}" class="text-blue-600 hover:underline">View Quiz Attempts</a>
                         </div>
                     </div>
                     <form method="POST" 
