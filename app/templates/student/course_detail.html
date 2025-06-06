@@ -19,6 +19,19 @@
         {% endif %}
     </div>
 
+    <!-- Progress Tracking -->
+    <div class="mb-8">
+        <h2 class="text-xl font-bold mb-2">Your Progress</h2>
+        {% if completion_percentage is defined %}
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                <div class="bg-green-600 h-4 rounded-full" style="width: {{ completion_percentage }}%"></div>
+            </div>
+            <p class="text-gray-600">{{ completion_percentage }}% complete ({{ completed_sections }} of {{ total_sections }} sections)</p>
+        {% else %}
+            <p class="text-gray-600">No progress to display yet.</p>
+        {% endif %}
+    </div>
+
     <!-- Course Materials -->
     <div class="mb-8">
         <!-- Intro Video -->
@@ -75,9 +88,9 @@
     <!-- Sections -->
     <div>
         <h2 class="text-2xl font-bold mb-4">Course Sections</h2>
-        {% if course.sections %}
+        {% if sections %}
             <div class="space-y-4">
-                {% for section in course.sections|sort(attribute='order') %}
+                {% for section in sections %}
                     <div class="border rounded-lg">
                         <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center"
                                 onclick="toggleSection('section-{{ section.id }}')">
@@ -116,16 +129,44 @@
                                 </a>
                             {% endif %}
 
+                            <!-- Mark as Complete -->
+                            {% set enrollment_section = enrollment_sections.get(section.id) %}
+                            <form action="{{ url_for('student.get_section_content', section_id=section.id) }}" method="POST" class="mt-4">
+                                <input type="hidden" name="mark_completed" value="true">
+                                <button type="submit" class="bg-green-600 text-white py-1 px-3 rounded hover:bg-green-700 {% if enrollment_section and enrollment_section.completed %} opacity-50 cursor-not-allowed {% endif %}" 
+                                        {% if enrollment_section and enrollment_section.completed %} disabled {% endif %}>
+                                    {% if enrollment_section and enrollment_section.completed %} Completed {% else %} Mark as Complete {% endif %}
+                                </button>
+                            </form>
+
                             <!-- Assignments -->
                             {% if section.assignments %}
                                 <div class="mt-4">
                                     <h3 class="text-lg font-bold mb-2">Assignments</h3>
                                     {% for assignment in section.assignments %}
-                                        <div class="mb-2">
-                                            <p><strong>{{ assignment.title }}</strong></p>
-                                            <p>{{ assignment.description }}</p>
-                                            <p class="text-sm text-gray-500">Due: {{ assignment.due_date }}</p>
-                                            <!-- Add submission form if needed -->
+                                        <div class="border p-4 mb-2 rounded">
+                                            <p class="font-medium">{{ assignment.title }}</p>
+                                            <p class="text-gray-600">{{ assignment.description }}</p>
+                                            <p class="text-sm text-gray-500">Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
+                                            {% set submission = assignment.submissions|selectattr('student_id', 'equalto', current_user.id)|first %}
+                                            {% if submission %}
+                                                <p class="text-green-600 mt-2">Submitted on {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                                {% if submission.file_path %}
+                                                    <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
+                                                       class="text-blue-600 hover:underline" 
+                                                       target="_blank">
+                                                       View Submission File
+                                                    </a>
+                                                {% endif %}
+                                                {% if submission.feedback %}
+                                                    <p class="mt-2"><strong>Feedback:</strong> {{ submission.feedback }}</p>
+                                                {% endif %}
+                                            {% else %}
+                                                <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
+                                                   class="mt-2 inline-block bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700">
+                                                   Submit Assignment
+                                                </a>
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -137,8 +178,8 @@
                                     <h3 class="text-lg font-bold mb-2">Quizzes</h3>
                                     {% for quiz in section.quizzes %}
                                         <div class="mb-2">
-                                            <p><strong>{{ quiz.title }}</strong></p>
-                                            <a href="{{ url_for('student.take_quiz', course_id=course.id, section_id=section.id, quiz_id=quiz.id) }}" 
+                                            <p class="font-medium">{{ quiz.title }}</p>
+                                            <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" 
                                                class="text-blue-600 hover:underline">
                                                Take Quiz
                                             </a>
