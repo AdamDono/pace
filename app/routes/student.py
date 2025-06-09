@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash
+from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app  # Added current_app
 from flask_login import login_required, current_user
 from app.models import Course, Section, Enrollment, EnrollmentSection, Assignment, Quiz, QuizQuestion, QuizAttempt, AssignmentSubmission
 from app import db
@@ -6,6 +6,10 @@ from datetime import datetime
 from app.decorators import student_required, student_enrolled
 from app.forms import SubmissionForm
 import logging
+import os
+from uuid import uuid4
+from werkzeug.utils import secure_filename
+from app.routes.teacher import allowed_file
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -63,7 +67,6 @@ def course_detail(course_id):
                          locked_sections=locked_sections,
                          completion_percentage=completion_percentage)
 
-
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required
 def get_section_content(section_id):
@@ -117,10 +120,20 @@ def submit_assignment(section_id, assignment_id):
     
     form = SubmissionForm()
     if form.validate_on_submit():
+        file_path = None
+        # Handle file upload if present
+        if 'file' in request.files and request.files['file'].filename:
+            file = request.files['file']
+            if file and allowed_file(file.filename, allowed_extensions={'pdf', 'doc', 'docx'}):
+                filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+
         submission = AssignmentSubmission(
             assignment_id=assignment_id,
             student_id=current_user.id,
-            submission_text=form.submission_text.data
+            submission_text=form.submission_text.data,
+            file_path=file_path
         )
         db.session.add(submission)
         db.session.commit()
@@ -146,6 +159,11 @@ def take_quiz(section_id, quiz_id):
         flash('No questions available in this quiz.', 'danger')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
     
+    attempt_count = QuizAttempt.query.filter_by(quiz_id=quiz_id, student_id=current_user.id).count()
+    if attempt_count >= 3:
+        flash('You have reached the maximum of 3 attempts for this quiz.', 'warning')
+        return redirect(url_for('student.course_detail', course_id=section.course_id))
+
     if request.method == 'POST':
         score = 0
         total = len(questions)
@@ -260,7 +278,6 @@ def get_section_content_new(section_id):
         flash('Section marked as completed.', 'success')
 
     return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)
-
 
 @student_bp.route('/course/<int:course_id>/review', methods=['POST'])
 @login_required
