@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import Course, db, Section, User, Enrollment, Assignment, Quiz, QuizQuestion, QuizAttempt, QuizAnswer
+from app.models import Course, db, Section, User, Enrollment, Assignment, Quiz, QuizQuestion, QuizAttempt, QuizAnswer, AssignmentSubmission
 from app.forms import CourseForm, AssignmentForm, QuizForm, QuestionForm
 from app.decorators import teacher_required
 import os
@@ -69,7 +69,6 @@ def create_course():
                     flash('Only YouTube URLs are allowed for intro video', 'danger')
                     return redirect(url_for('teacher.create_course'))
                 intro_video = intro_video_url
-            print(f"intro_video: {intro_video}")  # Debug
 
             # Validate YouTube URL for youtube_url field
             youtube_url = None
@@ -78,8 +77,6 @@ def create_course():
                     flash('Only YouTube URLs are allowed', 'danger')
                     return redirect(url_for('teacher.create_course'))
                 youtube_url = form.youtube_url.data
-            print(f"youtube_url: {youtube_url}")  # Debug
-            print(f"pdf_filename: {pdf_filename}")  # Debug
 
             # Create the course
             course = Course(
@@ -364,7 +361,8 @@ def view_submissions(course_id, section_id):
     assignments = Assignment.query.filter_by(section_id=section_id).all()
     submissions = []
     for assignment in assignments:
-        submissions.extend(assignment.submissions)  # Directly use submission objects
+        for submission in assignment.submissions:
+            submissions.append(submission)
     return render_template('teacher/view_submissions.html', course=course, section=section, submissions=submissions)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submission/<int:submission_id>/review', methods=['POST'])
@@ -376,10 +374,12 @@ def review_submission(course_id, section_id, submission_id):
     if section.course_id != course_id or course.teacher_id != current_user.id:
         abort(403)
     
-    submission.feedback = request.form.get('feedback')
-    submission.reviewed = True
-    db.session.commit()
-    flash('Submission reviewed successfully.', 'success')
+    feedback = request.form.get('feedback')
+    if feedback:
+        submission.feedback = feedback
+        submission.reviewed = True
+        db.session.commit()
+        flash('Submission reviewed successfully.', 'success')
     return redirect(url_for('teacher.view_submissions', course_id=course_id, section_id=section_id))
 
 @teacher_bp.route('/course/<int:course_id>/reorder-sections', methods=['POST'])

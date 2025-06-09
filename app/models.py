@@ -68,7 +68,7 @@ class Section(db.Model):
     duration = db.Column(db.Integer, default=0)  # Duration in minutes
     media_type = db.Column(db.String(20), default='text')  # e.g., 'text', 'video', 'image', 'audio', 'presentation'
     media_file = db.Column(db.String(120))  # Filename for uploaded files
-    video_url = db.Column(db.String(255), nullable=True)  # Optional YouTube URL
+    video_url = db.Column(db.String(255), nullable=True)
     
     quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
     # interactive_contents = db.relationship('InteractiveContent', back_populates='section', cascade='all, delete-orphan')
@@ -118,6 +118,7 @@ class AssignmentSubmission(db.Model):
     submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     reviewed = db.Column(db.Boolean, default=False)
     feedback = db.Column(db.Text, nullable=True)
+    file_path = db.Column(db.String(120), nullable=True)  # Added for file uploads
     assignment = db.relationship('Assignment', back_populates='submissions')
     student = db.relationship('User')
 
@@ -174,6 +175,3 @@ class QuizAnswer(db.Model):
     selected_answer = db.Column(db.String(1), nullable=False)  # 'a', 'b', 'c', or 'd'
     attempt = db.relationship('QuizAttempt', back_populates='answers')
     question = db.relationship('QuizQuestion', back_populates='answers')
-    
-    
-

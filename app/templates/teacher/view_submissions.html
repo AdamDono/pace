@@ -8,6 +8,15 @@
             <p><strong>Assignment:</strong> {{ submission.assignment.title }}</p>
             <p><strong>Student:</strong> {{ submission.student.email }}</p>
             <p><strong>Submission:</strong> {{ submission.submission_text }}</p>
+            {% if submission.file_path %}
+                <p><strong>Attached File:</strong> 
+                    <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
+                       class="text-blue-600 hover:underline" 
+                       target="_blank">
+                       Download File
+                    </a>
+                </p>
+            {% endif %}
             <p><strong>Submitted At:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
             <p><strong>Status:</strong> {{ 'Reviewed' if submission.reviewed else 'Not Reviewed' }}</p>
             {% if submission.feedback %}
@@ -16,7 +25,7 @@
                 <form method="POST" action="{{ url_for('teacher.review_submission', course_id=course.id, section_id=section.id, submission_id=submission.id) }}">
                     <div class="mb-2">
                         <label class="block text-gray-700">Feedback</label>
-                        <textarea name="feedback" class="w-full border rounded p-2" rows="3"></textarea>
+                        <textarea name="feedback" class="w-full border rounded p-2" rows="3" required></textarea>
                     </div>
                     <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit Feedback</button>
                 </form>

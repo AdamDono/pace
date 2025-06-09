@@ -153,13 +153,23 @@
                                                 <p class="text-green-600 mt-2">Submitted on {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
                                                 {% if submission.file_path %}
                                                     <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
-                                                       class="text-blue-600 hover:underline" 
+                                                       class="text-blue-600 hover:underline mt-1 block" 
                                                        target="_blank">
-                                                       View Submission File
+                                                       View/Download Submitted File
                                                     </a>
                                                 {% endif %}
-                                                {% if submission.feedback %}
-                                                    <p class="mt-2"><strong>Feedback:</strong> {{ submission.feedback }}</p>
+                                                {% if submission.reviewed and submission.feedback %}
+                                                    <div class="mt-2 p-2 bg-gray-100 rounded">
+                                                        <p class="font-semibold">Teacher Feedback:</p>
+                                                        <p>{{ submission.feedback }}</p>
+                                                    </div>
+                                                {% elif submission.reviewed %}
+                                                    <p class="mt-2 text-yellow-600">Feedback is pending from the teacher.</p>
+                                                {% else %}
+                                                    <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
+                                                       class="mt-2 inline-block bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700">
+                                                       Submit or Update Assignment
+                                                    </a>
                                                 {% endif %}
                                             {% else %}
                                                 <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
@@ -179,10 +189,15 @@
                                     {% for quiz in section.quizzes %}
                                         <div class="mb-2">
                                             <p class="font-medium">{{ quiz.title }}</p>
-                                            <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" 
-                                               class="text-blue-600 hover:underline">
-                                               Take Quiz
-                                            </a>
+                                            {% set attempt_count = quiz.attempts|selectattr('student_id', 'equalto', current_user.id)|list|length %}
+                                            {% if attempt_count < 3 %}
+                                                <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" 
+                                                   class="text-blue-600 hover:underline">
+                                                   Take Quiz
+                                                </a>
+                                            {% else %}
+                                                <p class="text-red-600">Maximum 3 attempts reached. Best score: {{ quiz.attempts|selectattr('student_id', 'equalto', current_user.id)|map(attribute='score')|max|default(0)|round(1) }}%</p>
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 </div>
