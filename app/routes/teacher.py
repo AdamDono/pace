@@ -425,7 +425,7 @@ def delete_section(section_id):
 @teacher_required
 def submit_feedback(submission_id):
     submission = AssignmentSubmission.query.get_or_404(submission_id)
-    if not current_user.is_teacher_for_course(submission.assignment.section.course_id):  # Custom method assumed
+    if not current_user.is_teacher_for_course(submission.assignment.section.course_id):
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data = request.get_json()
     feedback = data.get('feedback')

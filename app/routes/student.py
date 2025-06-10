@@ -126,8 +126,8 @@ def submit_assignment(section_id, assignment_id):
             file = request.files['file']
             if file and allowed_file(file.filename, allowed_extensions={'pdf', 'doc', 'docx'}):
                 filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
+                file_path = filename  # Store only the filename
+                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
         submission = AssignmentSubmission(
             assignment_id=assignment_id,

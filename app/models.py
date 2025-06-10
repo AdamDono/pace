@@ -29,6 +29,16 @@ class User(db.Model, UserMixin):
     # Relationship to enrollments
     enrollments = db.relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
 
+    # Relationship to courses (as teacher), with renamed backref
+    courses = db.relationship('Course', backref='instructor', lazy=True)  # Kept as 'instructor'
+
+    def is_teacher_for_course(self, course_id):
+        """Check if the user is the teacher for a specific course."""
+        if self.role != 'teacher':
+            return False
+        # Check if the user is the teacher for the course using the teacher_id relationship
+        return any(course.id == course_id for course in self.courses)
+
 class Course(db.Model):
     __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
@@ -48,7 +58,7 @@ class Course(db.Model):
     teacher_contact = db.Column(db.String(120), nullable=True)  # Instructor contact
     resources = db.Column(db.Text, nullable=True)  # JSON for filenames
     
-    teacher = db.relationship('User', backref='courses')
+    teacher = db.relationship('User', backref='taught_courses')  # Changed 'courses' to 'taught_courses'
     sections = db.relationship('Section', 
                              back_populates='course',
                              order_by='Section.order',
