@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app  # Added current_app
+from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app
 from flask_login import login_required, current_user
-from app.models import Course, Section, Enrollment, EnrollmentSection, Assignment, Quiz, QuizQuestion, QuizAttempt, AssignmentSubmission
+from app.models import Course, Section, Enrollment, EnrollmentSection, Assignment, Quiz, QuizQuestion, QuizAttempt, AssignmentSubmission, Rating
 from app import db
 from datetime import datetime
 from app.decorators import student_required, student_enrolled
@@ -126,7 +126,7 @@ def submit_assignment(section_id, assignment_id):
             file = request.files['file']
             if file and allowed_file(file.filename, allowed_extensions={'pdf', 'doc', 'docx'}):
                 filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                file_path = filename  # Store only the filename
+                file_path = filename
                 file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
         submission = AssignmentSubmission(

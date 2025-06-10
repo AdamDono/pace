@@ -30,13 +30,12 @@ class User(db.Model, UserMixin):
     enrollments = db.relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
 
     # Relationship to courses (as teacher), with renamed backref
-    courses = db.relationship('Course', backref='instructor', lazy=True)  # Kept as 'instructor'
+    courses = db.relationship('Course', backref='instructor', lazy=True)
 
     def is_teacher_for_course(self, course_id):
         """Check if the user is the teacher for a specific course."""
         if self.role != 'teacher':
             return False
-        # Check if the user is the teacher for the course using the teacher_id relationship
         return any(course.id == course_id for course in self.courses)
 
 class Course(db.Model):
@@ -51,14 +50,14 @@ class Course(db.Model):
     admin_feedback = db.Column(db.Text)
     pdf_filename = db.Column(db.String(120))
     banner_image = db.Column(db.String(120))  # Thumbnail for preview
-    intro_text = db.Column(db.Text, nullable=True)  # Ensure this is nullable
-    intro_video = db.Column(db.String(255))  # YouTube URL for full view
-    description = db.Column(db.Text, nullable=True)  # Detailed overview
-    teacher_bio = db.Column(db.Text, nullable=True)  # Instructor bio
-    teacher_contact = db.Column(db.String(120), nullable=True)  # Instructor contact
-    resources = db.Column(db.Text, nullable=True)  # JSON for filenames
+    intro_text = db.Column(db.Text, nullable=True)
+    intro_video = db.Column(db.String(255))
+    description = db.Column(db.Text, nullable=True)
+    teacher_bio = db.Column(db.Text, nullable=True)
+    teacher_contact = db.Column(db.String(120), nullable=True)
+    resources = db.Column(db.Text, nullable=True)
     
-    teacher = db.relationship('User', backref='taught_courses')  # Changed 'courses' to 'taught_courses'
+    teacher = db.relationship('User', backref='taught_courses')
     sections = db.relationship('Section', 
                              back_populates='course',
                              order_by='Section.order',
@@ -75,13 +74,12 @@ class Section(db.Model):
     order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_published = db.Column(db.Boolean, default=False)
-    duration = db.Column(db.Integer, default=0)  # Duration in minutes
-    media_type = db.Column(db.String(20), default='text')  # e.g., 'text', 'video', 'image', 'audio', 'presentation'
-    media_file = db.Column(db.String(120))  # Filename for uploaded files
+    duration = db.Column(db.Integer, default=0)
+    media_type = db.Column(db.String(20), default='text')
+    media_file = db.Column(db.String(120))
     video_url = db.Column(db.String(255), nullable=True)
     
     quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
-    # interactive_contents = db.relationship('InteractiveContent', back_populates='section', cascade='all, delete-orphan')
     course = db.relationship('Course', back_populates='sections')
     enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
     assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan')
@@ -128,7 +126,7 @@ class AssignmentSubmission(db.Model):
     submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     reviewed = db.Column(db.Boolean, default=False)
     feedback = db.Column(db.Text, nullable=True)
-    file_path = db.Column(db.String(120), nullable=True)  # Added for file uploads
+    file_path = db.Column(db.String(120), nullable=True)
     assignment = db.relationship('Assignment', back_populates='submissions')
     student = db.relationship('User')
 
@@ -150,9 +148,9 @@ class QuizQuestion(db.Model):
     option_b = db.Column(db.String(100), nullable=False)
     option_c = db.Column(db.String(100), nullable=True)
     option_d = db.Column(db.String(100), nullable=True)
-    correct_answer = db.Column(db.String(1), nullable=False)  # 'a', 'b', 'c', or 'd'
+    correct_answer = db.Column(db.String(1), nullable=False)
     quiz = db.relationship('Quiz', back_populates='questions')
-    answers = db.relationship('QuizAnswer', back_populates='question', cascade='all, delete-orphan')  # Add relationship
+    answers = db.relationship('QuizAnswer', back_populates='question', cascade='all, delete-orphan')
 
 class QuizAttempt(db.Model):
     __tablename__ = 'quiz_attempts'
@@ -163,14 +161,14 @@ class QuizAttempt(db.Model):
     attempted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     quiz = db.relationship('Quiz', back_populates='attempts')
     student = db.relationship('User')
-    answers = db.relationship('QuizAnswer', back_populates='attempt', cascade='all, delete-orphan')  # Add relationship
+    answers = db.relationship('QuizAnswer', back_populates='attempt', cascade='all, delete-orphan')
     
 class Rating(db.Model):
     __tablename__ = 'ratings'
-    id = db.Column(db.Integer, primary_key=True)  # Add this line
+    id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
-    rating = db.Column(db.Integer)  # 1-5
+    rating = db.Column(db.Integer)
     review = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -182,6 +180,6 @@ class QuizAnswer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     attempt_id = db.Column(db.Integer, db.ForeignKey('quiz_attempts.id'), nullable=False)
     question_id = db.Column(db.Integer, db.ForeignKey('quiz_questions.id'), nullable=False)
-    selected_answer = db.Column(db.String(1), nullable=False)  # 'a', 'b', 'c', or 'd'
+    selected_answer = db.Column(db.String(1), nullable=False)
     attempt = db.relationship('QuizAttempt', back_populates='answers')
     question = db.relationship('QuizQuestion', back_populates='answers')
