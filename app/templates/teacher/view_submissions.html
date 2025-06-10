@@ -1,40 +1,132 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">Submissions for {{ section.title }}</h1>
-    {% if submissions %}
-        {% for submission in submissions %}
-        <div class="mb-4 p-4 border rounded">
-            <p><strong>Assignment:</strong> {{ submission.assignment.title }}</p>
-            <p><strong>Student:</strong> {{ submission.student.email }}</p>
-            <p><strong>Submission:</strong> {{ submission.submission_text }}</p>
-            {% if submission.file_path %}
-                <p><strong>Attached File:</strong> 
-                    <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
-                       class="text-blue-600 hover:underline" 
-                       target="_blank">
-                       Download File
-                    </a>
-                </p>
-            {% endif %}
-            <p><strong>Submitted At:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
-            <p><strong>Status:</strong> {{ 'Reviewed' if submission.reviewed else 'Not Reviewed' }}</p>
-            {% if submission.feedback %}
-                <p><strong>Feedback:</strong> {{ submission.feedback }}</p>
-            {% else %}
-                <form method="POST" action="{{ url_for('teacher.review_submission', course_id=course.id, section_id=section.id, submission_id=submission.id) }}">
-                    <div class="mb-2">
-                        <label class="block text-gray-700">Feedback</label>
-                        <textarea name="feedback" class="w-full border rounded p-2" rows="3" required></textarea>
-                    </div>
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit Feedback</button>
-                </form>
-            {% endif %}
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Review Submissions</h2>
+
+    <!-- Submissions Table -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="p-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200" onclick="sortTable(0)">Student Name</th>
+                    <th class="p-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200" onclick="sortTable(1)">Assignment</th>
+                    <th class="p-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200" onclick="sortTable(2)">Submitted</th>
+                    <th class="p-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200" onclick="sortTable(3)">File</th>
+                    <th class="p-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200" onclick="sortTable(4)">Status</th>
+                    <th class="p-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for submission in submissions %}
+                    <tr class="border-b hover:bg-gray-50 transition-colors duration-200">
+                        <td class="p-4">{{ submission.student.name or submission.student.email.split('@')[0] }}</td>
+                        <td class="p-4">{{ submission.assignment.title }}</td>
+                        <td class="p-4">{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="p-4">
+                            {% if submission.file_path %}
+                                <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
+                                   class="text-blue-600 hover:text-blue-800 transition-colors duration-200" 
+                                   target="_blank">
+                                   View File
+                                </a>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            {% if submission.reviewed %}
+                                <span class="text-green-600">Reviewed</span>
+                            {% else %}
+                                <span class="text-yellow-600">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            <button class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200" 
+                                    onclick="openModal('{{ submission.id }}', '{{ submission.file_path if submission.file_path else '' }}', '{{ submission.feedback|safe if submission.feedback else '' }}')">
+                                Review
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md relative">
+            <button class="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl" onclick="closeModal()">×</button>
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Provide Feedback</h3>
+            <input type="hidden" id="submissionId">
+            <div id="filePreview" class="mb-4 hidden">
+                <iframe id="previewFrame" class="w-full h-64 border rounded-lg" frameborder="0"></iframe>
+            </div>
+            <textarea id="feedbackText" class="w-full p-3 border rounded-lg mb-4" rows="4" placeholder="Enter feedback here..."></textarea>
+            <button class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200" 
+                    onclick="saveFeedback()">Save Feedback</button>
         </div>
-        {% endfor %}
-    {% else %}
-        <p>No submissions yet.</p>
-    {% endif %}
-    <a href="{{ url_for('teacher.manage_sections', course_id=course.id) }}" class="mt-4 block text-blue-600 hover:underline">Back to Sections</a>
+    </div>
 </div>
+
+<script>
+function sortTable(columnIndex) {
+    const table = document.querySelector('table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const isAscending = !table.dataset.sort || table.dataset.sort !== 'asc' + columnIndex;
+
+    rows.sort((a, b) => {
+        const aValue = a.cells[columnIndex].textContent.trim();
+        const bValue = b.cells[columnIndex].textContent.trim();
+        return isAscending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+    table.dataset.sort = isAscending ? 'asc' + columnIndex : 'desc' + columnIndex;
+}
+
+function openModal(submissionId, filePath, feedback) {
+    const modal = document.getElementById('feedbackModal');
+    const submissionIdInput = document.getElementById('submissionId');
+    const feedbackText = document.getElementById('feedbackText');
+    const filePreview = document.getElementById('filePreview');
+    const previewFrame = document.getElementById('previewFrame');
+
+    submissionIdInput.value = submissionId;
+    feedbackText.value = feedback || '';
+    if (filePath) {
+        previewFrame.src = `{{ url_for('static', filename='uploads/') }}` + filePath;
+        filePreview.classList.remove('hidden');
+    } else {
+        filePreview.classList.add('hidden');
+    }
+    modal.classList.remove('hidden');
+}
+
+function closeModal() {
+    const modal = document.getElementById('feedbackModal');
+    modal.classList.add('hidden');
+}
+
+function saveFeedback() {
+    const submissionId = document.getElementById('submissionId').value;
+    const feedbackText = document.getElementById('feedbackText').value;
+    fetch(`/teacher/submit_feedback/${submissionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: feedbackText })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Feedback saved successfully!');
+            closeModal();
+            location.reload();
+        } else {
+            alert('Error saving feedback.');
+        }
+    });
+}
+</script>
 {% endblock %}
