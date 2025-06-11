@@ -156,8 +156,14 @@
                                             <p class="text-sm text-gray-500">Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
                                             {% set submissions = assignment.submissions|selectattr('student_id', 'equalto', current_user.id)|list %}
                                             {% set submission = submissions|last if submissions else none %}
-                                            {% if submission %}
-                                                <div class="mt-2">
+                                            <div class="mt-2">
+                                                {% if submissions and submissions|length < 3 %}
+                                                    <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
+                                                       class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                                       {% if submission and submission.reviewed %} Update with Feedback {% else %} Submit Assignment {% endif %}
+                                                    </a>
+                                                    <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length }}</div>
+                                                {% elif submission %}
                                                     <p class="text-green-600 text-sm">Submitted: {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
                                                     {% if submission.file_path %}
                                                         <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
@@ -176,21 +182,17 @@
                                                         </div>
                                                     {% else %}
                                                         <p class="text-yellow-600 text-sm mt-2">Awaiting review...</p>
-                                                        <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
-                                                           class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                                           Update Submission
-                                                        </a>
                                                     {% endif %}
                                                     <div class="text-xs text-gray-500 mt-1">Draft: {{ submissions|length }}/3</div>
-                                                </div>
-                                            {% else %}
-                                                <p class="text-red-500">Debug: No submissions found for user {{ current_user.id }}</p>
-                                                <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
-                                                   class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                                   Submit Assignment
-                                                </a>
-                                                <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length if submissions|length < 3 else 0 }}</div>
-                                            {% endif %}
+                                                {% else %}
+                                                    <p class="text-red-500">Debug: No submissions found for user {{ current_user.id }}</p>
+                                                    <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
+                                                       class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                                       Submit Assignment
+                                                    </a>
+                                                    <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length }}</div>
+                                                {% endif %}
+                                            </div>
                                             {# Debug: <p>Submissions count: {{ submissions|length }}, Student ID: {{ current_user.id }}</p> #}
                                         </div>
                                     {% endfor %}
