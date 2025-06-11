@@ -419,6 +419,21 @@ def delete_section(section_id):
     
     return redirect(url_for('teacher.manage_sections', course_id=course_id))
 
+
+@teacher_bp.route('/submit_feedback/<int:submission_id>', methods=['POST'])
+@login_required
+@teacher_required
+def submit_feedback(submission_id):
+    submission = AssignmentSubmission.query.get_or_404(submission_id)
+    if not current_user.is_teacher_for_course(submission.assignment.section.course_id):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json()
+    feedback = data.get('feedback')
+    submission.feedback = feedback
+    submission.reviewed = True
+    db.session.commit()
+    return jsonify({'success': True})
+
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz-attempts')
 @teacher_required
 def view_quiz_attempts(course_id, section_id):

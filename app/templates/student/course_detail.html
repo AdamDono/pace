@@ -1,47 +1,53 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto p-6">
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
     <!-- Course Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold mb-2">{{ course.title }}</h1>
+    <div class="mb-8 bg-white shadow-lg rounded-lg p-6">
+        <h1 class="text-3xl font-bold mb-2 text-gray-800">{{ course.title }}</h1>
         <p class="text-gray-600 mb-4">{{ course.description }}</p>
         
         <!-- Banner Image -->
         {% if course.banner_image %}
             <img src="{{ url_for('static', filename='uploads/' + course.banner_image) }}" 
                  alt="{{ course.title }}" 
-                 class="w-full h-64 object-cover rounded-lg mb-4">
+                 class="w-full h-64 object-cover rounded-lg mb-4 transition-transform duration-300 hover:scale-105">
         {% else %}
             <img src="{{ url_for('static', filename='default_course.jpg') }}" 
                  alt="{{ course.title }}" 
-                 class="w-full h-64 object-cover rounded-lg mb-4">
+                 class="w-full h-64 object-cover rounded-lg mb-4 transition-transform duration-300 hover:scale-105">
         {% endif %}
+        <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-500">Created by {{ course.teacher.email.split('@')[0] }}</span>
+            {% if completion_percentage is defined %}
+                <span class="text-green-600 font-semibold">{{ completion_percentage }}% Complete</span>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Progress Tracking -->
-    <div class="mb-8">
-        <h2 class="text-xl font-bold mb-2">Your Progress</h2>
+    <div class="mb-8 bg-white shadow-lg rounded-lg p-6">
+        <h2 class="text-xl font-bold mb-2 text-gray-800">Your Progress</h2>
         {% if completion_percentage is defined %}
             <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
-                <div class="bg-green-600 h-4 rounded-full" style="width: {{ completion_percentage }}%"></div>
+                <div class="bg-gradient-to-r from-green-400 to-green-600 h-4 rounded-full transition-all duration-500" style="width: {{ completion_percentage }}%"></div>
             </div>
-            <p class="text-gray-600">{{ completion_percentage }}% complete ({{ completed_sections }} of {{ total_sections }} sections)</p>
+            <p class="text-gray-600">{{ completed_sections }} of {{ total_sections }} sections</p>
         {% else %}
             <p class="text-gray-600">No progress to display yet.</p>
         {% endif %}
     </div>
 
     <!-- Course Materials -->
-    <div class="mb-8">
+    <div class="mb-8 bg-white shadow-lg rounded-lg p-6">
         <!-- Intro Video -->
         {% if course.intro_video %}
             {% set youtube_id = course.intro_video.split('v=')[1].split('&')[0] if 'v=' in course.intro_video else course.intro_video.split('/')[-1] %}
             {% if youtube_id and youtube_id|length == 11 %}
                 <div class="mb-6">
-                    <h2 class="text-xl font-bold mb-2">Course Intro Video</h2>
-                    <div class="aspect-w-16 aspect-h-9">
-                        <iframe class="w-full h-64 md:h-96" 
+                    <h2 class="text-xl font-bold mb-2 text-gray-700">Course Intro Video</h2>
+                    <div class="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg shadow-md">
+                        <iframe class="w-full h-full transition-opacity duration-300 hover:opacity-90" 
                                 src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
                                 frameborder="0" 
                                 allowfullscreen></iframe>
@@ -57,9 +63,9 @@
             {% set youtube_id = course.youtube_url.split('v=')[1].split('&')[0] if 'v=' in course.youtube_url else course.youtube_url.split('/')[-1] %}
             {% if youtube_id and youtube_id|length == 11 %}
                 <div class="mb-6">
-                    <h2 class="text-xl font-bold mb-2">Course Preview Video</h2>
-                    <div class="aspect-w-16 aspect-h-9">
-                        <iframe class="w-full h-64 md:h-96" 
+                    <h2 class="text-xl font-bold mb-2 text-gray-700">Course Preview Video</h2>
+                    <div class="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg shadow-md">
+                        <iframe class="w-full h-full transition-opacity duration-300 hover:opacity-90" 
                                 src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
                                 frameborder="0" 
                                 allowfullscreen></iframe>
@@ -73,9 +79,9 @@
         <!-- PDF Material -->
         {% if course.pdf_filename %}
             <div class="mb-6">
-                <h2 class="text-xl font-bold mb-2">Course Material (PDF)</h2>
+                <h2 class="text-xl font-bold mb-2 text-gray-700">Course Material (PDF)</h2>
                 <a href="{{ url_for('static', filename='uploads/' + course.pdf_filename) }}" 
-                   class="text-blue-600 hover:underline" 
+                   class="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200" 
                    target="_blank">
                    View/Download PDF Material
                 </a>
@@ -87,24 +93,24 @@
 
     <!-- Sections -->
     <div>
-        <h2 class="text-2xl font-bold mb-4">Course Sections</h2>
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Course Sections</h2>
         {% if sections %}
             <div class="space-y-4">
                 {% for section in sections %}
-                    <div class="border rounded-lg">
-                        <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center"
+                    <div class="bg-white shadow-lg rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+                        <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center focus:outline-none"
                                 onclick="toggleSection('section-{{ section.id }}')">
-                            <span class="font-medium">{{ section.title }}</span>
-                            <span class="text-gray-500">▼</span>
+                            <span class="font-medium text-gray-800">{{ section.title }}</span>
+                            <span class="text-gray-500" id="arrow-{{ section.id }}">▼</span>
                         </button>
                         <div id="section-{{ section.id }}" class="p-4 hidden">
                             {% if section.section_type == 'text' %}
-                                <p>{{ section.content|safe }}</p>
+                                <p class="text-gray-700">{{ section.content|safe }}</p>
                             {% elif section.section_type == 'video' and section.video_url %}
                                 {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
                                 {% if youtube_id and youtube_id|length == 11 %}
-                                    <div class="aspect-w-16 aspect-h-9 mb-4">
-                                        <iframe class="w-full h-64 md:h-96" 
+                                    <div class="aspect-w-16 aspect-h-9 mb-4 overflow-hidden rounded-lg shadow-md">
+                                        <iframe class="w-full h-full transition-opacity duration-300 hover:opacity-90" 
                                                 src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
                                                 frameborder="0" 
                                                 allowfullscreen></iframe>
@@ -115,7 +121,7 @@
                             {% elif section.section_type == 'image' and section.media_file %}
                                 <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
                                      alt="{{ section.title }}" 
-                                     class="w-full h-auto mb-4">
+                                     class="w-full h-auto mb-4 rounded-lg shadow-md">
                             {% elif section.section_type == 'audio' and section.media_file %}
                                 <audio controls class="w-full mb-4">
                                     <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg">
@@ -123,7 +129,7 @@
                                 </audio>
                             {% elif section.section_type == 'presentation' and section.media_file %}
                                 <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
-                                   class="text-blue-600 hover:underline" 
+                                   class="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200" 
                                    target="_blank">
                                    View Presentation (PDF)
                                 </a>
@@ -133,7 +139,7 @@
                             {% set enrollment_section = enrollment_sections.get(section.id) %}
                             <form action="{{ url_for('student.get_section_content', section_id=section.id) }}" method="POST" class="mt-4">
                                 <input type="hidden" name="mark_completed" value="true">
-                                <button type="submit" class="bg-green-600 text-white py-1 px-3 rounded hover:bg-green-700 {% if enrollment_section and enrollment_section.completed %} opacity-50 cursor-not-allowed {% endif %}" 
+                                <button type="submit" class="bg-green-600 text-white py-1 px-3 rounded hover:bg-green-700 transition-colors duration-200 {% if enrollment_section and enrollment_section.completed %} opacity-50 cursor-not-allowed {% endif %}" 
                                         {% if enrollment_section and enrollment_section.completed %} disabled {% endif %}>
                                     {% if enrollment_section and enrollment_section.completed %} Completed {% else %} Mark as Complete {% endif %}
                                 </button>
@@ -142,41 +148,52 @@
                             <!-- Assignments -->
                             {% if section.assignments %}
                                 <div class="mt-4">
-                                    <h3 class="text-lg font-bold mb-2">Assignments</h3>
+                                    <h3 class="text-lg font-bold mb-2 text-gray-700">Assignments</h3>
                                     {% for assignment in section.assignments %}
-                                        <div class="border p-4 mb-2 rounded">
-                                            <p class="font-medium">{{ assignment.title }}</p>
+                                        <div class="border-l-4 border-blue-500 p-4 mb-3 bg-gray-50 rounded-r-lg">
+                                            <p class="font-medium text-gray-800">{{ assignment.title }}</p>
                                             <p class="text-gray-600">{{ assignment.description }}</p>
                                             <p class="text-sm text-gray-500">Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
-                                            {% set submission = assignment.submissions|selectattr('student_id', 'equalto', current_user.id)|first %}
-                                            {% if submission %}
-                                                <p class="text-green-600 mt-2">Submitted on {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                                                {% if submission.file_path %}
-                                                    <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
-                                                       class="text-blue-600 hover:underline mt-1 block" 
-                                                       target="_blank">
-                                                       View/Download Submitted File
-                                                    </a>
-                                                {% endif %}
-                                                {% if submission.reviewed and submission.feedback %}
-                                                    <div class="mt-2 p-2 bg-gray-100 rounded">
-                                                        <p class="font-semibold">Teacher Feedback:</p>
-                                                        <p>{{ submission.feedback }}</p>
-                                                    </div>
-                                                {% elif submission.reviewed %}
-                                                    <p class="mt-2 text-yellow-600">Feedback is pending from the teacher.</p>
-                                                {% else %}
+                                            {% set submissions = assignment.submissions|selectattr('student_id', 'equalto', current_user.id)|list %}
+                                            {% set submission = submissions|last if submissions else none %}
+                                            <div class="mt-2">
+                                                {% if submissions and submissions|length < 3 %}
                                                     <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
-                                                       class="mt-2 inline-block bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700">
-                                                       Submit or Update Assignment
+                                                       class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                                       {% if submission and submission.reviewed %} Update with Feedback {% else %} Submit Assignment {% endif %}
                                                     </a>
+                                                    <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length }}</div>
+                                                {% elif submission %}
+                                                    <p class="text-green-600 text-sm">Submitted: {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                                    {% if submission.file_path %}
+                                                        <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
+                                                           class="text-blue-600 hover:text-blue-800 text-sm transition-colors duration-200" 
+                                                           target="_blank">
+                                                           View/Download File
+                                                        </a>
+                                                    {% endif %}
+                                                    {% if submission.reviewed %}
+                                                        <div class="mt-2 p-3 bg-blue-50 rounded-lg">
+                                                            <p class="font-semibold text-gray-800">Teacher Feedback:</p>
+                                                            <p class="text-gray-700">{{ submission.feedback or 'Feedback pending...' }}</p>
+                                                            {% if submission.feedback %}
+                                                                <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mt-1">New Feedback</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% else %}
+                                                        <p class="text-yellow-600 text-sm mt-2">Awaiting review...</p>
+                                                    {% endif %}
+                                                    <div class="text-xs text-gray-500 mt-1">Draft: {{ submissions|length }}/3</div>
+                                                {% else %}
+                                                    <p class="text-red-500">Debug: No submissions found for user {{ current_user.id }}</p>
+                                                    <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
+                                                       class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                                       Submit Assignment
+                                                    </a>
+                                                    <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length }}</div>
                                                 {% endif %}
-                                            {% else %}
-                                                <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
-                                                   class="mt-2 inline-block bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700">
-                                                   Submit Assignment
-                                                </a>
-                                            {% endif %}
+                                            </div>
+                                            {# Debug: <p>Submissions count: {{ submissions|length }}, Student ID: {{ current_user.id }}</p> #}
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -185,18 +202,18 @@
                             <!-- Quizzes -->
                             {% if section.quizzes %}
                                 <div class="mt-4">
-                                    <h3 class="text-lg font-bold mb-2">Quizzes</h3>
+                                    <h3 class="text-lg font-bold mb-2 text-gray-700">Quizzes</h3>
                                     {% for quiz in section.quizzes %}
-                                        <div class="mb-2">
-                                            <p class="font-medium">{{ quiz.title }}</p>
+                                        <div class="border-l-4 border-purple-500 p-4 mb-3 bg-gray-50 rounded-r-lg">
+                                            <p class="font-medium text-gray-800">{{ quiz.title }}</p>
                                             {% set attempt_count = quiz.attempts|selectattr('student_id', 'equalto', current_user.id)|list|length %}
                                             {% if attempt_count < 3 %}
                                                 <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" 
-                                                   class="text-blue-600 hover:underline">
-                                                   Take Quiz
+                                                   class="text-purple-600 hover:text-purple-800 font-medium transition-colors duration-200">
+                                                   Take Quiz ({{ 3 - attempt_count }} attempts left)
                                                 </a>
                                             {% else %}
-                                                <p class="text-red-600">Maximum 3 attempts reached. Best score: {{ quiz.attempts|selectattr('student_id', 'equalto', current_user.id)|map(attribute='score')|max|default(0)|round(1) }}%</p>
+                                                <p class="text-red-600 text-sm">Max 3 attempts reached. Best score: {{ quiz.attempts|selectattr('student_id', 'equalto', current_user.id)|map(attribute='score')|max|default(0)|round(1) }}%</p>
                                             {% endif %}
                                         </div>
                                     {% endfor %}
@@ -215,10 +232,14 @@
 <script>
 function toggleSection(sectionId) {
     const section = document.getElementById(sectionId);
-    section.classList.toggle('hidden');
-    const button = section.previousElementSibling;
-    const arrow = button.querySelector('span:last-child');
-    arrow.textContent = section.classList.contains('hidden') ? '▼' : '▲';
+    const isHidden = section.classList.contains('hidden');
+    section.classList.toggle('hidden', !isHidden);
+    const arrow = document.getElementById(`arrow-${sectionId}`);
+    arrow.textContent = isHidden ? '▲' : '▼';
+    section.style.height = isHidden ? `${section.scrollHeight}px` : '0';
+    setTimeout(() => {
+        section.style.height = isHidden ? 'auto' : '0';
+    }, 300);
 }
 </script>
 {% endblock %}

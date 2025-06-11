@@ -19,9 +19,9 @@ def ensure_admin_exists():
         if not admin_exists:
             admin = User(
                 email=os.getenv('ADMIN_EMAIL', 'admin@example.com'),
-                password=os.getenv('ADMIN_PASSWORD', 'adminpassword'),
                 role='admin'
             )
+            admin.password = os.getenv('ADMIN_PASSWORD', 'adminpassword')  # Use the setter
             db.session.add(admin)
             try:
                 db.session.commit()
@@ -39,8 +39,6 @@ def check_database_connection():
             return True
         except Exception as e:
             print(f"❌ Database connection failed: {str(e)}")
-            
-            
             return False
         
    
