@@ -137,7 +137,7 @@
 
                             <!-- Mark as Complete -->
                             {% set enrollment_section = enrollment_sections.get(section.id) %}
-                            <form action="{{ url_for('student.get_section_content', section_id=section.id) }}" method="POST" class="mt-4">
+                            <form id="complete-form-{{ section.id }}" action="{{ url_for('student.get_section_content', section_id=section.id) }}" method="POST" class="mt-4">
                                 <input type="hidden" name="mark_completed" value="true">
                                 <button type="submit" class="bg-green-600 text-white py-1 px-3 rounded hover:bg-green-700 transition-colors duration-200 {% if enrollment_section and enrollment_section.completed %} opacity-50 cursor-not-allowed {% endif %}" 
                                         {% if enrollment_section and enrollment_section.completed %} disabled {% endif %}>
@@ -193,7 +193,6 @@
                                                     <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length }}</div>
                                                 {% endif %}
                                             </div>
-                                            {# Debug: <p>Submissions count: {{ submissions|length }}, Student ID: {{ current_user.id }}</p> #}
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -227,19 +226,94 @@
             <p class="text-gray-500">No sections available.</p>
         {% endif %}
     </div>
-</div>
 
-<script>
-function toggleSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    const isHidden = section.classList.contains('hidden');
-    section.classList.toggle('hidden', !isHidden);
-    const arrow = document.getElementById(`arrow-${sectionId}`);
-    arrow.textContent = isHidden ? '▲' : '▼';
-    section.style.height = isHidden ? `${section.scrollHeight}px` : '0';
-    setTimeout(() => {
-        section.style.height = isHidden ? 'auto' : '0';
-    }, 300);
-}
-</script>
+    <!-- Rating Popup -->
+    <div id="ratingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 class="text-xl font-bold mb-4">Rate This Course</h2>
+            <form id="ratingForm" action="{{ url_for('student.rate_course', course_id=course.id) }}" method="POST">
+                <div class="mb-4">
+                    <label for="rating" class="block text-sm font-medium text-gray-700">Rating (0-5)</label>
+                    <input type="number" name="rating" id="rating" min="0" max="5" step="0.1" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="comment" class="block text-sm font-medium text-gray-700">Comment</label>
+                    <textarea name="comment" id="comment" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" rows="3"></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" onclick="closeModal()" class="mr-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function toggleSection(sectionId) {
+                const section = document.getElementById(sectionId);
+                const isHidden = section.classList.contains('hidden');
+                section.classList.toggle('hidden', !isHidden);
+                const arrow = document.getElementById(`arrow-${sectionId}`);
+                arrow.textContent = isHidden ? '▲' : '▼';
+                section.style.height = isHidden ? `${section.scrollHeight}px` : '0';
+                setTimeout(() => {
+                    section.style.height = isHidden ? 'auto' : '0';
+                }, 300);
+            }
+
+            // Attach toggle event to all section buttons
+            const buttons = document.querySelectorAll('button[onclick^="toggleSection"]');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const sectionId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+                    toggleSection(sectionId);
+                });
+            });
+
+            // Handle form submission with AJAX to check completion
+            {% for section in sections %}
+                document.getElementById('complete-form-{{ section.id }}').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: new FormData(this)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'updated') {
+                            alert(data.message); // Notify user of individual completion
+                            location.reload(); // Refresh to update UI
+                        } else if (data.status === 'completed') {
+                            document.getElementById('ratingModal').classList.remove('hidden');
+                            // No immediate redirect—wait for rating submission
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            {% endfor %}
+
+            // Handle rating form submission
+            document.getElementById('ratingForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        closeModal();
+                        location.href = '{{ url_for('student.course_detail', course_id=course.id) }}';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            function closeModal() {
+                document.getElementById('ratingModal').classList.add('hidden');
+            }
+        });
+    </script>
+</div>
 {% endblock %}

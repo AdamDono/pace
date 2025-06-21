@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app.models import Course, Section, Enrollment, EnrollmentSection, Assignment, Quiz, QuizQuestion, QuizAttempt, AssignmentSubmission, Rating
 from app import db
 from datetime import datetime
-from app.decorators import student_required, student_enrolled
+from app.decorators import student_required, student_enrolled,admin_required, teacher_required
 from app.forms import SubmissionForm
 import logging
 import os
@@ -93,40 +93,43 @@ def course_detail(course_id):
 
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required
+@student_required
 def get_section_content(section_id):
-    if current_user.role not in ['student', 'admin']:
-        return "Unauthorized", 403
-    
     section = Section.query.get_or_404(section_id)
-    logger.debug(f"Fetching content for section {section.id}: title={section.title}, type={section.section_type}, content={section.content}, duration={section.duration}")
+    course = Course.query.get_or_404(section.course_id)
+    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
 
-    if current_user.role == 'student':
-        if not student_enrolled(section.course_id):
-            return "Not enrolled or course not approved", 403
-        
-        sections = Section.query.filter_by(course_id=section.course_id).order_by(Section.order).all()
-        section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
-        if section_idx > 0:
-            prev_section = sections[section_idx - 1]
-            prev_enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first()
-            prev_es = EnrollmentSection.query.filter_by(enrollment_id=prev_enrollment.id, section_id=prev_section.id).first()
-            if not prev_es or not prev_es.completed:
-                return "Section locked", 403
+    # Section locking logic
+    sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
+    section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
+    if section_idx > 0:
+        prev_section = sections[section_idx - 1]
+        prev_es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=prev_section.id).first()
+        if not prev_es or not prev_es.completed:
+            flash('Please complete the previous section first.', 'error')
+            return redirect(url_for('student.course_detail', course_id=course.id))
 
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=section.course_id).first_or_404()
+    # Create EnrollmentSection if it doesn't exist
     enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
-    if not enrollment_section and current_user.role == 'student':
+    if not enrollment_section:
         enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
         db.session.add(enrollment_section)
         db.session.commit()
 
-    if request.method == 'POST' and 'mark_completed' in request.form and current_user.role == 'student':
+    # Handle marking as complete
+    if request.method == 'POST' and 'mark_completed' in request.form:
         enrollment_section.completed = True
         enrollment_section.completed_at = datetime.utcnow()
         db.session.commit()
         flash('Section marked as completed.', 'success')
 
-    course = Course.query.get_or_404(section.course_id)
+        # Check if the entire course is completed
+        all_sections = Section.query.filter_by(course_id=course.id).all()
+        all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+        if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+            return jsonify({'status': 'completed', 'course_id': course.id, 'redirect': None})  # No immediate redirect
+        return jsonify({'status': 'updated', 'message': 'Section updated.'})  # Individual section update
+
     return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)
 
 @student_bp.route('/section/<int:section_id>/assignment/<int:assignment_id>/submit', methods=['GET', 'POST'])
@@ -316,3 +319,47 @@ def submit_review(course_id):
     db.session.commit()
     flash('Review submitted successfully!', 'success')
     return redirect(url_for('student.course_detail', course_id=course_id))
+
+
+# New route to handle course rating
+@student_bp.route('/course/<int:course_id>/rate', methods=['POST'])
+@login_required
+@student_required
+def rate_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first_or_404()
+    sections = Section.query.filter_by(course_id=course_id).all()
+    enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+    if all(es.completed for es in enrollment_sections):
+        rating = request.form.get('rating')
+        comment = request.form.get('comment', '')
+        if rating and 0 <= float(rating) <= 5:
+            new_rating = Rating(course_id=course_id, student_id=current_user.id, rating=float(rating), comment=comment, rated_at=datetime.utcnow())
+            db.session.add(new_rating)
+            db.session.commit()
+            flash('Thank you for your feedback!', 'success')
+        else:
+            flash('Please provide a valid rating between 0 and 5.', 'error')
+    return redirect(url_for('student.course_detail', course_id=course_id))
+
+# Admin and teacher view for ratings
+@student_bp.route('/course/<int:course_id>/ratings')
+@login_required
+@admin_required
+def view_ratings(course_id):
+    course = Course.query.get_or_404(course_id)
+    ratings = Rating.query.filter_by(course_id=course_id).all()
+    return render_template('admin/course_ratings.html', course=course, ratings=ratings)
+
+@student_bp.route('/teacher/course/<int:course_id>/ratings')
+@login_required
+@teacher_required
+def teacher_view_ratings(course_id):
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        flash('You can only view ratings for your own courses.', 'error')
+        return redirect(url_for('teacher.dashboard'))
+    ratings = Rating.query.filter_by(course_id=course_id).all()
+    return render_template('teacher/course_ratings.html', course=course, ratings=ratings)
+
+
