@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app.models import Course, Section, Enrollment, EnrollmentSection, Assignment, Quiz, QuizQuestion, QuizAttempt, AssignmentSubmission, Rating
 from app import db
 from datetime import datetime
-from app.decorators import student_required, student_enrolled,admin_required, teacher_required
+from app.decorators import student_required, student_enrolled, admin_required, teacher_required
 from app.forms import SubmissionForm
 import logging
 import os
@@ -31,7 +31,6 @@ def dashboard():
         flash(f"You’ve been enrolled in {', '.join(c.title for c in new_enrollments)}!", 'success')
     return render_template('student/courses.html', courses=enrolled_courses)
 
-# New route for the graph page
 @student_bp.route('/course-progress')
 @login_required
 @student_required
@@ -127,8 +126,8 @@ def get_section_content(section_id):
         all_sections = Section.query.filter_by(course_id=course.id).all()
         all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
         if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
-            return jsonify({'status': 'completed', 'course_id': course.id, 'redirect': None})  # No immediate redirect
-        return jsonify({'status': 'updated', 'message': 'Section updated.'})  # Individual section update
+            return jsonify({'status': 'completed', 'course_id': course.id, 'redirect': None})
+        return jsonify({'status': 'updated', 'message': 'Section updated.'})
 
     return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)
 
@@ -148,7 +147,6 @@ def submit_assignment(section_id, assignment_id):
     form = SubmissionForm()
     if form.validate_on_submit():
         file_path = None
-        # Handle file upload if present
         if 'file' in request.files and request.files['file'].filename:
             file = request.files['file']
             if file and allowed_file(file.filename, allowed_extensions={'pdf', 'doc', 'docx'}):
@@ -269,7 +267,6 @@ def view_pdf(section_id):
     db.session.commit()
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], section.content)
 
-# Added new get_section_content route with unique endpoint to avoid conflict
 @student_bp.route('/section/<int:section_id>/content_new', methods=['GET', 'POST'])
 @student_required
 def get_section_content_new(section_id):
@@ -320,8 +317,6 @@ def submit_review(course_id):
     flash('Review submitted successfully!', 'success')
     return redirect(url_for('student.course_detail', course_id=course_id))
 
-
-# New route to handle course rating
 @student_bp.route('/course/<int:course_id>/rate', methods=['POST'])
 @login_required
 @student_required
@@ -334,7 +329,13 @@ def rate_course(course_id):
         rating = request.form.get('rating')
         comment = request.form.get('comment', '')
         if rating and 0 <= float(rating) <= 5:
-            new_rating = Rating(course_id=course_id, student_id=current_user.id, rating=float(rating), comment=comment, rated_at=datetime.utcnow())
+            new_rating = Rating(
+                course_id=course_id,
+                user_id=current_user.id,  # Changed from student_id to user_id
+                rating=float(rating),
+                comment=comment,
+                rated_at=datetime.utcnow()
+            )
             db.session.add(new_rating)
             db.session.commit()
             flash('Thank you for your feedback!', 'success')
@@ -342,7 +343,6 @@ def rate_course(course_id):
             flash('Please provide a valid rating between 0 and 5.', 'error')
     return redirect(url_for('student.course_detail', course_id=course_id))
 
-# Admin and teacher view for ratings
 @student_bp.route('/course/<int:course_id>/ratings')
 @login_required
 @admin_required
@@ -361,5 +361,3 @@ def teacher_view_ratings(course_id):
         return redirect(url_for('teacher.dashboard'))
     ratings = Rating.query.filter_by(course_id=course_id).all()
     return render_template('teacher/course_ratings.html', course=course, ratings=ratings)
-
-

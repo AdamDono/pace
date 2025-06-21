@@ -97,13 +97,13 @@
         {% if sections %}
             <div class="space-y-4">
                 {% for section in sections %}
-                    <div class="bg-white shadow-lg rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-                        <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center focus:outline-none"
-                                onclick="toggleSection('section-{{ section.id }}')">
+                    <div class="bg-white shadow-lg rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 {% if section.id in locked_sections %} opacity-50 cursor-not-allowed {% endif %}">
+                        <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center focus:outline-none {% if section.id in locked_sections %} cursor-not-allowed {% else %} cursor-pointer {% endif %}"
+                                onclick="{% if section.id not in locked_sections %}toggleSection('section-{{ section.id }}'){% endif %}">
                             <span class="font-medium text-gray-800">{{ section.title }}</span>
                             <span class="text-gray-500" id="arrow-{{ section.id }}">▼</span>
                         </button>
-                        <div id="section-{{ section.id }}" class="p-4 hidden">
+                        <div id="section-{{ section.id }}" class="p-4 hidden {% if section.id in locked_sections %} hidden {% endif %}">
                             {% if section.section_type == 'text' %}
                                 <p class="text-gray-700">{{ section.content|safe }}</p>
                             {% elif section.section_type == 'video' and section.video_url %}
@@ -262,7 +262,6 @@
                 }, 300);
             }
 
-            // Attach toggle event to all section buttons
             const buttons = document.querySelectorAll('button[onclick^="toggleSection"]');
             buttons.forEach(button => {
                 button.addEventListener('click', function(e) {
@@ -271,7 +270,6 @@
                 });
             });
 
-            // Handle form submission with AJAX to check completion
             {% for section in sections %}
                 document.getElementById('complete-form-{{ section.id }}').addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -282,18 +280,16 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'updated') {
-                            alert(data.message); // Notify user of individual completion
-                            location.reload(); // Refresh to update UI
+                            alert(data.message);
+                            location.reload();
                         } else if (data.status === 'completed') {
                             document.getElementById('ratingModal').classList.remove('hidden');
-                            // No immediate redirect—wait for rating submission
                         }
                     })
                     .catch(error => console.error('Error:', error));
                 });
             {% endfor %}
 
-            // Handle rating form submission
             document.getElementById('ratingForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 fetch(this.action, {
