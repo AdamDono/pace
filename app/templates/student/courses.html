@@ -2,6 +2,11 @@
 {% block content %}
 <div class="container mx-auto p-6">
     <h1 class="text-2xl font-bold mb-6">Your Courses</h1>
+    <div class="mb-4">
+        <a href="{{ url_for('student.course_progress') }}" class="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
+            View Course Progress
+        </a>
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         {% for course in courses %}
         <a href="{{ url_for('student.course_detail', course_id=course.id) }}"

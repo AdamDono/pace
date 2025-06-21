@@ -31,6 +31,30 @@ def dashboard():
         flash(f"You’ve been enrolled in {', '.join(c.title for c in new_enrollments)}!", 'success')
     return render_template('student/courses.html', courses=enrolled_courses)
 
+# New route for the graph page
+@student_bp.route('/course-progress')
+@login_required
+@student_required
+def course_progress():
+    enrolled_courses = Course.query.join(Enrollment)\
+        .filter(Enrollment.student_id == current_user.id)\
+        .filter(Course.status == 'approved')\
+        .all()
+    course_progress = []
+    for course in enrolled_courses:
+        sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first()
+        enrollment_sections = {es.section_id: es for es in enrollment.sections} if enrollment else {}
+        total_sections = len(sections)
+        completed_sections = sum(1 for es in enrollment_sections.values() if es.completed)
+        completion_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
+        course_progress.append({
+            'id': course.id,
+            'title': course.title,
+            'completion': completion_percentage
+        })
+    return render_template('student/course_progress.html', courses=enrolled_courses, course_progress=course_progress)
+
 @student_bp.route('/course/<int:course_id>')
 @login_required
 @student_required

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Course Progress{% endblock %}
+{% block content %}
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Your Course Progress</h1>
+    {% if course_progress %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for progress in course_progress %}
+                <div class="bg-white shadow-lg rounded-lg p-4">
+                    <h2 class="text-xl font-semibold mb-2 text-gray-700">{{ progress.title }}</h2>
+                    <div class="h-64">
+                        <canvas id="chart-{{ progress.id }}" class="w-full h-full"></canvas>
+                    </div>
+                    <p class="text-gray-600 mt-2">Completion: {{ progress.completion|round(1) }}%</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-500">No progress data available.</p>
+    {% endif %}
+    <div class="mt-6">
+        <a href="{{ url_for('student.dashboard') }}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for progress in course_progress %}
+            const ctx = document.getElementById('chart-{{ progress.id }}').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Completion'],
+                    datasets: [{
+                        label: 'Progress (%)',
+                        data: [{{ progress.completion }}],
+                        backgroundColor: 'rgba(34, 197, 94, 0.8)', // Green shade
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { stepSize: 20 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    maintainAspectRatio: false
+                }
+            });
+        {% endfor %}
+    });
+</script>
+{% endblock %}
