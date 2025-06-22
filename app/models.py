@@ -1,10 +1,7 @@
 import os
 from datetime import datetime
 from flask_login import UserMixin
-import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
-
-# Import db directly
 from app import db
 
 class User(db.Model, UserMixin):
@@ -12,8 +9,16 @@ class User(db.Model, UserMixin):
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)  # Added
     password_hash = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False)
+
+    # Explicit __init__ to handle all fields
+    def __init__(self, email, username, password, role):
+        self.email = email
+        self.username = username
+        self.password = password  # Triggers @password.setter
+        self.role = role
 
     @property
     def password(self):
@@ -31,6 +36,7 @@ class User(db.Model, UserMixin):
 
     # Relationship to courses (as teacher), with renamed backref
     courses = db.relationship('Course', backref='instructor', lazy=True)
+    ratings = db.relationship('Rating', back_populates='user')  # Add this line
 
     def is_teacher_for_course(self, course_id):
         """Check if the user is the teacher for a specific course."""
@@ -63,6 +69,7 @@ class Course(db.Model):
                              order_by='Section.order',
                              cascade='all, delete-orphan')
     enrollments = db.relationship('Enrollment', back_populates='course', cascade='all, delete-orphan')
+    ratings = db.relationship('Rating', back_populates='course', cascade='all, delete-orphan')
 
 class Section(db.Model):
     __tablename__ = 'sections'
@@ -168,12 +175,12 @@ class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
-    rating = db.Column(db.Integer)
-    review = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    rating = db.Column(db.Float)
+    comment = db.Column(db.Text)
+    rated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship('User', backref='ratings')
-    course = db.relationship('Course', backref='ratings')
+    user = db.relationship('User', back_populates='ratings')
+    course = db.relationship('Course', back_populates='ratings')
 
 class QuizAnswer(db.Model):
     __tablename__ = 'quiz_answers'
