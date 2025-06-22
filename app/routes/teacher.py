@@ -1,8 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import Course, db, Section, User, Enrollment, Assignment, Quiz, QuizQuestion, QuizAttempt, QuizAnswer, AssignmentSubmission
-from app.forms import CourseForm, AssignmentForm, QuizForm, QuestionForm
 from app.decorators import teacher_required
 import os
 import uuid
@@ -18,14 +16,18 @@ def allowed_file(filename, allowed_extensions=None):
 @teacher_bp.route('/dashboard')
 @login_required
 def dashboard():
+    from app.models import Course  # Moved here
     if current_user.role != 'teacher':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('auth.login'))
-    return render_template('teacher/dashboard.html')
+    courses = Course.query.filter_by(teacher_id=current_user.id).all()
+    return render_template('teacher/dashboard.html', courses=courses)
 
 @teacher_bp.route('/create-course', methods=['GET', 'POST'])
 @teacher_required
 def create_course():
+    from app.models import Course, db  # Moved here
+    from app.forms import CourseForm  # Moved here
     form = CourseForm()
     if form.validate_on_submit():
         try:
@@ -109,6 +111,8 @@ def create_course():
 @teacher_bp.route('/edit-course/<int:course_id>', methods=['GET', 'POST'])
 @teacher_required
 def edit_course(course_id):
+    from app.models import Course, db  # Moved here
+    from app.forms import CourseForm  # Moved here
     course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id or course.status == 'approved':
         abort(403)
@@ -183,6 +187,7 @@ def edit_course(course_id):
 @teacher_bp.route('/my-courses')
 @teacher_required
 def my_courses():
+    from app.models import Course  # Moved here
     status_filter = request.args.get('status', 'all')
     query = Course.query.filter_by(teacher_id=current_user.id)\
                         .order_by(Course.created_at.desc())
@@ -194,6 +199,7 @@ def my_courses():
 @teacher_bp.route('/course/<int:course_id>/enroll-students', methods=['GET', 'POST'])
 @teacher_required
 def enroll_students(course_id):
+    from app.models import Course, User, Enrollment, db  # Moved here
     course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id:
         abort(403)
@@ -223,6 +229,7 @@ def enroll_students(course_id):
 @teacher_bp.route('/course/<int:course_id>/add-section', methods=['GET', 'POST'])
 @teacher_required
 def create_section(course_id):
+    from app.models import Course, Section, db  # Moved here
     course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id:
         abort(403)
@@ -252,6 +259,7 @@ def create_section(course_id):
 @login_required
 @teacher_required
 def manage_sections(course_id):
+    from app.models import Course, Section, Rating, User, db  # Moved here
     course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id:
         flash('You are not authorized to manage this course.', 'danger')
@@ -300,11 +308,14 @@ def manage_sections(course_id):
         return redirect(url_for('teacher.manage_sections', course_id=course_id))
 
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
-    return render_template('teacher/section_editor.html', course=course, sections=sections)
+    ratings = Rating.query.filter_by(course_id=course_id).join(User, Rating.user_id == User.id).all()
+    return render_template('teacher/section_editor.html', course=course, sections=sections, ratings=ratings)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-assignment', methods=['GET', 'POST'])
 @teacher_required
 def add_assignment(course_id, section_id):
+    from app.models import Course, Section, Assignment, db  # Moved here
+    from app.forms import AssignmentForm  # Moved here
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     if section.course_id != course_id or course.teacher_id != current_user.id:
@@ -327,6 +338,8 @@ def add_assignment(course_id, section_id):
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-quiz', methods=['GET', 'POST'])
 @teacher_required
 def add_quiz(course_id, section_id):
+    from app.models import Course, Section, Quiz, QuizQuestion, db  # Moved here
+    from app.forms import QuizForm  # Moved here
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     if section.course_id != course_id or course.teacher_id != current_user.id:
@@ -353,6 +366,7 @@ def add_quiz(course_id, section_id):
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submissions')
 @teacher_required
 def view_submissions(course_id, section_id):
+    from app.models import Course, Section, Assignment, AssignmentSubmission  # Moved here
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     if section.course_id != course_id or course.teacher_id != current_user.id:
@@ -368,6 +382,7 @@ def view_submissions(course_id, section_id):
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submission/<int:submission_id>/review', methods=['POST'])
 @teacher_required
 def review_submission(course_id, section_id, submission_id):
+    from app.models import Course, Section, AssignmentSubmission, db  # Moved here
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     submission = AssignmentSubmission.query.get_or_404(submission_id)
@@ -385,6 +400,7 @@ def review_submission(course_id, section_id, submission_id):
 @teacher_bp.route('/course/<int:course_id>/reorder-sections', methods=['POST'])
 @teacher_required
 def reorder_sections(course_id):
+    from app.models import Course, Section, db  # Moved here
     course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id:
         abort(403)
@@ -403,6 +419,7 @@ def reorder_sections(course_id):
 @teacher_bp.route('/section/<int:section_id>/delete', methods=['POST'])
 @teacher_required
 def delete_section(section_id):
+    from app.models import Section, db  # Moved here
     section = db.session.get(Section, section_id) or abort(404)
     course_id = section.course_id
     
@@ -419,11 +436,11 @@ def delete_section(section_id):
     
     return redirect(url_for('teacher.manage_sections', course_id=course_id))
 
-
 @teacher_bp.route('/submit_feedback/<int:submission_id>', methods=['POST'])
 @login_required
 @teacher_required
 def submit_feedback(submission_id):
+    from app.models import AssignmentSubmission, db  # Moved here
     submission = AssignmentSubmission.query.get_or_404(submission_id)
     if not current_user.is_teacher_for_course(submission.assignment.section.course_id):
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
@@ -437,6 +454,7 @@ def submit_feedback(submission_id):
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz-attempts')
 @teacher_required
 def view_quiz_attempts(course_id, section_id):
+    from app.models import Course, Section, Quiz, QuizAttempt, User, QuizAnswer  # Moved here
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     if section.course_id != course_id or course.teacher_id != current_user.id:
@@ -461,3 +479,15 @@ def view_quiz_attempts(course_id, section_id):
             })
 
     return render_template('teacher/view_quiz_attempts.html', course=course, section=section, quiz_attempts=quiz_attempts)
+
+@teacher_bp.route('/course/<int:course_id>/ratings', methods=['GET'])
+@login_required
+@teacher_required
+def teacher_view_ratings(course_id):
+    from app.models import Course, Rating, User, db  # Moved here
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        flash('You can only view ratings for your own courses.', 'error')
+        return redirect(url_for('teacher.dashboard'))
+    ratings = Rating.query.filter_by(course_id=course_id).join(User, Rating.user_id == User.id).all()
+    return render_template('teacher/course_ratings.html', course=course, ratings=ratings)
