@@ -13,6 +13,13 @@
             {% endfor %}
         </div>
         <div>
+            {{ form.username.label(class="block mb-1") }}
+            {{ form.username(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+            {% for error in form.username.errors %}
+                <span class="text-red-500 text-sm">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div>
             {{ form.password.label(class="block mb-1") }}
             {{ form.password(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
             {% for error in form.password.errors %}
@@ -29,6 +36,9 @@
         <div>
             {{ form.role.label(class="block mb-1") }}
             {{ form.role(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+            {% for error in form.role.errors %}
+                <span class="text-red-500 text-sm">{{ error }}</span>
+            {% endfor %}
         </div>
         <button type="submit" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 transition">
             Register
