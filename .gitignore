@@ -2,3 +2,49 @@ venv/
 __pycache__/
 .env
 *.pycflask_session/
+flask_session/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+env/
+
+# Flask session & instance folders
+flask_session/
+instance/
+
+# IDEs and editor settings
+.vscode/
+.idea/
+*.swp
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Migrations (optional — only if you recreate them regularly)
+#migrations/
+
+# Database files (SQLite, if used)
+*.db
+*.sqlite3
+
+# Logs and temp
+*.log
+*.tmp
+
+# Environment variables
+.env
+
+# Coverage and testing
+.coverage
+htmlcov/
+pytest_cache/
