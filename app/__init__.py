@@ -31,9 +31,8 @@ def create_app():
     def average_filter(items):
         if not items:
             return 0
-        # Convert generator to list to get length and sum
         items_list = list(items)
-        if not items_list:  # Check if the list is empty after conversion
+        if not items_list:
             return 0
         return sum(items_list) / len(items_list)
 
@@ -48,8 +47,8 @@ def create_app():
     # Configure uploads
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
-    app.config['WTF_CSRF_ENABLED'] = False
-    app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
+    app.config['WTF_CSRF_ENABLED'] = True  # Enabled for security
+    app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx'}  # Updated to match forms
 
     # Configure session
     app.config['SESSION_TYPE'] = 'filesystem'

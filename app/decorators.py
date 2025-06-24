@@ -3,7 +3,6 @@ from flask import abort
 from flask_login import current_user
 from app.models import User
 
-
 def student_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -33,14 +32,6 @@ def teacher_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role != 'teacher':
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
-
-def student_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'student':
             abort(403)
         return f(*args, **kwargs)
     return decorated_function

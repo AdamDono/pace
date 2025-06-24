@@ -299,8 +299,11 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
+                        alert(data.message);
                         closeModal();
-                        location.href = '{{ url_for('student.course_detail', course_id=course.id) }}';
+                        location.reload();
+                    } else {
+                        alert(data.message);
                     }
                 })
                 .catch(error => console.error('Error:', error));
