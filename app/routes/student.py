@@ -319,12 +319,10 @@ def get_section_content_new(section_id):
 @login_required
 @student_required
 def rate_course(course_id):
-    from app.models import Course, Enrollment, Section, EnrollmentSection, Rating, db  # Moved here
+    from app.models import Course, Enrollment, Rating, db
     course = Course.query.get_or_404(course_id)
     enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first_or_404()
-    sections = Section.query.filter_by(course_id=course_id).all()
-    enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
-    if all(es.completed for es in enrollment_sections):
+    if all(es.completed for es in enrollment.sections):
         rating = request.form.get('rating')
         comment = request.form.get('comment', '')
         if rating and 0 <= float(rating) <= 5:
@@ -337,10 +335,9 @@ def rate_course(course_id):
             )
             db.session.add(new_rating)
             db.session.commit()
-            flash('Thank you for your feedback!', 'success')
-        else:
-            flash('Please provide a valid rating between 0 and 5.', 'error')
-    return redirect(url_for('student.course_detail', course_id=course_id))
+            return jsonify({'status': 'success', 'message': 'Thank you for your feedback!'})
+        return jsonify({'status': 'error', 'message': 'Please provide a valid rating between 0 and 5.'}), 400
+    return jsonify({'status': 'error', 'message': 'Course not completed.'}), 403
 
 @student_bp.route('/course/<int:course_id>/ratings')
 @login_required
