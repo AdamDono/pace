@@ -3,7 +3,7 @@ from app.models import User
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+
 load_dotenv()
 
 app = create_app()
@@ -11,7 +11,8 @@ app = create_app()
 def ensure_admin_exists():
     """Ensure there's at least one admin user in the system"""
     with app.app_context():
-        # Check if any admin exists
+        
+        
         admin_exists = db.session.query(
             db.session.query(User).filter_by(role='admin').exists()
         ).scalar()
@@ -21,7 +22,7 @@ def ensure_admin_exists():
                 email=os.getenv('ADMIN_EMAIL', 'admin@example.com'),
                 role='admin'
             )
-            admin.password = os.getenv('ADMIN_PASSWORD', 'adminpassword')  # Use the setter
+            admin.password = os.getenv('ADMIN_PASSWORD', 'adminpassword') 
             db.session.add(admin)
             try:
                 db.session.commit()
@@ -44,7 +45,7 @@ def check_database_connection():
    
 
 if __name__ == '__main__':
-    # Verify database connection first
+   
     if not check_database_connection():
         exit(1)
     
