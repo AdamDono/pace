@@ -356,8 +356,10 @@ def view_ratings(course_id):
 @student_required
 def generate_certificate(enrollment_id):
     from app.models import Enrollment, db
+    logger.debug(f"Generating certificate for enrollment_id: {enrollment_id}")  # Debug log
     enrollment = Enrollment.query.get_or_404(enrollment_id)
     if enrollment.student_id != current_user.id or enrollment.certificate_path:
+        logger.warning(f"Unauthorized or duplicate certificate request for enrollment_id: {enrollment_id}")
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 403
 
     course = enrollment.course
@@ -378,15 +380,18 @@ def generate_certificate(enrollment_id):
 
     enrollment.certificate_path = certificate_filename
     db.session.commit()
+    logger.info(f"Certificate generated successfully for enrollment_id: {enrollment_id}")
     flash('Certificate generated successfully!', 'success')
     return jsonify({'status': 'success', 'message': 'Certificate generated', 'certificate_path': certificate_filename})
 
-@student_bp.route('/student/certificate/<int:enrollment_id>')
+@student_bp.route('/student/serve_certificate/<int:enrollment_id>')
 @login_required
 @student_required
 def serve_certificate(enrollment_id):
     from app.models import Enrollment
+    logger.debug(f"Serving certificate for enrollment_id: {enrollment_id}")  # Debug log
     enrollment = Enrollment.query.get_or_404(enrollment_id)
     if enrollment.student_id != current_user.id or not enrollment.certificate_path:
+        logger.warning(f"Unauthorized or no certificate for enrollment_id: {enrollment_id}")
         abort(403)
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], enrollment.certificate_path, as_attachment=True)
