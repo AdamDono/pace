@@ -7,6 +7,8 @@ import os
 from uuid import uuid4
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -94,7 +96,8 @@ def course_detail(course_id):
                          sections=sections,
                          enrollment_sections=enrollment_sections,
                          locked_sections=locked_sections,
-                         completion_percentage=completion_percentage)
+                         completion_percentage=completion_percentage,
+                         enrollment=enrollment)
 
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required
@@ -347,3 +350,48 @@ def view_ratings(course_id):
     course = Course.query.get_or_404(course_id)
     ratings = Rating.query.filter_by(course_id=course_id).all()
     return render_template('admin/course_ratings.html', course=course, ratings=ratings)
+
+@student_bp.route('/student/generate_certificate/<int:enrollment_id>', methods=['POST'])
+@login_required
+@student_required
+def generate_certificate(enrollment_id):
+    from app.models import Enrollment, db
+    logger.debug(f"Generating certificate for enrollment_id: {enrollment_id}")  # Debug log
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    if enrollment.student_id != current_user.id or enrollment.certificate_path:
+        logger.warning(f"Unauthorized or duplicate certificate request for enrollment_id: {enrollment_id}")
+        return jsonify({'status': 'error', 'message': 'Invalid request'}), 403
+
+    course = enrollment.course
+    user_name = current_user.username or current_user.email.split('@')[0]
+    completion_date = datetime.utcnow().strftime('%Y-%m-%d')
+    certificate_filename = f"certificate_{enrollment.id}_{int(datetime.utcnow().timestamp())}.pdf"
+    certificate_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate_filename)
+
+    c = canvas.Canvas(certificate_path, pagesize=letter)
+    c.setFont("Helvetica-Bold", 24)
+    c.drawString(100, 750, "Certificate of Completion")
+    c.setFont("Helvetica", 16)
+    c.drawString(100, 700, f"Awarded to: {user_name}")
+    c.drawString(100, 650, f"Course: {course.title}")
+    c.drawString(100, 600, f"Completed on: {completion_date}")
+    c.drawString(100, 550, "Signature: [Issued by xAI]")
+    c.save()
+
+    enrollment.certificate_path = certificate_filename
+    db.session.commit()
+    logger.info(f"Certificate generated successfully for enrollment_id: {enrollment_id}")
+    flash('Certificate generated successfully!', 'success')
+    return jsonify({'status': 'success', 'message': 'Certificate generated', 'certificate_path': certificate_filename})
+
+@student_bp.route('/student/serve_certificate/<int:enrollment_id>')
+@login_required
+@student_required
+def serve_certificate(enrollment_id):
+    from app.models import Enrollment
+    logger.debug(f"Serving certificate for enrollment_id: {enrollment_id}")  # Debug log
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    if enrollment.student_id != current_user.id or not enrollment.certificate_path:
+        logger.warning(f"Unauthorized or no certificate for enrollment_id: {enrollment_id}")
+        abort(403)
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], enrollment.certificate_path, as_attachment=True)
