@@ -245,6 +245,10 @@
                     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit</button>
                 </div>
             </form>
+            <div id="certificateSection" class="mt-4 hidden">
+                <button id="generateCertificateBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onclick="generateCertificate()">Generate Certificate</button>
+                <a id="certificateLink" href="#" class="ml-2 text-blue-600 hover:underline hidden">View/Download Certificate</a>
+            </div>
         </div>
     </div>
 
@@ -300,14 +304,41 @@
                 .then(data => {
                     if (data.status === 'success') {
                         alert(data.message);
-                        closeModal();
-                        location.reload();
+                        document.getElementById('certificateSection').classList.remove('hidden');
+                        document.querySelectorAll('#ratingForm input, #ratingForm textarea, #ratingForm button[type="submit"]').forEach(el => el.disabled = true);
                     } else {
                         alert(data.message);
                     }
                 })
                 .catch(error => console.error('Error:', error));
             });
+
+            function generateCertificate() {
+                const enrollmentId = {{ enrollment.id if enrollment else 'null' }};
+                if (enrollmentId) {
+                    const baseUrl = '{{ url_for('student.generate_certificate', enrollment_id=0) }}'.replace('/0', '/'); // Base URL with placeholder
+                    const fullUrl = baseUrl + enrollmentId;
+                    fetch(fullUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const certificateLink = document.getElementById('certificateLink');
+                            certificateLink.href = '{{ url_for('student.serve_certificate', enrollment_id=0) }}'.replace('/0', '/') + enrollmentId; // Corrected endpoint
+                            certificateLink.classList.remove('hidden');
+                            document.getElementById('generateCertificateBtn').disabled = true;
+                            alert(data.message);
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                } else {
+                    alert('Enrollment ID is not available.');
+                }
+            }
 
             function closeModal() {
                 document.getElementById('ratingModal').classList.add('hidden');
