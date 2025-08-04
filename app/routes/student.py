@@ -197,7 +197,7 @@ def take_quiz(section_id, quiz_id):
     if attempt_count >= 3:
         flash('You have reached the maximum of 3 attempts for this quiz.', 'warning')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
-
+    
     if request.method == 'POST':
         score = 0
         total = len(questions)
@@ -361,22 +361,31 @@ def generate_certificate(enrollment_id):
 
     c = canvas.Canvas(certificate_path, pagesize=letter)
     
-    # Logo with transparency mask
+    # Top logo centered
     logo_path = os.path.join(current_app.static_folder, 'images', 'xai_logo.png')
     if os.path.exists(logo_path):
-        logger.debug(f"Adding logo from {logo_path}")
-        c.drawImage(logo_path, 50, 720, width=80, height=40, mask='auto')  # 'auto' handles transparency
+        logger.debug(f"Adding top logo from {logo_path}")
+        c.drawImage(logo_path, (letter[0] - 80) / 2, 750, width=80, height=40, mask='auto')  # Centered at top
     else:
         logger.warning(f"Logo not found at {logo_path}")
 
-    # Content area with black text
+    # Content area with black text and custom font sizes
     c.setFillColor(HexColor('#000000'))  # Black text
-    c.setFont("Helvetica", 16)
+    c.setFont("Helvetica", 30)  # Larger title
     c.drawCentredString(letter[0] / 2, 600, "Certificate of Completion")
-    c.drawCentredString(letter[0] / 2, 550, f"Awarded to: {user_name}")
-    c.drawCentredString(letter[0] / 2, 500, f"Course: {enrollment.course.title}")
+    c.setFont("Helvetica", 18)  # Medium name
+    c.drawCentredString(letter[0] / 2, 550, f" Awarded To{user_name}")
+    c.setFont("Helvetica", 10)  # Smaller participation text
+    c.drawCentredString(letter[0] / 2, 500, "For participating in the Creative Technologist UIUX for three months held by Shaper on behalf of Oliver Agency.")
+    c.setFont("Helvetica", 16)  # Default date
     c.drawCentredString(letter[0] / 2, 450, f"Completed on: {datetime.utcnow().strftime('%Y-%m-%d')}")
-    c.drawCentredString(letter[0] / 2, 400, "Signature: [Issued by xAI]")
+    c.setFont("Helvetica", 16)  # Default signature
+    c.drawCentredString(letter[0] / 2, 400, "Signature: Pce Academy ]")
+
+    # Bottom logo centered
+    if os.path.exists(logo_path):
+        logger.debug(f"Adding bottom logo from {logo_path}")
+        c.drawImage(logo_path, (letter[0] - 80) / 2, 100, width=80, height=40, mask='auto')  # Centered at bottom
 
     # Save the PDF
     logger.debug(f"Saving certificate to {certificate_path}")
