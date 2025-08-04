@@ -361,34 +361,25 @@ def generate_certificate(enrollment_id):
 
     c = canvas.Canvas(certificate_path, pagesize=letter)
     
-    # Add border
-    c.setStrokeColor(HexColor('#1E40AF'))  # Dark blue border
-    c.setLineWidth(5)
-    c.rect(50, 50, letter[0] - 100, letter[1] - 100)
-
-    # Add logo (assuming a static logo file, adjust path as needed)
-    logo_path = os.path.join(current_app.static_folder, 'images', 'xai_logo.png')  # Update with your logo path
+    # Logo with transparency mask
+    logo_path = os.path.join(current_app.static_folder, 'images', 'xai_logo.png')
     if os.path.exists(logo_path):
-        c.drawImage(logo_path, 50, 700, width=100, height=50)
+        logger.debug(f"Adding logo from {logo_path}")
+        c.drawImage(logo_path, 50, 720, width=80, height=40, mask='auto')  # 'auto' handles transparency
+    else:
+        logger.warning(f"Logo not found at {logo_path}")
 
-    # Set background color
-    c.setFillColor(HexColor('#F1F5F9'))  # Light gray background
-    c.rect(60, 60, letter[0] - 120, letter[1] - 120, fill=1)
-
-    # Title
-    c.setFont("Helvetica-Bold", 30)
-    c.setFillColor(HexColor('#1E40AF'))  # Dark blue text
-    c.drawCentredString(letter[0] / 2, 650, "Certificate of Completion")
-
-    # Details
-    c.setFont("Helvetica", 18)
+    # Content area with black text
     c.setFillColor(HexColor('#000000'))  # Black text
-    c.drawString(100, 580, f"Awarded to: {user_name}")
-    c.drawString(100, 540, f"Course: {enrollment.course.title}")
-    c.drawString(100, 500, f"Completed on: {datetime.utcnow().strftime('%Y-%m-%d')}")
-    c.drawString(100, 460, "Signature: [Issued by xAI]")
+    c.setFont("Helvetica", 16)
+    c.drawCentredString(letter[0] / 2, 600, "Certificate of Completion")
+    c.drawCentredString(letter[0] / 2, 550, f"Awarded to: {user_name}")
+    c.drawCentredString(letter[0] / 2, 500, f"Course: {enrollment.course.title}")
+    c.drawCentredString(letter[0] / 2, 450, f"Completed on: {datetime.utcnow().strftime('%Y-%m-%d')}")
+    c.drawCentredString(letter[0] / 2, 400, "Signature: [Issued by xAI]")
 
     # Save the PDF
+    logger.debug(f"Saving certificate to {certificate_path}")
     c.save()
 
     enrollment.certificate_path = certificate_filename
@@ -406,4 +397,4 @@ def serve_certificate(enrollment_id):
     if enrollment.student_id != current_user.id or not enrollment.certificate_path:
         logger.warning(f"Unauthorized or no certificate for enrollment_id: {enrollment_id}")
         abort(403)
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], enrollment.certificate_path, as_attachment=True)  # Fixed syntax
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], enrollment.certificate_path, as_attachment=True)
