@@ -7,6 +7,14 @@ import os
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+@admin_bp.context_processor
+def inject_pending_count():
+    """Inject pending course count into all admin templates"""
+    if current_user.is_authenticated and current_user.role == 'admin':
+        pending_count = Course.query.filter_by(status='pending').count()
+        return dict(pending_count=pending_count)
+    return dict(pending_count=0)
+
 @admin_bp.route('/dashboard')
 @admin_required
 def dashboard():
@@ -63,3 +71,130 @@ def course_detail(course_id):
 @admin_required
 def serve_pdf(filename):
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
+@admin_bp.route('/users')
+@admin_required
+def manage_users():
+    users = User.query.all()
+    return render_template('admin/users.html', users=users)
+
+@admin_bp.route('/create-user', methods=['GET', 'POST'])
+@admin_required
+def create_user():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        role = request.form.get('role')
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('User with this email already exists', 'danger')
+            return redirect(url_for('admin.create_user'))
+        
+        # Create new user
+        user = User(
+            email=email,
+            username=username,
+            password=password,
+            role=role
+        )
+        db.session.add(user)
+        db.session.commit()
+        flash(f'User {email} created successfully!', 'success')
+        return redirect(url_for('admin.manage_users'))
+    
+    return render_template('admin/create_user.html')
+
+@admin_bp.route('/create-teacher', methods=['GET', 'POST'])
+@admin_required
+def create_teacher():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        bio = request.form.get('bio')
+        specialization = request.form.get('specialization')
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('User with this email already exists', 'danger')
+            return redirect(url_for('admin.create_teacher'))
+        
+        # Create new teacher
+        teacher = User(
+            email=email,
+            username=username,
+            password=password,
+            role='teacher',
+            first_name=first_name,
+            last_name=last_name,
+            bio=bio,
+            specialization=specialization
+        )
+        db.session.add(teacher)
+        db.session.commit()
+        flash(f'Teacher {first_name} {last_name} created successfully!', 'success')
+        return redirect(url_for('admin.manage_users'))
+    
+    return render_template('admin/create_teacher.html')
+
+@admin_bp.route('/teachers')
+@admin_required
+def manage_teachers():
+    teachers = User.query.filter_by(role='teacher').all()
+    return render_template('admin/teachers.html', teachers=teachers)
+
+@admin_bp.route('/delete-user/<int:user_id>', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    from app.models import AssignmentSubmission, QuizAttempt, Rating
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent deleting yourself
+    if user.id == current_user.id:
+        flash('You cannot delete your own account!', 'danger')
+        return redirect(url_for('admin.manage_users'))
+    
+    # Prevent deleting other admins
+    if user.role == 'admin':
+        flash('Cannot delete administrator accounts!', 'danger')
+        return redirect(url_for('admin.manage_users'))
+    
+    try:
+        email = user.email
+        
+        # Delete all related records that don't have cascade delete
+        # Delete assignment submissions
+        AssignmentSubmission.query.filter_by(student_id=user.id).delete()
+        
+        # Delete quiz attempts
+        QuizAttempt.query.filter_by(student_id=user.id).delete()
+        
+        # Delete ratings
+        Rating.query.filter_by(user_id=user.id).delete()
+        
+        # Enrollments will be deleted automatically due to cascade='all, delete-orphan'
+        
+        # If user is a teacher, handle their courses
+        if user.role == 'teacher':
+            # Delete all courses created by this teacher
+            # This will cascade delete sections, quizzes, enrollments, etc.
+            for course in user.courses:
+                db.session.delete(course)
+        
+        # Now delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f'User {email} and all associated data have been deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.manage_users'))

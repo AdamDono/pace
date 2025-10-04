@@ -320,26 +320,25 @@
             }
 
             function generateCertificate() {
-                console.log('Generate Certificate button clicked'); // Debug log
+                console.log('Generate Certificate button clicked');
                 const enrollmentId = {{ enrollment.id if enrollment else 'null' }};
-                console.log('Enrollment ID:', enrollmentId); // Debug log
+                console.log('Enrollment ID:', enrollmentId);
                 if (enrollmentId) {
-                    const baseUrl = '{{ url_for('student.generate_certificate', enrollment_id=0) }}'.replace('/0', '/'); // Base URL with placeholder
-                    const fullUrl = baseUrl + enrollmentId;
-                    console.log('Fetching URL:', fullUrl); // Debug log
-                    fetch(fullUrl, {
+                    const baseUrl = '{{ url_for('student.generate_certificate', enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);
+                    console.log('Fetching URL:', baseUrl);
+                    fetch(baseUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
                     })
                     .then(response => {
-                        console.log('Response status:', response.status); // Debug log
+                        console.log('Response status:', response.status);
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Response data:', data); // Debug log
+                        console.log('Response data:', data);
                         if (data.status === 'success') {
                             const certificateLink = document.getElementById('certificateLink');
-                            certificateLink.href = '{{ url_for('student.serve_certificate', enrollment_id=0) }}'.replace('/0', '/') + enrollmentId; // Corrected endpoint
+                            certificateLink.href = '{{ url_for('student.serve_certificate', enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);
                             certificateLink.classList.remove('hidden');
                             document.getElementById('generateCertificateBtn').disabled = true;
                             alert(data.message);
@@ -348,11 +347,11 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Fetch error:', error); // Enhanced error logging
+                        console.error('Fetch error:', error);
                         alert('An error occurred while generating the certificate. Check console for details.');
                     });
                 } else {
-                    console.log('Enrollment ID is null'); // Debug log
+                    console.log('Enrollment ID is null');
                     alert('Enrollment ID is not available.');
                 }
             }

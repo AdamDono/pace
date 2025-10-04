@@ -10,7 +10,7 @@
 
   <!-- Sections List -->
   <div class="space-y-4">
-    {% for section in course.sections %}
+    {% for section in sections %}
     <div class="bg-white p-4 rounded-lg shadow">
       <h3 class="font-medium">{{ section.title }}</h3>
       <div class="mt-2 prose">{{ section.content|safe }}</div>
@@ -20,6 +20,9 @@
             class="mt-4">
         <button type="submit" class="text-red-500 text-sm">Delete</button>
       </form>
+      
+      <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}" class="text-blue-500 mt-2 inline-block">Add Quiz</a>
+      <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}" class="text-blue-500 mt-2 inline-block ml-4">Add Assignment</a>
     </div>
     {% endfor %}
   </div>
@@ -27,7 +30,7 @@
   <!-- Add Section Form -->
   <div class="mt-8 bg-white p-6 rounded-lg shadow">
     <h2 class="text-xl font-semibold mb-4">Add New Section</h2>
-    <form method="POST" action="{{ url_for('teacher.manage_course', course_id=course.id) }}">
+    <form method="POST" action="{{ url_for('teacher.create_section', course_id=course.id) }}">
       <div class="mb-4"> 
         <label class="block mb-2">Title</label>
         <input type="text" name="title" required class="w-full p-2 border rounded">

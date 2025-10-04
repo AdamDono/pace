@@ -40,6 +40,7 @@ class CourseForm(FlaskForm):
     pdf_upload = FileField('PDF Material', validators=[
         FileAllowed(['pdf'], 'Only PDF files allowed!')
     ])
+    submit = SubmitField('Submit for Approval')  # Added to match the template
 
 class AssignmentForm(FlaskForm):
     title = StringField('Assignment Title', validators=[DataRequired(), Length(max=100)])

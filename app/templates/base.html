@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}PaceAcademy{% endblock %}</title>
+    <title>{% block title %}Pace Academy{% endblock %}</title>
     <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
     <!-- Fallback to CDN if local file fails -->
     <script>
@@ -26,7 +26,12 @@
             <div class="flex justify-between h-16 items-center">
                 <!-- Logo -->
                 <div class="flex-shrink-0">
-                    <a href="/" class="text-2xl font-bold text-blue-600">PaceAcademy</a>
+                    <a href="/" class="flex items-center space-x-2">
+                        <h1 class="text-2xl font-bold">
+                            <span class="text-blue-600">Pace</span>
+                            <span class="text-black">Academy</span>
+                        </h1>
+                    </a>
                 </div>
                 <!-- Desktop Menu -->
                 <div class="hidden sm:flex sm:items-center sm:space-x-6">
@@ -44,6 +49,9 @@
                             </a>
                             <a href="{{ url_for('admin.pending_approvals') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                                 Approvals
+                            </a>
+                            <a href="{{ url_for('admin.manage_users') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
+                                Users
                             </a>
                         {% endif %}
                         
@@ -79,9 +87,6 @@
                     {% else %}
                         <a href="{{ url_for('auth.login') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                             Login
-                        </a>
-                        <a href="{{ url_for('auth.register') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
-                            Register
                         </a>
                     {% endif %}
                 </div>
@@ -145,9 +150,6 @@
                     <a href="{{ url_for('auth.login') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
                         Login
                     </a>
-                    <a href="{{ url_for('auth.register') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
-                        Register
-                    </a>
                 {% endif %}
             </div>
         </div>
@@ -176,7 +178,7 @@
     <!-- Fixed Footer -->
     <footer class="bg-gray-800 text-white py-4 fixed bottom-0 w-full z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p>© 2025 PaceAcademy. All rights reserved.</p>
+            <p>© 2025 Pace Academy. All rights reserved.</p>
         </div>
     </footer>
 

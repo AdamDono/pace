@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app
+from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort
 from flask_login import login_required, current_user
 from app.decorators import student_required, student_enrolled, admin_required, teacher_required
 from app.forms import SubmissionForm
@@ -9,6 +9,9 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.colors import HexColor
+from reportlab.lib.units import inch
+from app.models import Course, Enrollment, Section, EnrollmentSection, User, Rating, db  # Correct imports
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -25,7 +28,6 @@ def allowed_file(filename, allowed_extensions=None):
 @login_required
 @student_required
 def dashboard():
-    from app.models import Course, Enrollment  # Moved here
     enrolled_courses = Course.query.join(Enrollment)\
         .filter(Enrollment.student_id == current_user.id)\
         .filter(Course.status == 'approved')\
@@ -41,7 +43,6 @@ def dashboard():
 @login_required
 @student_required
 def course_progress():
-    from app.models import Course, Enrollment, Section, EnrollmentSection  # Moved here
     enrolled_courses = Course.query.join(Enrollment)\
         .filter(Enrollment.student_id == current_user.id)\
         .filter(Course.status == 'approved')\
@@ -65,7 +66,6 @@ def course_progress():
 @login_required
 @student_required
 def course_detail(course_id):
-    from app.models import Course, Enrollment, Section, EnrollmentSection  # Moved here
     if not student_enrolled(course_id):
         return redirect(url_for('auth.login'))
 
@@ -103,7 +103,6 @@ def course_detail(course_id):
 @login_required
 @student_required
 def get_section_content(section_id):
-    from app.models import Section, Course, Enrollment, EnrollmentSection, db  # Moved here
     section = Section.query.get_or_404(section_id)
     course = Course.query.get_or_404(section.course_id)
     enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
@@ -145,7 +144,6 @@ def get_section_content(section_id):
 @login_required
 @student_required
 def submit_assignment(section_id, assignment_id):
-    from app.models import Section, Assignment, Enrollment, AssignmentSubmission, db  # Moved here
     section = Section.query.get_or_404(section_id)
     assignment = Assignment.query.get_or_404(assignment_id)
     if assignment.section_id != section_id or not student_enrolled(section.course_id):
@@ -160,7 +158,7 @@ def submit_assignment(section_id, assignment_id):
         file_path = None
         if 'file' in request.files and request.files['file'].filename:
             file = request.files['file']
-            if file and allowed_file(file.filename):  # Use local allowed_file
+            if file and allowed_file(file.filename):
                 filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
                 file_path = filename
                 file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
@@ -181,7 +179,6 @@ def submit_assignment(section_id, assignment_id):
 @login_required
 @student_required
 def take_quiz(section_id, quiz_id):
-    from app.models import Section, Quiz, QuizQuestion, QuizAttempt, Enrollment, db  # Moved here
     section = Section.query.get_or_404(section_id)
     quiz = Quiz.query.get_or_404(quiz_id)
     if quiz.section_id != section_id or not student_enrolled(section.course_id):
@@ -200,7 +197,7 @@ def take_quiz(section_id, quiz_id):
     if attempt_count >= 3:
         flash('You have reached the maximum of 3 attempts for this quiz.', 'warning')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
-
+    
     if request.method == 'POST':
         score = 0
         total = len(questions)
@@ -222,7 +219,6 @@ def take_quiz(section_id, quiz_id):
 @student_bp.route('/section/<int:section_id>/mark-completed', methods=['POST'])
 @login_required
 def mark_section_completed(section_id):
-    from app.models import Section, Enrollment, EnrollmentSection, db  # Moved here
     if current_user.role != 'student':
         return "Unauthorized", 403
     
@@ -253,7 +249,6 @@ def mark_section_completed(section_id):
 @student_bp.route('/view-pdf/<int:section_id>')
 @login_required
 def view_pdf(section_id):
-    from app.models import Section, Enrollment, EnrollmentSection, db  # Moved here
     if current_user.role != 'student':
         return redirect(url_for('auth.login'))
     
@@ -284,7 +279,6 @@ def view_pdf(section_id):
 @student_bp.route('/section/<int:section_id>/content_new', methods=['GET', 'POST'])
 @student_required
 def get_section_content_new(section_id):
-    from app.models import Section, Course, Enrollment, EnrollmentSection, db  # Moved here
     section = Section.query.get_or_404(section_id)
     course = Course.query.get_or_404(section.course_id)
     enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
@@ -322,7 +316,6 @@ def get_section_content_new(section_id):
 @login_required
 @student_required
 def rate_course(course_id):
-    from app.models import Course, Enrollment, Rating, db
     course = Course.query.get_or_404(course_id)
     enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first_or_404()
     if all(es.completed for es in enrollment.sections):
@@ -346,36 +339,56 @@ def rate_course(course_id):
 @login_required
 @admin_required
 def view_ratings(course_id):
-    from app.models import Course, Rating  # Moved here
     course = Course.query.get_or_404(course_id)
     ratings = Rating.query.filter_by(course_id=course_id).all()
     return render_template('admin/course_ratings.html', course=course, ratings=ratings)
 
-@student_bp.route('/student/generate_certificate/<int:enrollment_id>', methods=['POST'])
+@student_bp.route('/generate_certificate/<int:enrollment_id>', methods=['POST'])
 @login_required
 @student_required
 def generate_certificate(enrollment_id):
-    from app.models import Enrollment, db
-    logger.debug(f"Generating certificate for enrollment_id: {enrollment_id}")  # Debug log
+    logger.debug(f"Generating certificate for enrollment_id: {enrollment_id}")
     enrollment = Enrollment.query.get_or_404(enrollment_id)
-    if enrollment.student_id != current_user.id or enrollment.certificate_path:
-        logger.warning(f"Unauthorized or duplicate certificate request for enrollment_id: {enrollment_id}")
-        return jsonify({'status': 'error', 'message': 'Invalid request'}), 403
+    if enrollment.student_id != current_user.id:
+        logger.warning(f"Unauthorized certificate request for enrollment_id: {enrollment_id}")
+        return jsonify({'status': 'error', 'message': 'Unauthorized access.'}), 403
+    if not all(es.completed for es in enrollment.sections) or not Rating.query.filter_by(course_id=enrollment.course_id, user_id=current_user.id).first():
+        return jsonify({'status': 'error', 'message': 'Course not fully completed or rated.'}), 403
 
-    course = enrollment.course
     user_name = current_user.username or current_user.email.split('@')[0]
-    completion_date = datetime.utcnow().strftime('%Y-%m-%d')
     certificate_filename = f"certificate_{enrollment.id}_{int(datetime.utcnow().timestamp())}.pdf"
     certificate_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate_filename)
 
     c = canvas.Canvas(certificate_path, pagesize=letter)
-    c.setFont("Helvetica-Bold", 24)
-    c.drawString(100, 750, "Certificate of Completion")
-    c.setFont("Helvetica", 16)
-    c.drawString(100, 700, f"Awarded to: {user_name}")
-    c.drawString(100, 650, f"Course: {course.title}")
-    c.drawString(100, 600, f"Completed on: {completion_date}")
-    c.drawString(100, 550, "Signature: [Issued by xAI]")
+    
+    # Top logo centered
+    logo_path = os.path.join(current_app.static_folder, 'images', 'xai_logo.png')
+    if os.path.exists(logo_path):
+        logger.debug(f"Adding top logo from {logo_path}")
+        c.drawImage(logo_path, (letter[0] - 80) / 2, 750, width=80, height=40, mask='auto')  # Centered at top
+    else:
+        logger.warning(f"Logo not found at {logo_path}")
+
+    # Content area with black text and custom font sizes
+    c.setFillColor(HexColor('#000000'))  # Black text
+    c.setFont("Helvetica", 30)  # Larger title
+    c.drawCentredString(letter[0] / 2, 600, "Certificate of Completion")
+    c.setFont("Helvetica", 18)  # Medium name
+    c.drawCentredString(letter[0] / 2, 550, f" Awarded To{user_name}")
+    c.setFont("Helvetica", 10)  # Smaller participation text
+    c.drawCentredString(letter[0] / 2, 500, "For participating in the Creative Technologist UIUX for three months held by Shaper on behalf of Oliver Agency.")
+    c.setFont("Helvetica", 16)  # Default date
+    c.drawCentredString(letter[0] / 2, 450, f"Completed on: {datetime.utcnow().strftime('%Y-%m-%d')}")
+    c.setFont("Helvetica", 16)  # Default signature
+    c.drawCentredString(letter[0] / 2, 400, "Signature: Pce Academy ]")
+
+    # Bottom logo centered
+    if os.path.exists(logo_path):
+        logger.debug(f"Adding bottom logo from {logo_path}")
+        c.drawImage(logo_path, (letter[0] - 80) / 2, 100, width=80, height=40, mask='auto')  # Centered at bottom
+
+    # Save the PDF
+    logger.debug(f"Saving certificate to {certificate_path}")
     c.save()
 
     enrollment.certificate_path = certificate_filename
@@ -384,12 +397,11 @@ def generate_certificate(enrollment_id):
     flash('Certificate generated successfully!', 'success')
     return jsonify({'status': 'success', 'message': 'Certificate generated', 'certificate_path': certificate_filename})
 
-@student_bp.route('/student/serve_certificate/<int:enrollment_id>')
+@student_bp.route('/serve_certificate/<int:enrollment_id>')
 @login_required
 @student_required
 def serve_certificate(enrollment_id):
-    from app.models import Enrollment
-    logger.debug(f"Serving certificate for enrollment_id: {enrollment_id}")  # Debug log
+    logger.debug(f"Serving certificate for enrollment_id: {enrollment_id}")
     enrollment = Enrollment.query.get_or_404(enrollment_id)
     if enrollment.student_id != current_user.id or not enrollment.certificate_path:
         logger.warning(f"Unauthorized or no certificate for enrollment_id: {enrollment_id}")

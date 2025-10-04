@@ -48,3 +48,7 @@ Thumbs.db
 .coverage
 htmlcov/
 pytest_cache/
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md

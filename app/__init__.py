@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from flask_session import Session
 from jinja2 import Environment
+from flask_wtf import CSRFProtect  # Add this import
 
 def format_datetime(value, format='medium'):
     if format == 'full':
@@ -20,6 +21,7 @@ def format_datetime(value, format='medium'):
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
+csrf = CSRFProtect()  # Add this line
 
 def create_app():
     load_dotenv()
@@ -61,6 +63,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)  # Add this line
     login_manager.login_view = 'auth.login'
 
     # Define login_manager.user_loader here to avoid circular imports
@@ -84,3 +87,4 @@ def create_app():
     app.register_blueprint(student_bp)
 
     return app
+
