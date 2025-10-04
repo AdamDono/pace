@@ -2,7 +2,12 @@
 
 {% block content %}
 <div class="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow">
-    <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
+    <div class="text-center mb-6">
+        <img src="{{ url_for('static', filename='images/pace-logo.png') }}" 
+             onerror="this.src='{{ url_for('static', filename='images/pace-logo.svg') }}'"
+             alt="Pace Academy" class="h-16 w-auto mx-auto mb-4">
+        <h1 class="text-2xl font-bold">Register</h1>
+    </div>
     <form method="POST" class="space-y-4">
         {{ form.hidden_tag() }}
         <div>

@@ -1,59 +1,78 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Course Details{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-6">
+<div class="p-6">
     <!-- Course Overview -->
     <div class="mb-6">
-        <h1 class="text-2xl font-bold mb-4">{{ course.title }}</h1>
-        <p class="mb-4">{{ course.description }}</p>
-        {% if course.youtube_url %}
-            <iframe class="w-full h-64 mb-4" src="{{ course.youtube_url.replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
-        {% endif %}
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-900">{{ course.title }}</h2>
+            <a href="{{ url_for('admin.manage_courses') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Courses
+            </a>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <p class="text-gray-600 mb-4">{{ course.description }}</p>
+            {% if course.youtube_url %}
+                <div class="aspect-video rounded-xl overflow-hidden">
+                    <iframe class="w-full h-full" src="{{ course.youtube_url.replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Sections List with Toggle -->
-    <div class="bg-white rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4">Course Sections</h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Course Sections</h3>
         {% if course.sections %}
-            <div class="space-y-2">
+            <div class="space-y-3">
                 {% for section in course.sections|sort(attribute='order') %}
-                    <div class="border rounded-lg">
-                        <button class="w-full text-left p-3 flex justify-between items-center hover:bg-gray-100"
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <button class="w-full text-left p-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
                                 hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
                                 hx-target="#content-{{ section.id }}"
                                 hx-swap="innerHTML"
                                 hx-indicator="#loading-{{ section.id }}"
-                                onclick="this.classList.toggle('bg-blue-100'); document.getElementById('content-{{ section.id }}').classList.toggle('hidden')">
+                                onclick="this.classList.toggle('bg-blue-50'); document.getElementById('content-{{ section.id }}').classList.toggle('hidden')">
                             <div class="flex items-center">
-                                <span class="mr-2">{{ loop.index }}.</span>
-                                <span>{{ section.title }}</span>
+                                <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-3 font-semibold">
+                                    {{ loop.index }}
+                                </div>
+                                <span class="font-medium text-gray-900">{{ section.title }}</span>
                             </div>
-                            {% if section.duration > 0 %}
-                                <span class="text-sm text-gray-500">{{ section.duration }} min</span>
-                            {% endif %}
-                            <svg class="w-5 h-5 transform transition-transform" id="toggle-icon-{{ section.id }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            <div class="flex items-center space-x-2">
+                                {% if section.duration and section.duration > 0 %}
+                                    <span class="text-sm text-gray-500">{{ section.duration }} min</span>
+                                {% endif %}
+                                <svg class="w-5 h-5 transform transition-transform text-gray-400" id="toggle-icon-{{ section.id }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                         </button>
-                        <div id="loading-{{ section.id }}" class="hidden text-center p-2">
+                        <div id="loading-{{ section.id }}" class="hidden text-center p-4 bg-gray-50">
                             <svg class="animate-spin h-5 w-5 text-blue-600 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </div>
-                        <div id="content-{{ section.id }}" class="p-3 hidden"></div>
+                        <div id="content-{{ section.id }}" class="p-4 bg-gray-50 border-t border-gray-200 hidden"></div>
                     </div>
                 {% endfor %}
             </div>
         {% else %}
-            <p class="text-gray-500">No sections available for this course.</p>
+            <div class="text-center py-8">
+                <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-gray-500">No sections available for this course.</p>
+            </div>
         {% endif %}
-        <div class="mt-4">
-            <a href="{{ url_for('admin.manage_courses') }}" 
-               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center block">
-                Back to Courses
-            </a>
-        </div>
     </div>
 </div>
 
