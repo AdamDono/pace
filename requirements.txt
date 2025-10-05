@@ -10,3 +10,4 @@ flask-migrate
 flask-session
 reportlab
 pillow
+gunicorn==21.2.0

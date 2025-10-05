@@ -62,3 +62,15 @@ class QuizForm(FlaskForm):
 
 class SubmissionForm(FlaskForm):
     submission_text = TextAreaField('Your Submission', validators=[DataRequired(), Length(max=1000)])
+
+class ProfileForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    bio = TextAreaField('Bio/About', validators=[Optional(), Length(max=500)])
+    contact = StringField('Contact Information', validators=[Optional(), Length(max=120)])
+    current_password = PasswordField('Current Password (required to save changes)', validators=[DataRequired()])
+    new_password = PasswordField('New Password (leave blank to keep current)', validators=[Optional(), Length(min=6)])
+    confirm_password = PasswordField('Confirm New Password', validators=[
+        EqualTo('new_password', message='Passwords must match')
+    ])
+    submit = SubmitField('Update Profile')

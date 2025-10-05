@@ -66,6 +66,9 @@
                             <a href="{{ url_for('teacher.create_course') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                                 Create Course
                             </a>
+                            <a href="{{ url_for('teacher.profile') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
+                                Profile
+                            </a>
                         {% endif %}
                         
                         <!-- Student Navigation -->
@@ -73,11 +76,8 @@
                             <a href="{{ url_for('student.dashboard') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                                 My Courses
                             </a>
-                            <a href="#" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
+                            <a href="{{ url_for('student.profile') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                                 Profile
-                            </a>
-                            <a href="#" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
-                                Courses
                             </a>
                         {% endif %}
                         

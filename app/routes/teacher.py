@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.decorators import teacher_required
+from app.forms import ProfileForm
+from app import db
 import os
 import uuid
 from datetime import datetime
@@ -491,3 +493,52 @@ def teacher_view_ratings(course_id):
         return redirect(url_for('teacher.dashboard'))
     ratings = Rating.query.filter_by(course_id=course_id).join(User, Rating.user_id == User.id).all()
     return render_template('teacher/course_ratings.html', course=course, ratings=ratings)
+
+@teacher_bp.route('/profile', methods=['GET', 'POST'])
+@teacher_required
+def profile():
+    from app.models import User
+    form = ProfileForm()
+    
+    if form.validate_on_submit():
+        # Verify current password
+        if not current_user.verify_password(form.current_password.data):
+            flash('Current password is incorrect', 'danger')
+            return render_template('teacher/profile.html', form=form)
+        
+        # Check if email is already taken by another user
+        if form.email.data != current_user.email:
+            existing_user = User.query.filter_by(email=form.email.data).first()
+            if existing_user:
+                flash('Email already in use by another account', 'danger')
+                return render_template('teacher/profile.html', form=form)
+        
+        # Check if username is already taken by another user
+        if form.username.data != current_user.username:
+            existing_user = User.query.filter_by(username=form.username.data).first()
+            if existing_user:
+                flash('Username already in use', 'danger')
+                return render_template('teacher/profile.html', form=form)
+        
+        # Update profile information
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.bio = form.bio.data
+        current_user.contact = form.contact.data
+        
+        # Update password if provided
+        if form.new_password.data:
+            current_user.password = form.new_password.data
+        
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('teacher.profile'))
+    
+    # Pre-populate form with current user data
+    if request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+        form.bio.data = current_user.bio
+        form.contact.data = current_user.contact
+    
+    return render_template('teacher/profile.html', form=form)
