@@ -5,6 +5,7 @@
 
     <!-- Enrollment Form -->
     <form method="POST" class="mb-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="mb-4">
             <label for="student_email" class="block text-gray-700">Student Email</label>
             <input type="email" name="student_email" id="student_email" class="border rounded px-3 py-2 w-full" placeholder="student@example.com" required>

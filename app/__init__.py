@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_mail import Mail
 from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
@@ -22,6 +23,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()  # Add this line
+mail = Mail()
 
 def create_app():
     load_dotenv()
@@ -52,6 +54,14 @@ def create_app():
     app.config['WTF_CSRF_ENABLED'] = True  # Enabled for security
     app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx'}  # Updated to match forms
 
+    # Configure email
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@paceacademy.com')
+
     # Configure session
     app.config['SESSION_TYPE'] = 'filesystem'
     Session(app)
@@ -64,6 +74,7 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)  # Add this line
+    mail.init_app(app)
     login_manager.login_view = 'auth.login'
 
     # Define login_manager.user_loader here to avoid circular imports

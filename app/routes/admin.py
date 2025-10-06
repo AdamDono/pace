@@ -4,6 +4,7 @@ from app.models import Course, User
 from app import db
 from app.decorators import admin_required
 from app.forms import ProfileForm
+from app.utils.email import send_welcome_email
 import os
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -103,7 +104,14 @@ def create_user():
         )
         db.session.add(user)
         db.session.commit()
-        flash(f'User {email} created successfully!', 'success')
+        
+        # Send welcome email with credentials
+        try:
+            send_welcome_email(user, password)
+            flash(f'User {email} created successfully! Welcome email sent.', 'success')
+        except Exception as e:
+            flash(f'User {email} created but email failed to send: {str(e)}', 'warning')
+        
         return redirect(url_for('admin.manage_users'))
     
     return render_template('admin/create_user.html')
@@ -139,7 +147,14 @@ def create_teacher():
         )
         db.session.add(teacher)
         db.session.commit()
-        flash(f'Teacher {first_name} {last_name} created successfully!', 'success')
+        
+        # Send welcome email with credentials
+        try:
+            send_welcome_email(teacher, password)
+            flash(f'Teacher {first_name} {last_name} created successfully! Welcome email sent.', 'success')
+        except Exception as e:
+            flash(f'Teacher {first_name} {last_name} created but email failed to send: {str(e)}', 'warning')
+        
         return redirect(url_for('admin.manage_users'))
     
     return render_template('admin/create_teacher.html')

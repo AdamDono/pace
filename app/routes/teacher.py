@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from app.decorators import teacher_required
 from app.forms import ProfileForm
 from app import db
+from app.utils.email import send_enrollment_email
 import os
 import uuid
 from datetime import datetime
@@ -222,7 +223,14 @@ def enroll_students(course_id):
         enrollment = Enrollment(student_id=student.id, course_id=course.id)
         db.session.add(enrollment)
         db.session.commit()
-        flash(f'Student {student.email} enrolled successfully!', 'success')
+        
+        # Send enrollment notification email
+        try:
+            send_enrollment_email(student, course)
+            flash(f'Student {student.email} enrolled successfully! Notification email sent.', 'success')
+        except Exception as e:
+            flash(f'Student {student.email} enrolled but email failed to send: {str(e)}', 'warning')
+        
         return redirect(url_for('teacher.enroll_students', course_id=course_id))
 
     enrolled_students = User.query.join(Enrollment).filter(Enrollment.course_id == course.id).all()
