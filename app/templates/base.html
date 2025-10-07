@@ -63,11 +63,8 @@
                             <a href="{{ url_for('teacher.my_courses') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                                 My Courses
                             </a>
-                            <a href="{{ url_for('teacher.create_course') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
+                            <a href="{{ url_for('teacher.create_course_wizard') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                                 Create Course
-                            </a>
-                            <a href="{{ url_for('teacher.profile') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
-                                Profile
                             </a>
                         {% endif %}
                         
@@ -127,7 +124,7 @@
                         <a href="{{ url_for('teacher.my_courses') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
                             My Courses
                         </a>
-                        <a href="{{ url_for('teacher.create_course') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
+                        <a href="{{ url_for('teacher.create_course_wizard') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
                             Create Course
                         </a>
                     {% endif %}

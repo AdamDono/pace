@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">Edit Section</h1>
+            <p class="text-gray-600">Course: {{ course.title }} | Module: {{ module.title }}</p>
+        </div>
+        <a href="{{ url_for('teacher.manage_module_sections', course_id=course.id, module_id=module.id) }}"
+           class="text-blue-600 hover:underline flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            Back to Module
+        </a>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Edit Section: {{ section.title }}</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Section Title *</label>
+                    <input type="text" name="title" value="{{ section.title }}" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Section Type *</label>
+                    <select name="section_type" id="section-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="text" {{ 'selected' if section.section_type == 'text' }}>📄 Text Content</option>
+                        <option value="video" {{ 'selected' if section.section_type == 'video' }}>🎥 Video (YouTube URL)</option>
+                        <option value="image" {{ 'selected' if section.section_type == 'image' }}>🖼️ Image</option>
+                        <option value="audio" {{ 'selected' if section.section_type == 'audio' }}>🎵 Audio</option>
+                        <option value="presentation" {{ 'selected' if section.section_type == 'presentation' }}>📊 Presentation (PDF)</option>
+                        <option value="quiz" {{ 'selected' if section.section_type == 'quiz' }}>❓ Quiz</option>
+                        <option value="assignment" {{ 'selected' if section.section_type == 'assignment' }}>📝 Assignment</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                <textarea name="content" rows="8" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none">{{ section.content or '' }}</textarea>
+                <p class="text-sm text-gray-500 mt-1">For videos, you can add text description here or leave blank if using Video URL.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video URL (Optional)</label>
+                    <input type="url" name="video_url" value="{{ section.video_url or '' }}"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                    <input type="number" name="duration" min="0" value="{{ section.duration or 0 }}"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <!-- Quiz Options (shown when quiz selected) -->
+            <div id="quiz-options" class="hidden space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200 mt-6">
+                <h3 class="font-medium text-blue-900">📝 Quiz Settings</h3>
+                <p class="text-sm text-blue-700">Quiz settings will be available in the full quiz editor.</p>
+            </div>
+
+            <!-- Assignment Options (shown when assignment selected) -->
+            <div id="assignment-options" class="hidden space-y-4 bg-green-50 p-4 rounded-lg border border-green-200 mt-6">
+                <h3 class="font-medium text-green-900">📝 Assignment Settings</h3>
+                <p class="text-sm text-green-700">Assignment settings will be available in the full assignment editor.</p>
+            </div>
+
+            <!-- Presentation Options (shown when presentation selected) -->
+            <div id="presentation-options" class="hidden space-y-4 bg-purple-50 p-4 rounded-lg border border-purple-200 mt-6">
+                <h3 class="font-medium text-purple-900">📊 Presentation File</h3>
+                <div>
+                    <label class="block text-sm font-medium text-purple-700 mb-2">Upload PDF Document</label>
+                    <input type="file" name="media_file" accept=".pdf"
+                           class="w-full px-4 py-3 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    {% if section.media_file %}
+                    <p class="text-sm text-purple-600 mt-1">Current file: {{ section.media_file }}</p>
+                    {% endif %}
+                    <p class="text-sm text-purple-600 mt-1">Upload a PDF file for your presentation (optional)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4 mt-8">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                    💾 Save Changes
+                </button>
+                <a href="{{ url_for('teacher.manage_module_sections', course_id=course.id, module_id=module.id) }}"
+                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// 🔥 TOGGLE FUNCTIONALITY - Quiz & Assignment & Presentation Options 🔥
+document.addEventListener('DOMContentLoaded', function() {
+    const sectionTypeSelect = document.getElementById('section-type');
+    const quizOptions = document.getElementById('quiz-options');
+    const assignmentOptions = document.getElementById('assignment-options');
+    const presentationOptions = document.getElementById('presentation-options');
+
+    // Function to toggle options based on type
+    function toggleOptions() {
+        const selectedType = sectionTypeSelect.value;
+
+        // Hide all options first
+        quizOptions.classList.add('hidden');
+        assignmentOptions.classList.add('hidden');
+        presentationOptions.classList.add('hidden');
+
+        // Show relevant options with smooth animation
+        if (selectedType === 'quiz') {
+            quizOptions.classList.remove('hidden');
+            quizOptions.style.animation = 'slideDown 0.3s ease-out';
+        } else if (selectedType === 'assignment') {
+            assignmentOptions.classList.remove('hidden');
+            assignmentOptions.style.animation = 'slideDown 0.3s ease-out';
+        } else if (selectedType === 'presentation') {
+            presentationOptions.classList.remove('hidden');
+            presentationOptions.style.animation = 'slideDown 0.3s ease-out';
+        }
+    }
+
+    // Initial toggle based on current value (important for page load)
+    setTimeout(() => {
+        toggleOptions();
+    }, 100); // Small delay to ensure DOM is ready
+
+    // Toggle on change
+    sectionTypeSelect.addEventListener('change', toggleOptions);
+});
+
+// Add smooth slide down animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+{% endblock %}

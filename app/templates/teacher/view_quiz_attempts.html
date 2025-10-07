@@ -24,6 +24,6 @@
     {% else %}
         <p>No quiz attempts yet.</p>
     {% endif %}
-    <a href="{{ url_for('teacher.manage_sections', course_id=course.id) }}" class="mt-4 block text-blue-600 hover:underline">Back to Sections</a>
+    <a href="{{ url_for('teacher.manage_module_sections', course_id=course.id, module_id=section.module_id) }}" class="mt-4 block text-blue-600 hover:underline">Back to Module</a>
 </div>
 {% endblock %}

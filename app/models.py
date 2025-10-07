@@ -38,15 +38,15 @@ class User(db.Model, UserMixin):
     # Relationship to enrollments
     enrollments = db.relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
 
-    # Relationship to courses (as teacher), with renamed backref
-    courses = db.relationship('Course', backref='instructor', lazy=True)
-    ratings = db.relationship('Rating', back_populates='user')  # Add this line
+    # Relationship to courses (as teacher) - REMOVED conflicting relationship
+    # Use Course.teacher relationship instead
+    ratings = db.relationship('Rating', back_populates='user')
 
     def is_teacher_for_course(self, course_id):
         """Check if the user is the teacher for a specific course."""
         if self.role != 'teacher':
             return False
-        return any(course.id == course_id for course in self.courses)
+        return any(course.id == course_id for course in self.taught_courses)
 
 class Course(db.Model):
     __tablename__ = 'courses'
@@ -55,19 +55,34 @@ class Course(db.Model):
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
     youtube_url = db.Column(db.String(255))
-    status = db.Column(db.String(20), default='draft')
+    status = db.Column(db.String(20), default='draft')  # Changed from 'pending' to 'draft'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     admin_feedback = db.Column(db.Text)
     pdf_filename = db.Column(db.String(120))
     banner_image = db.Column(db.String(120))  # Thumbnail for preview
     intro_text = db.Column(db.Text, nullable=True)
     intro_video = db.Column(db.String(255))
-    description = db.Column(db.Text, nullable=True)
     teacher_bio = db.Column(db.Text, nullable=True)
     teacher_contact = db.Column(db.String(120), nullable=True)
     resources = db.Column(db.Text, nullable=True)
     
+    # New fields for enhanced course creation
+    category = db.Column(db.String(50), nullable=True)  # e.g., 'programming', 'design', 'business'
+    difficulty_level = db.Column(db.String(20), default='intermediate')  # 'beginner', 'intermediate', 'advanced'
+    estimated_duration = db.Column(db.Integer, nullable=True)  # in hours
+    language = db.Column(db.String(20), default='english')
+    learning_objectives = db.Column(db.Text, nullable=True)  # JSON string of objectives
+    prerequisites = db.Column(db.Text, nullable=True)  # JSON string of prerequisites
+    tags = db.Column(db.String(255), nullable=True)  # comma-separated tags
+    is_draft = db.Column(db.Boolean, default=True)  # for autosave functionality
+    last_autosave = db.Column(db.DateTime, nullable=True)
+    
     teacher = db.relationship('User', backref='taught_courses')
+    modules = db.relationship('Module', 
+                             back_populates='course',
+                             order_by='Module.order',
+                             cascade='all, delete-orphan')
     sections = db.relationship('Section', 
                              back_populates='course',
                              order_by='Section.order',
@@ -75,10 +90,26 @@ class Course(db.Model):
     enrollments = db.relationship('Enrollment', back_populates='course', cascade='all, delete-orphan')
     ratings = db.relationship('Rating', back_populates='course', cascade='all, delete-orphan')
 
+class Module(db.Model):
+    __tablename__ = 'modules'
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    course = db.relationship('Course', back_populates='modules')
+    sections = db.relationship('Section', 
+                             back_populates='module',
+                             order_by='Section.order',
+                             cascade='all, delete-orphan')
+
 class Section(db.Model):
     __tablename__ = 'sections'
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=True)  # New field for hierarchical structure
     title = db.Column(db.String(150), nullable=False)
     content = db.Column(db.Text)
     section_type = db.Column(db.String(20), default='text')
@@ -92,6 +123,7 @@ class Section(db.Model):
     
     quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
     course = db.relationship('Course', back_populates='sections')
+    module = db.relationship('Module', back_populates='sections')  # New relationship
     enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
     assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan')
 

@@ -1,0 +1,450 @@
+<!-- templates/teacher/manage_module_sections.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">Module: {{ module.title }}</h1>
+            <p class="text-gray-600 mt-1">Course: {{ course.title }}</p>
+            {% if module.description %}
+            <p class="text-gray-700 mt-2">{{ module.description }}</p>
+            {% endif %}
+        </div>
+        <div class="flex space-x-3">
+            <a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}"
+               class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                ← Back to Modules
+            </a>
+            <a href="{{ url_for('teacher.preview_course', course_id=course.id) }}" target="_blank"
+               class="px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                Preview Course
+            </a>
+        </div>
+    </div>
+
+    <!-- Module Stats -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4">Module Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+            <div class="bg-blue-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ sections|length }}</div>
+                <div class="text-blue-800">Sections</div>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-green-600">
+                    {% set total_duration = 0 %}
+                    {% for section in sections %}
+                        {% set total_duration = total_duration + (section.duration or 0) %}
+                    {% endfor %}
+                    {{ total_duration }}
+                </div>
+                <div class="text-green-800">Minutes</div>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-purple-600">{{ module.order }}</div>
+                <div class="text-purple-800">Module Order</div>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-yellow-600">{{ sections|selectattr('is_published')|list|length }}</div>
+                <div class="text-yellow-800">Published</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New Section -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4">Add New Section</h2>
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="create_section">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Section Title *</label>
+                    <input type="text" name="title" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="e.g., Variables and Data Types">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Section Type *</label>
+                    <select name="section_type" id="section-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="text">📄 Text Content</option>
+                        <option value="video">🎥 Video (YouTube URL)</option>
+                        <option value="image">🖼️ Image</option>
+                        <option value="audio">🎵 Audio</option>
+                        <option value="presentation">📊 Presentation (PDF)</option>
+                        <option value="quiz">❓ Quiz</option>
+                        <option value="assignment">📝 Assignment</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Content *</label>
+                <textarea name="content" id="section-content" rows="6" required
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          placeholder="Enter the main content for this section..."></textarea>
+                <p class="text-sm text-gray-500 mt-1">For videos, you can add text description here or leave blank if using Video URL.</p>
+            </div>
+
+            <!-- Quiz Options (shown when quiz selected) -->
+            <div id="quiz-options" class="hidden space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 class="font-medium text-blue-900">📝 Quiz Settings</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
+                        <input type="text" name="quiz_title"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="e.g., Python Basics Quiz">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Passing Score (%)</label>
+                        <input type="number" name="passing_score" min="0" max="100" value="70"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+                        <input type="number" name="quiz_time_limit" min="5" max="180" value="30"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max Attempts</label>
+                        <input type="number" name="max_attempts" min="1" max="10" value="3"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="randomize_questions" id="randomize" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="randomize" class="ml-2 block text-sm text-gray-700">
+                        🔀 Randomize question order
+                    </label>
+                </div>
+            </div>
+
+            <!-- Presentation Options (shown when presentation selected) -->
+            <div id="presentation-options" class="hidden space-y-4 bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <h3 class="font-medium text-purple-900">📊 Presentation File</h3>
+                <div>
+                    <label class="block text-sm font-medium text-purple-700 mb-2">Upload PDF Document</label>
+                    <input type="file" name="media_file" accept=".pdf"
+                           class="w-full px-4 py-3 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <p class="text-sm text-purple-600 mt-1">Upload a PDF file for your presentation (optional)</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                    <input type="number" name="duration" min="0" value="0"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video URL (Optional)</label>
+                    <input type="url" name="video_url"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+            </div>
+
+            <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                + Add Section
+            </button>
+        </form>
+    </div>
+
+    <!-- Existing Sections -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">Sections in "{{ module.title }}" ({{ sections|length }})</h2>
+
+        {% if sections %}
+        <div id="sections-list" class="space-y-4">
+            {% for section in sections %}
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow" data-id="{{ section.id }}">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-start space-x-4 flex-1">
+                        <!-- Section Number -->
+                        <div class="flex-shrink-0">
+                            <span class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                                {{ loop.index }}
+                            </span>
+                        </div>
+
+                        <!-- Section Content -->
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg font-medium text-gray-900 mb-1">{{ section.title }}</h3>
+
+                            {% if section.content %}
+                            <div class="text-gray-600 text-sm mb-2 line-clamp-2">
+                                {{ section.content | striptags }}
+                            </div>
+                            {% endif %}
+
+                            <!-- Section Meta -->
+                            <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                                <span class="flex items-center">
+                                    {% if section.section_type == 'video' %}
+                                        🎥 Video
+                                    {% elif section.section_type == 'quiz' %}
+                                        ❓ Quiz
+                                    {% elif section.section_type == 'assignment' %}
+                                        📝 Assignment
+                                    {% elif section.section_type == 'image' %}
+                                        🖼️ Image
+                                    {% elif section.section_type == 'audio' %}
+                                        🎵 Audio
+                                    {% elif section.section_type == 'presentation' %}
+                                        📊 Presentation
+                                    {% else %}
+                                        📄 Text
+                                    {% endif %}
+                                </span>
+
+                                {% if section.duration %}
+                                <span>{{ section.duration }} min</span>
+                                {% endif %}
+
+                                {% if section.video_url %}
+                                <span class="text-blue-600">📺 YouTube Video</span>
+                                {% endif %}
+
+                                {% if section.media_file %}
+                                <span class="text-green-600">📎 {{ section.media_file.split('.')[-1].upper() }} File</span>
+                                {% endif %}
+
+                                <span class="flex items-center">
+                                    {% if section.is_published %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                            ✓ Published
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                            Draft
+                                        </span>
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <!-- Media Preview -->
+                            {% if section.video_url or section.media_file %}
+                            <div class="mt-4 space-y-3">
+                                {% if section.video_url %}
+                                    {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
+                                    {% if youtube_id and youtube_id|length == 11 %}
+                                    <div class="bg-gray-50 p-3 rounded-lg">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-medium text-gray-700">🎥 Video Preview</span>
+                                            <a href="{{ section.video_url }}" target="_blank" class="text-xs text-blue-600 hover:underline">Open in YouTube ↗</a>
+                                        </div>
+                                        <div class="aspect-w-16 aspect-h-9">
+                                            <iframe class="w-full h-32 rounded border" 
+                                                    src="https://www.youtube.com/embed/{{ youtube_id }}" 
+                                                    frameborder="0" 
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                                    allowfullscreen></iframe>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="bg-red-50 p-3 rounded-lg">
+                                        <span class="text-sm text-red-700">⚠️ Invalid YouTube URL format</span>
+                                        <a href="{{ section.video_url }}" target="_blank" class="text-xs text-red-600 hover:underline ml-2">Check URL</a>
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if section.media_file %}
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    {% if section.media_file.lower().endswith('.pdf') %}
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-700">📄 PDF Document</span>
+                                            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
+                                               target="_blank" 
+                                               class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
+                                                View PDF ↗
+                                            </a>
+                                        </div>
+                                        <div class="mt-2">
+                                            <iframe src="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
+                                                    class="w-full h-48 border rounded" 
+                                                    type="application/pdf"></iframe>
+                                        </div>
+                                    {% elif section.media_file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) %}
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-700">🖼️ Image</span>
+                                            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
+                                               target="_blank" 
+                                               class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
+                                                View Full Size ↗
+                                            </a>
+                                        </div>
+                                        <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
+                                             alt="Section media" 
+                                             class="mt-2 max-w-full h-32 object-cover rounded border">
+                                    {% else %}
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-700">📎 Media File</span>
+                                            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
+                                               target="_blank" 
+                                               class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700">
+                                                Download ↗
+                                            </a>
+                                        </div>
+                                        <div class="mt-2 p-4 bg-white border rounded text-center">
+                                            <span class="text-gray-500">{{ section.media_file.split('.')[-1].upper() }} file</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Assignments/Quizzes -->
+                            {% if section.assignments or section.quizzes %}
+                            <div class="mt-3 space-y-1">
+                                {% if section.assignments %}
+                                    {% for assignment in section.assignments %}
+                                    <div class="text-sm text-blue-600">
+                                        📝 Assignment: {{ assignment.title }}
+                                        {% if assignment.due_date %}
+                                        (Due: {{ assignment.due_date.strftime('%Y-%m-%d') }})
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% if section.quizzes %}
+                                    {% for quiz in section.quizzes %}
+                                    <div class="text-sm text-purple-600">
+                                        ❓ Quiz: {{ quiz.title }}
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col space-y-2 ml-4">
+                        <a href="{{ url_for('teacher.edit_section', course_id=course.id, section_id=section.id) }}"
+                           class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors text-center">
+                            Edit
+                        </a>
+
+                        {% if section.assignments %}
+                        <a href="{{ url_for('teacher.view_submissions', course_id=course.id, section_id=section.id) }}"
+                           class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors text-center">
+                            Submissions
+                        </a>
+                        {% endif %}
+
+                        {% if section.quizzes %}
+                        <a href="{{ url_for('teacher.view_quiz_attempts', course_id=course.id, section_id=section.id) }}"
+                           class="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors text-center">
+                            Quiz Results
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-24 w-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No sections yet</h3>
+            <p class="text-gray-600 mb-6">Add your first section using the form above to start building this module.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 2; /* Standard property for compatibility */
+}
+</style>
+
+<script>
+// 🔥 TOGGLE FUNCTIONALITY - Quiz & Assignment & Presentation Options 🔥
+document.addEventListener('DOMContentLoaded', function() {
+    const sectionTypeSelect = document.getElementById('section-type');
+    const quizOptions = document.getElementById('quiz-options');
+    const assignmentOptions = document.getElementById('assignment-options');
+    const presentationOptions = document.getElementById('presentation-options');
+    const sectionContent = document.getElementById('section-content');
+
+    // Toggle section options based on type
+    sectionTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        
+        // Hide all options first
+        quizOptions.classList.add('hidden');
+        assignmentOptions.classList.add('hidden');
+        presentationOptions.classList.add('hidden');
+        
+        // Show relevant options with smooth animation
+        if (selectedType === 'quiz') {
+            quizOptions.classList.remove('hidden');
+            quizOptions.style.animation = 'slideDown 0.3s ease-out';
+            sectionContent.placeholder = 'Brief description of the quiz...';
+            sectionContent.required = false;
+        } else if (selectedType === 'assignment') {
+            assignmentOptions.classList.remove('hidden');
+            assignmentOptions.style.animation = 'slideDown 0.3s ease-out';
+            sectionContent.placeholder = 'Assignment overview and objectives...';
+            sectionContent.required = false;
+        } else if (selectedType === 'presentation') {
+            presentationOptions.classList.remove('hidden');
+            presentationOptions.style.animation = 'slideDown 0.3s ease-out';
+            sectionContent.placeholder = 'Presentation overview and key points...';
+            sectionContent.required = true;
+        } else if (selectedType === 'video') {
+            sectionContent.placeholder = 'Video description and key takeaways...';
+            sectionContent.required = true;
+        } else {
+            sectionContent.placeholder = 'Enter the main content for this section...';
+            sectionContent.required = true;
+        }
+    });
+
+    // Initial toggle based on current value (important for page load)
+    setTimeout(() => {
+        const selectedType = sectionTypeSelect.value;
+        if (selectedType) {
+            const event = new Event('change');
+            sectionTypeSelect.dispatchEvent(event);
+        }
+    }, 100); // Small delay to ensure DOM is ready
+});
+
+// Add smooth slide down animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+{% endblock %}
