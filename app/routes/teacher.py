@@ -417,6 +417,27 @@ def add_assignment(course_id, section_id):
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
     return render_template('teacher/add_assignment.html', form=form, course=course, section=section)
 
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/assignment/<int:assignment_id>/edit', methods=['GET', 'POST'])
+@teacher_required
+def edit_assignment(course_id, section_id, assignment_id):
+    from app.models import Course, Section, Assignment, db  # Moved here
+    from app.forms import AssignmentForm  # Moved here
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    assignment = Assignment.query.get_or_404(assignment_id)
+    if section.course_id != course_id or course.teacher_id != current_user.id or assignment.section_id != section_id:
+        abort(403)
+
+    form = AssignmentForm(obj=assignment)
+    if form.validate_on_submit():
+        assignment.title = form.title.data
+        assignment.description = form.description.data
+        assignment.due_date = form.due_date.data
+        db.session.commit()
+        flash('Assignment updated successfully.', 'success')
+        return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
+    return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
+
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-quiz', methods=['GET', 'POST'])
 @teacher_required
 def add_quiz(course_id, section_id):
@@ -444,6 +465,47 @@ def add_quiz(course_id, section_id):
         flash('Quiz created successfully.', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
     return render_template('teacher/add_quiz.html', form=form, course=course, section=section)
+
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz/<int:quiz_id>/edit', methods=['GET', 'POST'])
+@teacher_required
+def edit_quiz(course_id, section_id, quiz_id):
+    from app.models import Course, Section, Quiz, QuizQuestion, db  # Moved here
+    from app.forms import QuizForm  # Moved here
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    quiz = Quiz.query.get_or_404(quiz_id)
+    if section.course_id != course_id or course.teacher_id != current_user.id or quiz.section_id != section_id:
+        abort(403)
+
+    form = QuizForm(obj=quiz)
+    # Pre-populate questions
+    if request.method == 'GET':
+        for i, question in enumerate(quiz.questions):
+            if i < len(form.questions):
+                form.questions[i].question.data = question.question_text
+                form.questions[i].a.data = question.option_a
+                form.questions[i].b.data = question.option_b
+                form.questions[i].c.data = question.option_c
+                form.questions[i].d.data = question.option_d
+                form.questions[i].correct.data = question.correct_answer
+
+    if form.validate_on_submit():
+        quiz.title = form.title.data
+        # Delete existing questions
+        QuizQuestion.query.filter_by(quiz_id=quiz.id).delete()
+        # Add new questions
+        for q in form.questions.data:
+            question = QuizQuestion(
+                quiz_id=quiz.id,
+                question_text=q['question'],
+                option_a=q['a'], option_b=q['b'], option_c=q['c'], option_d=q['d'],
+                correct_answer=q['correct']
+            )
+            db.session.add(question)
+        db.session.commit()
+        flash('Quiz updated successfully.', 'success')
+        return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
+    return render_template('teacher/edit_quiz.html', form=form, course=course, section=section, quiz=quiz)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submissions')
 @teacher_required
@@ -815,7 +877,7 @@ def edit_section(course_id, section_id):
         flash('Section updated successfully!', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
 
-    return render_template('teacher/edit_section.html', course=course, module=module, section=section)
+    return render_template('teacher/edit_section.html', course=course, module=module, section=section, quizzes=section.quizzes, assignments=section.assignments)
 
 @teacher_bp.route('/course/<int:course_id>/preview')
 def preview_course(course_id):

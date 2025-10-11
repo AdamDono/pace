@@ -201,7 +201,7 @@ def delete_user(user_id):
         if user.role == 'teacher':
             # Delete all courses created by this teacher
             # This will cascade delete sections, quizzes, enrollments, etc.
-            for course in user.courses:
+            for course in user.taught_courses:
                 db.session.delete(course)
         
         # Now delete the user

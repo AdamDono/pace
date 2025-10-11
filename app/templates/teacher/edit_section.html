@@ -64,14 +64,66 @@
 
             <!-- Quiz Options (shown when quiz selected) -->
             <div id="quiz-options" class="hidden space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200 mt-6">
-                <h3 class="font-medium text-blue-900">📝 Quiz Settings</h3>
-                <p class="text-sm text-blue-700">Quiz settings will be available in the full quiz editor.</p>
+                <h3 class="font-medium text-blue-900">📝 Quiz Management</h3>
+                {% if quizzes %}
+                    <p class="text-sm text-blue-700 mb-3">Existing quizzes for this section:</p>
+                    <div class="space-y-2">
+                        {% for quiz in quizzes %}
+                        <div class="flex items-center justify-between bg-white p-3 rounded border">
+                            <span class="text-sm font-medium">{{ quiz.title }}</span>
+                            <a href="{{ url_for('teacher.edit_quiz', course_id=course.id, section_id=section.id, quiz_id=quiz.id) }}"
+                               class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
+                                Edit Quiz
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}"
+                           class="text-sm text-blue-600 hover:underline">+ Add Another Quiz</a>
+                    </div>
+                {% else %}
+                    <p class="text-sm text-blue-700 mb-3">No quiz created for this section yet.</p>
+                    <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}"
+                       class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Create Quiz
+                    </a>
+                {% endif %}
             </div>
 
             <!-- Assignment Options (shown when assignment selected) -->
             <div id="assignment-options" class="hidden space-y-4 bg-green-50 p-4 rounded-lg border border-green-200 mt-6">
-                <h3 class="font-medium text-green-900">📝 Assignment Settings</h3>
-                <p class="text-sm text-green-700">Assignment settings will be available in the full assignment editor.</p>
+                <h3 class="font-medium text-green-900">📝 Assignment Management</h3>
+                {% if assignments %}
+                    <p class="text-sm text-green-700 mb-3">Existing assignments for this section:</p>
+                    <div class="space-y-2">
+                        {% for assignment in assignments %}
+                        <div class="flex items-center justify-between bg-white p-3 rounded border">
+                            <span class="text-sm font-medium">{{ assignment.title }}</span>
+                            <a href="{{ url_for('teacher.edit_assignment', course_id=course.id, section_id=section.id, assignment_id=assignment.id) }}"
+                               class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
+                                Edit Assignment
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
+                           class="text-sm text-green-600 hover:underline">+ Add Another Assignment</a>
+                    </div>
+                {% else %}
+                    <p class="text-sm text-green-700 mb-3">No assignment created for this section yet.</p>
+                    <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
+                       class="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Create Assignment
+                    </a>
+                {% endif %}
             </div>
 
             <!-- Presentation Options (shown when presentation selected) -->
