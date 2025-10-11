@@ -1,109 +1,162 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
-    <!-- Course Header -->
-    <div class="mb-8 bg-white shadow-lg rounded-lg p-6">
-        <h1 class="text-3xl font-bold mb-2 text-gray-800">{{ course.title }}</h1>
-        <p class="text-gray-600 mb-4">{{ course.description }}</p>
-        
-        <!-- Banner Image -->
-        {% if course.banner_image %}
-            <img src="{{ url_for('static', filename='uploads/' + course.banner_image) }}" 
-                 alt="{{ course.title }}" 
-                 class="w-full h-64 object-cover rounded-lg mb-4 transition-transform duration-300 hover:scale-105">
-        {% else %}
-            <img src="{{ url_for('static', filename='default_course.jpg') }}" 
-                 alt="{{ course.title }}" 
-                 class="w-full h-64 object-cover rounded-lg mb-4 transition-transform duration-300 hover:scale-105">
-        {% endif %}
-        <div class="flex justify-between items-center text-sm">
-            <span class="text-gray-500">Created by {{ course.teacher.email.split('@')[0] }}</span>
-            {% if completion_percentage is defined %}
-                <span class="text-green-600 font-semibold">{{ completion_percentage }}% Complete</span>
-            {% endif %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white">
+        <div class="container mx-auto px-6 py-12">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <!-- Left: Course Info -->
+                <div class="lg:col-span-2">
+                    <div class="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium mb-4">
+                        {% if course.price and course.price > 0 %}
+                            ${{ course.price }}
+                        {% else %}
+                            <span class="text-green-200">✓ Free Course</span>
+                        {% endif %}
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">{{ course.title }}</h1>
+                    <p class="text-lg text-white/90 mb-6 leading-relaxed">{{ course.description }}</p>
+                    
+                    <div class="flex flex-wrap items-center gap-4 text-sm mb-6">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-2xl">⭐</span>
+                            <span class="font-semibold">{{ course.average_rating|default(0)|round(1) }}</span>
+                            <span class="text-white/80">({{ course.ratings|length if course.ratings else 0 }} ratings)</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xl">👥</span>
+                            <span class="text-white/90">{{ course.enrollments|length if course.enrollments else 0 }} learners enrolled</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 text-white/80">
+                        <span class="text-lg">👨‍🏫</span>
+                        <span>Created by <span class="font-medium text-white">{{ course.teacher.email.split('@')[0] }}</span></span>
+                    </div>
+
+                    {% if completion_percentage is defined and completion_percentage > 0 %}
+                    <div class="mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium">Your Progress</span>
+                            <span class="text-sm font-bold">{{ completion_percentage }}%</span>
+                        </div>
+                        <div class="w-full bg-white/20 rounded-full h-2">
+                            <div class="bg-green-400 h-2 rounded-full transition-all duration-500" style="width: {{ completion_percentage }}%"></div>
+                        </div>
+                        <p class="text-xs text-white/70 mt-2">{{ completed_sections }} of {{ total_sections }} sections completed</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Right: Course Highlights Card -->
+                <div class="lg:sticky lg:top-6">
+                    <div class="bg-white rounded-xl shadow-2xl p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">📚 This course includes</h3>
+                        <ul class="space-y-3 text-sm">
+                            {% if modules %}
+                            <li class="flex items-start space-x-3">
+                                <span class="text-indigo-600 text-lg flex-shrink-0">📖</span>
+                                <span class="text-gray-700">{{ modules|length }} modules with {{ total_sections|default(sections|length) }} lessons</span>
+                            </li>
+                            {% endif %}
+                            {% if sections|selectattr('quizzes')|list|length > 0 %}
+                            <li class="flex items-start space-x-3">
+                                <span class="text-purple-600 text-lg flex-shrink-0">✅</span>
+                                <span class="text-gray-700">Quizzes to test your knowledge</span>
+                            </li>
+                            {% endif %}
+                            {% if sections|selectattr('assignments')|list|length > 0 %}
+                            <li class="flex items-start space-x-3">
+                                <span class="text-green-600 text-lg flex-shrink-0">📝</span>
+                                <span class="text-gray-700">Projects to apply new skills</span>
+                            </li>
+                            {% endif %}
+                            <li class="flex items-start space-x-3">
+                                <span class="text-blue-600 text-lg flex-shrink-0">🎓</span>
+                                <span class="text-gray-700">A certificate of completion</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <span class="text-yellow-600 text-lg flex-shrink-0">♾️</span>
+                                <span class="text-gray-700">Lifetime access to materials</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Progress Tracking -->
-    <div class="mb-8 bg-white shadow-lg rounded-lg p-6">
-        <h2 class="text-xl font-bold mb-2 text-gray-800">Your Progress</h2>
-        {% if completion_percentage is defined %}
-            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
-                <div class="bg-gradient-to-r from-green-400 to-green-600 h-4 rounded-full transition-all duration-500" style="width: {{ completion_percentage }}%"></div>
-            </div>
-            <p class="text-gray-600">{{ completed_sections }} of {{ total_sections }} sections</p>
-        {% else %}
-            <p class="text-gray-600">No progress to display yet.</p>
-        {% endif %}
-    </div>
-
-    <!-- Course Materials -->
-    <div class="mb-8 bg-white shadow-lg rounded-lg p-6">
-        <!-- Intro Video -->
-        {% if course.intro_video %}
-            {% set youtube_id = course.intro_video.split('v=')[1].split('&')[0] if 'v=' in course.intro_video else course.intro_video.split('/')[-1] %}
-            {% if youtube_id and youtube_id|length == 11 %}
-                <div class="mb-6">
-                    <h2 class="text-xl font-bold mb-2 text-gray-700">Course Intro Video</h2>
-                    <div class="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg shadow-md">
-                        <iframe class="w-full h-full transition-opacity duration-300 hover:opacity-90" 
-                                src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
-                                frameborder="0" 
-                                allowfullscreen></iframe>
-                    </div>
+    <div class="container mx-auto px-6 py-12">
+        <!-- Course Stats Bar -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div class="flex flex-col items-center">
+                    <div class="text-indigo-600 text-3xl mb-2">📊</div>
+                    <div class="text-sm text-gray-500 mb-1">Skill level</div>
+                    <div class="font-semibold text-gray-800">{{ course.level|default('Beginner')|title }}</div>
                 </div>
-            {% else %}
-                <p class="text-red-500 mb-4">Invalid intro video URL.</p>
-            {% endif %}
-        {% endif %}
-
-        <!-- Preview Video (youtube_url) -->
-        {% if course.youtube_url %}
-            {% set youtube_id = course.youtube_url.split('v=')[1].split('&')[0] if 'v=' in course.youtube_url else course.youtube_url.split('/')[-1] %}
-            {% if youtube_id and youtube_id|length == 11 %}
-                <div class="mb-6">
-                    <h2 class="text-xl font-bold mb-2 text-gray-700">Course Preview Video</h2>
-                    <div class="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg shadow-md">
-                        <iframe class="w-full h-full transition-opacity duration-300 hover:opacity-90" 
-                                src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
-                                frameborder="0" 
-                                allowfullscreen></iframe>
-                    </div>
+                <div class="flex flex-col items-center">
+                    <div class="text-purple-600 text-3xl mb-2">⏱️</div>
+                    <div class="text-sm text-gray-500 mb-1">Time to complete</div>
+                    <div class="font-semibold text-gray-800">{{ course.duration|default('Self-paced') }}</div>
                 </div>
-            {% else %}
-                <p class="text-red-500 mb-4">Invalid preview video URL.</p>
-            {% endif %}
-        {% endif %}
-
-        <!-- PDF Material -->
-        {% if course.pdf_filename %}
-            <div class="mb-6">
-                <h2 class="text-xl font-bold mb-2 text-gray-700">Course Material (PDF)</h2>
-                <a href="{{ url_for('static', filename='uploads/' + course.pdf_filename) }}" 
-                   class="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200" 
-                   target="_blank">
-                   View/Download PDF Material
-                </a>
+                <div class="flex flex-col items-center">
+                    <div class="text-green-600 text-3xl mb-2">🎯</div>
+                    <div class="text-sm text-gray-500 mb-1">Projects</div>
+                    <div class="font-semibold text-gray-800">{{ sections|selectattr('assignments')|list|length|default(0) }}</div>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="text-orange-600 text-3xl mb-2">📋</div>
+                    <div class="text-sm text-gray-500 mb-1">Prerequisites</div>
+                    <div class="font-semibold text-gray-800">None</div>
+                </div>
             </div>
-        {% else %}
-            <p class="text-gray-500 mb-4">No PDF material available.</p>
-        {% endif %}
-    </div>
+        </div>
 
-    <!-- Sections -->
-    <div>
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Course Sections</h2>
+        <!-- Syllabus Section -->
+        <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">📋 Course Syllabus</h2>
+                <button onclick="expandAllSections()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                    Expand all sections
+                </button>
+            </div>
+            <p class="text-gray-600 mb-6">
+                {{ total_sections|default(sections|length) }} lessons • 
+                {% set quiz_count = sections|selectattr('quizzes')|list|length %}
+                {% set assignment_count = sections|selectattr('assignments')|list|length %}
+                {{ assignment_count }} projects • {{ quiz_count }} quizzes
+            </p>
         {% if sections %}
-            <div class="space-y-4">
+            <div class="space-y-3">
                 {% for section in sections %}
-                    <div class="bg-white shadow-lg rounded-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 {% if section.id in locked_sections %} opacity-50 cursor-not-allowed {% endif %}">
-                        <button class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center focus:outline-none {% if section.id in locked_sections %} cursor-not-allowed {% else %} cursor-pointer {% endif %}"
+                    <div class="border border-gray-200 rounded-lg overflow-hidden hover:border-indigo-300 transition-colors duration-200 {% if section.id in locked_sections %} opacity-60 {% endif %}">
+                        <button class="w-full text-left p-5 bg-white hover:bg-gray-50 flex items-center justify-between focus:outline-none group {% if section.id in locked_sections %} cursor-not-allowed {% else %} cursor-pointer {% endif %}"
                                 onclick="{% if section.id not in locked_sections %}toggleSection('section-{{ section.id }}'){% endif %}">
-                            <span class="font-medium text-gray-800">{{ section.title }}</span>
-                            <span class="text-gray-500" id="arrow-{{ section.id }}">▼</span>
+                            <div class="flex items-center space-x-4 flex-1">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                                    {{ loop.index }}
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ section.title }}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        {% if section.section_type == 'video' %}🎥 Video
+                                        {% elif section.section_type == 'text' %}📄 Reading
+                                        {% elif section.section_type == 'quiz' %}❓ Quiz
+                                        {% elif section.section_type == 'assignment' %}📝 Assignment
+                                        {% elif section.section_type == 'presentation' %}📊 Presentation
+                                        {% else %}📖 Lesson
+                                        {% endif %}
+                                        {% if section.duration %} • {{ section.duration }} min{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200 section-arrow" id="arrow-{{ section.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
                         </button>
-                        <div id="section-{{ section.id }}" class="p-4 hidden {% if section.id in locked_sections %} hidden {% endif %}">
+                        <div id="section-{{ section.id }}" class="p-6 bg-gray-50 border-t border-gray-100 hidden {% if section.id in locked_sections %} hidden {% endif %}"">
                             {% if section.section_type == 'text' %}
                                 <p class="text-gray-700">{{ section.content|safe }}</p>
                             {% elif section.section_type == 'video' and section.video_url %}
@@ -223,9 +276,15 @@
                 {% endfor %}
             </div>
         {% else %}
-            <p class="text-gray-500">No sections available.</p>
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">📭</div>
+                <p class="text-gray-500 text-lg">No sections available yet.</p>
+                <p class="text-gray-400 text-sm mt-2">Check back soon for course content!</p>
+            </div>
         {% endif %}
+        </div>
     </div>
+</div>
 
     <!-- Rating Popup -->
     <div id="ratingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
@@ -253,18 +312,34 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            function toggleSection(sectionId) {
-                const section = document.getElementById(sectionId);
-                const isHidden = section.classList.contains('hidden');
-                section.classList.toggle('hidden', !isHidden);
-                const arrow = document.getElementById(`arrow-${sectionId}`);
-                arrow.textContent = isHidden ? '▲' : '▼';
-                section.style.height = isHidden ? `${section.scrollHeight}px` : '0';
-                setTimeout(() => {
-                    section.style.height = isHidden ? 'auto' : '0';
-                }, 300);
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const arrow = document.getElementById(`arrow-${sectionId}`);
+            const isHidden = section.classList.contains('hidden');
+            
+            section.classList.toggle('hidden');
+            
+            if (isHidden) {
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                arrow.style.transform = 'rotate(0deg)';
             }
+        }
+
+        function expandAllSections() {
+            const allSections = document.querySelectorAll('[id^="section-"]');
+            const allArrows = document.querySelectorAll('[id^="arrow-section-"]');
+            
+            allSections.forEach(section => {
+                section.classList.remove('hidden');
+            });
+            
+            allArrows.forEach(arrow => {
+                arrow.style.transform = 'rotate(180deg)';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
 
             const buttons = document.querySelectorAll('button[onclick^="toggleSection"]');
             buttons.forEach(button => {
