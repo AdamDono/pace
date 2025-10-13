@@ -158,7 +158,7 @@
                         </button>
                         <div id="section-{{ section.id }}" class="p-6 bg-gray-50 border-t border-gray-100 hidden {% if section.id in locked_sections %} hidden {% endif %}"">
                             {% if section.section_type == 'text' %}
-                                <p class="text-gray-700">{{ section.content|safe }}</p>
+                                <div class="prose prose-gray max-w-none text-gray-700" style="white-space: pre-wrap;">{{ section.content|safe }}</div>
                             {% elif section.section_type == 'video' and section.video_url %}
                                 {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
                                 {% if youtube_id and youtube_id|length == 11 %}
