@@ -360,33 +360,139 @@ def generate_certificate(enrollment_id):
     certificate_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate_filename)
 
     c = canvas.Canvas(certificate_path, pagesize=letter)
+    width, height = letter
     
-    # Top logo centered
+    # ===== ELEGANT BORDER DESIGN =====
+    # Outer gold border
+    c.setStrokeColor(HexColor('#D4AF37'))  # Gold
+    c.setLineWidth(8)
+    c.rect(30, 30, width - 60, height - 60, stroke=1, fill=0)
+    
+    # Inner border with gradient effect (multiple lines)
+    c.setStrokeColor(HexColor('#B8860B'))  # Dark gold
+    c.setLineWidth(2)
+    c.rect(40, 40, width - 80, height - 80, stroke=1, fill=0)
+    
+    # Decorative corner accents
+    c.setStrokeColor(HexColor('#FFD700'))  # Bright gold
+    c.setLineWidth(3)
+    # Top left corner
+    c.line(40, height - 80, 100, height - 80)
+    c.line(40, height - 80, 40, height - 140)
+    # Top right corner
+    c.line(width - 100, height - 80, width - 40, height - 80)
+    c.line(width - 40, height - 80, width - 40, height - 140)
+    # Bottom left corner
+    c.line(40, 80, 100, 80)
+    c.line(40, 80, 40, 140)
+    # Bottom right corner
+    c.line(width - 100, 80, width - 40, 80)
+    c.line(width - 40, 80, width - 40, 140)
+    
+    # ===== HEADER SECTION =====
+    # Top decorative line
+    c.setStrokeColor(HexColor('#4169E1'))  # Royal blue
+    c.setLineWidth(3)
+    c.line(100, height - 120, width - 100, height - 120)
+    
+    # Logo at top (if exists)
     logo_path = os.path.join(current_app.static_folder, 'images', 'xai_logo.png')
     if os.path.exists(logo_path):
-        logger.debug(f"Adding top logo from {logo_path}")
-        c.drawImage(logo_path, (letter[0] - 80) / 2, 750, width=80, height=40, mask='auto')  # Centered at top
-    else:
-        logger.warning(f"Logo not found at {logo_path}")
-
-    # Content area with black text and custom font sizes
-    c.setFillColor(HexColor('#000000'))  # Black text
-    c.setFont("Helvetica", 30)  # Larger title
-    c.drawCentredString(letter[0] / 2, 600, "Certificate of Completion")
-    c.setFont("Helvetica", 18)  # Medium name
-    c.drawCentredString(letter[0] / 2, 550, f" Awarded To{user_name}")
-    c.setFont("Helvetica", 10)  # Smaller participation text
-    c.drawCentredString(letter[0] / 2, 500, "For participating in the Creative Technologist UIUX for three months held by Shaper on behalf of Oliver Agency.")
-    c.setFont("Helvetica", 16)  # Default date
-    c.drawCentredString(letter[0] / 2, 450, f"Completed on: {datetime.utcnow().strftime('%Y-%m-%d')}")
-    c.setFont("Helvetica", 16)  # Default signature
-    c.drawCentredString(letter[0] / 2, 400, "Signature: Pce Academy ]")
-
-    # Bottom logo centered
-    if os.path.exists(logo_path):
-        logger.debug(f"Adding bottom logo from {logo_path}")
-        c.drawImage(logo_path, (letter[0] - 80) / 2, 100, width=80, height=40, mask='auto')  # Centered at bottom
-
+        c.drawImage(logo_path, (width - 100) / 2, height - 110, width=100, height=50, mask='auto')
+    
+    # ===== TITLE SECTION =====
+    # "Certificate of" in elegant script
+    c.setFillColor(HexColor('#4169E1'))  # Royal blue
+    c.setFont("Helvetica-Oblique", 24)
+    c.drawCentredString(width / 2, height - 180, "Certificate of")
+    
+    # "COMPLETION" in bold capitals
+    c.setFillColor(HexColor('#1E3A8A'))  # Dark blue
+    c.setFont("Helvetica-Bold", 42)
+    c.drawCentredString(width / 2, height - 230, "COMPLETION")
+    
+    # Decorative line under title
+    c.setStrokeColor(HexColor('#D4AF37'))  # Gold
+    c.setLineWidth(2)
+    c.line(150, height - 250, width - 150, height - 250)
+    
+    # ===== PRESENTED TO SECTION =====
+    c.setFillColor(HexColor('#666666'))  # Gray
+    c.setFont("Helvetica-Oblique", 16)
+    c.drawCentredString(width / 2, height - 290, "This certificate is proudly presented to")
+    
+    # ===== STUDENT NAME (HIGHLIGHTED) =====
+    # Name background box
+    c.setFillColor(HexColor('#F0F8FF'))  # Alice blue background
+    c.setStrokeColor(HexColor('#4169E1'))  # Royal blue border
+    c.setLineWidth(1)
+    c.roundRect(120, height - 360, width - 240, 50, 10, stroke=1, fill=1)
+    
+    # Student name in elegant font
+    c.setFillColor(HexColor('#1E3A8A'))  # Dark blue
+    c.setFont("Helvetica-Bold", 32)
+    c.drawCentredString(width / 2, height - 345, user_name)
+    
+    # ===== COURSE DESCRIPTION =====
+    c.setFillColor(HexColor('#333333'))  # Dark gray
+    c.setFont("Helvetica", 14)
+    course_name = enrollment.course.title
+    c.drawCentredString(width / 2, height - 400, "For successfully completing the course")
+    
+    c.setFont("Helvetica-Bold", 16)
+    c.setFillColor(HexColor('#4169E1'))  # Royal blue
+    c.drawCentredString(width / 2, height - 430, f'"{course_name}"')
+    
+    c.setFont("Helvetica", 12)
+    c.setFillColor(HexColor('#666666'))  # Gray
+    c.drawCentredString(width / 2, height - 460, "with dedication and commitment to learning excellence")
+    
+    # ===== DATE AND SIGNATURE SECTION =====
+    # Completion date
+    c.setFont("Helvetica", 12)
+    c.setFillColor(HexColor('#333333'))
+    completion_date = datetime.utcnow().strftime('%B %d, %Y')
+    c.drawString(120, 200, "Date of Completion:")
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(120, 180, completion_date)
+    
+    # Signature line and text
+    c.setFont("Helvetica", 12)
+    c.setFillColor(HexColor('#333333'))
+    c.drawString(width - 250, 200, "Authorized Signature:")
+    # Signature line
+    c.setStrokeColor(HexColor('#000000'))
+    c.setLineWidth(1)
+    c.line(width - 250, 175, width - 80, 175)
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawString(width - 220, 160, "Pace Academy")
+    
+    # ===== SEAL/BADGE =====
+    # Draw a circular seal
+    c.setStrokeColor(HexColor('#D4AF37'))  # Gold
+    c.setFillColor(HexColor('#FFD700'))  # Bright gold
+    c.setLineWidth(3)
+    seal_x, seal_y = 100, 120
+    c.circle(seal_x, seal_y, 40, stroke=1, fill=1)
+    
+    # Inner circle
+    c.setFillColor(HexColor('#FFFFFF'))  # White
+    c.circle(seal_x, seal_y, 35, stroke=0, fill=1)
+    
+    # Seal text
+    c.setFillColor(HexColor('#D4AF37'))  # Gold
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(seal_x, seal_y + 5, "CERTIFIED")
+    c.setFont("Helvetica", 8)
+    c.drawCentredString(seal_x, seal_y - 10, "COMPLETION")
+    
+    # ===== FOOTER =====
+    c.setFillColor(HexColor('#999999'))
+    c.setFont("Helvetica-Oblique", 9)
+    certificate_id = f"CERT-{enrollment.id}-{int(datetime.utcnow().timestamp())}"
+    c.drawCentredString(width / 2, 60, f"Certificate ID: {certificate_id}")
+    c.drawCentredString(width / 2, 45, "This certificate verifies successful course completion")
+    
     # Save the PDF
     logger.debug(f"Saving certificate to {certificate_path}")
     c.save()
