@@ -2,9 +2,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
     <!-- Sticky Header with Preview Badge -->
-    <div class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-md border-b border-gray-200">
+    <div class="sticky top-16 z-40 bg-white/95 backdrop-blur-sm shadow-md border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <a href="{{ url_for('teacher.my_courses') }}"
@@ -298,12 +298,16 @@
                                                     <h4 class="text-lg font-semibold text-gray-900">🎥 Video Content</h4>
                                                     <a href="{{ section.video_url }}" target="_blank" class="text-sm text-blue-600 hover:underline">Watch on YouTube ↗</a>
                                                 </div>
-                                                <div class="aspect-w-16 aspect-h-9">
-                                                    <iframe class="w-full h-64 rounded border"
-                                                            src="https://www.youtube.com/embed/{{ youtube_id }}"
-                                                            frameborder="0"
-                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                            allowfullscreen></iframe>
+                                                <div class="flex justify-center">
+                                                    <div class="w-full max-w-4xl">
+                                                        <div class="relative" style="padding-bottom: 56.25%; height: 0; overflow: hidden;">
+                                                            <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
+                                                                    src="https://www.youtube.com/embed/{{ youtube_id }}"
+                                                                    frameborder="0"
+                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                    allowfullscreen></iframe>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             {% else %}

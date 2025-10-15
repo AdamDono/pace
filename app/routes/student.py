@@ -11,7 +11,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 from reportlab.lib.units import inch
-from app.models import Course, Enrollment, Section, EnrollmentSection, User, Rating, db  # Correct imports
+from app.models import Course, Enrollment, Section, EnrollmentSection, User, Rating, Quiz, Assignment, QuizAttempt, AssignmentSubmission, QuizQuestion, QuizAnswer, db  # Correct imports
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
