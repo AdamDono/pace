@@ -369,10 +369,11 @@ def profile():
     form = ProfileForm()
     
     if form.validate_on_submit():
-        # Verify current password
-        if not current_user.verify_password(form.current_password.data):
-            flash('Current password is incorrect', 'danger')
-            return render_template('admin/profile.html', form=form)
+        # Only require current password when changing password
+        if form.new_password.data:
+            if not current_user.verify_password(form.current_password.data or ''):
+                flash('Current password is incorrect', 'danger')
+                return render_template('admin/profile.html', form=form)
         
         # Check if email is already taken by another user
         if form.email.data != current_user.email:

@@ -41,8 +41,12 @@
             <!-- Admin Profile -->
             <a href="{{ url_for('admin.profile') }}" class="block p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
                 <div class="flex items-center">
-                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {{ current_user.email[0].upper() }}
+                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                        {% if current_user.profile_image %}
+                            <img src="{{ url_for('admin.serve_pdf', filename=current_user.profile_image) }}" alt="Avatar" class="w-full h-full object-cover" />
+                        {% else %}
+                            {{ current_user.email[0].upper() }}
+                        {% endif %}
                     </div>
                     <div class="ml-3">
                         <p class="text-sm font-medium text-gray-900">{{ current_user.email }}</p>
