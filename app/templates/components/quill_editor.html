@@ -1,0 +1,97 @@
+<!-- Reusable Quill Rich Text Editor Component -->
+<!-- Usage: {% include 'components/quill_editor.html' with {field_id: 'description', field_name: 'description', initial_value: course.description|default(''), height: '400px'} %} -->
+
+{% if not quill_loaded %}
+<!-- Load Quill CSS (only once per page) -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<style>
+.quill-editor-container {
+    margin-bottom: 1rem;
+}
+.ql-editor {
+    font-size: 15px;
+    line-height: 1.6;
+}
+.ql-toolbar.ql-snow {
+    border-radius: 8px 8px 0 0;
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+.ql-container.ql-snow {
+    border-radius: 0 0 8px 8px;
+    border-color: #d1d5db;
+}
+.ql-editor.ql-blank::before {
+    color: #9ca3af;
+    font-style: italic;
+}
+</style>
+{% set quill_loaded = true %}
+{% endif %}
+
+<!-- Editor Container -->
+<div class="quill-editor-container">
+    <div id="quill-{{ field_id }}" style="height: {{ height|default('300px') }};"></div>
+    <textarea id="{{ field_id }}" name="{{ field_name }}" class="hidden">{{ initial_value|default('') }}</textarea>
+</div>
+
+{% if not quill_script_loaded %}
+<!-- Load Quill JS (only once per page) -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+// Store all Quill instances
+window.quillEditors = window.quillEditors || {};
+</script>
+{% set quill_script_loaded = true %}
+{% endif %}
+
+<!-- Initialize this specific editor -->
+<script>
+(function() {
+    var editorId = 'quill-{{ field_id }}';
+    var textareaId = '{{ field_id }}';
+    
+    // Initialize Quill
+    var quill = new Quill('#' + editorId, {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                [{ 'align': [] }],
+                ['link', 'image', 'video'],
+                [{ 'color': [] }, { 'background': [] }],
+                ['blockquote', 'code-block'],
+                ['clean']
+            ]
+        },
+        placeholder: '{{ placeholder|default("Start writing here...") }}'
+    });
+    
+    // Store instance
+    window.quillEditors[textareaId] = quill;
+    
+    // Load existing content
+    var existingContent = document.getElementById(textareaId).value;
+    if (existingContent) {
+        quill.root.innerHTML = existingContent;
+    }
+    
+    // Sync content to hidden textarea on change
+    quill.on('text-change', function() {
+        document.getElementById(textareaId).value = quill.root.innerHTML;
+    });
+    
+    // Also sync on form submit
+    var form = document.getElementById(textareaId).closest('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            document.getElementById(textareaId).value = quill.root.innerHTML;
+        });
+    }
+    
+    console.log('✅ Quill editor initialized:', textareaId);
+})();
+</script>

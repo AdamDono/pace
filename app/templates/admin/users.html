@@ -3,36 +3,91 @@
 {% block page_title %}User Management{% endblock %}
 
 {% block content %}
-<div class="p-6">
+<div class="p-4 md:p-6">
     <!-- Header Section -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
+            <h2 class="text-2xl font-bold text-gray-900">👥 User Management</h2>
             <p class="text-gray-600 mt-1">Manage all platform users and their roles</p>
         </div>
-        <a href="{{ url_for('admin.create_user') }}" 
-           class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Add New User
-        </a>
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <a href="{{ url_for('admin.export_users') }}" 
+               class="inline-flex items-center justify-center px-3 md:px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-colors duration-200">
+                <svg class="w-4 h-4 md:w-5 md:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span class="hidden sm:inline">Export CSV</span>
+                <span class="sm:hidden">Export</span>
+            </a>
+            <a href="{{ url_for('admin.create_user') }}" 
+               class="inline-flex items-center justify-center px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors duration-200">
+                <svg class="w-4 h-4 md:w-5 md:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span class="hidden sm:inline">Add New User</span>
+                <span class="sm:hidden">Add User</span>
+            </a>
+        </div>
     </div>
-        <!-- Users Table -->
+
+    <!-- Search and Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <form method="GET" action="{{ url_for('admin.manage_users') }}" class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 min-w-0">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <input type="text" name="search" value="{{ search_query }}" 
+                       placeholder="Search by name, email..."
+                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="w-full md:w-40">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select name="role" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Roles</option>
+                    <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Student</option>
+                    <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>Teacher</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+            </div>
+            <div class="w-full md:w-44">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                <select name="sort" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Newest First</option>
+                    <option value="last_login" {% if sort_by == 'last_login' %}selected{% endif %}>Recent Activity</option>
+                    <option value="login_count" {% if sort_by == 'login_count' %}selected{% endif %}>Most Active</option>
+                    <option value="username" {% if sort_by == 'username' %}selected{% endif %}>Username A-Z</option>
+                    <option value="email" {% if sort_by == 'email' %}selected{% endif %}>Email A-Z</option>
+                </select>
+            </div>
+            <div class="flex gap-2 md:items-end">
+                <button type="submit" class="flex-1 md:flex-none px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Search
+                </button>
+                <a href="{{ url_for('admin.manage_users') }}" class="flex-1 md:flex-none px-4 py-2 text-sm text-center bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Users Table -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100">
-                <h3 class="text-lg font-semibold text-gray-900">All Users</h3>
-                <p class="text-sm text-gray-600 mt-1">{{ users|length }} total users</p>
+            <div class="px-4 md:px-6 py-4 border-b border-gray-100">
+                <h3 class="text-base md:text-lg font-semibold text-gray-900">All Users</h3>
+                <p class="text-xs md:text-sm text-gray-600 mt-1">{{ users|length }} total users</p>
             </div>
             
             {% if users %}
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto -mx-4 md:mx-0">
+                    <div class="inline-block min-w-full align-middle">
+                        <div class="overflow-hidden">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -40,7 +95,7 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             {% for user in users %}
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-6 py-4">
                                     <div class="flex items-center">
                                         <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                                             {{ user.email[0].upper() }}
@@ -60,33 +115,95 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                        <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></div>
-                                        Active
-                                    </span>
+                                    {% if user.is_banned %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                            🚫 Banned
+                                        </span>
+                                    {% elif user.is_suspended %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            ⚠️ Suspended
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                            ✓ Active
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-sm">
+                                    {% if user.last_login %}
+                                        <div class="text-gray-900">🟢 {{ user.last_login.strftime('%b %d, %Y') }}</div>
+                                        <div class="text-gray-500 text-xs">{{ user.login_count or 0 }} logins</div>
+                                    {% else %}
+                                        <span class="text-gray-400">Never logged in</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600">
+                                    {% if user.role == 'student' %}
+                                        📚 {{ user.enrollment_count }} courses<br>
+                                        📝 {{ user.submission_count }} submissions
+                                    {% elif user.role == 'teacher' %}
+                                        📘 {{ user.course_count }} courses created
+                                    {% else %}
+                                        -
+                                    {% endif %}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">
-                                        {% if user.role != 'admin' %}
-                                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" 
-                                              onsubmit="return confirm('Are you sure you want to delete {{ user.email }}? This action cannot be undone.');" 
-                                              class="inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                            <button type="submit" class="text-red-600 hover:text-red-700 p-1 rounded transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        {% if user.role != 'admin' and user.id != current_user.id %}
+                                            <!-- Suspend/Unsuspend/Ban Actions -->
+                                            {% if user.is_banned %}
+                                                <!-- Unban Button -->
+                                                <button onclick="openUnbanModal({{ user.id }}, '{{ user.username }}')" 
+                                                        class="text-green-600 hover:text-green-700 p-1 rounded transition-colors" title="Unban User">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                </button>
+                                            {% elif user.is_suspended %}
+                                                <!-- Unsuspend Button -->
+                                                <button onclick="openUnsuspendModal({{ user.id }}, '{{ user.username }}')" 
+                                                        class="text-green-600 hover:text-green-700 p-1 rounded transition-colors" title="Unsuspend User">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                </button>
+                                            {% else %}
+                                                <!-- Suspend Button -->
+                                                <button onclick="openSuspendModal({{ user.id }}, '{{ user.username }}')" 
+                                                        class="text-yellow-600 hover:text-yellow-700 p-1 rounded transition-colors" title="Suspend User">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                                    </svg>
+                                                </button>
+                                                <!-- Ban Button -->
+                                                <button onclick="openBanModal({{ user.id }}, '{{ user.username }}')" 
+                                                        class="text-red-600 hover:text-red-700 p-1 rounded transition-colors" title="Ban User">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                                    </svg>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            <!-- Delete Button -->
+                                            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" 
+                                                  onsubmit="return confirm('Are you sure you want to delete {{ user.email }}? This action cannot be undone.');" 
+                                                  class="inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button type="submit" class="text-gray-600 hover:text-gray-700 p-1 rounded transition-colors" title="Delete User">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </form>
                                         {% else %}
-                                        <span class="text-gray-400 p-1">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                            </svg>
-                                        </span>
+                                            <span class="text-gray-400 p-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                                </svg>
+                                            </span>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -94,7 +211,42 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Pagination -->
+                {% if pagination.pages > 1 %}
+                <div class="px-4 md:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="text-xs md:text-sm text-gray-700 text-center sm:text-left">
+                        Showing <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span> 
+                        to <span class="font-medium">{{ min(pagination.page * pagination.per_page, pagination.total) }}</span> 
+                        of <span class="font-medium">{{ pagination.total }}</span> users
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2">
+                        {% if pagination.has_prev %}
+                        <a href="{{ url_for('admin.manage_users', page=pagination.prev_num, search=search_query, role=role_filter, sort=sort_by) }}" 
+                           class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Previous
+                        </a>
+                        {% endif %}
+                        
+                        {% for page_num in range(max(1, pagination.page - 2), min(pagination.pages + 1, pagination.page + 3)) %}
+                        <a href="{{ url_for('admin.manage_users', page=page_num, search=search_query, role=role_filter, sort=sort_by) }}" 
+                           class="px-3 py-1.5 text-sm border rounded-lg {% if page_num == pagination.page %}bg-blue-600 text-white border-blue-600{% else %}border-gray-300 hover:bg-gray-50{% endif %}">
+                            {{ page_num }}
+                        </a>
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <a href="{{ url_for('admin.manage_users', page=pagination.next_num, search=search_query, role=role_filter, sort=sort_by) }}" 
+                           class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Next
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             {% else %}
                 <div class="text-center py-12">
                     <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,4 +258,190 @@
         </div>
     </div>
 </div>
+
+<!-- Suspend User Modal -->
+<div id="suspendModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+    <div class="relative top-4 md:top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Suspend User</h3>
+                <button onclick="closeSuspendModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form id="suspendForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Suspension</label>
+                    <textarea name="reason" rows="3" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+                              placeholder="Explain why this user is being suspended..."></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration (days)</label>
+                    <input type="number" name="duration_days" min="1" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+                           placeholder="Leave empty for indefinite">
+                    <p class="text-xs text-gray-500 mt-1">Leave empty for indefinite suspension</p>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeSuspendModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                        Suspend User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Ban User Modal -->
+<div id="banModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+    <div class="relative top-4 md:top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-red-600">⚠️ Ban User Permanently</h3>
+                <button onclick="closeBanModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">This is a permanent action. The user will be banned and unable to access their account.</p>
+            <form id="banForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Ban</label>
+                    <textarea name="reason" rows="3" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                              placeholder="Explain why this user is being banned..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeBanModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Ban User Permanently
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Unsuspend User Modal -->
+<div id="unsuspendModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+    <div class="relative top-4 md:top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-green-600">Restore User Access</h3>
+                <button onclick="closeUnsuspendModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Remove the suspension and restore full access to <span id="unsuspendUsername" class="font-semibold"></span>?</p>
+            <form id="unsuspendForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeUnsuspendModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Unsuspend User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Unban User Modal -->
+<div id="unbanModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+    <div class="relative top-4 md:top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-green-600">Restore Banned User</h3>
+                <button onclick="closeUnbanModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Remove the ban and restore full access to <span id="unbanUsername" class="font-semibold"></span>?</p>
+            <form id="unbanForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeUnbanModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Unban User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSuspendModal(userId, username) {
+    document.getElementById('suspendForm').action = '/admin/user/' + userId + '/suspend';
+    document.getElementById('suspendModal').classList.remove('hidden');
+}
+
+function closeSuspendModal() {
+    document.getElementById('suspendModal').classList.add('hidden');
+}
+
+function openBanModal(userId, username) {
+    document.getElementById('banForm').action = '/admin/user/' + userId + '/ban';
+    document.getElementById('banModal').classList.remove('hidden');
+}
+
+function closeBanModal() {
+    document.getElementById('banModal').classList.add('hidden');
+}
+
+function openUnsuspendModal(userId, username) {
+    document.getElementById('unsuspendUsername').textContent = username;
+    document.getElementById('unsuspendForm').action = '/admin/user/' + userId + '/unsuspend';
+    document.getElementById('unsuspendModal').classList.remove('hidden');
+}
+
+function closeUnsuspendModal() {
+    document.getElementById('unsuspendModal').classList.add('hidden');
+}
+
+function openUnbanModal(userId, username) {
+    document.getElementById('unbanUsername').textContent = username;
+    document.getElementById('unbanForm').action = '/admin/user/' + userId + '/unban';
+    document.getElementById('unbanModal').classList.remove('hidden');
+}
+
+function closeUnbanModal() {
+    document.getElementById('unbanModal').classList.add('hidden');
+}
+
+// Close modals on outside click
+window.onclick = function(event) {
+    if (event.target.id === 'suspendModal') closeSuspendModal();
+    if (event.target.id === 'banModal') closeBanModal();
+    if (event.target.id === 'unsuspendModal') closeUnsuspendModal();
+    if (event.target.id === 'unbanModal') closeUnbanModal();
+}
+</script>
 {% endblock %}

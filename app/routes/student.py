@@ -11,7 +11,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 from reportlab.lib.units import inch
-from app.models import Course, Enrollment, Section, EnrollmentSection, User, Rating, Quiz, Assignment, QuizAttempt, AssignmentSubmission, QuizQuestion, QuizAnswer, db  # Correct imports
+from app.models import Course, Enrollment, Section, EnrollmentSection, User, Rating, Quiz, Assignment, QuizAttempt, AssignmentSubmission, QuizQuestion, QuizAnswer, VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse, db  # Correct imports
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -122,7 +122,11 @@ def get_section_content(section_id):
     if not enrollment_section:
         enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
         db.session.add(enrollment_section)
-        db.session.commit()
+    
+    # Update tracking: increment view count and update last accessed
+    enrollment_section.view_count = (enrollment_section.view_count or 0) + 1
+    enrollment_section.last_accessed = datetime.utcnow()
+    db.session.commit()
 
     # Handle marking as complete
     if request.method == 'POST' and 'mark_completed' in request.form:
@@ -138,7 +142,19 @@ def get_section_content(section_id):
             return jsonify({'status': 'completed', 'course_id': course.id, 'redirect': None})
         return jsonify({'status': 'updated', 'message': 'Section updated.'})
 
-    return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)
+    # Get interactive questions and subtitles for video sections
+    interactive_questions = []
+    subtitles = []
+    if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
+        interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
+        subtitles = section.subtitles if hasattr(section, 'subtitles') else []
+    
+    return render_template('student/_section_content.html', 
+                         section=section, 
+                         course=course, 
+                         enrollment_section=enrollment_section,
+                         interactive_questions=interactive_questions,
+                         subtitles=subtitles)
 
 @student_bp.route('/section/<int:section_id>/assignment/<int:assignment_id>/submit', methods=['GET', 'POST'])
 @login_required
@@ -153,7 +169,52 @@ def submit_assignment(section_id, assignment_id):
     if not enrollment:
         abort(403)
     
+    # Check for existing submission
+    existing_submission = AssignmentSubmission.query.filter_by(
+        assignment_id=assignment_id,
+        student_id=current_user.id
+    ).first()
+    
     form = SubmissionForm()
+
+    # --- Coding assignment submission path ---
+    if assignment.is_coding_assignment:
+        if request.method == 'POST':
+            code = request.form.get('code_submission', '').strip()
+            file_path = None
+
+            # Allow code file uploads if enabled
+            if assignment.allow_file_upload and 'file' in request.files and request.files['file'].filename:
+                file = request.files['file']
+                # Accept common code extensions
+                code_exts = {'py', 'js', 'java', 'cpp', 'c', 'hpp', 'h', 'ts', 'tsx', 'html', 'css', 'sql', 'txt'}
+                if file and allowed_file(file.filename, allowed_extensions=code_exts):
+                    filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                    file_path = filename
+                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+
+            if not code and not file_path:
+                flash('Please write code or upload a code file before submitting.', 'danger')
+                return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+
+            submission = AssignmentSubmission(
+                assignment_id=assignment_id,
+                student_id=current_user.id,
+                submission_text=code if not file_path else '',
+                file_path=file_path,
+                submission_type='code',
+                code_submission=code if code else None,
+                programming_language=assignment.programming_language
+            )
+            db.session.add(submission)
+            db.session.commit()
+            flash('Coding assignment submitted successfully.', 'success')
+            return redirect(url_for('student.course_detail', course_id=section.course_id))
+
+        # GET or invalid post
+        return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+
+    # --- Regular (text/file) assignment path ---
     if form.validate_on_submit():
         file_path = None
         if 'file' in request.files and request.files['file'].filename:
@@ -167,13 +228,14 @@ def submit_assignment(section_id, assignment_id):
             assignment_id=assignment_id,
             student_id=current_user.id,
             submission_text=form.submission_text.data,
-            file_path=file_path
+            file_path=file_path,
+            submission_type='text'
         )
         db.session.add(submission)
         db.session.commit()
         flash('Assignment submitted successfully.', 'success')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
-    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section)
+    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
 @student_bp.route('/section/<int:section_id>/quiz/<int:quiz_id>/take', methods=['GET', 'POST'])
 @login_required
@@ -310,7 +372,19 @@ def get_section_content_new(section_id):
         db.session.commit()
         flash('Section marked as completed.', 'success')
 
-    return render_template('student/_section_content.html', section=section, course=course, enrollment_section=enrollment_section)
+    # Get interactive questions and subtitles for video sections
+    interactive_questions = []
+    subtitles = []
+    if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
+        interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
+        subtitles = section.subtitles if hasattr(section, 'subtitles') else []
+    
+    return render_template('student/_section_content.html', 
+                         section=section, 
+                         course=course, 
+                         enrollment_section=enrollment_section,
+                         interactive_questions=interactive_questions,
+                         subtitles=subtitles)
 
 @student_bp.route('/course/<int:course_id>/rate', methods=['POST'])
 @login_required
@@ -514,6 +588,49 @@ def serve_certificate(enrollment_id):
         abort(403)
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], enrollment.certificate_path, as_attachment=True)
 
+@student_bp.route('/track-time/<int:section_id>', methods=['POST'])
+@login_required
+@student_required
+def track_time(section_id):
+    """Track time spent on a section (AJAX endpoint)"""
+    try:
+        data = request.get_json()
+        time_spent = data.get('time_spent', 0)  # in seconds
+        
+        # Find the enrollment and section
+        section = Section.query.get_or_404(section_id)
+        enrollment = Enrollment.query.filter_by(
+            student_id=current_user.id,
+            course_id=section.course_id
+        ).first_or_404()
+        
+        # Find or create enrollment section
+        enrollment_section = EnrollmentSection.query.filter_by(
+            enrollment_id=enrollment.id,
+            section_id=section_id
+        ).first()
+        
+        if not enrollment_section:
+            enrollment_section = EnrollmentSection(
+                enrollment_id=enrollment.id,
+                section_id=section_id
+            )
+            db.session.add(enrollment_section)
+        
+        # Update time spent (cumulative)
+        enrollment_section.time_spent = (enrollment_section.time_spent or 0) + time_spent
+        enrollment_section.last_accessed = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'total_time': enrollment_section.time_spent
+        })
+    except Exception as e:
+        logger.error(f"Error tracking time for section {section_id}: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @student_bp.route('/profile', methods=['GET', 'POST'])
 @student_required
 def profile():
@@ -561,3 +678,143 @@ def profile():
         form.contact.data = current_user.contact
     
     return render_template('student/profile.html', form=form)
+
+# ===== VIDEO FEATURES =====
+
+@student_bp.route('/video-progress/<int:section_id>', methods=['GET', 'POST'])
+@login_required
+@student_required
+def video_progress(section_id):
+    """Save or retrieve video watch progress"""
+    section = Section.query.get_or_404(section_id)
+    enrollment = Enrollment.query.filter_by(
+        student_id=current_user.id,
+        course_id=section.course_id
+    ).first_or_404()
+    
+    enrollment_section = EnrollmentSection.query.filter_by(
+        enrollment_id=enrollment.id,
+        section_id=section_id
+    ).first()
+    
+    if not enrollment_section:
+        enrollment_section = EnrollmentSection(
+            enrollment_id=enrollment.id,
+            section_id=section_id
+        )
+        db.session.add(enrollment_section)
+        db.session.commit()
+    
+    if request.method == 'POST':
+        # Save video progress
+        data = request.get_json()
+        
+        progress = VideoWatchProgress.query.filter_by(
+            enrollment_section_id=enrollment_section.id,
+            section_id=section_id,
+            student_id=current_user.id
+        ).first()
+        
+        if not progress:
+            progress = VideoWatchProgress(
+                enrollment_section_id=enrollment_section.id,
+                section_id=section_id,
+                student_id=current_user.id
+            )
+            db.session.add(progress)
+        
+        # Update progress
+        progress.video_current_time = data.get('current_time', 0)
+        progress.duration = data.get('duration', 0)
+        progress.watch_percentage = data.get('watch_percentage', 0)
+        progress.total_watch_time = data.get('total_watch_time', 0)
+        progress.playback_speed = data.get('playback_speed', 1.0)
+        progress.play_count = data.get('play_count', 0)
+        progress.last_watched = datetime.utcnow()
+        
+        # Mark as completed if watched >90%
+        if progress.watch_percentage >= 90:
+            progress.completed = True
+            if not enrollment_section.completed:
+                enrollment_section.completed = True
+                enrollment_section.completed_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'watch_percentage': progress.watch_percentage,
+            'completed': progress.completed
+        })
+    
+    else:
+        # GET: Retrieve saved progress
+        progress = VideoWatchProgress.query.filter_by(
+            enrollment_section_id=enrollment_section.id,
+            section_id=section_id,
+            student_id=current_user.id
+        ).first()
+        
+        if progress:
+            return jsonify({
+                'current_time': progress.video_current_time,
+                'duration': progress.duration,
+                'watch_percentage': progress.watch_percentage,
+                'total_watch_time': progress.total_watch_time,
+                'play_count': progress.play_count,
+                'playback_speed': progress.playback_speed
+            })
+        else:
+            return jsonify({
+                'current_time': 0,
+                'duration': 0,
+                'watch_percentage': 0,
+                'total_watch_time': 0,
+                'play_count': 0,
+                'playback_speed': 1.0
+            })
+
+@student_bp.route('/video-question/respond', methods=['POST'])
+@login_required
+@student_required
+def respond_video_question():
+    """Submit response to interactive video question"""
+    try:
+        data = request.get_json()
+        question_id = data.get('question_id')
+        selected_answer = data.get('selected_answer')
+        is_correct = data.get('is_correct')
+        
+        question = VideoInteractiveQuestion.query.get_or_404(question_id)
+        
+        # Check if already answered
+        existing_response = VideoQuestionResponse.query.filter_by(
+            question_id=question_id,
+            student_id=current_user.id
+        ).first()
+        
+        if existing_response:
+            # Update existing response
+            existing_response.selected_answer = selected_answer
+            existing_response.is_correct = is_correct
+            existing_response.answered_at = datetime.utcnow()
+        else:
+            # Create new response
+            response = VideoQuestionResponse(
+                question_id=question_id,
+                student_id=current_user.id,
+                selected_answer=selected_answer,
+                is_correct=is_correct
+            )
+            db.session.add(response)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'is_correct': is_correct
+        })
+    
+    except Exception as e:
+        logger.error(f"Error submitting video question response: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

@@ -91,3 +91,53 @@ def send_course_rejected_email(teacher, course, feedback):
         feedback=feedback,
         edit_url=current_app.config.get('BASE_URL', 'http://localhost:5000') + f'/teacher/edit-course/{course.id}'
     )
+
+def send_suspension_email(user, reason, suspended_until=None):
+    """Notify user when their account is suspended"""
+    from datetime import datetime
+    if suspended_until:
+        duration_text = f"until {suspended_until.strftime('%B %d, %Y at %I:%M %p')}"
+    else:
+        duration_text = "indefinitely"
+    
+    return send_email(
+        subject='Your Pace Academy account has been suspended',
+        recipient=user.email,
+        template='suspension',
+        user=user,
+        reason=reason,
+        duration_text=duration_text,
+        suspended_until=suspended_until,
+        support_email=current_app.config.get('MAIL_DEFAULT_SENDER', 'support@paceacademy.com')
+    )
+
+def send_ban_email(user, reason):
+    """Notify user when their account is permanently banned"""
+    return send_email(
+        subject='Your Pace Academy account has been banned',
+        recipient=user.email,
+        template='ban',
+        user=user,
+        reason=reason,
+        support_email=current_app.config.get('MAIL_DEFAULT_SENDER', 'support@paceacademy.com')
+    )
+
+def send_unsuspension_email(user):
+    """Notify user when their suspension is lifted"""
+    return send_email(
+        subject='Your Pace Academy account has been restored',
+        recipient=user.email,
+        template='unsuspension',
+        user=user,
+        login_url=current_app.config.get('BASE_URL', 'http://localhost:5000') + '/login'
+    )
+
+def send_unban_email(user):
+    """Notify user when their ban is lifted"""
+    return send_email(
+        subject='Your Pace Academy account has been restored',
+        recipient=user.email,
+        template='unban',
+        user=user,
+        login_url=current_app.config.get('BASE_URL', 'http://localhost:5000') + '/login'
+    )

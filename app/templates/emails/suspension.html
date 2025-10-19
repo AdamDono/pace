@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #F59E0B;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .logo .pace {
+            color: #3B82F6;
+        }
+        .logo .academy {
+            color: #1F2937;
+        }
+        h1 {
+            color: #F59E0B;
+            margin-top: 20px;
+        }
+        .warning-box {
+            background-color: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-item {
+            margin: 10px 0;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #4B5563;
+        }
+        .info-value {
+            color: #1F2937;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span class="pace">Pace</span><span class="academy">Academy</span>
+            </div>
+            <p style="color: #6B7280; margin: 0;">Account Notification</p>
+        </div>
+
+        <h1>Account Suspension Notice ⚠️</h1>
+
+        <p>Dear {{ user.username }},</p>
+
+        <p>We regret to inform you that your Pace Academy account has been temporarily suspended {{ duration_text }}.</p>
+
+        <div class="warning-box">
+            <h3 style="margin-top: 0; color: #92400E;">Suspension Details</h3>
+            <div class="info-item">
+                <span class="info-label">Reason:</span><br>
+                <span class="info-value">{{ reason }}</span>
+            </div>
+            {% if suspended_until %}
+            <div class="info-item" style="margin-top: 15px;">
+                <span class="info-label">Suspended Until:</span><br>
+                <span class="info-value">{{ suspended_until.strftime('%B %d, %Y at %I:%M %p') }}</span>
+            </div>
+            {% else %}
+            <div class="info-item" style="margin-top: 15px;">
+                <span class="info-label">Duration:</span><br>
+                <span class="info-value">Indefinite - Contact support for more information</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="background-color: #FEF2F2; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #DC2626;">
+            <h3 style="margin-top: 0; color: #991B1B;">What This Means</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>You cannot login to your account during the suspension period</li>
+                <li>Your course progress and data are preserved</li>
+                <li>You will not receive course notifications</li>
+                {% if suspended_until %}
+                <li>Access will be automatically restored after {{ suspended_until.strftime('%B %d, %Y') }}</li>
+                {% else %}
+                <li>Please contact support to discuss account restoration</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <p>If you believe this suspension was made in error or would like to appeal this decision, please contact our support team at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+
+        <p>We hope to have you back as an active member of our learning community soon.</p>
+
+        <div class="footer">
+            <p><strong>Pace Academy</strong></p>
+            <p>Support: {{ support_email }}</p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                This is an automated message. For inquiries, please contact support.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

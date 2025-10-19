@@ -293,16 +293,19 @@
                                         {% if section.video_url %}
                                             {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
                                             {% if youtube_id and youtube_id|length == 11 %}
-                                            <div class="bg-white p-4 rounded-lg border border-gray-200">
-                                                <div class="flex items-center justify-between mb-3">
-                                                    <h4 class="text-lg font-semibold text-gray-900">🎥 Video Content</h4>
+                                            <div class="bg-white border border-gray-200 rounded-xl p-6">
+                                                <div class="flex items-center justify-between mb-4">
+                                                    <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center">
+                                                        <span class="text-red-500 text-lg mr-2">🎥</span>
+                                                        Video Content
+                                                    </h4>
                                                     <a href="{{ section.video_url }}" target="_blank" class="text-sm text-blue-600 hover:underline">Watch on YouTube ↗</a>
                                                 </div>
                                                 <div class="flex justify-center">
-                                                    <div class="w-full max-w-4xl">
-                                                        <div class="relative" style="padding-bottom: 56.25%; height: 0; overflow: hidden;">
-                                                            <iframe class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
-                                                                    src="https://www.youtube.com/embed/{{ youtube_id }}"
+                                                    <div class="max-w-4xl w-full">
+                                                        <div class="relative rounded-lg overflow-hidden shadow-md" style="padding-bottom: 56.25%; height: 0;">
+                                                            <iframe class="absolute top-0 left-0 w-full h-full"
+                                                                    src="https://www.youtube.com/embed/{{ youtube_id }}?rel=0&modestbranding=1"
                                                                     frameborder="0"
                                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                                     allowfullscreen></iframe>

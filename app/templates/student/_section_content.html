@@ -3,21 +3,27 @@
     <p class="text-gray-600 mb-4">Type: {{ section.section_type.capitalize() }}</p>
 
     <!-- Content Rendering -->
-    {% if not section.content %}
+    {% if not section.content and not section.video_url and not section.media_file %}
         <p class="text-red-500">No content available for this section.</p>
-    {% elif section.section_type == 'video' %}
-        {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
-        {% if youtube_id and youtube_id|length == 11 %}
-            <div class="aspect-w-16 aspect-h-9">
-                <iframe id="youtube-player-{{ section.id }}" 
-                        class="w-full h-64 md:h-96" 
-                        src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen></iframe>
-            </div>
+    {% elif section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
+        <!-- Use Modern Video Player for uploaded videos or direct URLs -->
+        {% if section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
+            {% include 'student/_video_player.html' %}
         {% else %}
-            <p class="text-red-500">Invalid video content. Please check the URL.</p>
+            <!-- Fallback for YouTube videos -->
+            {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
+            {% if youtube_id and youtube_id|length == 11 %}
+                <div class="aspect-w-16 aspect-h-9">
+                    <iframe id="youtube-player-{{ section.id }}" 
+                            class="w-full h-64 md:h-96" 
+                            src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen></iframe>
+                </div>
+            {% else %}
+                <p class="text-red-500">Invalid video content. Please check the URL.</p>
+            {% endif %}
         {% endif %}
     {% elif section.section_type == 'image' %}
         <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" alt="Section Image" class="mt-2 w-64 h-64 object-cover">

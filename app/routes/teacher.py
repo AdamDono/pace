@@ -26,6 +26,265 @@ def dashboard():
     courses = Course.query.filter_by(teacher_id=current_user.id).all()
     return render_template('teacher/dashboard.html', courses=courses)
 
+@teacher_bp.route('/course/<int:course_id>/analytics')
+@teacher_required
+def course_analytics(course_id):
+    """Comprehensive analytics dashboard for a course"""
+    from app.models import (Course, Enrollment, EnrollmentSection, Section, 
+                           Quiz, QuizAttempt, QuizQuestion, QuizAnswer, 
+                           Assignment, AssignmentSubmission, User,
+                           VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse)
+    from sqlalchemy import func
+    
+    course = Course.query.get_or_404(course_id)
+    
+    # Verify teacher owns this course
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # === BASIC STATS ===
+    total_enrollments = Enrollment.query.filter_by(course_id=course_id).count()
+    completed_enrollments = Enrollment.query.filter_by(course_id=course_id, completed=True).count()
+    completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
+    
+    # === STUDENT PROGRESS DETAILS ===
+    enrollments = Enrollment.query.filter_by(course_id=course_id).all()
+    total_sections = Section.query.filter_by(course_id=course_id).count()
+    
+    student_progress = []
+    for enrollment in enrollments:
+        student = User.query.get(enrollment.student_id)
+        completed_sections = EnrollmentSection.query.filter_by(
+            enrollment_id=enrollment.id, 
+            completed=True
+        ).count()
+        
+        progress_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
+        
+        # Total time spent
+        total_time = db.session.query(func.sum(EnrollmentSection.time_spent)).filter_by(
+            enrollment_id=enrollment.id
+        ).scalar() or 0
+        
+        # Last activity
+        last_activity = db.session.query(func.max(EnrollmentSection.last_accessed)).filter_by(
+            enrollment_id=enrollment.id
+        ).scalar()
+        
+        # Quiz scores
+        quiz_attempts = QuizAttempt.query.filter_by(student_id=student.id).join(
+            Quiz
+        ).filter(Quiz.section_id.in_(
+            [s.id for s in course.sections]
+        )).all()
+        
+        avg_quiz_score = sum([attempt.score for attempt in quiz_attempts]) / len(quiz_attempts) if quiz_attempts else 0
+        
+        # Assignment submissions
+        assignments_submitted = AssignmentSubmission.query.filter_by(student_id=student.id).join(
+            Assignment
+        ).join(Section).filter(Section.course_id == course_id).count()
+        
+        total_assignments = Assignment.query.join(Section).filter(
+            Section.course_id == course_id
+        ).count()
+        
+        student_progress.append({
+            'student': student,
+            'enrollment': enrollment,
+            'completed_sections': completed_sections,
+            'total_sections': total_sections,
+            'progress_percentage': round(progress_percentage, 1),
+            'total_time_minutes': round(total_time / 60, 1),
+            'last_activity': last_activity,
+            'avg_quiz_score': round(avg_quiz_score, 1),
+            'assignments_submitted': assignments_submitted,
+            'total_assignments': total_assignments
+        })
+    
+    # === SECTION-WISE ANALYTICS ===
+    sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    section_analytics = []
+    
+    for section in sections:
+        # Completion rate for this section
+        section_completions = EnrollmentSection.query.filter_by(
+            section_id=section.id,
+            completed=True
+        ).count()
+        
+        section_completion_rate = (section_completions / total_enrollments * 100) if total_enrollments > 0 else 0
+        
+        # Average time spent on this section
+        avg_time = db.session.query(func.avg(EnrollmentSection.time_spent)).filter_by(
+            section_id=section.id
+        ).scalar() or 0
+        
+        # View count
+        total_views = db.session.query(func.sum(EnrollmentSection.view_count)).filter_by(
+            section_id=section.id
+        ).scalar() or 0
+        
+        # Dropout point detection (sections with low completion but high starts)
+        section_starts = EnrollmentSection.query.filter_by(section_id=section.id).count()
+        dropout_rate = ((section_starts - section_completions) / section_starts * 100) if section_starts > 0 else 0
+        
+        section_analytics.append({
+            'section': section,
+            'completion_rate': round(section_completion_rate, 1),
+            'avg_time_minutes': round(avg_time / 60, 1),
+            'total_views': total_views,
+            'dropout_rate': round(dropout_rate, 1),
+            'is_bottleneck': dropout_rate > 50  # Flag sections where >50% drop out
+        })
+    
+    # === QUIZ PERFORMANCE ANALYTICS ===
+    quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).all()
+    quiz_analytics = []
+    
+    for quiz in quizzes:
+        attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
+        
+        # Show ALL quizzes, even without attempts
+        if attempts:
+            avg_score = sum([a.score for a in attempts]) / len(attempts)
+            max_score = max([a.score for a in attempts])
+            min_score = min([a.score for a in attempts])
+        else:
+            avg_score = 0
+            max_score = 0
+            min_score = 0
+        
+        # Question-level analysis
+        questions = QuizQuestion.query.filter_by(quiz_id=quiz.id).all()
+        question_analysis = []
+        
+        for question in questions:
+            # Count correct vs incorrect answers
+            answers = QuizAnswer.query.filter_by(question_id=question.id).all()
+            correct_count = sum([1 for a in answers if a.selected_answer == question.correct_answer])
+            total_answers = len(answers)
+            
+            success_rate = (correct_count / total_answers * 100) if total_answers > 0 else 0
+            
+            question_analysis.append({
+                'question': question,
+                'success_rate': round(success_rate, 1),
+                'total_attempts': total_answers,
+                'is_difficult': success_rate < 50  # Flag questions with <50% success
+            })
+        
+        quiz_analytics.append({
+            'quiz': quiz,
+            'section': quiz.section,
+            'total_attempts': len(attempts),
+            'avg_score': round(avg_score, 1),
+            'max_score': round(max_score, 1),
+            'min_score': round(min_score, 1),
+            'questions': question_analysis,
+            'has_attempts': len(attempts) > 0  # Flag for template
+        })
+    
+    # === ENGAGEMENT METRICS ===
+    # Active students (accessed in last 7 days)
+    from datetime import datetime, timedelta
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    
+    active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
+        Enrollment
+    ).filter(
+        Enrollment.course_id == course_id,
+        EnrollmentSection.last_accessed >= seven_days_ago
+    ).scalar() or 0
+    
+    # Average session duration
+    avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
+        Enrollment
+    ).filter(Enrollment.course_id == course_id).scalar() or 0
+    
+    engagement_metrics = {
+        'active_students_7days': active_students,
+        'avg_session_minutes': round(avg_session_duration / 60, 1),
+        'engagement_rate': round((active_students / total_enrollments * 100), 1) if total_enrollments > 0 else 0
+    }
+    
+    # === VIDEO ANALYTICS ===
+    video_sections = Section.query.filter(
+        Section.course_id == course_id,
+        db.or_(
+            Section.section_type == 'video',
+            Section.video_url != None,
+            Section.media_file.like('%.mp4')
+        )
+    ).all()
+    
+    video_analytics = []
+    for video_section in video_sections:
+        # Get all watch progress for this video
+        watch_data = VideoWatchProgress.query.filter_by(section_id=video_section.id).all()
+        
+        if watch_data:
+            total_views = len(watch_data)
+            avg_watch_pct = sum([w.watch_percentage for w in watch_data]) / total_views if total_views > 0 else 0
+            avg_watch_time = sum([w.total_watch_time for w in watch_data]) / total_views if total_views > 0 else 0
+            completed_count = sum([1 for w in watch_data if w.completed])
+            completion_rate_video = (completed_count / total_views * 100) if total_views > 0 else 0
+            avg_speed = sum([w.playback_speed for w in watch_data]) / total_views if total_views > 0 else 1.0
+            total_play_count = sum([w.play_count for w in watch_data])
+        else:
+            total_views = 0
+            avg_watch_pct = 0
+            avg_watch_time = 0
+            completed_count = 0
+            completion_rate_video = 0
+            avg_speed = 1.0
+            total_play_count = 0
+        
+        # Get interactive question stats for this video
+        interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=video_section.id).all()
+        question_stats = []
+        
+        for question in interactive_questions:
+            responses = VideoQuestionResponse.query.filter_by(question_id=question.id).all()
+            if responses:
+                correct_count = sum([1 for r in responses if r.is_correct])
+                success_rate = (correct_count / len(responses) * 100) if len(responses) > 0 else 0
+                avg_time_taken = sum([r.time_taken for r in responses]) / len(responses) if len(responses) > 0 else 0
+            else:
+                success_rate = 0
+                avg_time_taken = 0
+            
+            question_stats.append({
+                'question': question,
+                'total_responses': len(responses),
+                'success_rate': round(success_rate, 1),
+                'avg_time_taken': round(avg_time_taken, 1)
+            })
+        
+        video_analytics.append({
+            'section': video_section,
+            'total_views': total_views,
+            'avg_watch_percentage': round(avg_watch_pct, 1),
+            'avg_watch_time_minutes': round(avg_watch_time / 60, 1),
+            'completed_count': completed_count,
+            'completion_rate': round(completion_rate_video, 1),
+            'avg_playback_speed': round(avg_speed, 2),
+            'total_play_count': total_play_count,
+            'has_interactive_questions': len(interactive_questions) > 0,
+            'question_stats': question_stats
+        })
+    
+    return render_template('teacher/course_analytics.html',
+                         course=course,
+                         total_enrollments=total_enrollments,
+                         completed_enrollments=completed_enrollments,
+                         completion_rate=round(completion_rate, 1),
+                         student_progress=student_progress,
+                         section_analytics=section_analytics,
+                         quiz_analytics=quiz_analytics,
+                         engagement_metrics=engagement_metrics,
+                         video_analytics=video_analytics)
+
 @teacher_bp.route('/create-course-wizard', methods=['GET', 'POST'])
 @teacher_required
 def create_course_wizard():
@@ -411,9 +670,18 @@ def add_assignment(course_id, section_id):
             section_id=section_id,
             due_date=form.due_date.data
         )
+
+        # Persist coding assignment fields from the plain HTML controls
+        is_coding = request.form.get('is_coding_assignment') == 'on'
+        assignment.is_coding_assignment = is_coding
+        assignment.programming_language = request.form.get('programming_language') or None
+        assignment.starter_code = request.form.get('starter_code') or None
+        assignment.enable_code_execution = (request.form.get('enable_code_execution') == 'on') if is_coding else False
+        assignment.allow_file_upload = (request.form.get('allow_file_upload') == 'on') if is_coding else True
+
         db.session.add(assignment)
         db.session.commit()
-        flash('Assignment created successfully.', 'success')
+        flash(('Coding ' if is_coding else '') + 'Assignment created successfully.', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
     return render_template('teacher/add_assignment.html', form=form, course=course, section=section)
 
@@ -433,6 +701,16 @@ def edit_assignment(course_id, section_id, assignment_id):
         assignment.title = form.title.data
         assignment.description = form.description.data
         assignment.due_date = form.due_date.data
+
+        # Update coding fields if present
+        if 'is_coding_assignment' in request.form:
+            is_coding = request.form.get('is_coding_assignment') == 'on'
+            assignment.is_coding_assignment = is_coding
+            assignment.programming_language = request.form.get('programming_language') or assignment.programming_language
+            assignment.starter_code = request.form.get('starter_code') or assignment.starter_code
+            assignment.enable_code_execution = (request.form.get('enable_code_execution') == 'on') if is_coding else False
+            assignment.allow_file_upload = (request.form.get('allow_file_upload') == 'on') if is_coding else assignment.allow_file_upload
+
         db.session.commit()
         flash('Assignment updated successfully.', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
@@ -586,14 +864,65 @@ def delete_section(section_id):
 @teacher_required
 def submit_feedback(submission_id):
     from app.models import AssignmentSubmission, db  # Moved here
+    from app.utils.notifications import NotificationService
+    
     submission = AssignmentSubmission.query.get_or_404(submission_id)
     if not current_user.is_teacher_for_course(submission.assignment.section.course_id):
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
     data = request.get_json()
     feedback = data.get('feedback')
+    grade = data.get('grade')  # Can be None, float, or null
+    
     submission.feedback = feedback
     submission.reviewed = True
+    
+    # Save grade if provided (0-100 percentage)
+    if grade is not None:
+        try:
+            grade_float = float(grade)
+            if 0 <= grade_float <= 100:
+                submission.grade = grade_float
+            else:
+                return jsonify({'success': False, 'message': 'Grade must be between 0 and 100'}), 400
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Invalid grade format'}), 400
+    else:
+        # If grade is explicitly null, clear it
+        submission.grade = None
+    
     db.session.commit()
+    
+    # Send notification to student
+    try:
+        grade_text = f"{submission.grade}%" if submission.grade is not None else "reviewed"
+        message = f"Your assignment '{submission.assignment.title}' has been {grade_text}"
+        if feedback:
+            message += f": {feedback[:100]}..."
+        
+        # Link directly to the assignment page where student can see grade & feedback
+        assignment_url = url_for(
+            'student.submit_assignment',
+            section_id=submission.assignment.section_id,
+            assignment_id=submission.assignment_id,
+            _external=False
+        )
+        
+        NotificationService.create_notification(
+            user_id=submission.student_id,
+            notification_type='assignment_feedback',
+            title=f'Assignment Graded: {submission.assignment.title}',
+            message=message,
+            link_url=assignment_url,
+            priority='normal',
+            related_course_id=submission.assignment.section.course_id,
+            related_assignment_id=submission.assignment_id,
+            send_email=True
+        )
+    except Exception as e:
+        # Don't fail the feedback submission if notification fails
+        print(f"Failed to send notification: {e}")
+    
     return jsonify({'success': True})
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz-attempts')

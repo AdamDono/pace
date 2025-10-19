@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #10B981;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .logo .pace {
+            color: #3B82F6;
+        }
+        .logo .academy {
+            color: #1F2937;
+        }
+        h1 {
+            color: #10B981;
+            margin-top: 20px;
+        }
+        .success-box {
+            background-color: #D1FAE5;
+            border-left: 4px solid #10B981;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #10B981;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .button:hover {
+            background-color: #059669;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span class="pace">Pace</span><span class="academy">Academy</span>
+            </div>
+            <p style="color: #6B7280; margin: 0;">Account Restored</p>
+        </div>
+
+        <h1>Your Account Has Been Reinstated! 🎉</h1>
+
+        <p>Dear {{ user.username }},</p>
+
+        <p>We're pleased to inform you that your Pace Academy account ban has been lifted, and you now have full access to your account.</p>
+
+        <div class="success-box">
+            <h3 style="margin-top: 0; color: #065F46;">Account Fully Restored</h3>
+            <p style="margin: 0;">Your account is now active. You can login and access all features of Pace Academy.</p>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{{ login_url }}" class="button">Login to Your Account</a>
+        </div>
+
+        <div style="background-color: #FEF3C7; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #F59E0B;">
+            <h3 style="margin-top: 0; color: #92400E;">Important Reminders</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>Please review our <strong>Terms of Service</strong> and <strong>Community Guidelines</strong></li>
+                <li>Any future violations may result in permanent account termination</li>
+                <li>We expect all users to maintain respectful and appropriate behavior</li>
+                <li>Contact support if you have questions about acceptable use</li>
+            </ul>
+        </div>
+
+        <p>We believe in second chances and are happy to welcome you back to our learning community. Please use this opportunity to contribute positively to the platform.</p>
+
+        <p>Welcome back! 📚</p>
+
+        <div class="footer">
+            <p><strong>Pace Academy</strong></p>
+            <p>Empowering learners, one course at a time.</p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

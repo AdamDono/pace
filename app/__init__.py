@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -91,11 +91,28 @@ def create_app():
     from app.routes.admin import admin_bp
     from app.routes.teacher import teacher_bp
     from app.routes.student import student_bp
+    from app.routes.notifications import notifications_bp
+    from app.routes.code_execution import code_execution_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(teacher_bp)
     app.register_blueprint(student_bp)
+    app.register_blueprint(notifications_bp)
+    app.register_blueprint(code_execution_bp)
+
+    # Register error handlers
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template('errors/404.html'), 404
+    
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        return render_template('errors/500.html'), 500
+    
+    @app.errorhandler(403)
+    def forbidden(e):
+        return render_template('errors/403.html'), 403
 
     return app
 

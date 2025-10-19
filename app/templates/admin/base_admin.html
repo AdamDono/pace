@@ -20,12 +20,17 @@
                 transform: translateX(-100%);
             }
         }
+        @media (min-width: 769px) {
+            .sidebar-visible {
+                transform: translateX(0) !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <div id="sidebar" class="sidebar-transition fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform md:translate-x-0 md:static md:inset-0">
+        <div id="sidebar" class="sidebar-transition sidebar-hidden md:sidebar-visible fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform md:translate-x-0 md:static md:inset-0">
             <div class="flex items-center justify-center h-16 bg-white border-b border-gray-200">
                 <h1 class="text-xl font-bold">
                     <span class="text-blue-600">Pace</span>
@@ -84,6 +89,43 @@
                         <span class="ml-auto bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">{{ pending_count }}</span>
                         {% endif %}
                     </a>
+
+                    <a href="{{ url_for('admin.course_statistics') }}" 
+                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'admin.course_statistics' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Statistics
+                    </a>
+
+                    <!-- Reports Dropdown -->
+                    <div class="relative">
+                        <button onclick="toggleReportsMenu()" class="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Reports
+                            </div>
+                            <svg id="reports-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="reports-menu" class="hidden pl-8 mt-1 space-y-1">
+                            <a href="{{ url_for('admin.export_users') }}" 
+                               class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-700">
+                                📥 Export Users
+                            </a>
+                            <a href="{{ url_for('admin.export_courses') }}" 
+                               class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-700">
+                                📥 Export Courses
+                            </a>
+                            <a href="{{ url_for('admin.export_grades') }}" 
+                               class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-700">
+                                📥 Export Grades
+                            </a>
+                        </div>
+                    </div>
                     
                     <div class="pt-4 mt-4 border-t border-gray-200">
                         <a href="{{ url_for('auth.logout') }}" 
@@ -105,14 +147,14 @@
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Top bar -->
             <header class="bg-white shadow-sm border-b border-gray-200">
-                <div class="flex items-center justify-between px-6 py-4">
-                    <div class="flex items-center">
-                        <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 md:hidden">
+                <div class="flex items-center justify-between px-4 md:px-6 py-4">
+                    <div class="flex items-center flex-1 min-w-0">
+                        <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 md:hidden flex-shrink-0">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
-                        <h1 class="ml-4 text-2xl font-semibold text-gray-900 md:ml-0">{% block page_title %}Admin Panel{% endblock %}</h1>
+                        <h1 class="ml-3 md:ml-0 text-lg md:text-2xl font-semibold text-gray-900 truncate">{% block page_title %}Admin Panel{% endblock %}</h1>
                     </div>
                     
                     <div class="flex items-center space-x-4">
@@ -128,7 +170,7 @@
             </header>
             
             <!-- Page content -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 pb-20">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         <div class="p-4">
@@ -154,6 +196,29 @@
             sidebar.classList.toggle('sidebar-hidden');
             overlay.classList.toggle('hidden');
         }
+
+        function toggleReportsMenu() {
+            const menu = document.getElementById('reports-menu');
+            const arrow = document.getElementById('reports-arrow');
+            
+            menu.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        // Close sidebar when clicking a link on mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarLinks = document.querySelectorAll('#sidebar a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 768) {
+                        const sidebar = document.getElementById('sidebar');
+                        const overlay = document.getElementById('sidebar-overlay');
+                        sidebar.classList.add('sidebar-hidden');
+                        overlay.classList.add('hidden');
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="container mx-auto px-4 max-w-3xl">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">⚙️ Notification Preferences</h1>
+            <p class="text-gray-600">Choose how you want to be notified</p>
+        </div>
+
+        <form method="POST" class="bg-white rounded-lg shadow-md p-6">
+            <div class="space-y-6">
+                <!-- Assignment Feedback -->
+                <div class="border-b border-gray-200 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">📝 Assignment Feedback</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="inapp_assignment_feedback" 
+                                   {% if prefs.inapp_assignment_feedback %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">In-app notifications</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="email_assignment_feedback" 
+                                   {% if prefs.email_assignment_feedback %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">Email notifications</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Quiz Graded -->
+                <div class="border-b border-gray-200 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">✅ Quiz Graded</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="inapp_quiz_graded" 
+                                   {% if prefs.inapp_quiz_graded %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">In-app notifications</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="email_quiz_graded" 
+                                   {% if prefs.email_quiz_graded %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">Email notifications</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Course Announcements -->
+                <div class="border-b border-gray-200 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">📢 Course Announcements</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="inapp_course_announcement" 
+                                   {% if prefs.inapp_course_announcement %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">In-app notifications</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="email_course_announcement" 
+                                   {% if prefs.email_course_announcement %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">Email notifications</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- New Course Content -->
+                <div class="border-b border-gray-200 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">🆕 New Course Content</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="inapp_new_course_content" 
+                                   {% if prefs.inapp_new_course_content %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">In-app notifications</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="email_new_course_content" 
+                                   {% if prefs.email_new_course_content %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">Email notifications</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Course Completion -->
+                <div class="pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">🎓 Course Completion & Certificates</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="inapp_course_completion" 
+                                   {% if prefs.inapp_course_completion %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">In-app notifications</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="email_course_completion" 
+                                   {% if prefs.email_course_completion %}checked{% endif %}
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">Email notifications</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex items-center justify-between">
+                <a href="{{ url_for('notifications.list_notifications') }}" 
+                   class="text-gray-600 hover:text-gray-800">
+                    ← Back to Notifications
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                    💾 Save Preferences
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

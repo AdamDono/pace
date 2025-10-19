@@ -3,8 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>{% block title %}Pace Academy{% endblock %}</title>
     <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
+    <style>
+      /* Make embedded iframes inside rich text responsive and large */
+      .prose iframe,
+      .content iframe,
+      .rich-text iframe {
+        width: 100% !important;
+        max-width: 1024px;
+        aspect-ratio: 16 / 9;
+        height: auto !important;
+        display: block;
+        margin: 0 auto;
+        border: 0;
+        border-radius: 0.5rem; /* rounded */
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+      }
+    </style>
     <!-- Fallback to CDN if local file fails -->
     <script>
         if (!document.querySelector('link[href*="tailwind.min.css"]').sheet) {
@@ -77,6 +96,30 @@
                                 Profile
                             </a>
                         {% endif %}
+                        
+                        <!-- Notifications Bell -->
+                        <div class="relative" id="notifications-dropdown">
+                            <button onclick="toggleNotifications()" class="relative text-gray-600 hover:text-blue-600 focus:outline-none">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                </svg>
+                                <span id="notification-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
+                            </button>
+                            
+                            <!-- Dropdown -->
+                            <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                                    <h3 class="font-semibold text-gray-800">Notifications</h3>
+                                    <button onclick="markAllRead()" class="text-xs text-blue-600 hover:text-blue-800">Mark all read</button>
+                                </div>
+                                <div id="notifications-list" class="max-h-96 overflow-y-auto">
+                                    <div class="p-4 text-center text-gray-500 text-sm">Loading...</div>
+                                </div>
+                                <div class="p-3 border-t border-gray-200 text-center">
+                                    <a href="{{ url_for('notifications.list_notifications') }}" class="text-sm text-blue-600 hover:text-blue-800">View all notifications</a>
+                                </div>
+                            </div>
+                        </div>
                         
                         <a href="{{ url_for('auth.logout') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                             Logout
@@ -152,6 +195,14 @@
         </div>
     </nav>
 
+    <!-- Global Loading Spinner -->
+    <div id="global-loading" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+            <p class="text-gray-700 font-semibold" id="loading-message">Loading...</p>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <div class="pt-16 pb-16 flex-grow">
         <!-- Flash messages -->
@@ -181,5 +232,271 @@
 
     {% block scripts %}
     {% endblock %}
+    
+    <!-- Notification System JavaScript -->
+    {% if current_user.is_authenticated %}
+    <script>
+    // Notification System
+    let notificationsMenu = document.getElementById('notifications-menu');
+    let notificationBadge = document.getElementById('notification-badge');
+    let notificationsList = document.getElementById('notifications-list');
+    
+    // Toggle notifications dropdown
+    function toggleNotifications() {
+        notificationsMenu.classList.toggle('hidden');
+        if (!notificationsMenu.classList.contains('hidden')) {
+            loadNotifications();
+        }
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        let dropdown = document.getElementById('notifications-dropdown');
+        if (dropdown && !dropdown.contains(event.target)) {
+            notificationsMenu.classList.add('hidden');
+        }
+    });
+    
+    // Load notifications
+    function loadNotifications() {
+        fetch('/notifications/recent')
+            .then(response => response.json())
+            .then(data => {
+                displayNotifications(data.notifications);
+                updateBadge(data.unread_count);
+            })
+            .catch(error => console.error('Error loading notifications:', error));
+    }
+    
+    // Display notifications in dropdown
+    function displayNotifications(notifications) {
+        if (notifications.length === 0) {
+            notificationsList.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No notifications</div>';
+            return;
+        }
+        
+        let html = '';
+        notifications.forEach(notif => {
+            const priorityColors = {
+                'urgent': 'bg-red-50 border-l-4 border-red-500',
+                'high': 'bg-orange-50 border-l-4 border-orange-500',
+                'normal': 'bg-white',
+                'low': 'bg-gray-50'
+            };
+            
+            const priorityColor = priorityColors[notif.priority] || priorityColors['normal'];
+            const readClass = notif.read ? 'opacity-60' : '';
+            
+            html += `
+                <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${priorityColor} ${readClass}" 
+                     onclick="handleNotificationClick(${notif.id}, '${notif.link_url || ''}', ${notif.read})">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <p class="font-semibold text-sm text-gray-800">${notif.title}</p>
+                            <p class="text-xs text-gray-600 mt-1">${notif.message}</p>
+                            <p class="text-xs text-gray-400 mt-2">${notif.created_at}</p>
+                        </div>
+                        ${!notif.read ? '<span class="w-2 h-2 bg-blue-500 rounded-full ml-2"></span>' : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        notificationsList.innerHTML = html;
+    }
+    
+    // Handle notification click
+    function handleNotificationClick(notificationId, linkUrl, isRead) {
+        // Mark as read
+        if (!isRead) {
+            fetch(`/notifications/${notificationId}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            }).then(() => {
+                loadNotifications();  // Reload to update UI
+            });
+        }
+        
+        // Navigate to link if provided
+        if (linkUrl && linkUrl !== 'None' && linkUrl !== '') {
+            window.location.href = linkUrl;
+        }
+    }
+    
+    // Mark all as read
+    function markAllRead() {
+        fetch('/notifications/mark-all-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadNotifications();
+            }
+        })
+        .catch(error => console.error('Error marking all as read:', error));
+    }
+    
+    // Update notification badge
+    function updateBadge(count) {
+        if (count > 0) {
+            notificationBadge.textContent = count > 99 ? '99+' : count;
+            notificationBadge.classList.remove('hidden');
+        } else {
+            notificationBadge.classList.add('hidden');
+        }
+    }
+    
+    // Check for new notifications every 30 seconds
+    setInterval(function() {
+        fetch('/notifications/unread-count')
+            .then(response => response.json())
+            .then(data => {
+                updateBadge(data.count);
+            })
+            .catch(error => console.error('Error checking notifications:', error));
+    }, 30000);
+    
+    // Initial load
+    fetch('/notifications/unread-count')
+        .then(response => response.json())
+        .then(data => {
+            updateBadge(data.count);
+        })
+        .catch(error => console.error('Error loading initial count:', error));
+    </script>
+    {% endif %}
+    
+    <!-- Loading Spinner & Navigation Memory -->
+    <script>
+    // ===== LOADING SPINNER =====
+    const loadingEl = document.getElementById('global-loading');
+    const loadingMessage = document.getElementById('loading-message');
+    
+    function showLoading(message = 'Loading...') {
+        if (loadingEl) {
+            loadingMessage.textContent = message;
+            loadingEl.classList.remove('hidden');
+        }
+    }
+    
+    function hideLoading() {
+        if (loadingEl) {
+            loadingEl.classList.add('hidden');
+        }
+    }
+    
+    // Show loading on form submits
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form[data-loading]');
+        forms.forEach(form => {
+            form.addEventListener('submit', function() {
+                const message = form.dataset.loading || 'Processing...';
+                showLoading(message);
+            });
+        });
+    });
+    
+    // ===== NAVIGATION MEMORY =====
+    // Save current scroll position and URL before navigation
+    function saveNavigationState() {
+        const state = {
+            url: window.location.href,
+            scrollY: window.scrollY,
+            timestamp: Date.now()
+        };
+        sessionStorage.setItem('navState', JSON.stringify(state));
+    }
+    
+    // Restore scroll position if returning to same page
+    function restoreNavigationState() {
+        const saved = sessionStorage.getItem('navState');
+        if (saved) {
+            const state = JSON.parse(saved);
+            // Only restore if returning within 5 minutes
+            if (Date.now() - state.timestamp < 300000) {
+                if (state.url === window.location.href) {
+                    window.scrollTo(0, state.scrollY);
+                }
+            }
+        }
+    }
+    
+    // Save state before clicking links
+    document.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A' || e.target.closest('a')) {
+            saveNavigationState();
+        }
+    });
+    
+    // Restore state on page load
+    window.addEventListener('load', restoreNavigationState);
+    
+    // ===== CONTINUE WHERE LEFT OFF =====
+    // Track last accessed section for each course
+    function trackSectionAccess(courseId, sectionId, sectionTitle) {
+        const key = `course_${courseId}_lastSection`;
+        const data = {
+            sectionId: sectionId,
+            sectionTitle: sectionTitle,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+    
+    function getLastSection(courseId) {
+        const key = `course_${courseId}_lastSection`;
+        const saved = localStorage.getItem(key);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        return null;
+    }
+    
+    // Auto-track when viewing sections
+    {% if current_user.is_authenticated and current_user.role == 'student' %}
+    // Check if we're on a course page with sections
+    const courseMatch = window.location.pathname.match(/\/course\/(\d+)/);
+    if (courseMatch) {
+        const courseId = courseMatch[1];
+        
+        // Track section clicks
+        document.addEventListener('click', function(e) {
+            const sectionToggle = e.target.closest('[data-section-id]');
+            if (sectionToggle) {
+                const sectionId = sectionToggle.dataset.sectionId;
+                const sectionTitle = sectionToggle.dataset.sectionTitle || 'Section';
+                trackSectionAccess(courseId, sectionId, sectionTitle);
+            }
+        });
+    }
+    {% endif %}
+    
+    // Helper: Show loading for AJAX requests
+    window.showLoadingForAjax = function(promise, message = 'Loading...') {
+        showLoading(message);
+        return promise.finally(() => hideLoading());
+    };
+    
+    // Helper: Add return URL to forms
+    window.addReturnUrl = function(form) {
+        const returnUrl = window.location.href;
+        let input = form.querySelector('input[name="return_url"]');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'return_url';
+            form.appendChild(input);
+        }
+        input.value = returnUrl;
+    };
+    </script>
 </body>
 </html>

@@ -1,11 +1,15 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_from_directory
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_from_directory, jsonify, make_response
 from flask_login import login_required, current_user
-from app.models import Course, User
+from app.models import Course, User, Enrollment, AssignmentSubmission, QuizAttempt, Rating, Assignment, Section
 from app import db
 from app.decorators import admin_required
 from app.forms import ProfileForm
 from app.utils.email import send_welcome_email
+from datetime import datetime, timedelta
+from sqlalchemy import func, desc
 import os
+import csv
+import io
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -20,13 +24,79 @@ def inject_pending_count():
 @admin_bp.route('/dashboard')
 @admin_required
 def dashboard():
+    # Course stats
     approved_count = Course.query.filter_by(status='approved').count()
     pending_count = Course.query.filter_by(status='pending').count()
+    rejected_count = Course.query.filter_by(status='rejected').count()
+    total_courses = Course.query.count()
+    
+    # User stats
+    total_users = User.query.count()
+    student_count = User.query.filter_by(role='student').count()
+    teacher_count = User.query.filter_by(role='teacher').count()
+    admin_count = User.query.filter_by(role='admin').count()
+    
+    # Active users (logged in last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    active_users = User.query.filter(User.last_login >= thirty_days_ago).count() if thirty_days_ago else 0
+    
+    # Enrollment stats
+    total_enrollments = Enrollment.query.count()
+    
+    # Assignment stats
+    total_assignments = AssignmentSubmission.query.count()
+    graded_assignments = AssignmentSubmission.query.filter_by(reviewed=True).count()
+    pending_grading = total_assignments - graded_assignments
+    
+    # Average grade
+    avg_grade_result = db.session.query(func.avg(AssignmentSubmission.grade)).filter(
+        AssignmentSubmission.grade.isnot(None)
+    ).scalar()
+    avg_grade = round(avg_grade_result, 1) if avg_grade_result else 0
+    
+    # Recent activity (last 10 logins)
+    recent_logins = User.query.filter(User.last_login.isnot(None)).order_by(
+        desc(User.last_login)
+    ).limit(10).all()
+    
+    # Most popular courses (by enrollment)
+    popular_courses = db.session.query(
+        Course, func.count(Enrollment.id).label('enrollment_count')
+    ).join(Enrollment).group_by(Course.id).order_by(
+        desc('enrollment_count')
+    ).limit(5).all()
+    
+    # Growth data (users created per month - last 6 months)
+    six_months_ago = datetime.utcnow() - timedelta(days=180)
+    try:
+        # PostgreSQL version
+        monthly_signups = db.session.query(
+            func.to_char(User.created_at, 'YYYY-MM').label('month'),
+            func.count(User.id).label('count')
+        ).filter(User.created_at >= six_months_ago).group_by('month').all()
+    except:
+        # Fallback to empty list if query fails
+        monthly_signups = []
     
     return render_template('admin/dashboard.html',
                          user=current_user,
                          approved_count=approved_count,
-                         pending_count=pending_count)
+                         pending_count=pending_count,
+                         rejected_count=rejected_count,
+                         total_courses=total_courses,
+                         total_users=total_users,
+                         student_count=student_count,
+                         teacher_count=teacher_count,
+                         admin_count=admin_count,
+                         active_users=active_users,
+                         total_enrollments=total_enrollments,
+                         total_assignments=total_assignments,
+                         graded_assignments=graded_assignments,
+                         pending_grading=pending_grading,
+                         avg_grade=avg_grade,
+                         recent_logins=recent_logins,
+                         popular_courses=popular_courses,
+                         monthly_signups=monthly_signups)
 
 @admin_bp.route('/approvals')
 @admin_required
@@ -77,8 +147,59 @@ def serve_pdf(filename):
 @admin_bp.route('/users')
 @admin_required
 def manage_users():
-    users = User.query.all()
-    return render_template('admin/users.html', users=users)
+    # Get search and filter parameters
+    search_query = request.args.get('search', '').strip()
+    role_filter = request.args.get('role', '')
+    sort_by = request.args.get('sort', 'created_at')
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # Build query
+    query = User.query
+    
+    # Apply search
+    if search_query:
+        query = query.filter(
+            db.or_(
+                User.username.ilike(f'%{search_query}%'),
+                User.email.ilike(f'%{search_query}%'),
+                User.first_name.ilike(f'%{search_query}%'),
+                User.last_name.ilike(f'%{search_query}%')
+            )
+        )
+    
+    # Apply role filter
+    if role_filter:
+        query = query.filter_by(role=role_filter)
+    
+    # Apply sorting
+    if sort_by == 'last_login':
+        query = query.order_by(desc(User.last_login))
+    elif sort_by == 'login_count':
+        query = query.order_by(desc(User.login_count))
+    elif sort_by == 'username':
+        query = query.order_by(User.username)
+    elif sort_by == 'email':
+        query = query.order_by(User.email)
+    else:  # created_at
+        query = query.order_by(desc(User.created_at))
+    
+    # Paginate
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    users = pagination.items
+    
+    # Get activity stats for each user
+    for user in users:
+        user.enrollment_count = Enrollment.query.filter_by(student_id=user.id).count() if user.role == 'student' else 0
+        user.course_count = Course.query.filter_by(teacher_id=user.id).count() if user.role == 'teacher' else 0
+        user.submission_count = AssignmentSubmission.query.filter_by(student_id=user.id).count() if user.role == 'student' else 0
+    
+    return render_template('admin/users.html', 
+                         users=users,
+                         pagination=pagination,
+                         search_query=search_query,
+                         role_filter=role_filter,
+                         sort_by=sort_by)
 
 @admin_bp.route('/create-user', methods=['GET', 'POST'])
 @admin_required
@@ -262,3 +383,339 @@ def profile():
         form.contact.data = current_user.contact
     
     return render_template('admin/profile.html', form=form)
+
+# ===== EXPORTS & REPORTS =====
+
+@admin_bp.route('/export/users')
+@admin_required
+def export_users():
+    """Export all users to CSV"""
+    users = User.query.all()
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(['ID', 'Username', 'Email', 'Role', 'First Name', 'Last Name', 
+                     'Created At', 'Last Login', 'Login Count', 'Enrollments', 'Submissions'])
+    
+    # Write data
+    for user in users:
+        enrollment_count = Enrollment.query.filter_by(student_id=user.id).count()
+        submission_count = AssignmentSubmission.query.filter_by(student_id=user.id).count()
+        
+        writer.writerow([
+            user.id,
+            user.username,
+            user.email,
+            user.role,
+            user.first_name or '',
+            user.last_name or '',
+            user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '',
+            user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never',
+            user.login_count or 0,
+            enrollment_count,
+            submission_count
+        ])
+    
+    # Prepare response
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = f'attachment; filename=users_export_{datetime.now().strftime("%Y%m%d")}.csv'
+    
+    return response
+
+@admin_bp.route('/export/courses')
+@admin_required
+def export_courses():
+    """Export all courses to CSV"""
+    courses = Course.query.all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(['ID', 'Title', 'Teacher', 'Status', 'Enrollments', 'Avg Rating', 
+                     'Total Assignments', 'Created At'])
+    
+    # Write data
+    for course in courses:
+        enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
+        avg_rating = db.session.query(func.avg(Rating.rating)).filter_by(course_id=course.id).scalar() or 0
+        
+        # Count assignments in course
+        assignment_count = db.session.query(func.count(Assignment.id)).join(
+            Section
+        ).filter(Section.course_id == course.id).scalar() or 0
+        
+        writer.writerow([
+            course.id,
+            course.title,
+            course.teacher.username if course.teacher else '',
+            course.status,
+            enrollment_count,
+            round(avg_rating, 2),
+            assignment_count,
+            course.created_at.strftime('%Y-%m-%d') if hasattr(course, 'created_at') else ''
+        ])
+    
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = f'attachment; filename=courses_export_{datetime.now().strftime("%Y%m%d")}.csv'
+    
+    return response
+
+@admin_bp.route('/export/grades')
+@admin_required
+def export_grades():
+    """Export all grades to CSV"""
+    submissions = AssignmentSubmission.query.filter(
+        AssignmentSubmission.grade.isnot(None)
+    ).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(['Student ID', 'Student Name', 'Student Email', 'Course', 'Assignment', 
+                     'Grade', 'Submitted At', 'Reviewed'])
+    
+    # Write data
+    for submission in submissions:
+        from app.models import Assignment, Section
+        assignment = Assignment.query.get(submission.assignment_id)
+        if assignment:
+            section = Section.query.get(assignment.section_id)
+            course = Course.query.get(section.course_id) if section else None
+            student = User.query.get(submission.student_id)
+            
+            writer.writerow([
+                submission.student_id,
+                student.username if student else '',
+                student.email if student else '',
+                course.title if course else '',
+                assignment.title,
+                submission.grade or '',
+                submission.submitted_at.strftime('%Y-%m-%d %H:%M') if submission.submitted_at else '',
+                'Yes' if submission.reviewed else 'No'
+            ])
+    
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = f'attachment; filename=grades_export_{datetime.now().strftime("%Y%m%d")}.csv'
+    
+    return response
+
+# ===== COURSE STATISTICS =====
+
+@admin_bp.route('/course-statistics')
+@admin_required
+def course_statistics():
+    """Detailed statistics for all courses"""
+    courses = Course.query.filter_by(status='approved').all()
+    
+    course_stats = []
+    for course in courses:
+        # Get enrollments
+        enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
+        
+        # Get completion rate
+        completed_enrollments = Enrollment.query.filter_by(
+            course_id=course.id,
+            completed=True
+        ).count()
+        completion_rate = (completed_enrollments / enrollment_count * 100) if enrollment_count > 0 else 0
+        
+        # Get average rating
+        avg_rating = db.session.query(func.avg(Rating.rating)).filter_by(course_id=course.id).scalar() or 0
+        rating_count = Rating.query.filter_by(course_id=course.id).count()
+        
+        # Get assignment stats
+        from app.models import Assignment, Section
+        assignments = db.session.query(Assignment).join(Section).filter(
+            Section.course_id == course.id
+        ).all()
+        
+        total_assignments = len(assignments)
+        total_submissions = sum(
+            AssignmentSubmission.query.filter_by(assignment_id=a.id).count() 
+            for a in assignments
+        )
+        
+        # Average grade for course
+        avg_grade = 0
+        if assignments:
+            grades = []
+            for assignment in assignments:
+                assignment_grades = db.session.query(AssignmentSubmission.grade).filter_by(
+                    assignment_id=assignment.id
+                ).filter(AssignmentSubmission.grade.isnot(None)).all()
+                grades.extend([g[0] for g in assignment_grades])
+            
+            avg_grade = sum(grades) / len(grades) if grades else 0
+        
+        course_stats.append({
+            'course': course,
+            'enrollment_count': enrollment_count,
+            'completion_rate': round(completion_rate, 1),
+            'avg_rating': round(avg_rating, 2),
+            'rating_count': rating_count,
+            'total_assignments': total_assignments,
+            'total_submissions': total_submissions,
+            'avg_grade': round(avg_grade, 1) if avg_grade else 0
+        })
+    
+    # Sort by enrollment count
+    course_stats.sort(key=lambda x: x['enrollment_count'], reverse=True)
+    
+    return render_template('admin/course_statistics.html', course_stats=course_stats)
+
+# ============================================
+# USER SUSPENSION/BAN MANAGEMENT
+# ============================================
+
+@admin_bp.route('/user/<int:user_id>/suspend', methods=['POST'])
+@admin_required
+def suspend_user(user_id):
+    """Suspend a user account"""
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent admin from suspending themselves
+    if user.id == current_user.id:
+        flash('You cannot suspend your own account', 'danger')
+        return redirect(url_for('admin.manage_users'))
+    
+    # Prevent suspending other admins
+    if user.role == 'admin':
+        flash('You cannot suspend other administrators', 'danger')
+        return redirect(url_for('admin.manage_users'))
+    
+    # Get suspension details from form
+    reason = request.form.get('reason', 'No reason provided')
+    duration_days = request.form.get('duration_days', type=int)
+    
+    user.is_suspended = True
+    user.suspension_reason = reason
+    user.suspended_at = datetime.utcnow()
+    user.suspended_by = current_user.id
+    
+    if duration_days and duration_days > 0:
+        user.suspended_until = datetime.utcnow() + timedelta(days=duration_days)
+    else:
+        user.suspended_until = None  # Indefinite suspension
+    
+    db.session.commit()
+    
+    # Send email notification
+    try:
+        from app.utils.email import send_suspension_email
+        send_suspension_email(user, reason, user.suspended_until)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send suspension email: {e}")
+    
+    if duration_days:
+        flash(f'User {user.username} has been suspended for {duration_days} days', 'success')
+    else:
+        flash(f'User {user.username} has been suspended indefinitely', 'success')
+    
+    return redirect(url_for('admin.manage_users'))
+
+@admin_bp.route('/user/<int:user_id>/ban', methods=['POST'])
+@admin_required
+def ban_user(user_id):
+    """Permanently ban a user account"""
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent admin from banning themselves
+    if user.id == current_user.id:
+        flash('You cannot ban your own account', 'danger')
+        return redirect(url_for('admin.manage_users'))
+    
+    # Prevent banning other admins
+    if user.role == 'admin':
+        flash('You cannot ban other administrators', 'danger')
+        return redirect(url_for('admin.manage_users'))
+    
+    # Get ban reason from form
+    reason = request.form.get('reason', 'Violation of terms and conditions')
+    
+    user.is_banned = True
+    user.is_suspended = False  # Clear suspension if any
+    user.suspension_reason = reason
+    user.suspended_at = datetime.utcnow()
+    user.suspended_by = current_user.id
+    user.suspended_until = None
+    
+    db.session.commit()
+    
+    # Send email notification
+    try:
+        from app.utils.email import send_ban_email
+        send_ban_email(user, reason)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send ban email: {e}")
+    
+    flash(f'User {user.username} has been permanently banned', 'success')
+    return redirect(url_for('admin.manage_users'))
+
+@admin_bp.route('/user/<int:user_id>/unsuspend', methods=['POST'])
+@admin_required
+def unsuspend_user(user_id):
+    """Remove suspension from a user account"""
+    user = User.query.get_or_404(user_id)
+    
+    if not user.is_suspended and not user.is_banned:
+        flash('User is not suspended or banned', 'info')
+        return redirect(url_for('admin.manage_users'))
+    
+    # Cannot unban through unsuspend - must use separate unban route
+    if user.is_banned:
+        flash('This user is permanently banned. Use the "Unban" action to restore access', 'warning')
+        return redirect(url_for('admin.manage_users'))
+    
+    user.is_suspended = False
+    user.suspended_until = None
+    # Keep suspension_reason and suspended_at for history
+    
+    db.session.commit()
+    
+    # Send email notification
+    try:
+        from app.utils.email import send_unsuspension_email
+        send_unsuspension_email(user)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send unsuspension email: {e}")
+    
+    flash(f'User {user.username} has been unsuspended', 'success')
+    return redirect(url_for('admin.manage_users'))
+
+@admin_bp.route('/user/<int:user_id>/unban', methods=['POST'])
+@admin_required
+def unban_user(user_id):
+    """Remove ban from a user account"""
+    user = User.query.get_or_404(user_id)
+    
+    if not user.is_banned:
+        flash('User is not banned', 'info')
+        return redirect(url_for('admin.manage_users'))
+    
+    user.is_banned = False
+    user.is_suspended = False
+    user.suspended_until = None
+    # Keep suspension_reason and suspended_at for history
+    
+    db.session.commit()
+    
+    # Send email notification
+    try:
+        from app.utils.email import send_unban_email
+        send_unban_email(user)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send unban email: {e}")
+    
+    flash(f'User {user.username} has been unbanned', 'success')
+    return redirect(url_for('admin.manage_users'))

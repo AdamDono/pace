@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #DC2626;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .logo .pace {
+            color: #3B82F6;
+        }
+        .logo .academy {
+            color: #1F2937;
+        }
+        h1 {
+            color: #DC2626;
+            margin-top: 20px;
+        }
+        .danger-box {
+            background-color: #FEE2E2;
+            border-left: 4px solid #DC2626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-item {
+            margin: 10px 0;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #4B5563;
+        }
+        .info-value {
+            color: #1F2937;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span class="pace">Pace</span><span class="academy">Academy</span>
+            </div>
+            <p style="color: #6B7280; margin: 0;">Account Notification</p>
+        </div>
+
+        <h1>Account Permanently Banned 🚫</h1>
+
+        <p>Dear {{ user.username }},</p>
+
+        <p>We regret to inform you that your Pace Academy account has been permanently banned due to a violation of our terms and conditions.</p>
+
+        <div class="danger-box">
+            <h3 style="margin-top: 0; color: #7F1D1D;">Ban Details</h3>
+            <div class="info-item">
+                <span class="info-label">Reason:</span><br>
+                <span class="info-value">{{ reason }}</span>
+            </div>
+            <div class="info-item" style="margin-top: 15px;">
+                <span class="info-label">Status:</span><br>
+                <span class="info-value" style="color: #DC2626; font-weight: bold;">Permanent Ban</span>
+            </div>
+        </div>
+
+        <div style="background-color: #FEF2F2; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #991B1B;">
+            <h3 style="margin-top: 0; color: #7F1D1D;">What This Means</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>You can no longer access your account</li>
+                <li>All enrolled courses are no longer accessible</li>
+                <li>You cannot create a new account without approval</li>
+                <li>This decision is final unless successfully appealed</li>
+            </ul>
+        </div>
+
+        <p>If you believe this ban was made in error or would like to submit an appeal, please contact our support team at <a href="mailto:{{ support_email }}" style="color: #DC2626;">{{ support_email }}</a> within 30 days of this notice.</p>
+
+        <p>Please include your username and a detailed explanation in your appeal.</p>
+
+        <p style="color: #6B7280; font-size: 14px; margin-top: 30px;">
+            We take violations of our community guidelines seriously to maintain a safe and productive learning environment for all users.
+        </p>
+
+        <div class="footer">
+            <p><strong>Pace Academy</strong></p>
+            <p>Support: {{ support_email }}</p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                This is an automated message. For appeals, please contact support.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
