@@ -26,6 +26,103 @@ def dashboard():
     courses = Course.query.filter_by(teacher_id=current_user.id).all()
     return render_template('teacher/dashboard.html', courses=courses)
 
+@teacher_bp.route('/course/<int:course_id>/delete-draft', methods=['POST'])
+@teacher_required
+def delete_draft_course(course_id):
+    """Allow a teacher to permanently delete their own draft course."""
+    from app.models import Course, db
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+    # Only allow deletion for drafts
+    is_draft = getattr(course, 'is_draft', False) or getattr(course, 'status', '') == 'draft'
+    if not is_draft:
+        flash('Only draft courses can be deleted by teachers. Request admin approval to delete published courses.', 'warning')
+        return redirect(url_for('teacher.manage_modules', course_id=course.id))
+
+    try:
+        title = course.title
+        db.session.delete(course)
+        db.session.commit()
+        flash(f"Draft course '{title}' was deleted.", 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to delete draft: {str(e)}', 'danger')
+        return redirect(url_for('teacher.manage_modules', course_id=course.id))
+
+    return_url = request.form.get('return_url')
+    if return_url:
+        return redirect(return_url)
+    return redirect(url_for('teacher.my_courses'))
+
+@teacher_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def profile():
+    """Teacher profile edit page"""
+    form = ProfileForm()
+
+    if form.validate_on_submit():
+        # Verify current password
+        if not current_user.verify_password(form.current_password.data):
+            flash('Current password is incorrect', 'danger')
+            return render_template('teacher/profile.html', form=form)
+
+        # Check for email/username conflicts
+        from app.models import User
+        if form.email.data != current_user.email:
+            existing_user = User.query.filter_by(email=form.email.data).first()
+            if existing_user:
+                flash('Email already in use by another account', 'danger')
+                return render_template('teacher/profile.html', form=form)
+
+        if form.username.data != current_user.username:
+            existing_user = User.query.filter_by(username=form.username.data).first()
+            if existing_user:
+                flash('Username already in use', 'danger')
+                return render_template('teacher/profile.html', form=form)
+
+        # Update fields
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.bio = form.bio.data
+        current_user.contact = form.contact.data
+
+        # Handle profile image upload (optional)
+        file = request.files.get('profile_image')
+        if file and file.filename:
+            allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
+            if ext in allowed:
+                # Remove old image if any
+                if getattr(current_user, 'profile_image', None):
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
+                    try:
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except Exception:
+                        pass
+                new_name = f"avatar_teacher_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+                save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
+                file.save(save_path)
+                current_user.profile_image = new_name
+
+        if form.new_password.data:
+            current_user.password = form.new_password.data
+
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('teacher.profile'))
+
+    # Pre-populate on GET
+    if request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+        form.bio.data = getattr(current_user, 'bio', '')
+        form.contact.data = getattr(current_user, 'contact', '')
+
+    return render_template('teacher/profile.html', form=form)
+
 @teacher_bp.route('/course/<int:course_id>/analytics')
 @teacher_required
 def course_analytics(course_id):
@@ -728,7 +825,22 @@ def add_quiz(course_id, section_id):
 
     form = QuizForm()
     if form.validate_on_submit():
-        quiz = Quiz(title=form.title.data, section_id=section_id)
+        # Get quiz settings from form
+        time_limit = request.form.get('time_limit', type=int)
+        passing_score = request.form.get('passing_score', type=float) or 60.0
+        max_attempts = request.form.get('max_attempts', type=int)
+        randomize_questions = 'randomize_questions' in request.form
+        show_correct_answers = 'show_correct_answers' in request.form
+        
+        quiz = Quiz(
+            title=form.title.data,
+            section_id=section_id,
+            time_limit=time_limit,
+            passing_score=passing_score,
+            max_attempts=max_attempts,
+            randomize_questions=randomize_questions,
+            show_correct_answers=show_correct_answers
+        )
         db.session.add(quiz)
         db.session.flush()
         for q in form.questions.data:
@@ -1227,3 +1339,84 @@ def preview_course(course_id):
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
 
     return render_template('teacher/course_preview.html', course=course, modules=modules, sections=sections)
+
+@teacher_bp.route('/course/<int:course_id>/calendar')
+@teacher_required
+def course_calendar(course_id):
+    """Calendar view of all course deadlines"""
+    from app.models import Course, Assignment, Section, Module
+    from datetime import datetime, timedelta
+    
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # Get all assignments with due dates
+    assignments = Assignment.query.join(Section).filter(
+        Section.course_id == course_id,
+        Assignment.due_date.isnot(None)
+    ).order_by(Assignment.due_date).all()
+    
+    # Group assignments by date
+    calendar_data = {}
+    today = datetime.utcnow().date()
+    
+    for assignment in assignments:
+        date_key = assignment.due_date.date()
+        days_until = (date_key - today).days
+        
+        if date_key not in calendar_data:
+            calendar_data[date_key] = {
+                'date': date_key,
+                'assignments': [],
+                'is_past': date_key < today,
+                'is_today': date_key == today,
+                'is_soon': 0 <= days_until <= 7,
+                'days_until': days_until
+            }
+        
+        calendar_data[date_key]['assignments'].append({
+            'assignment': assignment,
+            'section': assignment.section,
+            'module': assignment.section.module
+        })
+    
+    # Convert to sorted list
+    calendar_items = sorted(calendar_data.values(), key=lambda x: x['date'])
+    
+    # Stats
+    total_assignments = len(assignments)
+    upcoming_assignments = sum(1 for a in assignments if a.due_date and a.due_date.date() >= today)
+    past_due = sum(1 for a in assignments if a.due_date and a.due_date.date() < today)
+    due_this_week = sum(1 for a in assignments if a.due_date and 0 <= (a.due_date.date() - today).days <= 7)
+    
+    return render_template('teacher/course_calendar.html',
+                         course=course,
+                         calendar_items=calendar_items,
+                         total_assignments=total_assignments,
+                         upcoming_assignments=upcoming_assignments,
+                         past_due=past_due,
+                         due_this_week=due_this_week)
+
+@teacher_bp.route('/course/<int:course_id>/view-as-student')
+@teacher_required
+def view_as_student(course_id):
+    """View course exactly as students see it"""
+    from app.models import Course, Module, Section, Enrollment, EnrollmentSection
+    
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # Create a temporary "preview" enrollment to simulate student experience
+    # Get course structure
+    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
+    
+    # Get first enrolled student for realistic preview (if any)
+    sample_enrollment = Enrollment.query.filter_by(course_id=course_id).first()
+    
+    return render_template('teacher/view_as_student.html',
+                         course=course,
+                         modules=modules,
+                         sample_enrollment=sample_enrollment,
+                         preview_mode=True)

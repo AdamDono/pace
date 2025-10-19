@@ -14,6 +14,7 @@ class User(db.Model, UserMixin):
     role = db.Column(db.String(20), nullable=False)
     bio = db.Column(db.Text, nullable=True)
     contact = db.Column(db.String(120), nullable=True)
+    profile_image = db.Column(db.String(255), nullable=True)
     
     # Teacher-specific fields
     first_name = db.Column(db.String(80), nullable=True)
@@ -275,6 +276,11 @@ class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
+    time_limit = db.Column(db.Integer, nullable=True)  # Time limit in minutes (null = unlimited)
+    passing_score = db.Column(db.Float, default=60.0)  # Minimum score to pass (percentage)
+    max_attempts = db.Column(db.Integer, nullable=True)  # Max attempts allowed (null = unlimited)
+    randomize_questions = db.Column(db.Boolean, default=False)  # Randomize question order
+    show_correct_answers = db.Column(db.Boolean, default=True)  # Show correct answers after submission
     section = db.relationship('Section', back_populates='quizzes')
     questions = db.relationship('QuizQuestion', back_populates='quiz', cascade='all, delete-orphan')
     attempts = db.relationship('QuizAttempt', back_populates='quiz', cascade='all, delete-orphan')
@@ -299,6 +305,8 @@ class QuizAttempt(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     score = db.Column(db.Float, nullable=False)
     attempted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    time_taken = db.Column(db.Integer, nullable=True)  # Time taken in seconds
+    completed_at = db.Column(db.DateTime, nullable=True)  # When quiz was completed
     quiz = db.relationship('Quiz', back_populates='attempts')
     student = db.relationship('User')
     answers = db.relationship('QuizAnswer', back_populates='attempt', cascade='all, delete-orphan')

@@ -16,6 +16,56 @@
                 Back to Courses
             </a>
         </div>
+
+    <!-- Danger Zone -->
+    <div class="mt-8 bg-white rounded-2xl shadow-sm border border-red-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-red-700">Danger Zone</h3>
+                <p class="text-sm text-red-600 mt-1">Deleting a course is permanent and cannot be undone.</p>
+            </div>
+            <button onclick="document.getElementById('delete-modal').classList.remove('hidden')"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete Course</button>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-xl w-full max-w-md p-6 shadow-xl">
+            <h3 class="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
+            <p class="text-sm text-gray-600 mt-2">Type the course title to confirm deletion:</p>
+            <p class="mt-2 font-medium">{{ course.title }}</p>
+            <form method="POST" action="{{ url_for('admin.delete_course', course_id=course.id) }}" class="mt-4"
+                  onsubmit="return checkTitleMatch()">
+                <input type="hidden" name="return_url" value="{{ request.url }}">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                <input id="confirm-title" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="Enter course title exactly">
+                <div class="mt-4 flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="px-4 py-2 border rounded-lg">Cancel</button>
+                    <button id="confirm-delete-btn" type="submit" disabled class="px-4 py-2 bg-red-600 text-white rounded-lg opacity-50">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    const inputEl = document.getElementById('confirm-title');
+    const btnEl = document.getElementById('confirm-delete-btn');
+    function checkTitleMatch(){
+        return inputEl && inputEl.value.trim() === '{{ course.title }}';
+    }
+    if (inputEl && btnEl){
+        inputEl.addEventListener('input', function(){
+            if (this.value.trim() === '{{ course.title }}'){
+                btnEl.disabled = false;
+                btnEl.classList.remove('opacity-50');
+            } else {
+                btnEl.disabled = true;
+                btnEl.classList.add('opacity-50');
+            }
+        });
+    }
+    </script>
         
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <p class="text-gray-600 mb-4">{{ course.description }}</p>
