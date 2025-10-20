@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify, session, send_from_directory
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.decorators import teacher_required
@@ -25,6 +25,12 @@ def dashboard():
         return redirect(url_for('auth.login'))
     courses = Course.query.filter_by(teacher_id=current_user.id).all()
     return render_template('teacher/dashboard.html', courses=courses)
+
+@teacher_bp.route('/media/<path:filename>')
+@login_required
+def media(filename):
+    """Serve uploaded media files (avatars, banners) for teachers."""
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
 @teacher_bp.route('/course/<int:course_id>/delete-draft', methods=['POST'])
 @teacher_required
@@ -68,7 +74,6 @@ def profile():
             if not current_user.verify_password(form.current_password.data or ''):
                 flash('Current password is incorrect', 'danger')
                 return render_template('teacher/profile.html', form=form)
-
         # Check for email/username conflicts
         from app.models import User
         if form.email.data != current_user.email:
@@ -123,6 +128,24 @@ def profile():
         form.contact.data = getattr(current_user, 'contact', '')
 
     return render_template('teacher/profile.html', form=form)
+
+@teacher_bp.route('/calendar')
+@login_required
+@teacher_required
+def calendar():
+    """Teacher calendar index: list courses and quick links."""
+    from app.models import Course
+    courses = Course.query.filter_by(teacher_id=current_user.id).all()
+    upcoming = []
+    try:
+        for c in courses:
+            upcoming.append({
+                'course': c,
+                'sections_count': len(getattr(c, 'sections', []))
+            })
+    except Exception:
+        pass
+    return render_template('teacher/calendar.html', courses=courses, upcoming=upcoming)
 
 @teacher_bp.route('/course/<int:course_id>/analytics')
 @teacher_required

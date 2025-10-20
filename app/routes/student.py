@@ -28,16 +28,72 @@ def allowed_file(filename, allowed_extensions=None):
 @login_required
 @student_required
 def dashboard():
-    enrolled_courses = Course.query.join(Enrollment)\
-        .filter(Enrollment.student_id == current_user.id)\
-        .filter(Course.status == 'approved')\
+    """Learner dashboard: enrolled courses, progress, and upcoming items."""
+    # Enrolled approved courses
+    enrolled_courses = Course.query.join(Enrollment) \
+        .filter(Enrollment.student_id == current_user.id) \
+        .filter(Course.status == 'approved') \
         .all()
-    for course in enrolled_courses:
-        logger.debug(f"Course ID: {course.id}, Title: {course.title}, intro_text: {course.intro_text}")
-    new_enrollments = [c for c in enrolled_courses if not hasattr(current_user, 'last_seen') or c.created_at > getattr(current_user, 'last_seen', None)]
-    if new_enrollments:
-        flash(f"You’ve been enrolled in {', '.join(c.title for c in new_enrollments)}!", 'success')
-    return render_template('student/courses.html', courses=enrolled_courses)
+
+    # Simple course progress per course
+    progress_by_course = {}
+    continue_learning = []  # recently accessed sections
+    upcoming = []  # assignments due soon
+    estimated_time = {}  # estimated completion time per course
+
+    try:
+        # Preload enrollments
+        enrollments = {e.course_id: e for e in Enrollment.query.filter_by(student_id=current_user.id).all()}
+
+        for course in enrolled_courses:
+            sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
+            total_sections = len(sections)
+            enrollment = enrollments.get(course.id)
+
+            completed_sections = 0
+            last_accessed = None
+            
+            # Calculate estimated time (sum of section durations)
+            total_duration = sum(s.duration or 0 for s in sections)  # duration in minutes
+            estimated_time[course.id] = total_duration
+            
+            if enrollment:
+                # Map enrollment sections
+                es_list = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+                completed_sections = sum(1 for es in es_list if es.completed)
+                # Continue learning: pick most recent section
+                if es_list:
+                    last_es = max(es_list, key=lambda es: es.last_accessed or datetime.min)
+                    if last_es and last_es.last_accessed:
+                        last_accessed = last_es
+                        # Ensure section exists
+                        try:
+                            cont_section = Section.query.get(last_es.section_id)
+                            if cont_section:
+                                continue_learning.append({'course': course, 'section': cont_section, 'last_accessed': last_es.last_accessed})
+                        except Exception:
+                            pass
+
+            completion = (completed_sections / total_sections * 100) if total_sections > 0 else 0
+            progress_by_course[course.id] = round(completion, 1)
+
+        # Upcoming assignments within 7 days across all enrolled courses
+        upcoming = Assignment.query.join(Section).join(Course) \
+            .filter(Course.id.in_([c.id for c in enrolled_courses])) \
+            .filter(Assignment.due_date.isnot(None)) \
+            .order_by(Assignment.due_date.asc()) \
+            .limit(10).all()
+    except Exception as e:
+        logger.warning(f"Dashboard aggregation fallback: {e}")
+
+    return render_template(
+        'student/dashboard.html',
+        courses=enrolled_courses,
+        progress_by_course=progress_by_course,
+        continue_learning=sorted(continue_learning, key=lambda x: x['last_accessed'], reverse=True)[:6],
+        upcoming=upcoming,
+        estimated_time=estimated_time
+    )
 
 @student_bp.route('/course-progress')
 @login_required
@@ -637,10 +693,11 @@ def profile():
     form = ProfileForm()
     
     if form.validate_on_submit():
-        # Verify current password
-        if not current_user.verify_password(form.current_password.data):
-            flash('Current password is incorrect', 'danger')
-            return render_template('student/profile.html', form=form)
+        # Only require current password when changing password
+        if form.new_password.data:
+            if not current_user.verify_password(form.current_password.data or ''):
+                flash('Current password is incorrect', 'danger')
+                return render_template('student/profile.html', form=form)
         
         # Check if email is already taken by another user
         if form.email.data != current_user.email:
@@ -661,6 +718,27 @@ def profile():
         current_user.email = form.email.data
         current_user.bio = form.bio.data
         current_user.contact = form.contact.data
+        
+        # Handle profile image upload (optional field)
+        file = request.files.get('profile_image')
+        if file and file.filename:
+            # Basic validation
+            allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
+            if ext in allowed:
+                # Remove old image if exists
+                if getattr(current_user, 'profile_image', None):
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
+                    try:
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except Exception:
+                        pass
+                # Save new image
+                new_name = f"avatar_student_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+                save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
+                file.save(save_path)
+                current_user.profile_image = new_name
         
         # Update password if provided
         if form.new_password.data:
@@ -818,3 +896,126 @@ def respond_video_question():
     except Exception as e:
         logger.error(f"Error submitting video question response: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# ===== NEW SIDEBAR ROUTES =====
+
+@student_bp.route('/assignments')
+@login_required
+@student_required
+def assignments():
+    """View all assignments across enrolled courses"""
+    from sqlalchemy import or_
+    
+    # Get all assignments for enrolled courses
+    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+    
+    assignments = Assignment.query.join(Section).filter(
+        Section.course_id.in_(enrolled_course_ids)
+    ).order_by(Assignment.due_date.asc()).all()
+    
+    # Categorize assignments
+    pending = []
+    submitted = []
+    graded = []
+    
+    for assignment in assignments:
+        submission = AssignmentSubmission.query.filter_by(
+            assignment_id=assignment.id,
+            student_id=current_user.id
+        ).first()
+        
+        if submission:
+            if submission.grade is not None:
+                graded.append({'assignment': assignment, 'submission': submission})
+            else:
+                submitted.append({'assignment': assignment, 'submission': submission})
+        else:
+            pending.append({'assignment': assignment, 'submission': None})
+    
+    return render_template('student/assignments.html',
+                         pending=pending,
+                         submitted=submitted,
+                         graded=graded)
+
+@student_bp.route('/certificates')
+@login_required
+@student_required
+def certificates():
+    """View all earned certificates"""
+    enrollments = Enrollment.query.filter_by(
+        student_id=current_user.id,
+        completed=True
+    ).all()
+    
+    certificates = [e for e in enrollments if e.certificate_path]
+    
+    return render_template('student/certificates.html', certificates=certificates)
+
+@student_bp.route('/calendar')
+@login_required
+@student_required
+def calendar():
+    """Calendar view of all deadlines"""
+    from datetime import datetime, timedelta
+    
+    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+    
+    # Get all assignments with due dates
+    assignments = Assignment.query.join(Section).filter(
+        Section.course_id.in_(enrolled_course_ids),
+        Assignment.due_date.isnot(None)
+    ).order_by(Assignment.due_date).all()
+    
+    # Group by date
+    calendar_data = {}
+    today = datetime.utcnow().date()
+    
+    for assignment in assignments:
+        date_key = assignment.due_date.date()
+        if date_key not in calendar_data:
+            calendar_data[date_key] = {
+                'date': date_key,
+                'items': [],
+                'is_past': date_key < today,
+                'is_today': date_key == today
+            }
+        calendar_data[date_key]['items'].append(assignment)
+    
+    calendar_items = sorted(calendar_data.values(), key=lambda x: x['date'])
+    
+    return render_template('student/calendar.html', calendar_items=calendar_items)
+
+@student_bp.route('/announcements')
+@login_required
+@student_required
+def announcements():
+    """View all course announcements"""
+    from app.models import Announcement
+    
+    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+    
+    announcements = Announcement.query.filter(
+        Announcement.course_id.in_(enrolled_course_ids)
+    ).order_by(Announcement.created_at.desc()).all()
+    
+    return render_template('student/announcements.html', announcements=announcements)
+
+@student_bp.route('/notifications')
+@login_required
+@student_required
+def notifications_list():
+    """View all notifications"""
+    from app.models import Notification
+    
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).limit(50).all()
+    
+    return render_template('student/notifications.html', notifications=notifications)
+
+@student_bp.route('/help')
+@login_required
+@student_required
+def help():
+    """Help and support page"""
+    return render_template('student/help.html')

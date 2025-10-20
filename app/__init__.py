@@ -52,6 +52,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
     app.config['WTF_CSRF_ENABLED'] = True  # Enabled for security
+    app.config['WTF_CSRF_TIME_LIMIT'] = None  # Do not expire CSRF tokens during session
     app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx'}  # Updated to match forms
 
     # Configure email
@@ -82,6 +83,70 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
+    # Context processor for sidebar counts
+    @app.context_processor
+    def inject_sidebar_counts():
+        from flask_login import current_user
+        from app.models import Assignment, AssignmentSubmission, Enrollment, Section, Announcement, Notification
+        from datetime import datetime
+        
+        if current_user.is_authenticated and current_user.role == 'student':
+            try:
+                # Get enrolled course IDs
+                enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+                
+                # Count pending assignments (not submitted)
+                all_assignments = Assignment.query.join(Section).filter(
+                    Section.course_id.in_(enrolled_course_ids) if enrolled_course_ids else False
+                ).all()
+                
+                pending_assignments = 0
+                for assignment in all_assignments:
+                    submission = AssignmentSubmission.query.filter_by(
+                        assignment_id=assignment.id,
+                        student_id=current_user.id
+                    ).first()
+                    if not submission:
+                        pending_assignments += 1
+                
+                # Count unread announcements (last 7 days as "new")
+                from datetime import timedelta
+                week_ago = datetime.utcnow() - timedelta(days=7)
+                unread_announcements = Announcement.query.filter(
+                    Announcement.course_id.in_(enrolled_course_ids) if enrolled_course_ids else False,
+                    Announcement.created_at >= week_ago
+                ).count()
+                
+                # Count unread notifications
+                unread_notifications = Notification.query.filter_by(
+                    user_id=current_user.id,
+                    read=False
+                ).count() if hasattr(Notification, 'read') else 0
+                
+                return {
+                    'sidebar_counts': {
+                        'pending_assignments': pending_assignments,
+                        'unread_announcements': unread_announcements,
+                        'unread_notifications': unread_notifications
+                    }
+                }
+            except Exception as e:
+                # Fallback to zero counts if there's an error
+                return {
+                    'sidebar_counts': {
+                        'pending_assignments': 0,
+                        'unread_announcements': 0,
+                        'unread_notifications': 0
+                    }
+                }
+        return {
+            'sidebar_counts': {
+                'pending_assignments': 0,
+                'unread_announcements': 0,
+                'unread_notifications': 0
+            }
+        }
 
     # Import decorators after app initialization
     from .decorators import student_required, teacher_required

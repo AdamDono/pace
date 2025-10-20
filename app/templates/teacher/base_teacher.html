@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Teacher - Pace Academy{% endblock %}</title>
+    <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
+    <script>
+        if (!document.querySelector('link[href*="tailwind.min.css"]').sheet) {
+            document.write('<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">');
+        }
+    </script>
+    <style>
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        @media (max-width: 768px) { .sidebar-hidden { transform: translateX(-100%); } }
+        @media (min-width: 769px) { .sidebar-visible { transform: translateX(0) !important; } }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar-transition sidebar-hidden md:sidebar-visible fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform md:translate-x-0 md:static md:inset-0">
+            <div class="flex items-center justify-center h-16 bg-white border-b border-gray-200">
+                <h1 class="text-xl font-bold">
+                    <span class="text-blue-600">Pace</span>
+                    <span class="text-black">Academy</span>
+                </h1>
+            </div>
+            <!-- Teacher Profile -->
+            <a href="{{ url_for('teacher.profile') }}" class="block p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                        {% if current_user.profile_image %}
+                            <img src="{{ url_for('teacher.media', filename=current_user.profile_image) }}" alt="Avatar" class="w-full h-full object-cover" />
+                        {% else %}
+                            {{ current_user.email[0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">{{ current_user.email }}</p>
+                        <p class="text-xs text-gray-500">Teacher</p>
+                    </div>
+                </div>
+            </a>
+            <!-- Navigation -->
+            <nav class="mt-4">
+                <div class="px-4 space-y-2">
+                    <a href="{{ url_for('teacher.dashboard') }}"
+                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'teacher.dashboard' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path></svg>
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('teacher.my_courses') }}"
+                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'teacher.my_courses' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13M16.5 5c1.747 0 3.332.477 4.5 1.253v13"></path></svg>
+                        My Courses
+                    </a>
+                    <a href="{{ url_for('teacher.create_course_wizard') }}"
+                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Create Course
+                    </a>
+                    <a href="{{ url_for('teacher.calendar') }}"
+                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7H3v10a2 2 0 002 2z"></path></svg>
+                        Calendar
+                    </a>
+                    <a href="{{ url_for('teacher.profile') }}"
+                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'teacher.profile' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118 8"></path></svg>
+                        Profile
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-gray-200">
+                        <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        <!-- Mobile sidebar overlay -->
+        <div id="sidebar-overlay" class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden hidden" onclick="toggleSidebar()"></div>
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="flex items-center justify-between px-4 md:px-6 py-4">
+                    <div class="flex items-center flex-1 min-w-0">
+                        <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 md:hidden flex-shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </button>
+                        <h1 class="ml-3 md:ml-0 text-lg md:text-2xl font-semibold text-gray-900 truncate">{% block page_title %}Teacher Panel{% endblock %}</h1>
+                    </div>
+                </div>
+            </header>
+            <!-- Page content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 pb-20">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="p-4">
+                            {% for category, message in messages %}
+                                <div class="mb-4 p-4 rounded-lg {% if category == 'success' %}bg-green-50 text-green-800 border border-green-200{% elif category == 'danger' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('sidebar-hidden');
+            overlay.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>

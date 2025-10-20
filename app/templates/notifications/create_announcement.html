@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "teacher/base_teacher.html" %}
 
 {% block title %}Create Announcement{% endblock %}
 
@@ -20,6 +20,7 @@
 
     <div class="bg-white rounded-lg shadow-lg p-8">
         <form method="POST" data-loading="Creating announcement...">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class="space-y-6">
                 <!-- Title -->
                 <div>
