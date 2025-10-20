@@ -6,6 +6,7 @@ Your Pace Academy now has enhanced content creation with:
 - **😀 Emoji Picker** - 60+ emojis
 - **📊 Tables** - Insert and edit tables
 - **🎮 H5P Interactive Content** - Quizzes, videos, games, and more
+- **</> Source Code Editor** - Edit HTML directly with Monaco editor (syntax highlighting)
 
 ---
 
@@ -135,13 +136,70 @@ H5P lets you create interactive content like:
 
 ---
 
+## </> How to Use Source Code Editor
+
+### What is it?
+The source code editor lets you edit the raw HTML of your content with:
+- **Syntax highlighting** - Color-coded HTML for easy reading
+- **Line numbers** - Navigate easily
+- **Auto-complete** - Helps write valid HTML
+- **Custom CSS** - Add inline styles and custom classes
+
+### When to use it:
+- **Advanced formatting** - Add custom HTML/CSS
+- **Fix formatting issues** - Clean up messy HTML
+- **Copy/paste HTML** - From other sources
+- **Custom embeds** - Add widgets, calculators, etc.
+- **Fine-tune layout** - Precise control over appearance
+
+### How to use:
+
+1. **Click the </> button** in the editor toolbar
+2. **Monaco editor opens** in a modal with your current HTML
+3. **Edit the HTML**:
+   - Syntax highlighting makes it easy to read
+   - Add custom `<div>`, `<span>`, inline styles
+   - Add CSS classes: `class="my-custom-class"`
+   - Add inline styles: `style="color: red; font-size: 20px;"`
+4. **Click "Save"** to apply changes
+5. **Click "Cancel"** to discard changes
+
+### Example - Custom Styled Box:
+
+**Visual Editor**: Limited styling options
+
+**Source Code Editor**: Add this HTML:
+```html
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            padding: 20px; 
+            border-radius: 12px; 
+            color: white; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+  <h3 style="margin: 0 0 10px 0;">💡 Pro Tip</h3>
+  <p style="margin: 0;">This is a custom styled box with gradient background!</p>
+</div>
+```
+
+**Result**: Beautiful gradient box that's not possible in visual editor!
+
+### Safety:
+- ✅ **Inline styles allowed** - `style="..."`
+- ✅ **Custom classes allowed** - `class="..."`
+- ✅ **H5P iframes allowed** - For interactive content
+- ✅ **Most HTML tags allowed** - `<div>`, `<span>`, `<p>`, `<h1-h6>`, `<table>`, etc.
+- ⚠️ **Scripts blocked** - `<script>` tags are sanitized for security
+
+---
+
 ## 📍 Where These Features Work
 
-Enhanced Quill editor (😀 📊 🎮) is available in:
-- ✅ **Edit Section** (course content)
-- ✅ **Create Course** (course description)
-- ✅ **Add Assignment** (assignment description)
-- ✅ **Create Announcement** (announcement content)
+Enhanced Quill editor (😀 📊 🎮 </>) is available in:
+- ✅ **Edit Section** (course content) - **All features including Source Code**
+- ✅ **Create Announcement** (announcement content) - **All features including Source Code**
+- ✅ **Create Course** (course description) - Emojis, Tables, H5P
+- ✅ **Add Assignment** (assignment description) - Emojis, Tables, H5P
+
+**Note**: Source Code editor (</>) is only available in Edit Section and Create Announcement for teachers.
 
 ---
 

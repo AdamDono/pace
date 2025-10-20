@@ -129,14 +129,39 @@
 
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.js"></script>
-<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}"></script>
+<!-- Monaco Editor for Source Code -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 <script>
-// Initialize enhanced Quill for announcement content
-var announcementQuill = initQuillEnhanced(
-    'announcement-content-editor',
-    'announcement-content',
-    'Write your announcement here. You can format text, add tables, emojis, H5P...'
-);
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+    // Monaco loaded, now init Quill
+    initAnnouncementQuill();
+});
+
+function initAnnouncementQuill() {
+    console.log('✅ Monaco loaded for announcements');
+    
+    // Make monaco globally available
+    window.monaco = monaco;
+    
+    // Load enhanced Quill script
+    const script = document.createElement('script');
+    script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}";
+    script.onload = function() {
+        console.log('✅ Quill script loaded for announcements');
+        // Initialize enhanced Quill for announcement content
+        var announcementQuill = initQuillEnhanced(
+            'announcement-content-editor',
+            'announcement-content',
+            'Write your announcement here. You can format text, add tables, emojis, H5P, and edit source code!'
+        );
+        
+        // Make it globally accessible for preview function
+        window.announcementQuill = announcementQuill;
+        console.log('✅ Monaco available:', typeof monaco !== 'undefined');
+    };
+    document.head.appendChild(script);
+}
 
 // Preview function
 function previewAnnouncement() {

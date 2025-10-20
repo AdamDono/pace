@@ -65,55 +65,102 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
         document.body.appendChild(modal);
     }
 
+    // Create HTML Source Code modal if it doesn't exist
+    if (!document.getElementById('source-code-modal')) {
+        const modal = document.createElement('div');
+        modal.id = 'source-code-modal';
+        modal.style.cssText = 'display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:0;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.3);z-index:10000;width:90%;max-width:1200px;height:80vh;';
+        modal.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:20px;border-bottom:1px solid #e5e7eb;">
+                <h3 style="margin:0;font-size:18px;font-weight:bold;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:24px;">&lt;/&gt;</span> Source Code
+                </h3>
+                <button onclick="closeSourceCodeModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">&times;</button>
+            </div>
+            <div id="html-editor-container" style="height:calc(80vh - 140px);border:none;"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;padding:20px;border-top:1px solid #e5e7eb;background:#f9fafb;">
+                <button onclick="closeSourceCodeModal()" style="padding:10px 24px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">Cancel</button>
+                <button onclick="applySourceCode()" style="padding:10px 24px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">Save</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
     // Initialize Quill
+    const modules = {
+        toolbar: {
+            container: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'image'],
+                ['emoji', 'table', 'h5p', 'source'],
+                ['clean']
+            ],
+            handlers: {
+                'emoji': () => showEmojiModal(quill),
+                'table': () => insertTable(quill),
+                'h5p': () => showH5PModal(quill),
+                'source': () => showSourceCodeModal(quill)
+            }
+        }
+    };
+    
+    // Add better-table if available
+    if (typeof QuillBetterTable !== 'undefined') {
+        modules['better-table'] = {
+            operationMenu: {
+                items: { unmergeCells: { text: 'Unmerge cells' } }
+            }
+        };
+        modules.keyboard = {
+            bindings: QuillBetterTable.keyboardBindings
+        };
+    }
+    
     const quill = new Quill('#' + editorId, {
         theme: 'snow',
         placeholder: placeholder,
-        modules: {
-            table: false,
-            'better-table': typeof QuillBetterTable !== 'undefined' ? {
-                operationMenu: {
-                    items: { unmergeCells: { text: 'Unmerge cells' } }
-                }
-            } : undefined,
-            keyboard: typeof QuillBetterTable !== 'undefined' ? {
-                bindings: QuillBetterTable.keyboardBindings
-            } : undefined,
-            toolbar: {
-                container: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['link', 'image'],
-                    ['emoji', 'table', 'h5p'],
-                    ['clean']
-                ],
-                handlers: {
-                    'emoji': () => showEmojiModal(quill),
-                    'table': () => insertTable(quill),
-                    'h5p': () => showH5PModal(quill)
-                }
-            }
-        }
+        modules: modules
     });
 
-    // Load existing content
     const textarea = document.getElementById(textareaId);
     if (textarea && textarea.value) {
         quill.root.innerHTML = textarea.value;
     }
 
-    // Sync on change
-    quill.on('text-change', () => {
-        if (textarea) textarea.value = quill.root.innerHTML;
+    // Sync Quill content to textarea on change
+    quill.on('text-change', function(delta, oldDelta, source) {
+        if (!textarea) return;
+        
+        // If custom HTML flag is set, NEVER sync (preserve custom HTML)
+        if (quill.root.getAttribute('data-custom-html') === 'true') {
+            console.log('🔒 Custom HTML protected, not syncing');
+            return; // Don't sync at all
+        }
+        
+        // Normal sync only for user changes
+        if (source === 'user') {
+            textarea.value = quill.root.innerHTML;
+        }
     });
-
-    // Sync on form submit
+    
+    // Ensure content is synced on form submit
     const form = textarea ? textarea.closest('form') : null;
     if (form) {
-        form.addEventListener('submit', () => {
-            if (textarea) textarea.value = quill.root.innerHTML;
+        form.addEventListener('submit', (e) => {
+            if (textarea) {
+                // If custom HTML flag is set, DON'T override textarea
+                if (!quill.root.getAttribute('data-custom-html')) {
+                    textarea.value = quill.root.innerHTML;
+                    console.log('📤 Normal sync on submit');
+                } else {
+                    console.log('📤 Preserving custom HTML on submit');
+                }
+                console.log('📤 Submitting content length:', textarea.value.length);
+                console.log('📤 First 200 chars:', textarea.value.substring(0, 200));
+            }
         });
     }
 
@@ -182,4 +229,119 @@ function insertH5P() {
     const embedCode = `<div class="h5p-embed-container" style="position:relative;width:100%;padding-bottom:75%;height:0;overflow:hidden;margin:20px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="H5P Interactive Content"></iframe></div>`;
     window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, embedCode);
     closeH5PModal();
+}
+
+// Source Code Editor
+let htmlEditor = null;
+
+function showSourceCodeModal(quill) {
+    console.log('🔧 Opening source code modal...');
+    window.currentQuill = quill;
+    const modal = document.getElementById('source-code-modal');
+    const overlay = document.getElementById('emoji-overlay');
+    
+    if (!modal) {
+        console.error('❌ Source code modal not found!');
+        return;
+    }
+    
+    modal.style.display = 'block';
+    overlay.style.display = 'block';
+    
+    const currentHTML = quill.root.innerHTML;
+    console.log('📄 Current HTML:', currentHTML.substring(0, 200));
+    
+    // Initialize Monaco editor if not already initialized
+    if (!htmlEditor) {
+        if (typeof monaco === 'undefined') {
+            console.error('❌ Monaco editor not loaded!');
+            alert('Monaco editor is not loaded. Please refresh the page.');
+            closeSourceCodeModal();
+            return;
+        }
+        
+        console.log('✅ Creating Monaco editor...');
+        try {
+            htmlEditor = monaco.editor.create(document.getElementById('html-editor-container'), {
+                value: currentHTML,
+                language: 'html',
+                theme: 'vs',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 14,
+                lineNumbers: 'on',
+                wordWrap: 'on',
+                formatOnPaste: true,
+                formatOnType: true
+            });
+            console.log('✅ Monaco editor created');
+        } catch (e) {
+            console.error('❌ Error creating Monaco:', e);
+            alert('Error creating editor: ' + e.message);
+        }
+    } else {
+        // Update content
+        console.log('✅ Updating Monaco content...');
+        htmlEditor.setValue(currentHTML);
+    }
+}
+
+function closeSourceCodeModal() {
+    document.getElementById('source-code-modal').style.display = 'none';
+    document.getElementById('emoji-overlay').style.display = 'none';
+}
+
+function applySourceCode() {
+    if (!htmlEditor || !window.currentQuill) {
+        console.error('❌ No editor or quill instance');
+        closeSourceCodeModal();
+        return;
+    }
+    
+    const htmlContent = htmlEditor.getValue();
+    console.log('📝 Applying HTML:', htmlContent.substring(0, 100) + '...');
+    
+    // Find the textarea - try multiple methods
+    let textarea = null;
+    
+    // Method 1: Look for content-editor or announcement-content
+    textarea = document.getElementById('content-editor') || 
+               document.getElementById('announcement-content') ||
+               document.getElementById('course-description') ||
+               document.getElementById('assignment-description');
+    
+    // Method 2: Find in form
+    if (!textarea) {
+        const form = window.currentQuill.container.closest('form');
+        if (form) {
+            const textareas = form.querySelectorAll('textarea');
+            for (let ta of textareas) {
+                const style = window.getComputedStyle(ta);
+                if (style.display === 'none' || ta.offsetParent === null) {
+                    textarea = ta;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (textarea) {
+        // CRITICAL: Update textarea (this is what saves to database)
+        textarea.value = htmlContent;
+        console.log('✅ Textarea updated:', textarea.id, 'Length:', htmlContent.length);
+        
+        // Set the flag BEFORE updating visual display
+        window.currentQuill.root.setAttribute('data-custom-html', 'true');
+        
+        // Update visual display - completely replace Quill content
+        window.currentQuill.root.innerHTML = htmlContent;
+        
+        console.log('✅ Visual editor updated');
+        console.log('🔒 Custom HTML flag set - textarea is protected');
+    } else {
+        console.error('❌ No textarea found!');
+        console.log('Available textareas:', document.querySelectorAll('textarea'));
+    }
+    
+    closeSourceCodeModal();
 }

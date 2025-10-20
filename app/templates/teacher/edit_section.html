@@ -168,21 +168,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to toggle options based on type
     function toggleOptions() {
+        if (!sectionTypeSelect) return;
         const selectedType = sectionTypeSelect.value;
 
-        // Hide all options first
-        quizOptions.classList.add('hidden');
-        assignmentOptions.classList.add('hidden');
-        presentationOptions.classList.add('hidden');
+        // Hide all options first (only if they exist)
+        if (quizOptions) quizOptions.classList.add('hidden');
+        if (assignmentOptions) assignmentOptions.classList.add('hidden');
+        if (presentationOptions) presentationOptions.classList.add('hidden');
 
         // Show relevant options with smooth animation
-        if (selectedType === 'quiz') {
+        if (selectedType === 'quiz' && quizOptions) {
             quizOptions.classList.remove('hidden');
             quizOptions.style.animation = 'slideDown 0.3s ease-out';
-        } else if (selectedType === 'assignment') {
+        } else if (selectedType === 'assignment' && assignmentOptions) {
             assignmentOptions.classList.remove('hidden');
             assignmentOptions.style.animation = 'slideDown 0.3s ease-out';
-        } else if (selectedType === 'presentation') {
+        } else if (selectedType === 'presentation' && presentationOptions) {
             presentationOptions.classList.remove('hidden');
             presentationOptions.style.animation = 'slideDown 0.3s ease-out';
         }
@@ -194,7 +195,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100); // Small delay to ensure DOM is ready
 
     // Toggle on change
-    sectionTypeSelect.addEventListener('change', toggleOptions);
+    if (sectionTypeSelect) {
+        sectionTypeSelect.addEventListener('change', toggleOptions);
+    }
+});
+
+// Debug form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        console.log('✅ Form found, adding submit listener');
+        
+        form.addEventListener('submit', function(e) {
+            console.log('🚀 Form submit event fired!');
+            const textarea = document.getElementById('content-editor');
+            if (textarea) {
+                console.log('📝 Content length:', textarea.value.length);
+                console.log('📝 First 200 chars:', textarea.value.substring(0, 200));
+            }
+            
+            // Don't prevent default - let form submit normally
+            console.log('✅ Allowing form to submit...');
+        });
+        
+        // Also check if button click works
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            console.log('✅ Submit button found');
+            submitBtn.addEventListener('click', function(e) {
+                console.log('🖱️ Submit button clicked!');
+            });
+        } else {
+            console.log('❌ No submit button found');
+        }
+    } else {
+        console.log('❌ No form found on page');
+    }
 });
 
 // Add smooth slide down animation
@@ -239,16 +275,37 @@ document.head.appendChild(style);
 
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.js"></script>
-<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}"></script>
+<!-- Monaco Editor for Source Code -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 <script>
-// Initialize enhanced Quill
-var quill = initQuillEnhanced(
-    'editor-container',
-    'content-editor',
-    '✨ Create content with tables, emojis, H5P, and more!'
-);
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+    // Monaco loaded, now init Quill
+    initQuillWithMonaco();
+});
 
-console.log('✅ Enhanced Quill loaded: Tables, Emojis, H5P!');
+function initQuillWithMonaco() {
+    console.log('✅ Monaco loaded, initializing Quill...');
+    
+    // Make monaco globally available
+    window.monaco = monaco;
+    
+    // Load enhanced Quill script
+    const script = document.createElement('script');
+    script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}";
+    script.onload = function() {
+        console.log('✅ Quill script loaded');
+        // Initialize enhanced Quill
+        var quill = initQuillEnhanced(
+            'editor-container',
+            'content-editor',
+            '✨ Create content with tables, emojis, H5P, and source code editor!'
+        );
+        console.log('✅ Enhanced Quill loaded: Tables, Emojis, H5P, Source Code!');
+        console.log('✅ Monaco available:', typeof monaco !== 'undefined');
+    };
+    document.head.appendChild(script);
+}
 </script>
 
 {% endblock %}
