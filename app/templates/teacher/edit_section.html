@@ -214,11 +214,13 @@ style.textContent = `
 document.head.appendChild(style);
 </script>
 
-<!-- Quill Rich Text Editor (Free & No Domain Restrictions) -->
+<!-- Quill Rich Text Editor with Tables, Emojis, H5P -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/quill-buttons.css') }}" rel="stylesheet">
 <style>
 #editor-container {
-    height: 450px;
+    min-height: 450px;
 }
 .ql-editor {
     min-height: 400px;
@@ -233,55 +235,20 @@ document.head.appendChild(style);
 .ql-container.ql-snow {
     border-radius: 0 0 8px 8px;
 }
-
-/* Enhanced color picker */
-.ql-color-picker .ql-picker-options {
-    width: 200px !important;
-}
-
-/* Make toolbar more spacious */
-.ql-toolbar button {
-    margin: 2px !important;
-}
 </style>
 
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.js"></script>
+<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}"></script>
 <script>
-// Initialize Quill editor with enhanced features
-var quill = new Quill('#editor-container', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-            [{ 'font': [] }],
-            [{ 'size': ['small', false, 'large', 'huge'] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': ['#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', '#9933ff', '#ffffff', '#facccc', '#ffebcc', '#ffffcc', '#cce8cc', '#cce0f5', '#ebd6ff', '#bbbbbb', '#f06666', '#ffc266', '#ffff66', '#66b966', '#66a3e0', '#c285ff', '#888888', '#a10000', '#b26b00', '#b2b200', '#006100', '#0047b2', '#6b24b2', '#444444', '#5c0000', '#663d00', '#666600', '#003700', '#002966', '#3d1466'] }, 
-             { 'background': ['#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', '#9933ff', '#ffffff', '#facccc', '#ffebcc', '#ffffcc', '#cce8cc', '#cce0f5', '#ebd6ff', '#bbbbbb', '#f06666', '#ffc266', '#ffff66', '#66b966', '#66a3e0', '#c285ff', '#888888', '#a10000', '#b26b00', '#b2b200', '#006100', '#0047b2', '#6b24b2', '#444444', '#5c0000', '#663d00', '#666600', '#003700', '#002966', '#3d1466'] }],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
-            [{ 'indent': '-1'}, { 'indent': '+1' }],
-            [{ 'align': [] }],
-            ['link', 'image', 'video'],
-            ['blockquote', 'code-block'],
-            [{ 'script': 'sub'}, { 'script': 'super' }],
-            ['clean']
-        ]
-    },
-    placeholder: '✨ Start creating amazing content! Use colors, formatting, embed media, and more!'
-});
+// Initialize enhanced Quill
+var quill = initQuillEnhanced(
+    'editor-container',
+    'content-editor',
+    '✨ Create content with tables, emojis, H5P, and more!'
+);
 
-// Load existing content
-var existingContent = document.querySelector('#content-editor').value;
-if (existingContent) {
-    quill.root.innerHTML = existingContent;
-}
-
-// Sync Quill content back to hidden textarea on form submit
-document.querySelector('form').addEventListener('submit', function() {
-    document.querySelector('#content-editor').value = quill.root.innerHTML;
-});
-
-console.log('✅ Enhanced Quill Editor loaded with colors & quiz widgets!');
+console.log('✅ Enhanced Quill loaded: Tables, Emojis, H5P!');
 </script>
 
 {% endblock %}

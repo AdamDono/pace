@@ -24,6 +24,60 @@
         .ql-size-small { font-size: 0.75em; }
         .ql-size-large { font-size: 1.5em; }
         .ql-size-huge { font-size: 2.5em; }
+        
+        /* H5P embed styling - full width like videos */
+        .h5p-embed-container {
+            position: relative;
+            width: 100% !important;
+            padding-bottom: 75% !important;
+            height: 0;
+            overflow: hidden;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: #f9fafb;
+        }
+        .h5p-embed-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        
+        /* Table styling for student view */
+        .ql-editor table,
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .ql-editor table td,
+        .ql-editor table th,
+        table td,
+        table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        .ql-editor table th,
+        table th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+        
+        /* Video embeds - full width */
+        .ql-editor iframe,
+        iframe {
+            max-width: 100%;
+        }
+        
+        /* Images - full width */
+        .ql-editor img,
+        img {
+            max-width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -170,5 +224,7 @@
         </div>
     </div>
     
+    <!-- H5P Resizer Script for Interactive Content -->
+    <script src="https://h5p.org/sites/all/modules/h5p/library/js/h5p-resizer.js" charset="UTF-8"></script>
 </body>
 </html>

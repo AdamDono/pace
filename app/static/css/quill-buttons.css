@@ -1,0 +1,15 @@
+/* Custom Quill Toolbar Buttons */
+.ql-emoji::before {
+    content: '😀';
+    font-size: 16px;
+}
+
+.ql-table::before {
+    content: '📊';
+    font-size: 16px;
+}
+
+.ql-h5p::before {
+    content: '🎮';
+    font-size: 16px;
+}
