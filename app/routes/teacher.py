@@ -461,6 +461,27 @@ def create_course_wizard():
         for key, value in request.form.items():
             if key not in ['action', 'csrf_token', 'current_step']:
                 session[session_key][key] = value
+        
+        # Handle file uploads in step 2 (save immediately, store filename in session)
+        if current_step == 2:
+            # Banner image
+            banner_file = request.files.get('banner_image')
+            if banner_file and banner_file.filename:
+                if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
+                    banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
+                    banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
+                    banner_file.save(banner_save_path)
+                    session[session_key]['banner_image'] = banner_filename
+            
+            # PDF upload
+            pdf_file = request.files.get('pdf_upload')
+            if pdf_file and pdf_file.filename:
+                if allowed_file(pdf_file.filename, {'pdf'}):
+                    pdf_filename = f"course_{uuid.uuid4().hex}.pdf"
+                    pdf_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename)
+                    pdf_file.save(pdf_save_path)
+                    session[session_key]['pdf_filename'] = pdf_filename
+        
         session.modified = True
 
         if action == 'previous':
@@ -506,26 +527,9 @@ def create_course_from_wizard(session_data):
         # Merge current request form data with session data
         data = {**session_data, **dict(request.form)}
 
-        # Handle file uploads
-        banner_image = None
-        pdf_filename = None
-
-        # Banner image
-        banner_file = request.files.get('banner_image')
-        if banner_file and banner_file.filename:
-            if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif'}):
-                banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
-                banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
-                banner_file.save(banner_save_path)
-                banner_image = banner_filename
-
-        # PDF upload
-        if 'pdf_upload' in request.files:
-            pdf_file = request.files['pdf_upload']
-            if pdf_file and pdf_file.filename and allowed_file(pdf_file.filename):
-                pdf_filename = f"course_{uuid.uuid4().hex}.pdf"
-                pdf_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename)
-                pdf_file.save(pdf_save_path)
+        # Get file uploads from session (already saved in step 2)
+        banner_image = data.get('banner_image')
+        pdf_filename = data.get('pdf_filename')
 
         # Create course
         course = Course(
@@ -553,6 +557,8 @@ def create_course_from_wizard(session_data):
     except Exception as e:
         db.session.rollback()
         print(f"Error creating course: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def handle_autosave():

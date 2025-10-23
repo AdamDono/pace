@@ -18,11 +18,11 @@
             <span class="ml-2 text-xs bg-red-600 text-white px-2 py-1 rounded-full">Past Due</span>
             {% endif %}
           </h3>
-          <span class="text-sm text-gray-600">{{ day.items|length }} assignment{{ 's' if day.items|length != 1 else '' }}</span>
+          <span class="text-sm text-gray-600">{{ day.assignments|length }} assignment{{ 's' if day.assignments|length != 1 else '' }}</span>
         </div>
       </div>
       <div class="p-5 space-y-3">
-        {% for assignment in day.items %}
+        {% for assignment in day.assignments %}
         <div class="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
           <div class="flex-1">
             <h4 class="font-medium text-gray-900">{{ assignment.title }}</h4>

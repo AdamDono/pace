@@ -195,6 +195,11 @@ def get_section_content(section_id):
         all_sections = Section.query.filter_by(course_id=course.id).all()
         all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
         if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+            # Mark enrollment as completed
+            enrollment.completed = True
+            enrollment.completed_at = datetime.utcnow()
+            db.session.commit()
+            flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
             return jsonify({'status': 'completed', 'course_id': course.id, 'redirect': None})
         return jsonify({'status': 'updated', 'message': 'Section updated.'})
 
@@ -360,6 +365,13 @@ def mark_section_completed(section_id):
     else:
         es.completed = True
         es.completed_at = datetime.utcnow()
+    
+    # Check if all sections are completed to mark course as complete
+    all_sections = Section.query.filter_by(course_id=section.course_id).all()
+    all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+    if all(es_item.completed for es_item in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+        enrollment.completed = True
+        enrollment.completed_at = datetime.utcnow()
     
     db.session.commit()
     return "Section marked as completed", 200
@@ -816,6 +828,20 @@ def video_progress(section_id):
             if not enrollment_section.completed:
                 enrollment_section.completed = True
                 enrollment_section.completed_at = datetime.utcnow()
+                
+                # Check if all sections are completed to mark course as complete
+                section = Section.query.get(section_id)
+                enrollment = Enrollment.query.filter_by(
+                    student_id=current_user.id,
+                    course_id=section.course_id
+                ).first()
+                
+                if enrollment:
+                    all_sections = Section.query.filter_by(course_id=section.course_id).all()
+                    all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+                    if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+                        enrollment.completed = True
+                        enrollment.completed_at = datetime.utcnow()
         
         db.session.commit()
         
@@ -975,11 +1001,11 @@ def calendar():
         if date_key not in calendar_data:
             calendar_data[date_key] = {
                 'date': date_key,
-                'items': [],
+                'assignments': [],
                 'is_past': date_key < today,
                 'is_today': date_key == today
             }
-        calendar_data[date_key]['items'].append(assignment)
+        calendar_data[date_key]['assignments'].append(assignment)
     
     calendar_items = sorted(calendar_data.values(), key=lambda x: x['date'])
     
