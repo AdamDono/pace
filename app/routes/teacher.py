@@ -5,16 +5,16 @@ from app.decorators import teacher_required
 from app.forms import ProfileForm
 from app import db
 from app.utils.email import send_enrollment_email
+from app.utils.file_helpers import allowed_file, allowed_file_size
 import os
 import uuid
 from datetime import datetime
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
-
-def allowed_file(filename, allowed_extensions=None):
-    if allowed_extensions is None:
-        allowed_extensions = current_app.config['ALLOWED_EXTENSIONS']
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 @teacher_bp.route('/dashboard')
 @login_required
@@ -556,9 +556,7 @@ def create_course_from_wizard(session_data):
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error creating course: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error creating course: {e}", exc_info=True)
         return False
 
 def handle_autosave():

@@ -110,12 +110,12 @@ class User(db.Model, UserMixin):
 class Course(db.Model):
     __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    title = db.Column(db.String(100), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)  # Added index
+    title = db.Column(db.String(100), nullable=False, index=True)  # Added index for search
     description = db.Column(db.Text, nullable=False)
     youtube_url = db.Column(db.String(255))
-    status = db.Column(db.String(20), default='draft')  # Changed from 'pending' to 'draft'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='draft', index=True)  # Added index for filtering
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Added index for sorting
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     admin_feedback = db.Column(db.Text)
     pdf_filename = db.Column(db.String(120))
@@ -189,10 +189,10 @@ class Section(db.Model):
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
-    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed = db.Column(db.Boolean, default=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)  # Added index
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), index=True)  # Added index
+    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Added index
+    completed = db.Column(db.Boolean, default=False, index=True)  # Added index for filtering
     certificate_path = db.Column(db.String(255))  # Added for certificate storage
     
     student = db.relationship('User', back_populates='enrollments')
@@ -202,9 +202,9 @@ class Enrollment(db.Model):
 class EnrollmentSection(db.Model):
     __tablename__ = 'enrollment_sections'
     id = db.Column(db.Integer, primary_key=True)
-    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'))
-    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'))
-    completed = db.Column(db.Boolean, default=False)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'), index=True)  # Added index
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), index=True)  # Added index
+    completed = db.Column(db.Boolean, default=False, index=True)  # Added index
     completed_at = db.Column(db.DateTime)
     
     # Analytics tracking fields

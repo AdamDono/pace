@@ -1,28 +1,23 @@
 from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort
 from flask_login import login_required, current_user
 from app.decorators import student_required, student_enrolled, admin_required, teacher_required
-from app.forms import SubmissionForm, ProfileForm
-import logging
-import os
-from uuid import uuid4
+from app import db
+from app.models import Course, Enrollment, Section, EnrollmentSection, Assignment, AssignmentSubmission, Quiz, QuizQuestion, QuizAttempt, QuizAnswer, Rating, Announcement, Notification, VideoProgress, VideoInteractiveQuestion, VideoInteractiveAnswer
+from app.utils.file_helpers import allowed_file, allowed_file_size
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from reportlab.lib.colors import HexColor
-from reportlab.lib.units import inch
-from app.models import Course, Enrollment, Section, EnrollmentSection, User, Rating, Quiz, Assignment, QuizAttempt, AssignmentSubmission, QuizQuestion, QuizAnswer, VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse, db  # Correct imports
+from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
+from uuid import uuid4
+import logging
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 student_bp = Blueprint('student', __name__, url_prefix='/student')
-
-# Define allowed_file locally
-def allowed_file(filename, allowed_extensions=None):
-    if allowed_extensions is None:
-        allowed_extensions = {'pdf', 'doc', 'docx'}  # Default allowed extensions
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 @student_bp.route('/dashboard')
 @login_required
