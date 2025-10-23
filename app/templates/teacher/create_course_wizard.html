@@ -421,8 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // File preview functionality
     setupFilePreviews();
 
-    // Template selection functionality
-    setupTemplateSelection();
+    // Template selection will be initialized after Quill is ready
 });
 
 function startAutoSave() {
@@ -526,127 +525,6 @@ document.getElementById('course-form').addEventListener('submit', function(e) {
     // Add any client-side validation here if needed
 });
 
-function setupTemplateSelection() {
-    const templateCards = document.querySelectorAll('.template-card');
-    const selectedTemplateInput = document.getElementById('selected_template');
-    const subjectSection = document.getElementById('subject-section');
-    const subjectInput = document.getElementById('subject-input');
-    const courseTitleInput = document.getElementById('course-title');
-    const courseDescriptionTextarea = document.getElementById('course-description');
-    const courseCategorySelect = document.getElementById('course-category');
-    const courseDifficultySelect = document.getElementById('course-difficulty');
-    const courseDurationInput = document.getElementById('course-duration');
-
-    // Course templates data
-    const templates = {
-        blank: {
-            title: '',
-            description: '',
-            category: '',
-            difficulty: 'intermediate',
-            duration: '',
-            objectives: '',
-            prerequisites: '',
-            tags: ''
-        },
-        beginner: {
-            title: 'Introduction to [Subject]',
-            description: 'A comprehensive beginner-friendly course designed for complete newcomers. This course covers all the fundamental concepts and provides hands-on practice to build a strong foundation in [subject].',
-            category: 'programming',
-            difficulty: 'beginner',
-            duration: 20,
-            objectives: '• Understand the basic concepts and terminology\n• Learn fundamental principles and techniques\n• Practice with real-world examples\n• Build confidence through hands-on exercises',
-            prerequisites: '• No prior experience required\n• Basic computer skills\n• Willingness to learn and practice',
-            tags: 'beginner, fundamentals, introduction, basics'
-        },
-        intermediate: {
-            title: 'Advanced [Subject] Techniques',
-            description: 'Take your skills to the next level with intermediate to advanced techniques. This course assumes basic knowledge and dives deep into professional practices, best patterns, and real-world applications.',
-            category: 'programming',
-            difficulty: 'intermediate',
-            duration: 40,
-            objectives: '• Master advanced concepts and techniques\n• Learn industry best practices and patterns\n• Build complex, real-world projects\n• Optimize performance and efficiency\n• Collaborate on professional-grade applications',
-            prerequisites: '• Basic understanding of [subject] fundamentals\n• Experience with simple projects\n• Familiarity with development environment',
-            tags: 'intermediate, advanced, professional, best-practices'
-        },
-        project: {
-            title: 'Build a Complete [Subject] Project',
-            description: 'Learn by doing in this project-based course. Starting from scratch, you\'ll build a complete, production-ready [subject] application while learning modern development practices and industry standards.',
-            category: 'programming',
-            difficulty: 'intermediate',
-            duration: 60,
-            objectives: '• Plan and architect a complete application\n• Implement all major features and functionality\n• Apply modern development practices\n• Deploy and maintain a production application\n• Collaborate with other developers',
-            prerequisites: '• Solid foundation in [subject] basics\n• Experience with version control\n• Understanding of web development concepts',
-            tags: 'project, full-stack, production, real-world'
-        }
-    };
-
-    templateCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const templateType = this.dataset.template;
-
-            // Update selected template
-            selectedTemplateInput.value = templateType;
-
-            // Remove selected class from all cards
-            templateCards.forEach(c => c.classList.remove('selected', 'border-blue-500'));
-            templateCards.forEach(c => c.classList.add('border-gray-200'));
-
-            // Add selected class to clicked card
-            this.classList.add('selected', 'border-blue-500');
-            this.classList.remove('border-gray-200');
-
-            // Show/hide subject input
-            if (templateType === 'blank') {
-                subjectSection.style.display = 'none';
-                subjectInput.value = '';
-            } else {
-                subjectSection.style.display = 'block';
-            }
-        });
-    });
-
-    // Handle subject input changes to update template
-    subjectInput.addEventListener('input', function() {
-        const subject = this.value.trim();
-        const templateType = selectedTemplateInput.value;
-
-        if (subject && templateType !== 'blank' && templates[templateType]) {
-            const template = templates[templateType];
-            const subjectName = subject || '[Subject]';
-            const subjectLower = subjectName.toLowerCase();
-
-            // Update form fields with template data
-            courseTitleInput.value = template.title.replace('[Subject]', subjectName).replace('[subject]', subjectLower);
-            courseDescriptionTextarea.value = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
-            courseCategorySelect.value = template.category;
-            courseDifficultySelect.value = template.difficulty;
-            courseDurationInput.value = template.duration;
-
-            // Update hidden fields (we'll add these to the form)
-            updateHiddenFields(template, subjectName, subjectLower);
-        }
-    });
-
-    function updateHiddenFields(template, subjectName, subjectLower) {
-        // Update or create hidden fields for objectives, prerequisites, tags
-        updateHiddenField('learning_objectives', template.objectives.replace('[subject]', subjectLower).replace('[Subject]', subjectName));
-        updateHiddenField('prerequisites', template.prerequisites.replace('[subject]', subjectLower).replace('[Subject]', subjectName));
-        updateHiddenField('tags', template.tags);
-    }
-
-    function updateHiddenField(name, value) {
-        let field = document.querySelector(`input[name="${name}"][type="hidden"]`);
-        if (!field) {
-            field = document.createElement('input');
-            field.type = 'hidden';
-            field.name = name;
-            document.getElementById('course-form').appendChild(field);
-        }
-        field.value = value;
-    }
-}
-
 // ===== QUILL RICH TEXT EDITOR =====
 </script>
 
@@ -690,12 +568,9 @@ descriptionQuill.on('text-change', function() {
     document.getElementById('course-description').value = descriptionQuill.root.innerHTML;
 });
 
-// Update the template selection to work with Quill
-const originalCourseDescriptionTextarea = document.getElementById('course-description');
-
-// Override the template update to use Quill
-const originalTemplateUpdate = setupTemplateSelection;
-setupTemplateSelection = function() {
+// Setup template selection with Quill integration
+function setupTemplateSelection() {
+    const originalCourseDescriptionTextarea = document.getElementById('course-description');
     const templateCards = document.querySelectorAll('.template-card');
     const selectedTemplateInput = document.getElementById('selected_template');
     const subjectSection = document.getElementById('subject-section');
@@ -802,9 +677,9 @@ setupTemplateSelection = function() {
             originalCourseDescriptionTextarea.value = descContent;
         }
     });
-};
+}
 
-// Re-initialize template selection
+// Initialize template selection
 setupTemplateSelection();
 
 console.log('✅ Quill editor initialized for course description');
