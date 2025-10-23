@@ -131,8 +131,9 @@
 
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Course Description *</label>
-                        <div id="course-description-editor" style="height: 250px;"></div>
-                        <textarea name="description" id="course-description" class="hidden" required></textarea>
+                        <textarea name="description" id="course-description" rows="8" required
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                  placeholder="Describe what students will learn, course objectives, prerequisites, and what they will achieve..."></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
@@ -525,57 +526,14 @@ document.getElementById('course-form').addEventListener('submit', function(e) {
     // Add any client-side validation here if needed
 });
 
-// ===== QUILL RICH TEXT EDITOR =====
-</script>
-
-<!-- Quill CSS -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<style>
-.ql-editor {
-    font-size: 15px;
-    line-height: 1.6;
-}
-.ql-toolbar.ql-snow {
-    border-radius: 8px 8px 0 0;
-    background: #f9fafb;
-}
-.ql-container.ql-snow {
-    border-radius: 0 0 8px 8px;
-}
-</style>
-
-<!-- Quill JS -->
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-<script>
-// Initialize Quill for course description
-var descriptionQuill = new Quill('#course-description-editor', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [2, 3, false] }],
-            ['bold', 'italic', 'underline'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link'],
-            [{ 'color': [] }],
-            ['clean']
-        ]
-    },
-    placeholder: 'Describe what students will learn, course objectives, prerequisites, and what they will achieve...'
-});
-
-// Sync Quill content to hidden textarea
-descriptionQuill.on('text-change', function() {
-    document.getElementById('course-description').value = descriptionQuill.root.innerHTML;
-});
-
-// Setup template selection with Quill integration
+// Setup template selection
 function setupTemplateSelection() {
-    const originalCourseDescriptionTextarea = document.getElementById('course-description');
     const templateCards = document.querySelectorAll('.template-card');
     const selectedTemplateInput = document.getElementById('selected_template');
     const subjectSection = document.getElementById('subject-section');
     const subjectInput = document.getElementById('subject-input');
     const courseTitleInput = document.getElementById('course-title');
+    const courseDescriptionTextarea = document.getElementById('course-description');
     const courseCategorySelect = document.getElementById('course-category');
     const courseDifficultySelect = document.getElementById('course-difficulty');
     const courseDurationInput = document.getElementById('course-duration');
@@ -627,10 +585,12 @@ function setupTemplateSelection() {
     templateCards.forEach(card => {
         card.addEventListener('click', function() {
             // Remove selected state from all cards
-            templateCards.forEach(c => c.classList.remove('ring-4', 'ring-blue-500', 'border-blue-500'));
+            templateCards.forEach(c => c.classList.remove('selected', 'border-blue-500'));
+            templateCards.forEach(c => c.classList.add('border-gray-200'));
 
-            // Add selected state to clicked card
-            this.classList.add('ring-4', 'ring-blue-500', 'border-blue-500');
+            // Add selected class to clicked card
+            this.classList.add('selected', 'border-blue-500');
+            this.classList.remove('border-gray-200');
 
             // Get template ID
             const templateId = this.dataset.template;
@@ -638,9 +598,10 @@ function setupTemplateSelection() {
 
             // Show/hide subject input based on template
             if (templateId !== 'blank') {
-                subjectSection.classList.remove('hidden');
+                subjectSection.style.display = 'block';
             } else {
-                subjectSection.classList.add('hidden');
+                subjectSection.style.display = 'none';
+                subjectInput.value = '';
             }
 
             // Update fields based on template
@@ -650,15 +611,13 @@ function setupTemplateSelection() {
 
             // Update form fields with template data
             courseTitleInput.value = template.title.replace('[Subject]', subjectName).replace('[subject]', subjectLower);
-            
-            // Update Quill editor instead of textarea
-            const descContent = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
-            descriptionQuill.root.innerHTML = descContent;
-            originalCourseDescriptionTextarea.value = descContent;
-            
+            courseDescriptionTextarea.value = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
             courseCategorySelect.value = template.category;
             courseDifficultySelect.value = template.difficulty;
             courseDurationInput.value = template.duration;
+
+            // Update hidden fields
+            updateHiddenFields(template, subjectName, subjectLower);
         });
     });
 
@@ -671,18 +630,34 @@ function setupTemplateSelection() {
             const subjectLower = subjectName.toLowerCase();
 
             courseTitleInput.value = template.title.replace('[Subject]', subjectName).replace('[subject]', subjectLower);
+            courseDescriptionTextarea.value = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
             
-            const descContent = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
-            descriptionQuill.root.innerHTML = descContent;
-            originalCourseDescriptionTextarea.value = descContent;
+            // Update hidden fields
+            updateHiddenFields(template, subjectName, subjectLower);
         }
     });
+
+    function updateHiddenFields(template, subjectName, subjectLower) {
+        // Update or create hidden fields for objectives, prerequisites, tags
+        updateHiddenField('learning_objectives', template.objectives.replace('[subject]', subjectLower).replace('[Subject]', subjectName));
+        updateHiddenField('prerequisites', template.prerequisites.replace('[subject]', subjectLower).replace('[Subject]', subjectName));
+        updateHiddenField('tags', template.tags);
+    }
+
+    function updateHiddenField(name, value) {
+        let field = document.querySelector(`input[name="${name}"][type="hidden"]`);
+        if (!field) {
+            field = document.createElement('input');
+            field.type = 'hidden';
+            field.name = name;
+            document.getElementById('course-form').appendChild(field);
+        }
+        field.value = value;
+    }
 }
 
 // Initialize template selection
 setupTemplateSelection();
-
-console.log('✅ Quill editor initialized for course description');
 </script>
 
 {% endblock %}
