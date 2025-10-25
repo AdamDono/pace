@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, redirect, url_for, jsonify, send_f
 from flask_login import login_required, current_user
 from app.decorators import student_required, student_enrolled, admin_required, teacher_required
 from app import db
-from app.models import Course, Enrollment, Section, EnrollmentSection, Assignment, AssignmentSubmission, Quiz, QuizQuestion, QuizAttempt, QuizAnswer, Rating, Announcement, Notification, VideoProgress, VideoInteractiveQuestion, VideoInteractiveAnswer
+from app.models import Course, Enrollment, Section, EnrollmentSection, Assignment, AssignmentSubmission, Quiz, QuizQuestion, QuizAttempt, QuizAnswer, Rating, Announcement, Notification, VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse
+from app.forms import ProfileForm, SubmissionForm
 from app.utils.file_helpers import allowed_file, allowed_file_size
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
+from reportlab.lib.colors import HexColor
 from uuid import uuid4
 import logging
 import os
