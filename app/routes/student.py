@@ -83,13 +83,31 @@ def dashboard():
     except Exception as e:
         logger.warning(f"Dashboard aggregation fallback: {e}")
 
+    # Calculate quick stats
+    total_enrolled = len(enrolled_courses)
+    completed_courses = Enrollment.query.filter_by(
+        student_id=current_user.id,
+        completed=True
+    ).count()
+    total_certificates = Enrollment.query.filter_by(
+        student_id=current_user.id,
+        completed=True
+    ).filter(Enrollment.certificate_path.isnot(None)).count()
+    in_progress = total_enrolled - completed_courses
+
     return render_template(
         'student/dashboard.html',
         courses=enrolled_courses,
         progress_by_course=progress_by_course,
         continue_learning=sorted(continue_learning, key=lambda x: x['last_accessed'], reverse=True)[:6],
         upcoming=upcoming,
-        estimated_time=estimated_time
+        estimated_time=estimated_time,
+        stats={
+            'enrolled': total_enrolled,
+            'completed': completed_courses,
+            'certificates': total_certificates,
+            'in_progress': in_progress
+        }
     )
 
 @student_bp.route('/course-progress')
@@ -197,7 +215,14 @@ def get_section_content(section_id):
             enrollment.completed_at = datetime.utcnow()
             db.session.commit()
             flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
-            return jsonify({'status': 'completed', 'course_id': course.id, 'redirect': None})
+            return jsonify({
+                'status': 'completed', 
+                'course_id': course.id, 
+                'course_title': course.title,
+                'enrollment_id': enrollment.id,
+                'show_celebration': True,
+                'redirect': None
+            })
         return jsonify({'status': 'updated', 'message': 'Section updated.'})
 
     # Get interactive questions and subtitles for video sections
@@ -640,7 +665,9 @@ def generate_certificate(enrollment_id):
     db.session.commit()
     logger.info(f"Certificate generated successfully for enrollment_id: {enrollment_id}")
     flash('Certificate generated successfully!', 'success')
-    return jsonify({'status': 'success', 'message': 'Certificate generated', 'certificate_path': certificate_filename})
+    
+    # Redirect to download the certificate immediately
+    return redirect(url_for('student.serve_certificate', enrollment_id=enrollment_id))
 
 @student_bp.route('/serve_certificate/<int:enrollment_id>')
 @login_required
@@ -965,12 +992,23 @@ def assignments():
 @student_required
 def certificates():
     """View all earned certificates"""
-    enrollments = Enrollment.query.filter_by(
+    # Get all completed enrollments
+    completed_enrollments = Enrollment.query.filter_by(
         student_id=current_user.id,
         completed=True
     ).all()
     
-    certificates = [e for e in enrollments if e.certificate_path]
+    # Build certificates list with course info
+    certificates = []
+    for enrollment in completed_enrollments:
+        course = Course.query.get(enrollment.course_id)
+        if course:
+            certificates.append({
+                'enrollment': enrollment,
+                'course': course,
+                'has_certificate': bool(enrollment.certificate_path),
+                'completed_at': enrollment.completed_at
+            })
     
     return render_template('student/certificates.html', certificates=certificates)
 

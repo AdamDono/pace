@@ -124,11 +124,18 @@ def create_app():
                     read=False
                 ).count() if hasattr(Notification, 'read') else 0
                 
+                # Count completed courses
+                completed_courses = Enrollment.query.filter_by(
+                    student_id=current_user.id,
+                    completed=True
+                ).count()
+                
                 return {
                     'sidebar_counts': {
                         'pending_assignments': pending_assignments,
                         'unread_announcements': unread_announcements,
-                        'unread_notifications': unread_notifications
+                        'unread_notifications': unread_notifications,
+                        'completed_courses': completed_courses
                     }
                 }
             except Exception as e:
@@ -137,14 +144,16 @@ def create_app():
                     'sidebar_counts': {
                         'pending_assignments': 0,
                         'unread_announcements': 0,
-                        'unread_notifications': 0
+                        'unread_notifications': 0,
+                        'completed_courses': 0
                     }
                 }
         return {
             'sidebar_counts': {
                 'pending_assignments': 0,
                 'unread_announcements': 0,
-                'unread_notifications': 0
+                'unread_notifications': 0,
+                'completed_courses': 0
             }
         }
 

@@ -2,6 +2,19 @@
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
+    <!-- Breadcrumbs -->
+    <div class="bg-white border-b">
+        <div class="container mx-auto px-6 py-3">
+            <nav class="flex items-center space-x-2 text-sm">
+                <a href="{{ url_for('student.dashboard') }}" class="text-gray-600 hover:text-blue-600 transition">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <span class="text-gray-400">/</span>
+                <span class="text-gray-900 font-medium">{{ course.title[:50] }}{{ '...' if course.title|length > 50 else '' }}</span>
+            </nav>
+        </div>
+    </div>
+    
     <!-- Hero Section -->
     <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white relative">
         <div class="container mx-auto px-6 py-12">
@@ -742,7 +755,51 @@
             function closeModal() {
                 document.getElementById('ratingModal').classList.add('hidden');
             }
+            
+            // Show celebration modal when course is completed
+            function showCelebrationModal(courseTitle, enrollmentId) {
+                const modal = document.getElementById('celebrationModal');
+                document.getElementById('celebrationCourseTitle').textContent = courseTitle;
+                document.getElementById('celebrationEnrollmentId').value = enrollmentId;
+                modal.classList.remove('hidden');
+                
+                // Confetti animation
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+            
+            function closeCelebrationModal() {
+                document.getElementById('celebrationModal').classList.add('hidden');
+            }
         });
     </script>
+    
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center transform transition-all">
+            <div class="text-6xl mb-4 animate-bounce">🎉</div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+            <p class="text-gray-600 mb-1">You've completed</p>
+            <p id="celebrationCourseTitle" class="text-xl font-bold text-blue-600 mb-6"></p>
+            <div class="space-y-3">
+                <form method="POST" action="{{ url_for('student.generate_certificate', enrollment_id=0) }}" id="celebrationCertForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" id="celebrationEnrollmentId" name="enrollment_id" value=""/>
+                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-green-700 font-medium transition">
+                        <i class="fas fa-award mr-2"></i>Get Your Certificate 📜
+                    </button>
+                </form>
+                <button onclick="closeCelebrationModal()" class="w-full text-gray-600 hover:text-gray-900 py-2">
+                    Continue Learning
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </div>
 {% endblock %}

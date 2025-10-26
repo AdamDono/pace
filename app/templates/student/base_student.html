@@ -121,9 +121,15 @@
                     {% endif %}
                 </a>
                 
-                <a href="{{ url_for('student.certificates') }}" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 {% if request.endpoint == 'student.certificates' %}bg-blue-50 text-blue-700{% endif %}">
-                    <i class="fas fa-certificate w-5 mr-3"></i>
-                    Certificates
+                <a href="{{ url_for('student.certificates') }}" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 {% if request.endpoint == 'student.certificates' %}bg-blue-50 text-blue-700{% endif %}">
+                    <div class="flex items-center">
+                        <i class="fas fa-certificate w-5 mr-3"></i>
+                        Certificates
+                    </div>
+                    {% set completed_count = sidebar_counts.completed_courses if sidebar_counts else 0 %}
+                    {% if completed_count > 0 %}
+                    <span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full">{{ completed_count }}</span>
+                    {% endif %}
                 </a>
                 
                 <a href="{{ url_for('student.calendar') }}" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 {% if request.endpoint == 'student.calendar' %}bg-blue-50 text-blue-700{% endif %}">

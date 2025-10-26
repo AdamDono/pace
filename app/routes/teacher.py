@@ -1426,25 +1426,296 @@ def course_calendar(course_id):
                          past_due=past_due,
                          due_this_week=due_this_week)
 
-@teacher_bp.route('/course/<int:course_id>/view-as-student')
+@teacher_bp.route('/gradebook')
+@login_required
 @teacher_required
-def view_as_student(course_id):
-    """View course exactly as students see it"""
-    from app.models import Course, Module, Section, Enrollment, EnrollmentSection
+def gradebook():
+    """Main gradebook overview showing all courses with grading summaries"""
+    from app.models import Course, Enrollment, AssignmentSubmission, QuizAttempt, Assignment, Quiz, Section
+    from sqlalchemy import func
+    
+    # Get all courses for this teacher
+    courses = Course.query.filter_by(teacher_id=current_user.id).all()
+    
+    gradebook_data = []
+    
+    for course in courses:
+        # Get enrollments for this course
+        enrollments = Enrollment.query.filter_by(course_id=course.id).all()
+        total_students = len(enrollments)
+        
+        # Get all assignments and quizzes in this course
+        assignments = Assignment.query.join(Section).filter(Section.course_id == course.id).all()
+        quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
+        
+        total_assignments = len(assignments)
+        total_quizzes = len(quizzes)
+        
+        # Count graded vs ungraded submissions
+        graded_submissions = 0
+        total_submissions = 0
+        
+        for assignment in assignments:
+            submissions = AssignmentSubmission.query.filter_by(assignment_id=assignment.id).all()
+            total_submissions += len(submissions)
+            graded_submissions += sum(1 for s in submissions if s.reviewed)
+        
+        # Count graded quiz attempts
+        quiz_attempts = 0
+        for quiz in quizzes:
+            attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
+            quiz_attempts += len(attempts)
+        
+        # Calculate completion and grading percentages
+        completion_rate = (sum(1 for e in enrollments if e.completed) / total_students * 100) if total_students > 0 else 0
+        grading_completion = (graded_submissions / total_submissions * 100) if total_submissions > 0 else 100
+        
+        gradebook_data.append({
+            'course': course,
+            'total_students': total_students,
+            'total_assignments': total_assignments,
+            'total_quizzes': total_quizzes,
+            'total_submissions': total_submissions,
+            'graded_submissions': graded_submissions,
+            'quiz_attempts': quiz_attempts,
+            'completion_rate': round(completion_rate, 1),
+            'grading_completion': round(grading_completion, 1),
+            'needs_grading': total_submissions - graded_submissions
+        })
+    
+    return render_template('teacher/gradebook.html', gradebook_data=gradebook_data)
+
+@teacher_bp.route('/course/<int:course_id>/gradebook')
+@teacher_required
+def course_gradebook(course_id):
+    """Detailed gradebook view for a specific course"""
+    from app.models import Course, Enrollment, AssignmentSubmission, QuizAttempt, Assignment, Quiz, Section, User
     
     course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id:
         abort(403)
     
-    # Create a temporary "preview" enrollment to simulate student experience
-    # Get course structure
-    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
+    # Get all enrollments for this course
+    enrollments = Enrollment.query.filter_by(course_id=course_id).all()
     
-    # Get first enrolled student for realistic preview (if any)
-    sample_enrollment = Enrollment.query.filter_by(course_id=course_id).first()
+    # Get all assignments and quizzes in this course
+    assignments = Assignment.query.join(Section).filter(Section.course_id == course_id).order_by(Assignment.due_date).all()
+    quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).order_by(Quiz.id).all()
     
-    return render_template('teacher/view_as_student.html',
+    # Build student grade data
+    student_grades = []
+    
+    for enrollment in enrollments:
+        student = User.query.get(enrollment.student_id)
+        
+        # Get grades for all assignments
+        assignment_grades = {}
+        for assignment in assignments:
+            submission = AssignmentSubmission.query.filter_by(
+                assignment_id=assignment.id, 
+                student_id=student.id
+            ).first()
+            if submission and submission.grade is not None:
+                assignment_grades[assignment.id] = {
+                    'grade': submission.grade,
+                    'reviewed': submission.reviewed,
+                    'submitted_at': submission.submitted_at
+                }
+            else:
+                assignment_grades[assignment.id] = None
+        
+        # Get grades for all quizzes
+        quiz_grades = {}
+        for quiz in quizzes:
+            attempt = QuizAttempt.query.filter_by(
+                quiz_id=quiz.id,
+                student_id=student.id
+            ).order_by(QuizAttempt.attempted_at.desc()).first()
+            if attempt:
+                quiz_grades[quiz.id] = {
+                    'score': attempt.score,
+                    'attempted_at': attempt.attempted_at
+                }
+            else:
+                quiz_grades[quiz.id] = None
+        
+        # Calculate overall grade (weighted average)
+        total_points = 0
+        earned_points = 0
+        
+        # Assignments count as 60% of grade, quizzes as 40%
+        assignment_weight = 0.6
+        quiz_weight = 0.4
+        
+        # Calculate assignment average
+        assignment_scores = [grade['grade'] for grade in assignment_grades.values() if grade is not None]
+        assignment_avg = sum(assignment_scores) / len(assignment_scores) if assignment_scores else 0
+        
+        # Calculate quiz average  
+        quiz_scores = [grade['score'] for grade in quiz_grades.values() if grade is not None]
+        quiz_avg = sum(quiz_scores) / len(quiz_scores) if quiz_scores else 0
+        
+        # Overall grade
+        if assignments or quizzes:
+            overall_grade = (assignment_avg * assignment_weight + quiz_avg * quiz_weight)
+        else:
+            overall_grade = 0
+        
+        student_grades.append({
+            'student': student,
+            'enrollment': enrollment,
+            'assignment_grades': assignment_grades,
+            'quiz_grades': quiz_grades,
+            'assignment_avg': round(assignment_avg, 1) if assignment_scores else None,
+            'quiz_avg': round(quiz_avg, 1) if quiz_scores else None,
+            'overall_grade': round(overall_grade, 1) if overall_grade > 0 else None
+        })
+    
+    # Sort by overall grade (highest first)
+    student_grades.sort(key=lambda x: x['overall_grade'] or 0, reverse=True)
+    
+    return render_template('teacher/course_gradebook.html',
                          course=course,
-                         modules=modules,
-                         sample_enrollment=sample_enrollment,
-                         preview_mode=True)
+                         assignments=assignments,
+                         quizzes=quizzes,
+                         student_grades=student_grades)
+
+@teacher_bp.route('/course/<int:course_id>/bulk-grade')
+@teacher_required
+def bulk_grade_course(course_id):
+    """Bulk grading interface for a course"""
+    from app.models import Course, AssignmentSubmission, Assignment, Section
+    
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # Get all ungraded submissions
+    ungraded_submissions = AssignmentSubmission.query.join(Assignment).join(Section).filter(
+        Section.course_id == course_id,
+        AssignmentSubmission.reviewed == False
+    ).order_by(AssignmentSubmission.submitted_at).all()
+    
+    # Group by assignment
+    submissions_by_assignment = {}
+    for submission in ungraded_submissions:
+        assignment_id = submission.assignment_id
+        if assignment_id not in submissions_by_assignment:
+            submissions_by_assignment[assignment_id] = {
+                'assignment': submission.assignment,
+                'submissions': []
+            }
+        submissions_by_assignment[assignment_id]['submissions'].append(submission)
+    
+    return render_template('teacher/bulk_grade.html',
+                         course=course,
+                         submissions_by_assignment=submissions_by_assignment,
+                         total_ungraded=len(ungraded_submissions))
+
+@teacher_bp.route('/course/<int:course_id>/student/<int:student_id>/grades')
+@teacher_required
+def student_detail_grades(course_id, student_id):
+    """Detailed view of a student's grades in a course"""
+    from app.models import Course, User, Enrollment, AssignmentSubmission, QuizAttempt, Assignment, Quiz, Section
+    
+    course = Course.query.get_or_404(course_id)
+    student = User.query.get_or_404(student_id)
+    
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # Get enrollment
+    enrollment = Enrollment.query.filter_by(course_id=course_id, student_id=student_id).first()
+    if not enrollment:
+        abort(404)
+    
+    # Get all assignments and quizzes
+    assignments = Assignment.query.join(Section).filter(Section.course_id == course_id).all()
+    quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).all()
+    
+    # Get student's submissions and attempts
+    assignment_data = []
+    for assignment in assignments:
+        submission = AssignmentSubmission.query.filter_by(
+            assignment_id=assignment.id,
+            student_id=student_id
+        ).first()
+        
+        assignment_data.append({
+            'assignment': assignment,
+            'submission': submission,
+            'status': 'graded' if submission and submission.reviewed else 'submitted' if submission else 'not_submitted'
+        })
+    
+    quiz_data = []
+    for quiz in quizzes:
+        attempts = QuizAttempt.query.filter_by(
+            quiz_id=quiz.id,
+            student_id=student_id
+        ).order_by(QuizAttempt.attempted_at.desc()).all()
+        
+        quiz_data.append({
+            'quiz': quiz,
+            'attempts': attempts,
+            'best_score': max([a.score for a in attempts]) if attempts else None
+        })
+    
+    # Calculate overall statistics
+    total_assignments = len(assignments)
+    graded_assignments = sum(1 for a in assignment_data if a['status'] == 'graded')
+    submitted_assignments = sum(1 for a in assignment_data if a['submission'])
+    
+    total_quizzes = len(quizzes)
+    attempted_quizzes = sum(1 for q in quiz_data if q['attempts'])
+    
+    # Grade averages
+    assignment_grades = [s['submission'].grade for s in assignment_data if s['submission'] and s['submission'].grade is not None]
+    assignment_avg = sum(assignment_grades) / len(assignment_grades) if assignment_grades else None
+    
+    quiz_scores = [q['best_score'] for q in quiz_data if q['best_score'] is not None]
+    quiz_avg = sum(quiz_scores) / len(quiz_scores) if quiz_scores else None
+    
+    # Overall grade (60% assignments, 40% quizzes)
+    overall_grade = None
+    if assignment_avg is not None or quiz_avg is not None:
+        assignment_contrib = (assignment_avg or 0) * 0.6
+        quiz_contrib = (quiz_avg or 0) * 0.4
+        overall_grade = assignment_contrib + quiz_contrib
+    
+    return render_template('teacher/student_detail_grades.html',
+                         course=course,
+                         student=student,
+                         enrollment=enrollment,
+                         assignment_data=assignment_data,
+                         quiz_data=quiz_data,
+                         stats={
+                             'total_assignments': total_assignments,
+                             'graded_assignments': graded_assignments,
+                             'submitted_assignments': submitted_assignments,
+                             'total_quizzes': total_quizzes,
+                             'attempted_quizzes': attempted_quizzes,
+                             'assignment_avg': round(assignment_avg, 1) if assignment_avg else None,
+                             'quiz_avg': round(quiz_avg, 1) if quiz_avg else None,
+                             'overall_grade': round(overall_grade, 1) if overall_grade else None
+                         })
+
+@teacher_bp.route('/preview-submission/<int:submission_id>')
+@teacher_required
+def preview_submission(submission_id):
+    """AJAX endpoint to preview a submission"""
+    from app.models import AssignmentSubmission
+    
+    submission = AssignmentSubmission.query.get_or_404(submission_id)
+    
+    # Verify teacher owns the course
+    if not current_user.is_teacher_for_course(submission.assignment.section.course_id):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    return jsonify({
+        'submission_type': submission.submission_type,
+        'submission_text': submission.submission_text,
+        'code_submission': submission.code_submission,
+        'programming_language': submission.programming_language,
+        'file_path': submission.file_path,
+        'submitted_at': submission.submitted_at.isoformat() if submission.submitted_at else None
+    })

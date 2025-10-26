@@ -193,6 +193,7 @@ class Enrollment(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), index=True)  # Added index
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Added index
     completed = db.Column(db.Boolean, default=False, index=True)  # Added index for filtering
+    completed_at = db.Column(db.DateTime, nullable=True)  # When course was completed
     certificate_path = db.Column(db.String(255))  # Added for certificate storage
     
     student = db.relationship('User', back_populates='enrollments')

@@ -102,7 +102,6 @@ def dashboard():
 @admin_required
 def pending_approvals():
     pending_courses = Course.query.filter_by(status='pending').all()
-    print("Pending courses:", [(course.id, course.title, course.status) for course in pending_courses])  # Debug log
     return render_template('admin/approvals.html', courses=pending_courses)
 
 @admin_bp.route('/approve-course/<int:course_id>')

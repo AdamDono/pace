@@ -523,7 +523,24 @@ function showNotification(message, type) {
 
 // Form validation before next step
 document.getElementById('course-form').addEventListener('submit', function(e) {
-    // Add any client-side validation here if needed
+    // Ensure form action is correct
+    if (!this.action || this.action.includes('[object')) {
+        this.action = window.location.pathname + window.location.search;
+    }
+    
+    // Ensure radio button values are properly set
+    const statusRadios = document.querySelectorAll('input[name="status"]');
+    let statusSelected = false;
+    statusRadios.forEach(radio => {
+        if (radio.checked) {
+            statusSelected = true;
+        }
+    });
+    
+    // If no status is selected, select draft by default
+    if (!statusSelected && statusRadios.length > 0) {
+        statusRadios[0].checked = true; // Select first option (draft)
+    }
 });
 
 function setupTemplateSelection() {
@@ -532,7 +549,6 @@ function setupTemplateSelection() {
     const subjectSection = document.getElementById('subject-section');
     const subjectInput = document.getElementById('subject-input');
     const courseTitleInput = document.getElementById('course-title');
-    const courseDescriptionTextarea = document.getElementById('course-description');
     const courseCategorySelect = document.getElementById('course-category');
     const courseDifficultySelect = document.getElementById('course-difficulty');
     const courseDurationInput = document.getElementById('course-duration');
@@ -705,7 +721,7 @@ setupTemplateSelection = function() {
     const courseDifficultySelect = document.getElementById('course-difficulty');
     const courseDurationInput = document.getElementById('course-duration');
 
-    // Course templates data
+    // Course templates data (same as above)
     const templates = {
         blank: {
             title: '',
@@ -725,7 +741,7 @@ setupTemplateSelection = function() {
             duration: 20,
             objectives: '• Understand the basic concepts and terminology\n• Learn fundamental principles and techniques\n• Practice with real-world examples\n• Build confidence through hands-on exercises',
             prerequisites: '• No prior experience required\n• Basic computer skills\n• Willingness to learn and practice',
-            tags: 'beginner, fundamentals, introduction'
+            tags: 'beginner, fundamentals, introduction, basics'
         },
         intermediate: {
             title: 'Advanced [Subject] Techniques',

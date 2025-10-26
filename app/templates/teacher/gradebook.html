@@ -1,0 +1,181 @@
+{% extends "teacher/base_teacher.html" %}
+
+{% block content %}
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">📊 Gradebook</h1>
+                <p class="text-gray-600 mt-2">Overview of all your courses and grading progress</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="exportAllGrades()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    📥 Export All Grades
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {% set total_courses = gradebook_data|length %}
+        {% set total_students = gradebook_data|sum(attribute='total_students') %}
+        {% set total_needs_grading = gradebook_data|sum(attribute='needs_grading') %}
+        {% set avg_completion = gradebook_data|sum(attribute='completion_rate') / total_courses if total_courses > 0 else 0 %}
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <i class="fas fa-book text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Courses</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_courses }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <i class="fas fa-users text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Students</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Needs Grading</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_needs_grading }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Avg Completion</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(avg_completion) }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Table -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Course Overview</h2>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignments</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submissions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grading Progress</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in gradebook_data %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ item.course.title }}</div>
+                                    <div class="text-sm text-gray-500">{{ item.course.category|title }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ item.total_students }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ item.total_assignments }}</div>
+                            <div class="text-xs text-gray-500">{{ item.total_quizzes }} quizzes</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ item.graded_submissions }}/{{ item.total_submissions }}</div>
+                            <div class="text-xs text-gray-500">{{ item.quiz_attempts }} quiz attempts</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-full bg-gray-200 rounded-full h-2 mr-3">
+                                    <div class="bg-green-600 h-2 rounded-full progress-bar" data-width="{{ item.completion_rate }}"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">{{ item.completion_rate }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.needs_grading > 0 %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    {{ item.needs_grading }} pending
+                                </span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    ✓ Complete
+                                </span>
+                            {% endif %}
+                            <div class="text-xs text-gray-500 mt-1">{{ item.grading_completion }}% graded</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <a href="{{ url_for('teacher.course_gradebook', course_id=item.course.id) }}"
+                                   class="text-blue-600 hover:text-blue-900">📊 View Details</a>
+                                {% if item.needs_grading > 0 %}
+                                <a href="{{ url_for('teacher.bulk_grade_course', course_id=item.course.id) }}"
+                                   class="text-green-600 hover:text-green-900">⚡ Quick Grade</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if not gradebook_data %}
+        <div class="text-center py-12">
+            <i class="fas fa-book-open text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No courses yet</h3>
+            <p class="text-gray-500 mb-4">Create your first course to start using the gradebook</p>
+            <a href="{{ url_for('teacher.create_course_wizard') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                Create Course
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function exportAllGrades() {
+    // Export all grades across all courses
+    alert('Export functionality coming soon! This will download a comprehensive grade report.');
+}
+
+// Set progress bar widths dynamically
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.progress-bar').forEach(function(bar) {
+        const width = bar.getAttribute('data-width');
+        bar.style.width = width + '%';
+    });
+});
+</script>
+
+{% endblock %}

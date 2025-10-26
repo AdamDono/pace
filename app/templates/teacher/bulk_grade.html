@@ -1,0 +1,285 @@
+{% extends "teacher/base_teacher.html" %}
+
+{% block content %}
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center mb-2">
+                    <a href="{{ url_for('teacher.course_gradebook', course_id=course.id) }}" class="text-blue-600 hover:text-blue-800 mr-2">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-3xl font-bold text-gray-900">⚡ Bulk Grade</h1>
+                </div>
+                <p class="text-gray-600">{{ course.title }} - Quick grading for {{ total_ungraded }} ungraded submissions</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="saveAllGrades()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+                    💾 Save All Grades
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% if submissions_by_assignment %}
+        {% for assignment_id, data in submissions_by_assignment.items() %}
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">{{ data.assignment.title }}</h3>
+                <p class="text-sm text-gray-600">{{ data.submissions|length }} ungraded submissions</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submission Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade (0-100%)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for submission in data.submissions %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                                            {{ submission.student.email[0].upper() }}
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ submission.student.email.split('@')[0] }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ submission.student.email }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ submission.submitted_at.strftime('%b %d, %H:%M') }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if submission.submission_type == 'code' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        💻 Code
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        📄 Text/File
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <button onclick="previewSubmission({{ submission.id }})"
+                                        class="text-blue-600 hover:text-blue-900 text-sm underline">
+                                    👁️ Preview
+                                </button>
+                            </td>
+                            <td class="px-6 py-4">
+                                <input type="number" min="0" max="100" step="0.5"
+                                       class="grade-input w-20 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                       data-submission-id="{{ submission.id }}"
+                                       placeholder="85">
+                                <span class="text-sm text-gray-500 ml-1">%</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <textarea class="feedback-input w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                                          rows="2"
+                                          data-submission-id="{{ submission.id }}"
+                                          placeholder="Optional feedback..."></textarea>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="fixed bottom-4 right-4">
+            <button onclick="saveAllGrades()" class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition shadow-lg">
+                💾 Save All Grades ({{ total_ungraded }})
+            </button>
+        </div>
+    {% else %}
+        <div class="bg-white shadow-lg rounded-lg p-12 text-center">
+            <i class="fas fa-check-circle text-green-400 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">All Caught Up!</h3>
+            <p class="text-gray-500 mb-4">There are no ungraded submissions for this course.</p>
+            <a href="{{ url_for('teacher.course_gradebook', course_id=course.id) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                View Full Gradebook
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Submission Preview Modal -->
+<div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-4xl flex flex-col" style="max-height: 95vh; height: auto;">
+        <!-- Fixed Header -->
+        <div class="flex-shrink-0 p-6 pb-4 border-b">
+            <button class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-2xl" onclick="closePreviewModal()">×</button>
+            <h3 class="text-xl font-bold text-gray-800">📝 Submission Preview</h3>
+        </div>
+
+        <!-- Scrollable Content Area -->
+        <div class="flex-1 px-6 py-4" style="overflow-y: auto; min-height: 0;">
+            <div id="previewContent" class="mb-4 p-4 bg-gray-50 rounded-lg border">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Fixed Footer -->
+        <div class="flex-shrink-0 p-6 pt-4 border-t bg-gray-50">
+            <button onclick="closePreviewModal()" class="w-full bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition">
+                Close Preview
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewSubmission(submissionId) {
+    // Load submission content via AJAX
+    fetch(`/teacher/preview-submission/${submissionId}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('previewContent');
+
+            if (data.submission_type === 'code') {
+                if (data.code_submission) {
+                    content.innerHTML = `
+                        <div class="bg-gray-900 text-white p-4 rounded-lg overflow-auto max-h-[400px]">
+                            <pre><code class="text-sm">${data.code_submission}</code></pre>
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-xs text-gray-500">Language: ${data.programming_language || 'Unknown'}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                content.innerHTML = `
+                    <h4 class="font-semibold text-gray-700 mb-2">Student Submission:</h4>
+                    <p class="text-gray-700 whitespace-pre-wrap">${data.submission_text || 'No text content'}</p>
+                    ${data.file_path ? `<a href="/static/uploads/${data.file_path}" target="_blank" class="text-blue-600 hover:underline mt-2 inline-block">📎 View Attached File</a>` : ''}
+                `;
+            }
+
+            document.getElementById('previewModal').classList.remove('hidden');
+        })
+        .catch(error => {
+            alert('Error loading submission preview');
+        });
+}
+
+function closePreviewModal() {
+    document.getElementById('previewModal').classList.add('hidden');
+}
+
+function saveAllGrades() {
+    const gradeInputs = document.querySelectorAll('.grade-input');
+    const feedbackInputs = document.querySelectorAll('.feedback-input');
+
+    let submissionsToGrade = [];
+
+    gradeInputs.forEach(input => {
+        const submissionId = input.dataset.submissionId;
+        const grade = input.value.trim();
+        const feedbackInput = document.querySelector(`.feedback-input[data-submission-id="${submissionId}"]`);
+        const feedback = feedbackInput ? feedbackInput.value.trim() : '';
+
+        if (grade !== '') {
+            submissionsToGrade.push({
+                id: submissionId,
+                grade: parseFloat(grade),
+                feedback: feedback
+            });
+        }
+    });
+
+    if (submissionsToGrade.length === 0) {
+        alert('No grades entered. Please enter at least one grade.');
+        return;
+    }
+
+    if (confirm(`Save grades for ${submissionsToGrade.length} submission(s)?`)) {
+        // Save grades one by one
+        let saved = 0;
+        let errors = 0;
+
+        submissionsToGrade.forEach(submission => {
+            fetch(`/teacher/submit_feedback/${submission.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}',
+                    'X-CSRF-Token': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    feedback: submission.feedback,
+                    grade: submission.grade
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    saved++;
+                } else {
+                    errors++;
+                }
+
+                // Check if all requests are complete
+                if (saved + errors === submissionsToGrade.length) {
+                    if (errors === 0) {
+                        alert(`✅ Successfully saved ${saved} grade(s)!`);
+                        location.reload();
+                    } else {
+                        alert(`⚠️ Saved ${saved} grade(s), but ${errors} failed. Please try again.`);
+                    }
+                }
+            })
+            .catch(error => {
+                errors++;
+                if (saved + errors === submissionsToGrade.length) {
+                    alert(`❌ Error: ${errors} grade(s) failed to save.`);
+                }
+            });
+        });
+    }
+}
+
+// Auto-save grades to localStorage
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('grade-input') || e.target.classList.contains('feedback-input')) {
+        const submissionId = e.target.dataset.submissionId;
+        const type = e.target.classList.contains('grade-input') ? 'grade' : 'feedback';
+        const value = e.target.value;
+
+        const key = `bulk_grade_${submissionId}_${type}`;
+        localStorage.setItem(key, value);
+    }
+});
+
+// Load saved values on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.grade-input, .feedback-input').forEach(input => {
+        const submissionId = input.dataset.submissionId;
+        const type = input.classList.contains('grade-input') ? 'grade' : 'feedback';
+        const key = `bulk_grade_${submissionId}_${type}`;
+        const savedValue = localStorage.getItem(key);
+
+        if (savedValue) {
+            input.value = savedValue;
+        }
+    });
+});
+</script>
+
+{% endblock %}
