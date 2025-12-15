@@ -227,7 +227,23 @@ function insertH5P() {
 
     const range = window.currentQuill.getSelection(true);
     const embedCode = `<div class="h5p-embed-container" style="position:relative;width:100%;padding-bottom:75%;height:0;overflow:hidden;margin:20px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="H5P Interactive Content"></iframe></div>`;
+    
+    // Insert the HTML
     window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, embedCode);
+    
+    // CRITICAL: Mark as custom HTML to prevent Quill from stripping styles
+    window.currentQuill.root.setAttribute('data-custom-html', 'true');
+    
+    // CRITICAL: Update the hidden textarea immediately
+    const textarea = document.getElementById('content-editor') || 
+                     document.getElementById('announcement-content') ||
+                     document.getElementById('course-description');
+    if (textarea) {
+        textarea.value = window.currentQuill.root.innerHTML;
+        console.log('✅ H5P embedded and textarea updated');
+    }
+    
+    console.log('✅ H5P URL:', url);
     closeH5PModal();
 }
 

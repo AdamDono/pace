@@ -627,7 +627,7 @@ def edit_course(course_id):
     from app.models import Course, db  # Moved here
     from app.forms import CourseForm  # Moved here
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id or course.status == 'approved':
+    if course.teacher_id != current_user.id:
         abort(403)
     
     form = CourseForm(obj=course)
