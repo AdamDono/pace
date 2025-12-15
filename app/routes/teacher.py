@@ -595,8 +595,19 @@ def handle_autosave():
             course.prerequisites = request.form.get('prerequisites') or course.prerequisites
             course.tags = request.form.get('tags') or course.tags
 
+        # Handle banner image upload
+        banner_file = request.files.get('banner_image')
+        if banner_file and banner_file.filename:
+            if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
+                banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
+                banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
+                banner_file.save(banner_save_path)
+                course.banner_image = banner_filename
+
         course.last_autosave = datetime.utcnow()
         db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Draft saved', 'course_id': course.id})
 
         return jsonify({'success': True, 'course_id': course.id})
 

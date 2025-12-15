@@ -3,7 +3,7 @@ flask-sqlalchemy==3.1.1
 flask-login==0.6.3
 flask-wtf==1.2.1
 flask-mail==0.9.1
-psycopg2-binary==2.9.9
+# psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 werkzeug>=3.0.0
 pyjwt>=2.0.0

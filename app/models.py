@@ -454,7 +454,7 @@ class Notification(db.Model):
     related_quiz_id = db.Column(db.Integer, nullable=True)
     
     # Relationships
-    user = db.relationship('User', backref='notifications')
+    user = db.relationship('User', backref=db.backref('notifications', cascade='all, delete-orphan'))
     related_course = db.relationship('Course', backref='notifications')
 
 class NotificationPreference(db.Model):
@@ -485,7 +485,7 @@ class NotificationPreference(db.Model):
     digest_day = db.Column(db.String(10), default='Monday')  # Day of week for digest
     
     # Relationships
-    user = db.relationship('User', backref='notification_preferences')
+    user = db.relationship('User', backref=db.backref('notification_preferences', uselist=False, cascade='all, delete-orphan'))
 
 class Announcement(db.Model):
     """Course announcements from teachers"""
@@ -506,5 +506,5 @@ class Announcement(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    course = db.relationship('Course', backref='announcements')
+    course = db.relationship('Course', backref=db.backref('announcements', cascade='all, delete-orphan'))
     teacher = db.relationship('User', backref='announcements_created')

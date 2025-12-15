@@ -428,54 +428,6 @@ def view_pdf(section_id):
     db.session.commit()
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], section.content)
 
-@student_bp.route('/section/<int:section_id>/content_new', methods=['GET', 'POST'])
-@student_required
-def get_section_content_new(section_id):
-    section = Section.query.get_or_404(section_id)
-    course = Course.query.get_or_404(section.course_id)
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
-
-    # Section locking logic
-    sections = Section.query.filter_by(course_id=section.course_id).order_by(Section.order).all()
-    section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
-    if section_idx > 0:
-        prev_section = sections[section_idx - 1]
-        prev_es = EnrollmentSection.query.filter_by(
-            enrollment_id=enrollment.id, section_id=prev_section.id
-        ).first()
-        if not prev_es or not prev_es.completed:
-            return "Section locked", 403
-
-    # Create EnrollmentSection if it doesn't exist
-    enrollment_section = EnrollmentSection.query.filter_by(
-        enrollment_id=enrollment.id, section_id=section_id
-    ).first()
-    if not enrollment_section:
-        enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
-        db.session.add(enrollment_section)
-        db.session.commit()
-
-    # Handle marking as complete
-    if request.method == 'POST' and 'mark_completed' in request.form:
-        enrollment_section.completed = True
-        enrollment_section.completed_at = datetime.utcnow()
-        db.session.commit()
-        flash('Section marked as completed.', 'success')
-
-    # Get interactive questions and subtitles for video sections
-    interactive_questions = []
-    subtitles = []
-    if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
-        interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
-        subtitles = section.subtitles if hasattr(section, 'subtitles') else []
-    
-    return render_template('student/_section_content.html', 
-                         section=section, 
-                         course=course, 
-                         enrollment_section=enrollment_section,
-                         interactive_questions=interactive_questions,
-                         subtitles=subtitles)
-
 @student_bp.route('/course/<int:course_id>/rate', methods=['POST'])
 @login_required
 @student_required
@@ -1078,5 +1030,87 @@ def notifications_list():
 @login_required
 @student_required
 def help():
-    """Help and support page"""
     return render_template('student/help.html')
+
+@student_bp.route('/grades')
+@login_required
+@student_required
+def grades():
+    """Student gradebook showing all grades across enrolled courses"""
+    # Get all enrolled courses
+    enrolled_courses = Course.query.join(Enrollment).filter(
+        Enrollment.student_id == current_user.id,
+        Course.status == 'approved'
+    ).all()
+    
+    grade_data = []
+    
+    for course in enrolled_courses:
+        # Get assignments and quizzes for this course
+        assignments = Assignment.query.join(Section).filter(Section.course_id == course.id).all()
+        quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
+        
+        # Get student's submissions
+        assignment_grades = []
+        for assignment in assignments:
+            submission = AssignmentSubmission.query.filter_by(
+                assignment_id=assignment.id,
+                student_id=current_user.id
+            ).first()
+            
+            assignment_grades.append({
+                'assignment': assignment,
+                'submission': submission,
+                'grade': submission.grade if submission else None,
+                'status': 'graded' if submission and submission.reviewed else 'submitted' if submission else 'not_submitted'
+            })
+        
+        # Get quiz attempts
+        quiz_grades = []
+        for quiz in quizzes:
+            attempts = QuizAttempt.query.filter_by(
+                quiz_id=quiz.id,
+                student_id=current_user.id
+            ).order_by(QuizAttempt.attempted_at.desc()).all()
+            
+            best_score = max([a.score for a in attempts]) if attempts else None
+            
+            quiz_grades.append({
+                'quiz': quiz,
+                'attempts': attempts,
+                'best_score': best_score,
+                'status': 'completed' if attempts else 'not_attempted'
+            })
+        
+        # Calculate course average
+        assignment_scores = [g['grade'] for g in assignment_grades if g['grade'] is not None]
+        quiz_scores = [g['best_score'] for g in quiz_grades if g['best_score'] is not None]
+        
+        assignment_avg = sum(assignment_scores) / len(assignment_scores) if assignment_scores else None
+        quiz_avg = sum(quiz_scores) / len(quiz_scores) if quiz_scores else None
+        
+        # Overall grade (60% assignments, 40% quizzes)
+        overall_grade = None
+        if assignment_avg is not None or quiz_avg is not None:
+            overall_grade = (assignment_avg or 0) * 0.6 + (quiz_avg or 0) * 0.4
+        
+        grade_data.append({
+            'course': course,
+            'assignment_grades': assignment_grades,
+            'quiz_grades': quiz_grades,
+            'assignment_avg': round(assignment_avg, 1) if assignment_avg else None,
+            'quiz_avg': round(quiz_avg, 1) if quiz_avg else None,
+            'overall_grade': round(overall_grade, 1) if overall_grade else None,
+            'total_assignments': len(assignments),
+            'graded_assignments': sum(1 for g in assignment_grades if g['status'] == 'graded'),
+            'total_quizzes': len(quizzes),
+            'attempted_quizzes': sum(1 for g in quiz_grades if g['status'] == 'completed')
+        })
+    
+    # Calculate overall GPA
+    all_grades = [g['overall_grade'] for g in grade_data if g['overall_grade'] is not None]
+    overall_gpa = sum(all_grades) / len(all_grades) if all_grades else None
+    
+    return render_template('student/grades.html',
+                         grade_data=grade_data,
+                         overall_gpa=round(overall_gpa, 1) if overall_gpa else None)

@@ -110,6 +110,11 @@
                     My Progress
                 </a>
                 
+                <a href="{{ url_for('student.grades') }}" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 {% if request.endpoint == 'student.grades' %}bg-blue-50 text-blue-700{% endif %}">
+                    <i class="fas fa-graduation-cap w-5 mr-3"></i>
+                    My Grades
+                </a>
+                
                 <a href="{{ url_for('student.assignments') }}" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 {% if request.endpoint == 'student.assignments' %}bg-blue-50 text-blue-700{% endif %}">
                     <div class="flex items-center">
                         <i class="fas fa-tasks w-5 mr-3"></i>

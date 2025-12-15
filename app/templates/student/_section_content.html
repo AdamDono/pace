@@ -82,7 +82,7 @@
 
     <!-- Mark as Complete Button -->
     {% if not enrollment_section.completed %}
-        <form method="POST" class="mt-4" hx-post="{{ url_for('student.get_section_content_new', section_id=section.id) }}" hx-target="#section-content-{{ section.id }}" hx-swap="innerHTML">
+        <form method="POST" class="mt-4" hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}" hx-target="#section-content-{{ section.id }}" hx-swap="innerHTML">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 Mark as Completed
