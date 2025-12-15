@@ -530,7 +530,7 @@
     }
 
     function setupFilePreviews() {
-        // Banner image preview
+        // Banner image upload with AJAX
         const bannerInput = document.getElementById('banner_image');
         const bannerPreview = document.getElementById('banner-preview');
         const bannerImg = document.getElementById('banner-img');
@@ -539,12 +539,16 @@
             bannerInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
                 if (file) {
+                    // Show preview immediately
                     const reader = new FileReader();
                     reader.onload = function (e) {
                         bannerImg.src = e.target.result;
                         bannerPreview.classList.remove('hidden');
                     };
                     reader.readAsDataURL(file);
+                    
+                    // Upload file via AJAX
+                    uploadBanner(file);
                 }
             });
         }
@@ -576,11 +580,54 @@
         }, 3000);
     }
 
+    function uploadBanner(file) {
+        const formData = new FormData();
+        formData.append('banner_image', file);
+        
+        fetch('/teacher/upload-banner', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Store filename in hidden field for form submission
+                let hiddenField = document.getElementById('uploaded_banner_filename');
+                if (!hiddenField) {
+                    hiddenField = document.createElement('input');
+                    hiddenField.type = 'hidden';
+                    hiddenField.id = 'uploaded_banner_filename';
+                    hiddenField.name = 'banner_image_filename';
+                    document.getElementById('course-form').appendChild(hiddenField);
+                }
+                hiddenField.value = data.filename;
+                showNotification('Banner uploaded successfully', 'success');
+            } else {
+                showNotification('Upload failed: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            showNotification('Upload failed. Please try again.', 'error');
+        });
+    }
+
     // Form validation before next step
     document.getElementById('course-form').addEventListener('submit', function (e) {
         // Ensure form action is correct
         if (!this.action || this.action.includes('[object')) {
             this.action = window.location.pathname + window.location.search;
+        }
+        
+        // Prevent default form submission if we're in wizard mode
+        const submitButton = document.activeElement;
+        if (submitButton && submitButton.name === 'action' && submitButton.value === 'next_step') {
+            e.preventDefault();
+            // Handle next step logic here
+            return;
         }
 
         // Ensure radio button values are properly set

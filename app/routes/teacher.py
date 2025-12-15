@@ -32,6 +32,41 @@ def media(filename):
     """Serve uploaded media files (avatars, banners) for teachers."""
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
+@teacher_bp.route('/upload-banner', methods=['POST'])
+@login_required
+@teacher_required
+def upload_banner():
+    """Handle AJAX banner image upload."""
+    from flask import jsonify
+    import uuid
+    import os
+    
+    if 'banner_image' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+    
+    file = request.files['banner_image']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+    
+    # Validate file type
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    if not allowed_file(file.filename, allowed_extensions):
+        return jsonify({'success': False, 'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP'}), 400
+    
+    # Generate unique filename
+    filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(file.filename)[1]}"
+    save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    
+    try:
+        file.save(save_path)
+        return jsonify({
+            'success': True, 
+            'filename': filename,
+            'url': url_for('teacher.media', filename=filename)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Upload failed'}), 500
+
 @teacher_bp.route('/course/<int:course_id>/delete-draft', methods=['POST'])
 @teacher_required
 def delete_draft_course(course_id):
@@ -464,14 +499,19 @@ def create_course_wizard():
         
         # Handle file uploads in step 2 (save immediately, store filename in session)
         if current_step == 2:
-            # Banner image
-            banner_file = request.files.get('banner_image')
-            if banner_file and banner_file.filename:
-                if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
-                    banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
-                    banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
-                    banner_file.save(banner_save_path)
-                    session[session_key]['banner_image'] = banner_filename
+            # Banner image - handle both AJAX uploaded and form uploaded
+            banner_filename = request.form.get('banner_image_filename')  # From AJAX upload
+            if not banner_filename:
+                # Fallback to form upload
+                banner_file = request.files.get('banner_image')
+                if banner_file and banner_file.filename:
+                    if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
+                        banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
+                        banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
+                        banner_file.save(banner_save_path)
+            
+            if banner_filename:
+                session[session_key]['banner_image'] = banner_filename
             
             # PDF upload
             pdf_file = request.files.get('pdf_upload')
@@ -500,6 +540,7 @@ def create_course_wizard():
                 # Clear session data after successful creation
                 session.pop(session_key, None)
                 session.pop(f'course_wizard_template_{current_user.id}', None)
+                session.pop(f'{session_key}_draft_id', None)  # Clear draft ID
                 flash('Course created successfully!', 'success')
                 return redirect(url_for('teacher.my_courses'))
             else:
@@ -527,11 +568,43 @@ def create_course_from_wizard(session_data):
         # Merge current request form data with session data
         data = {**session_data, **dict(request.form)}
 
+        # Check if there's an existing draft from autosave
+        session_key = f'course_wizard_data_{current_user.id}'
+        existing_draft_id = session.get(f'{session_key}_draft_id')
+        
+        if existing_draft_id:
+            # Update existing draft instead of creating new course
+            course = Course.query.get(existing_draft_id)
+            if course and course.teacher_id == current_user.id and course.is_draft:
+                course.title = data.get('title')
+                course.description = data.get('description')
+                course.category = data.get('category')
+                course.difficulty_level = data.get('difficulty_level', 'intermediate')
+                course.estimated_duration = int(data.get('estimated_duration')) if data.get('estimated_duration') else None
+                course.language = data.get('language', 'english')
+                course.learning_objectives = data.get('learning_objectives')
+                course.prerequisites = data.get('prerequisites')
+                course.tags = data.get('tags')
+                course.status = 'draft' if data.get('status') == 'draft' else 'pending'
+                course.intro_video = data.get('intro_video')
+                course.is_draft = data.get('status') == 'draft'
+                
+                # Update banner and PDF if they exist in session
+                banner_image = data.get('banner_image')
+                pdf_filename = data.get('pdf_filename')
+                if banner_image:
+                    course.banner_image = banner_image
+                if pdf_filename:
+                    course.pdf_filename = pdf_filename
+                
+                db.session.commit()
+                return True
+
         # Get file uploads from session (already saved in step 2)
         banner_image = data.get('banner_image')
         pdf_filename = data.get('pdf_filename')
 
-        # Create course
+        # Create new course only if no existing draft
         course = Course(
             title=data.get('title'),
             description=data.get('description'),
@@ -573,6 +646,15 @@ def handle_autosave():
             if course.teacher_id != current_user.id:
                 return jsonify({'success': False, 'message': 'Unauthorized'})
 
+        # Check for existing draft in session first
+        session_key = f'course_wizard_data_{current_user.id}'
+        existing_draft_id = session.get(f'{session_key}_draft_id')
+        
+        if existing_draft_id and not course:
+            course = Course.query.get(existing_draft_id)
+            if course and course.teacher_id != current_user.id:
+                course = None
+
         # Create or update draft
         if not course:
             course = Course(
@@ -583,6 +665,9 @@ def handle_autosave():
                 status='draft'
             )
             db.session.add(course)
+            db.session.flush()  # Get the ID without committing
+            # Store draft ID in session
+            session[f'{session_key}_draft_id'] = course.id
         else:
             # Update existing draft
             course.title = request.form.get('title') or course.title
@@ -627,7 +712,7 @@ def edit_course(course_id):
     from app.models import Course, db  # Moved here
     from app.forms import CourseForm  # Moved here
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id or course.status == 'approved':
+    if course.teacher_id != current_user.id:
         abort(403)
     
     form = CourseForm(obj=course)
@@ -1121,68 +1206,57 @@ def teacher_view_ratings(course_id):
 @teacher_required
 def manage_modules(course_id):
     """Manage course modules (chapters)"""
-    from app.models import Course, Module, Section, Quiz, db
-    course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
-        abort(403)
+    try:
+        from app.models import Course, Module, Section, db
+        course = Course.query.get_or_404(course_id)
+        if course.teacher_id != current_user.id:
+            abort(403)
 
-    if request.method == 'POST':
-        action = request.form.get('action')
+        if request.method == 'POST':
+            action = request.form.get('action')
 
-        if action == 'create_module':
-            title = request.form.get('title')
-            description = request.form.get('description')
+            if action == 'create_module':
+                title = request.form.get('title')
+                description = request.form.get('description')
 
-            if not title:
-                flash('Module title is required.', 'danger')
+                if not title:
+                    flash('Module title is required.', 'danger')
+                    return redirect(url_for('teacher.manage_modules', course_id=course_id))
+
+                # Get the highest order number and add 1
+                max_order = db.session.query(db.func.max(Module.order)).filter_by(course_id=course_id).scalar() or 0
+                new_order = max_order + 1
+
+                module = Module(
+                    course_id=course_id,
+                    title=title,
+                    description=description,
+                    order=new_order
+                )
+                db.session.add(module)
+                db.session.commit()
+                flash('Module created successfully!', 'success')
                 return redirect(url_for('teacher.manage_modules', course_id=course_id))
 
-            # Get the highest order number and add 1
-            max_order = db.session.query(db.func.max(Module.order)).filter_by(course_id=course_id).scalar() or 0
-            new_order = max_order + 1
+            elif action == 'delete_module':
+                module_id = request.form.get('module_id')
+                module = Module.query.get_or_404(module_id)
+                if module.course_id != course_id:
+                    abort(403)
+                db.session.delete(module)
+                db.session.commit()
+                flash('Module deleted successfully!', 'success')
+                return redirect(url_for('teacher.manage_modules', course_id=course_id))
 
-            module = Module(
-                course_id=course_id,
-                title=title,
-                description=description,
-                order=new_order
-            )
-            db.session.add(module)
-            db.session.commit()
-            flash('Module created successfully!', 'success')
-
-        elif action == 'delete_module':
-            module_id = request.form.get('module_id')
-            module = Module.query.get_or_404(module_id)
-            if module.course_id != course_id:
-                abort(403)
-
-            db.session.delete(module)
-            db.session.commit()
-            flash('Module deleted successfully!', 'success')
-
-        elif action == 'reorder_modules':
-            # Handle drag-and-drop reordering
-            order_data = request.get_json()
-            for idx, module_id in enumerate(order_data):
-                module = Module.query.get(module_id)
-                if module and module.course_id == course_id:
-                    module.order = idx + 1
-            db.session.commit()
-            return jsonify({'success': True})
-
-    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
-    
-    # Load sections with their assignments and quizzes for each module
-    for module in modules:
-        from sqlalchemy.orm import joinedload
-        sections = Section.query.options(
-            joinedload(Section.assignments),
-            joinedload(Section.quizzes).joinedload(Quiz.questions)
-        ).filter_by(module_id=module.id).order_by(Section.order).all()
-        module.sections = sections
-    
-    return render_template('teacher/manage_modules.html', course=course, modules=modules)
+        # Simple query to get modules
+        modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
+        
+        return render_template('teacher/manage_modules.html', course=course, modules=modules)
+        
+    except Exception as e:
+        logger.error(f"Error in manage_modules: {e}", exc_info=True)
+        flash('An error occurred while loading modules.', 'danger')
+        return redirect(url_for('teacher.dashboard'))
 
 @teacher_bp.route('/course/<int:course_id>/module/<int:module_id>/edit', methods=['GET', 'POST'])
 @teacher_required
@@ -1622,6 +1696,22 @@ def bulk_grade_course(course_id):
                          course=course,
                          submissions_by_assignment=submissions_by_assignment,
                          total_ungraded=len(ungraded_submissions))
+
+@teacher_bp.route('/course/<int:course_id>/view-as-student')
+@teacher_required
+def view_as_student(course_id):
+    """View course as a student would see it"""
+    from app.models import Course, Module, Section, db
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # Get modules and sections for student view
+    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
+    for module in modules:
+        module.sections = Section.query.filter_by(module_id=module.id).order_by(Section.order).all()
+    
+    return render_template('teacher/view_as_student.html', course=course, modules=modules)
 
 @teacher_bp.route('/course/<int:course_id>/student/<int:student_id>/grades')
 @teacher_required
