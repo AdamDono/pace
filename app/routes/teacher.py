@@ -411,105 +411,71 @@ def course_analytics(course_id):
 def create_course_wizard():
     from app.models import Course, db
     from app.forms import CourseForm
-    from app.course_templates import get_course_template
-    import json
+    import uuid
 
-    current_step = int(request.args.get('step', 1))
+    # If it's an edit mode for an existing draft
     course_id = request.args.get('course_id')
-
-    # Handle autosave
-    if request.method == 'POST' and request.form.get('is_draft') == 'true':
-        return handle_autosave()
-
-    # Load existing course if editing draft
     course = None
     if course_id:
         course = Course.query.get_or_404(course_id)
         if course.teacher_id != current_user.id or not course.is_draft:
             abort(403)
-
+    
+    # Use the form
     form = CourseForm(obj=course) if course else CourseForm()
 
-    # Handle template selection and pre-population
     if request.method == 'POST':
-        selected_template = request.form.get('selected_template', 'blank')
-        subject = request.form.get('subject', '')
-
-        # If template is selected and subject provided, pre-populate form
-        if selected_template != 'blank' and subject:
-            template_data = get_course_template(selected_template, subject)
-            if template_data:
-                # Pre-populate form with template data
-                form.title.data = template_data['title']
-                form.description.data = template_data['description']
-                # Store template data in session for later steps
-                session[f'course_wizard_template_{current_user.id}'] = template_data
-
-    # Load template data from session for later steps
-    template_data = session.get(f'course_wizard_template_{current_user.id}')
-
-    # Handle form submission
-    if request.method == 'POST':
-        action = request.form.get('action')
-
-        # Store current step data in session
-        session_key = f'course_wizard_data_{current_user.id}'
-        if session_key not in session:
-            session[session_key] = {}
+        # Custom validation since we are bypassing some form fields or using direct form access for non-form fields
+        title = request.form.get('title')
+        description = request.form.get('description')
         
-        # Merge current form data into session (excluding files and CSRF)
-        for key, value in request.form.items():
-            if key not in ['action', 'csrf_token', 'current_step']:
-                session[session_key][key] = value
-        
-        # Handle file uploads in step 2 (save immediately, store filename in session)
-        if current_step == 2:
-            # Banner image
-            banner_file = request.files.get('banner_image')
-            if banner_file and banner_file.filename:
-                if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
-                    banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
-                    banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
-                    banner_file.save(banner_save_path)
-                    session[session_key]['banner_image'] = banner_filename
-            
-            # PDF upload
-            pdf_file = request.files.get('pdf_upload')
-            if pdf_file and pdf_file.filename:
-                if allowed_file(pdf_file.filename, {'pdf'}):
-                    pdf_filename = f"course_{uuid.uuid4().hex}.pdf"
-                    pdf_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], pdf_filename)
-                    pdf_file.save(pdf_save_path)
-                    session[session_key]['pdf_filename'] = pdf_filename
-        
-        session.modified = True
+        if not title or not description:
+            flash('Title and Description are required options.', 'danger')
+        else:
+            try:
+                if not course:
+                    course = Course(
+                        teacher_id=current_user.id,
+                        status='draft',
+                        is_draft=True
+                    )
+                    db.session.add(course)
+                
+                # Update fields
+                course.title = title
+                course.description = description
+                course.category = request.form.get('category')
+                course.difficulty_level = request.form.get('difficulty_level', 'intermediate')
+                course.language = request.form.get('language', 'english')
+                course.estimated_duration = int(request.form.get('estimated_duration')) if request.form.get('estimated_duration') else None
+                course.learning_objectives = request.form.get('learning_objectives')
+                course.prerequisites = request.form.get('prerequisites')
+                course.tags = request.form.get('tags')
+                
+                # Handle optional file uploads if provided immediately
+                banner_file = request.files.get('banner_image')
+                if banner_file and banner_file.filename:
+                    if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
+                        ext = os.path.splitext(banner_file.filename)[1]
+                        filename = f"banner_{uuid.uuid4().hex}{ext}"
+                        banner_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                        course.banner_image = filename
+                
+                db.session.commit()
+                flash('Course created! You can now add modules and content.', 'success')
+                
+                # Redirect to the course management/dashboard for this course (Phase 2 content builder)
+                # Currently we point to my_courses, but ideally we go to the "Notion-like" builder.
+                # For now, let's keep it consistent with the user's request to "fix phase 1".
+                # We will send them to the edit page or a new "manage course" page.
+                # Let's send them to edit_course for now, or maybe create a specific "structure" page later.
+                return redirect(url_for('teacher.edit_course', course_id=course.id))
 
-        if action == 'previous':
-            current_step = max(1, current_step - 1)
-            return redirect(url_for('teacher.create_course_wizard', step=current_step, course_id=course_id))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error creating course: {str(e)}', 'danger')
 
-        elif action == 'next':
-            if validate_step(current_step, request.form):
-                current_step = min(4, current_step + 1)
-                return redirect(url_for('teacher.create_course_wizard', step=current_step, course_id=course_id))
-            else:
-                flash('Please fill in all required fields.', 'danger')
-
-        elif action == 'create':
-            if create_course_from_wizard(session.get(session_key, {})):
-                # Clear session data after successful creation
-                session.pop(session_key, None)
-                session.pop(f'course_wizard_template_{current_user.id}', None)
-                flash('Course created successfully!', 'success')
-                return redirect(url_for('teacher.my_courses'))
-            else:
-                flash('Error creating course. Please try again.', 'danger')
-
-    return render_template('teacher/create_course_wizard.html',
-                         form=form,
-                         current_step=current_step,
-                         course=course,
-                         template_data=template_data)
+    return render_template('teacher/create_course_wizard.html', form=form, course=course)
 
 def validate_step(step, form_data):
     """Validate form data for current step"""
@@ -686,7 +652,8 @@ def edit_course(course_id):
 
             # Update other fields
             form.populate_obj(course)
-            course.status = 'pending'
+            # Removed automatic status change to pending
+            # course.status = 'pending'
             db.session.commit()
             flash('Course updated successfully!', 'success')
             return redirect(url_for('teacher.my_courses'))
@@ -871,28 +838,65 @@ def add_quiz(course_id, section_id):
         randomize_questions = 'randomize_questions' in request.form
         show_correct_answers = 'show_correct_answers' in request.form
         
-        quiz = Quiz(
-            title=form.title.data,
-            section_id=section_id,
-            time_limit=time_limit,
-            passing_score=passing_score,
-            max_attempts=max_attempts,
-            randomize_questions=randomize_questions,
-            show_correct_answers=show_correct_answers
-        )
-        db.session.add(quiz)
-        db.session.flush()
-        for q in form.questions.data:
-            question = QuizQuestion(
-                quiz_id=quiz.id,
-                question_text=q['question'],
-                option_a=q['a'], option_b=q['b'], option_c=q['c'], option_d=q['d'],
-                correct_answer=q['correct']
+    if request.method == 'POST':
+        # Custom handling for dynamic form
+        title = request.form.get('title')
+        if not title:
+            flash('Quiz title is required', 'danger')
+            return render_template('teacher/add_quiz.html', form=form, course=course, section=section)
+
+        try:
+            quiz = Quiz(
+                title=title,
+                section_id=section_id,
+                time_limit=int(request.form.get('time_limit')) if request.form.get('time_limit') else None,
+                passing_score=int(request.form.get('passing_score', 60)),
+                max_attempts=int(request.form.get('max_attempts')) if request.form.get('max_attempts') else None
             )
-            db.session.add(question)
-        db.session.commit()
-        flash('Quiz created successfully.', 'success')
-        return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
+            db.session.add(quiz)
+            db.session.flush() # Get ID
+
+            # Parse questions from form keys
+            questions_data = {}
+            for key in request.form:
+                if key.startswith('q_') and '_' in key[2:]:
+                    parts = key.split('_')
+                    # Expect keys like: q_{timestamp}_{field}
+                    if len(parts) >= 3:
+                        q_id = parts[1]
+                        field = parts[-1] # text, a, b, c, d, correct
+                        
+                        if q_id not in questions_data:
+                            questions_data[q_id] = {'question': '', 'a': '', 'b': '', 'c': '', 'd': '', 'correct': 'a'}
+                        
+                        if field == 'text':
+                            questions_data[q_id]['question'] = request.form[key]
+                        elif field in ['a', 'b', 'c', 'd']:
+                            questions_data[q_id][field] = request.form[key]
+                        elif field == 'correct':
+                             questions_data[q_id]['correct'] = request.form[key]
+            
+            for q_id, q in questions_data.items():
+                if q['question'] and q['a'] and q['b']: # Minimal validation
+                    question = QuizQuestion(
+                        quiz_id=quiz.id,
+                        question_text=q['question'],
+                        option_a=q['a'],
+                        option_b=q['b'],
+                        option_c=q.get('c'),
+                        option_d=q.get('d'),
+                        correct_answer=q['correct']
+                    )
+                    db.session.add(question)
+            
+            db.session.commit()
+            flash('Quiz created successfully!', 'success')
+            return redirect(url_for('teacher.course_builder', course_id=course.id))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating quiz: {str(e)}', 'danger')
+
     return render_template('teacher/add_quiz.html', form=form, course=course, section=section)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz/<int:quiz_id>/edit', methods=['GET', 'POST'])
@@ -989,26 +993,7 @@ def reorder_sections(course_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-@teacher_bp.route('/section/<int:section_id>/delete', methods=['POST'])
-@teacher_required
-def delete_section(section_id):
-    from app.models import Section, db  # Moved here
-    section = db.session.get(Section, section_id) or abort(404)
-    course_id = section.course_id
-    module_id = section.module_id
-    
-    if section.course.teacher_id != current_user.id:
-        abort(403)
 
-    try:
-        db.session.delete(section)
-        db.session.commit()
-        flash('Section deleted successfully', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error: {str(e)}', 'danger')
-    
-    return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=module_id))
 
 @teacher_bp.route('/submit_feedback/<int:submission_id>', methods=['POST'])
 @login_required
@@ -1120,69 +1105,8 @@ def teacher_view_ratings(course_id):
 @teacher_bp.route('/course/<int:course_id>/modules', methods=['GET', 'POST'])
 @teacher_required
 def manage_modules(course_id):
-    """Manage course modules (chapters)"""
-    from app.models import Course, Module, Section, Quiz, db
-    course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
-        abort(403)
-
-    if request.method == 'POST':
-        action = request.form.get('action')
-
-        if action == 'create_module':
-            title = request.form.get('title')
-            description = request.form.get('description')
-
-            if not title:
-                flash('Module title is required.', 'danger')
-                return redirect(url_for('teacher.manage_modules', course_id=course_id))
-
-            # Get the highest order number and add 1
-            max_order = db.session.query(db.func.max(Module.order)).filter_by(course_id=course_id).scalar() or 0
-            new_order = max_order + 1
-
-            module = Module(
-                course_id=course_id,
-                title=title,
-                description=description,
-                order=new_order
-            )
-            db.session.add(module)
-            db.session.commit()
-            flash('Module created successfully!', 'success')
-
-        elif action == 'delete_module':
-            module_id = request.form.get('module_id')
-            module = Module.query.get_or_404(module_id)
-            if module.course_id != course_id:
-                abort(403)
-
-            db.session.delete(module)
-            db.session.commit()
-            flash('Module deleted successfully!', 'success')
-
-        elif action == 'reorder_modules':
-            # Handle drag-and-drop reordering
-            order_data = request.get_json()
-            for idx, module_id in enumerate(order_data):
-                module = Module.query.get(module_id)
-                if module and module.course_id == course_id:
-                    module.order = idx + 1
-            db.session.commit()
-            return jsonify({'success': True})
-
-    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
-    
-    # Load sections with their assignments and quizzes for each module
-    for module in modules:
-        from sqlalchemy.orm import joinedload
-        sections = Section.query.options(
-            joinedload(Section.assignments),
-            joinedload(Section.quizzes).joinedload(Quiz.questions)
-        ).filter_by(module_id=module.id).order_by(Section.order).all()
-        module.sections = sections
-    
-    return render_template('teacher/manage_modules.html', course=course, modules=modules)
+    """Old module manager - now redirects to builder"""
+    return redirect(url_for('teacher.course_builder', course_id=course_id))
 
 @teacher_bp.route('/course/<int:course_id>/module/<int:module_id>/edit', methods=['GET', 'POST'])
 @teacher_required
@@ -1200,96 +1124,15 @@ def edit_module(course_id, module_id):
         module.description = request.form.get('description')
         db.session.commit()
         flash('Module updated successfully!', 'success')
-        return redirect(url_for('teacher.manage_modules', course_id=course_id))
+        return redirect(url_for('teacher.course_builder', course_id=course_id))
 
     return render_template('teacher/edit_module.html', course=course, module=module)
 
 @teacher_bp.route('/course/<int:course_id>/module/<int:module_id>/sections', methods=['GET', 'POST'])
 @teacher_required
 def manage_module_sections(course_id, module_id):
-    """Manage sections within a specific module"""
-    from app.models import Course, Module, Section, db
-    course = Course.query.get_or_404(course_id)
-    module = Module.query.get_or_404(module_id)
-
-    if course.teacher_id != current_user.id or module.course_id != course_id:
-        abort(403)
-
-    if request.method == 'POST':
-        action = request.form.get('action')
-
-        if action == 'create_section':
-            title = request.form.get('title')
-            content = request.form.get('content')
-            section_type = request.form.get('section_type', 'text')
-
-            if not title:
-                flash('Section title is required.', 'danger')
-                return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=module_id))
-
-            # Get the highest order number for this module and add 1
-            max_order = db.session.query(db.func.max(Section.order)).filter_by(module_id=module_id).scalar() or 0
-            new_order = max_order + 1
-
-            section = Section(
-                course_id=course_id,
-                module_id=module_id,
-                title=title,
-                content=content,
-                section_type=section_type,
-                order=new_order
-            )
-
-            # Handle file upload for new section
-            if 'media_file' in request.files:
-                file = request.files['media_file']
-                if file and file.filename:
-                    # Validate file type
-                    allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3'}
-                    if '.' in file.filename:
-                        extension = file.filename.rsplit('.', 1)[1].lower()
-                        if extension in allowed_extensions:
-                            # Generate unique filename
-                            import uuid
-                            import os
-                            unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
-                            
-                            # Ensure upload directory exists
-                            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
-                            os.makedirs(upload_dir, exist_ok=True)
-                            
-                            # Save file
-                            file_path = os.path.join(upload_dir, unique_filename)
-                            file.save(file_path)
-                            
-                            # Set file on section
-                            section.media_file = unique_filename
-                        else:
-                            flash('Invalid file type. Allowed: PDF, JPG, PNG, GIF, MP4, MP3', 'danger')
-                            return redirect(request.url)
-                    else:
-                        flash('Invalid file format.', 'danger')
-                        return redirect(request.url)
-
-            db.session.add(section)
-            db.session.commit()
-            flash('Section created successfully!', 'success')
-
-        elif action == 'delete_section':
-            section_id = request.form.get('section_id')
-            if section_id:
-                section = Section.query.filter_by(id=section_id, module_id=module_id, course_id=course_id).first()
-                if section:
-                    db.session.delete(section)
-                    db.session.commit()
-                    flash('Section deleted successfully!', 'success')
-                else:
-                    flash('Section not found.', 'danger')
-            else:
-                flash('Section ID required.', 'danger')
-
-    sections = Section.query.filter_by(module_id=module_id).order_by(Section.order).all()
-    return render_template('teacher/manage_module_sections.html', course=course, module=module, sections=sections)
+    """Old module section manager - now redirects to builder"""
+    return redirect(url_for('teacher.course_builder', course_id=course_id))
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/edit', methods=['GET', 'POST'])
 @teacher_required
@@ -1722,11 +1565,162 @@ def preview_submission(submission_id):
     if not current_user.is_teacher_for_course(submission.assignment.section.course_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
-    return jsonify({
-        'submission_type': submission.submission_type,
-        'submission_text': submission.submission_text,
-        'code_submission': submission.code_submission,
-        'programming_language': submission.programming_language,
-        'file_path': submission.file_path,
-        'submitted_at': submission.submitted_at.isoformat() if submission.submitted_at else None
-    })
+@teacher_bp.route('/course/<int:course_id>/builder')
+@teacher_required
+def course_builder(course_id):
+    """Notion-style course content builder"""
+    from app.models import Course, Module, Section
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # Ensure modules are loaded with sections
+    modules = Module.query.filter_by(course_id=course.id).order_by(Module.order).all()
+    
+    return render_template('teacher/course_builder.html', course=course, modules=modules)
+
+@teacher_bp.route('/course/<int:course_id>/submit-review', methods=['POST'])
+@teacher_required
+def submit_course_for_review(course_id):
+    """Change status from draft to pending for admin approval"""
+    from app.models import Course, db
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+    
+    # Only allow submission if it's currently a draft or rejected
+    if course.status in ['draft', 'rejected']:
+        course.status = 'pending'
+        course.is_draft = False
+        db.session.commit()
+        flash('Course submitted for admin review!', 'success')
+    else:
+        flash('Course is already pending or approved.', 'info')
+        
+    return redirect(url_for('teacher.my_courses'))
+
+@teacher_bp.route('/course/<int:course_id>/quick-create-module', methods=['POST'])
+@teacher_required
+def quick_create_module(course_id):
+    from app.models import Course, Module, db
+    from sqlalchemy import func
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    title = data.get('title')
+    
+    if not title:
+        return jsonify({'success': False, 'message': 'Title required'}), 400
+        
+    # Get max order
+    max_order = db.session.query(func.max(Module.order)).filter_by(course_id=course_id).scalar() or 0
+    
+    module = Module(
+        title=title,
+        course_id=course.id,
+        order=max_order + 1
+    )
+    db.session.add(module)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'module_id': module.id})
+
+@teacher_bp.route('/course/<int:course_id>/quick-create-section', methods=['POST'])
+@teacher_required
+def quick_create_section(course_id):
+    from app.models import Course, Section, Module, db
+    from sqlalchemy import func
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    module_id = data.get('module_id')
+    section_type = data.get('type')
+    title = data.get('title')
+    
+    module = Module.query.get(module_id)
+    if not module or module.course_id != course_id:
+        return jsonify({'success': False, 'message': 'Invalid module'}), 400
+        
+    # Get max order in module
+    max_order = db.session.query(func.max(Section.order)).filter_by(module_id=module_id).scalar() or 0
+    
+    section = Section(
+        title=title,
+        section_type=section_type,
+        course_id=course_id,
+        module_id=module_id,
+        order=max_order + 1,
+        content='' # Empty content initially
+    )
+    db.session.add(section)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'section_id': section.id})
+
+@teacher_bp.route('/teacher/delete-module/<int:module_id>', methods=['POST'])
+@teacher_required
+def delete_module(module_id):
+    from app.models import Module, db
+    module = Module.query.get_or_404(module_id)
+    # Check ownership via course
+    if module.course.teacher_id != current_user.id:
+        return jsonify({'success': False}), 403
+        
+    db.session.delete(module)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@teacher_bp.route('/teacher/delete-section/<int:section_id>', methods=['POST'])
+@teacher_required
+def delete_section(section_id):
+    from app.models import Section, db
+    section = Section.query.get_or_404(section_id)
+    # Check ownership via course
+    if section.course.teacher_id != current_user.id:
+        return jsonify({'success': False}), 403
+        
+    db.session.delete(section)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/edit-content', methods=['GET', 'POST'])
+@teacher_required
+def edit_section_content(course_id, section_id):
+    """Dedicated simplified content editor"""
+    from app.models import Course, Section, db
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    
+    if course.teacher_id != current_user.id or section.course_id != course_id:
+        abort(403)
+        
+    if request.method == 'POST':
+        section.title = request.form.get('title')
+        section.content = request.form.get('content')
+        section.video_url = request.form.get('video_url')
+        # Handle file uploads
+        if 'media_file' in request.files:
+            file = request.files['media_file']
+            if file and file.filename:
+                from werkzeug.utils import secure_filename
+                import os
+                import uuid
+                
+                # Basic validation
+                ext = os.path.splitext(file.filename)[1].lower()
+                if ext in ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx', '.ppt', '.pptx']:
+                    filename = secure_filename(f"{uuid.uuid4().hex[:8]}_{file.filename}")
+                    upload_path = os.path.join(current_app.root_path, 'static/uploads')
+                    os.makedirs(upload_path, exist_ok=True)
+                    file.save(os.path.join(upload_path, filename))
+                    section.media_file = filename
+        
+        db.session.commit()
+        flash('Content updated!', 'success')
+        return redirect(url_for('teacher.course_builder', course_id=course_id))
+        
+    return render_template('teacher/simple_content_editor.html', course=course, section=section)

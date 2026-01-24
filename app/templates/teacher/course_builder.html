@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-5xl">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <div class="flex items-center space-x-2 mb-1">
+                <h1 class="text-2xl font-bold">{{ course.title }}</h1>
+                {% if course.status == 'draft' %}
+                <span
+                    class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full border border-gray-200">Draft</span>
+                {% elif course.status == 'pending' %}
+                <span
+                    class="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full border border-yellow-200">Pending
+                    Approval</span>
+                {% elif course.status == 'approved' %}
+                <span
+                    class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full border border-green-200">Approved</span>
+                {% elif course.status == 'rejected' %}
+                <span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full border border-red-200">Action
+                    Required</span>
+                {% endif %}
+            </div>
+            <p class="text-gray-500 text-sm">Course Content Builder</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            {% if course.status in ['draft', 'rejected'] %}
+            <form action="{{ url_for('teacher.submit_course_for_review', course_id=course.id) }}" method="POST"
+                class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                    class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                        </path>
+                    </svg>
+                    Submit for Review
+                </button>
+            </form>
+            {% endif %}
+
+            <button onclick="showSettingsModal()"
+                class="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Settings
+            </button>
+
+            <a href="{{ url_for('teacher.preview_course', course_id=course.id) }}" target="_blank"
+                class="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                    </path>
+                </svg>
+                Preview
+            </a>
+            <a href="{{ url_for('teacher.my_courses') }}"
+                class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                Done
+            </a>
+        </div>
+    </div>
+
+    <!-- Course Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-2xl p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Course Settings</h2>
+                <button onclick="closeModal('settingsModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <form action="{{ url_for('teacher.edit_course', course_id=course.id) }}" method="POST"
+                enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
+                        <input type="text" name="title" value="{{ course.title }}" required
+                            class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="4"
+                            class="w-full p-2 border rounded-lg">{{ course.description }}</textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select name="category" class="w-full p-2 border rounded-lg">
+                                <option value="programming" {% if course.category=='programming' %}selected{% endif %}>
+                                    Programming</option>
+                                <option value="design" {% if course.category=='design' %}selected{% endif %}>Design
+                                </option>
+                                <option value="business" {% if course.category=='business' %}selected{% endif %}>
+                                    Business</option>
+                                <option value="academic" {% if course.category=='academic' %}selected{% endif %}>
+                                    Academic</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Learning Duration (hrs)</label>
+                            <input type="number" name="estimated_duration" value="{{ course.estimated_duration or '' }}"
+                                class="w-full p-2 border rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('settingsModal')"
+                        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="submit"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">Save
+                        Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content Builder Area -->
+    <div class="space-y-6" id="course-content-root">
+
+        {% if modules %}
+        {% for module in modules %}
+        <!-- Lesson (Module) Container -->
+        <div class="lesson-container bg-white border border-gray-200 rounded-lg mb-4 shadow-sm group"
+            data-module-id="{{ module.id }}">
+            <!-- Lesson Header -->
+            <div class="p-4 border-b border-gray-100 flex items-center hover:bg-gray-50 transition-colors cursor-pointer"
+                onclick="toggleLesson('lesson-{{ module.id }}')">
+                <div class="mr-3 text-gray-400 cursor-grab handle">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16">
+                        </path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-800">{{ module.title }}</h3>
+                </div>
+                <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="editLesson({{ module.id }}, '{{ module.title }}'); event.stopPropagation();"
+                        class="p-1.5 text-gray-500 hover:text-blue-600 rounded hover:bg-blue-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                            </path>
+                        </svg>
+                    </button>
+                    <button onclick="deleteLesson({{ module.id }}); event.stopPropagation();"
+                        class="p-1.5 text-gray-500 hover:text-red-600 rounded hover:bg-red-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ml-2 transform transition-transform duration-200" id="arrow-lesson-{{ module.id }}">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Lesson Content (Sections) -->
+            <div id="lesson-{{ module.id }}" class="lesson-content p-4 bg-gray-50/50 hidden">
+                <!-- Content List -->
+                <div class="space-y-3 mb-4 section-list" data-module-id="{{ module.id }}">
+                    {% for section in module.sections %}
+                    <div class="bg-white border border-gray-200 p-3 rounded shadow-sm flex items-center group/item hover:border-blue-300 transition-colors"
+                        data-section-id="{{ section.id }}">
+                        <div class="mr-3 text-gray-300 cursor-grab section-handle hover:text-gray-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 8h16M4 16h16"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-3 text-2xl">
+                            {% if section.section_type == 'video' %}🎥
+                            {% elif section.section_type == 'quiz' %}❓
+                            {% elif section.section_type == 'assignment' %}📝
+                            {% else %}📄{% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-800 text-sm">{{ section.title }}</h4>
+                            <p class="text-xs text-gray-500 truncate max-w-lg">{{ section.content[:50] if
+                                section.content else '' }}...</p>
+                        </div>
+                        <div
+                            class="flex items-center space-x-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <a href="{{ url_for('teacher.edit_section_content', course_id=course.id, section_id=section.id) }}"
+                                class="px-2 py-1 text-xs border border-gray-200 bg-white hover:bg-gray-50 rounded text-gray-600">
+                                Edit Content
+                            </a>
+                            <!-- Attach Activity Buttons -->
+                            <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}"
+                                class="px-2 py-1 text-xs border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded text-blue-600">
+                                + Quiz
+                            </a>
+                            <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
+                                class="px-2 py-1 text-xs border border-green-200 bg-green-50 hover:bg-green-100 rounded text-green-600">
+                                + Assignment
+                            </a>
+
+                            <button onclick="deleteSection({{ section.id }});"
+                                class="text-gray-400 hover:text-red-500 p-1 ml-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Quick Add Actions -->
+                <div class="flex space-x-2">
+                    <button onclick="quickAddText({{ module.id }})"
+                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all text-sm font-medium flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        + Text/Article
+                    </button>
+                    <button onclick="quickAddVideo({{ module.id }})"
+                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all text-sm font-medium flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                        + Video
+                    </button>
+                    <button onclick="quickAddQuiz({{ module.id }})"
+                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-all text-sm font-medium flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                            </path>
+                        </svg>
+                        + Quiz
+                    </button>
+                    <button onclick="quickAddAssignment({{ module.id }})"
+                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-yellow-400 hover:text-yellow-600 hover:bg-yellow-50 transition-all text-sm font-medium flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                            </path>
+                        </svg>
+                        + Assignment
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <p class="text-gray-500 mb-2">Start by creating your first lesson container. Think of it as a Week or
+                Chapter.</p>
+        </div>
+        {% endif %}
+
+        <!-- Add New Lesson Button -->
+        <button onclick="showAddLessonModal()"
+            class="w-full py-4 bg-white border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-semibold hover:bg-blue-50 hover:border-blue-500 transition-all shadow-sm">
+            + Add New Lesson / Module
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Add Lesson -->
+<div id="addLessonModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-xl transform transition-all scale-100">
+        <h3 class="text-lg font-bold mb-4">New Lesson</h3>
+        <input type="text" id="newLessonTitle" placeholder="e.g. Introduction to Variables"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4" autofocus>
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeModal('addLessonModal')"
+                class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+            <button onclick="createLesson()"
+                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    const courseId = {{ course.id }};
+    const csrfToken = "{{ csrf_token() }}";
+
+    function toggleLesson(id) {
+        const content = document.getElementById(id);
+        const arrow = document.getElementById('arrow-' + id);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            content.classList.add('hidden');
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function showAddLessonModal() {
+        document.getElementById('addLessonModal').classList.remove('hidden');
+        document.getElementById('newLessonTitle').focus();
+    }
+
+    function showSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    function editLesson(moduleId, currentTitle) {
+        const newTitle = prompt('Enter new title for this lesson:', currentTitle);
+        if (newTitle && newTitle !== currentTitle) {
+            fetch(`/teacher/course/${courseId}/module/${moduleId}/edit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `title=${encodeURIComponent(newTitle)}`
+            }).then(() => location.reload());
+        }
+    }
+
+    function createLesson() {
+        const title = document.getElementById('newLessonTitle').value;
+        if (!title.trim()) return;
+
+        fetch(`/teacher/course/${courseId}/quick-create-module`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ title: title })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) location.reload();
+            });
+    }
+
+    // Quick Add Content Functions
+    function quickAddText(moduleId) {
+        createSection(moduleId, 'text', 'New Text Lesson');
+    }
+
+    function quickAddVideo(moduleId) {
+        createSection(moduleId, 'video', 'New Video Lesson');
+    }
+
+    function quickAddQuiz(moduleId) {
+        createSection(moduleId, 'quiz', 'New Quiz', true);
+    }
+
+    function quickAddAssignment(moduleId) {
+        createSection(moduleId, 'assignment', 'New Assignment', true);
+    }
+
+    function createSection(moduleId, type, title, isWrapper = false) {
+        fetch(`/teacher/course/${courseId}/quick-create-section`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                module_id: moduleId,
+                type: type,
+                title: title
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (isWrapper) {
+                        if (type === 'quiz') {
+                            window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-quiz`;
+                        } else if (type === 'assignment') {
+                            window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-assignment`;
+                        }
+                    } else {
+                        window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/edit-content`;
+                    }
+                }
+            });
+    }
+
+    function deleteLesson(id) {
+        if (!confirm('Delete this lesson and all its content?')) return;
+        fetch(`/teacher/delete-module/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        }).then(() => location.reload());
+    }
+
+    function deleteSection(id) {
+        if (!confirm('Delete this item?')) return;
+        fetch(`/teacher/delete-section/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        }).then(() => location.reload());
+    }
+
+    // Initialize Sortable
+    document.addEventListener('DOMContentLoaded', function () {
+        // Sort Lesson Containers
+        new Sortable(document.getElementById('course-content-root'), {
+            handle: '.handle',
+            animation: 150,
+            onEnd: function (evt) {
+                // Future: implementation for reordering modules
+            }
+        });
+
+        // Sort Sections within Lessons
+        document.querySelectorAll('.section-list').forEach(list => {
+            new Sortable(list, {
+                group: 'sections',
+                handle: '.section-handle',
+                animation: 150,
+                onEnd: function (evt) {
+                    // Future: implementation for reordering sections
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

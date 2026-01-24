@@ -264,7 +264,7 @@
                         {% endif %}
                     </div>
                     <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">{{ course.title }}</h1>
-                    <p class="text-lg text-white/90 mb-6 leading-relaxed">{{ course.description }}</p>
+                    <p class="text-lg text-white/90 mb-6 leading-relaxed">{{ course.description|striptags }}</p>
 
                     <div class="flex flex-wrap items-center gap-4 text-sm mb-6">
                         <div class="flex items-center space-x-2">
@@ -1001,7 +1001,8 @@
 
         function generateCertificate() {
             console.log('Generate Certificate button clicked');
-            const enrollmentId = {{ enrollment.id if enrollment else 'null' }};
+            const enrollmentId = {{ enrollment.id if enrollment else 'null' }
+        };
         console.log('Enrollment ID:', enrollmentId);
         if (enrollmentId) {
             const baseUrl = '{{ url_for("student.generate_certificate", enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);

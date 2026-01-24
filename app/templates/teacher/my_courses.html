@@ -8,71 +8,79 @@
     <!-- Filter Tabs -->
     <div class="flex space-x-4 mb-6 border-b">
         <a href="{{ url_for('teacher.my_courses', status='all') }}"
-           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'all' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'all' else 'text-gray-600' }} hover:text-blue-600">
             All
         </a>
         <a href="{{ url_for('teacher.my_courses', status='approved') }}"
-           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'approved' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'approved' else 'text-gray-600' }} hover:text-blue-600">
             Approved
         </a>
         <a href="{{ url_for('teacher.my_courses', status='pending') }}"
-           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'pending' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'pending' else 'text-gray-600' }} hover:text-blue-600">
             Pending
         </a>
         <a href="{{ url_for('teacher.my_courses', status='rejected') }}"
-           class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'rejected' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'rejected' else 'text-gray-600' }} hover:text-blue-600">
             Rejected
         </a>
     </div>
 
     {% if courses %}
-        <ul class="space-y-2 mt-4">
-            {% for course in courses %}
-                <li class="border p-3 rounded flex justify-between items-center">
-                    <div>
-                        <span class="font-medium">{{ course.title }}</span>
-                        <span class="ml-4 text-sm text-gray-500">Status: {{ course.status|title }}</span>
-                        {% if course.admin_feedback and course.status == 'rejected' %}
-                            <span class="ml-4 text-sm text-red-500">Feedback: {{ course.admin_feedback }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="space-x-2 flex items-center">
-                        <a href="{{ url_for('teacher.edit_course', course_id=course.id) }}" class="text-blue-600 hover:underline">Edit</a>
-                        <a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}" class="text-blue-600 hover:underline">Manage Content</a>
-                        <a href="{{ url_for('teacher.enroll_students', course_id=course.id) }}" class="text-blue-600 hover:underline">Enroll Students</a>
-                        {% set draft_flag = (course.is_draft or course.status == 'draft') %}
-                        {% if draft_flag %}
-                        <button type="button" class="text-red-600 hover:underline"
-                                onclick="document.getElementById('delete-draft-{{ course.id }}').classList.remove('hidden')">
-                            Delete Draft
-                        </button>
-                        {% endif %}
-                    </div>
-                </li>
-
-                {% if draft_flag %}
-                <!-- Delete Draft Modal -->
-                <div id="delete-draft-{{ course.id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-                        <h3 class="text-lg font-semibold text-gray-900">Delete Draft</h3>
-                        <p class="text-sm text-gray-600 mt-2">Type the course title to confirm deletion. This action cannot be undone.</p>
-                        <p class="mt-2 font-medium">{{ course.title }}</p>
-                        <form method="POST" action="{{ url_for('teacher.delete_draft_course', course_id=course.id) }}" class="mt-4" onsubmit="return this.querySelector('input[name=confirm_title]').value.trim() === '{{ course.title }}'">
-                            <input type="hidden" name="return_url" value="{{ request.url }}">
-                            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                            <input name="confirm_title" type="text" class="w-full border rounded px-3 py-2" placeholder="Enter course title exactly">
-                            <div class="mt-4 flex justify-end gap-2">
-                                <button type="button" class="px-4 py-2 border rounded" onclick="document.getElementById('delete-draft-{{ course.id }}').classList.add('hidden')">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+    <ul class="space-y-2 mt-4">
+        {% for course in courses %}
+        <li class="border p-3 rounded flex justify-between items-center">
+            <div>
+                <span class="font-medium">{{ course.title }}</span>
+                <span class="ml-4 text-sm text-gray-500">Status: {{ course.status|title }}</span>
+                {% if course.admin_feedback and course.status == 'rejected' %}
+                <span class="ml-4 text-sm text-red-500">Feedback: {{ course.admin_feedback }}</span>
                 {% endif %}
-            {% endfor %}
-        </ul>
+            </div>
+            <div class="space-x-2 flex items-center">
+                <a href="{{ url_for('teacher.course_builder', course_id=course.id) }}"
+                    class="text-blue-600 hover:underline font-medium">Edit Course & Content</a>
+                <a href="{{ url_for('teacher.enroll_students', course_id=course.id) }}"
+                    class="text-blue-600 hover:underline">Enroll Students</a>
+                {% set draft_flag = (course.is_draft or course.status == 'draft') %}
+                {% if draft_flag %}
+                <button type="button" class="text-red-600 hover:underline"
+                    onclick="document.getElementById('delete-draft-{{ course.id }}').classList.remove('hidden')">
+                    Delete Draft
+                </button>
+                {% endif %}
+            </div>
+        </li>
+
+        {% if draft_flag %}
+        <!-- Delete Draft Modal -->
+        <div id="delete-draft-{{ course.id }}"
+            class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+                <h3 class="text-lg font-semibold text-gray-900">Delete Draft</h3>
+                <p class="text-sm text-gray-600 mt-2">Type the course title to confirm deletion. This action cannot be
+                    undone.</p>
+                <p class="mt-2 font-medium">{{ course.title }}</p>
+                <form method="POST" action="{{ url_for('teacher.delete_draft_course', course_id=course.id) }}"
+                    class="mt-4"
+                    onsubmit="return this.querySelector('input[name=confirm_title]').value.trim() === '{{ course.title }}'">
+                    <input type="hidden" name="return_url" value="{{ request.url }}">
+                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                    <input name="confirm_title" type="text" class="w-full border rounded px-3 py-2"
+                        placeholder="Enter course title exactly">
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button type="button" class="px-4 py-2 border rounded"
+                            onclick="document.getElementById('delete-draft-{{ course.id }}').classList.add('hidden')">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </ul>
     {% else %}
-        <p>No courses found. <a href="{{ url_for('teacher.create_course_wizard') }}" class="text-blue-600 hover:underline">Create a course</a>.</p>
+    <p>No courses found. <a href="{{ url_for('teacher.create_course_wizard') }}"
+            class="text-blue-600 hover:underline">Create a course</a>.</p>
     {% endif %}
     <a href="{{ url_for('teacher.dashboard') }}" class="mt-4 block text-blue-600 hover:underline">Back to Dashboard</a>
 </div>
