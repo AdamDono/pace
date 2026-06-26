@@ -1,4 +1,4 @@
-// Simple Enhanced Quill - Tables, Emojis, H5P
+// Enhanced Quill Editor - Tables, Emojis, Embed, Source Code
 // Usage: initQuillEnhanced('editor-id', 'textarea-id', 'placeholder')
 
 function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...') {
@@ -45,21 +45,22 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
         });
     }
 
-    // Create H5P modal if it doesn't exist
-    if (!document.getElementById('h5p-modal')) {
+    // Create Embed modal if it doesn't exist
+    if (!document.getElementById('embed-modal')) {
         const modal = document.createElement('div');
-        modal.id = 'h5p-modal';
+        modal.id = 'embed-modal';
         modal.style.cssText = 'display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.3);z-index:10000;width:500px;';
         modal.innerHTML = `
             <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
-                <h3 style="margin:0;font-size:16px;font-weight:bold;">🎮 Embed H5P</h3>
-                <button onclick="closeH5PModal()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+                <h3 style="margin:0;font-size:16px;font-weight:bold;">🔗 Embed Interactive Content</h3>
+                <button onclick="closeEmbedModal()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
             </div>
-            <p style="color:#666;font-size:14px;margin-bottom:15px;">Paste H5P embed URL or full iframe code:</p>
-            <textarea id="h5p-input" placeholder="https://h5p.org/h5p/embed/617 or <iframe...>" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:14px;margin-bottom:20px;min-height:100px;font-family:monospace;"></textarea>
+            <p style="color:#666;font-size:14px;margin-bottom:8px;">Paste an embed URL or full <code>&lt;iframe&gt;</code> code:</p>
+            <p style="color:#999;font-size:12px;margin-bottom:15px;">Supports: Lumi.education, H5P.org, YouTube embeds, or any iframe URL.</p>
+            <textarea id="embed-input" placeholder="https://lumi.education/run/... or <iframe src=\"...\" ...></iframe>" style="width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:14px;margin-bottom:20px;min-height:100px;font-family:monospace;"></textarea>
             <div style="display:flex;gap:10px;justify-content:flex-end;">
-                <button onclick="closeH5PModal()" style="padding:10px 20px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Cancel</button>
-                <button onclick="insertH5P()" style="padding:10px 20px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Insert</button>
+                <button onclick="closeEmbedModal()" style="padding:10px 20px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Cancel</button>
+                <button onclick="insertEmbed()" style="padding:10px 20px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Insert</button>
             </div>
         `;
         document.body.appendChild(modal);
@@ -95,13 +96,13 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
                 [{ 'color': [] }, { 'background': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                 ['link', 'image'],
-                ['emoji', 'table', 'h5p', 'source'],
+                ['emoji', 'table', 'embed', 'source'],
                 ['clean']
             ],
             handlers: {
                 'emoji': () => showEmojiModal(quill),
                 'table': () => insertTable(quill),
-                'h5p': () => showH5PModal(quill),
+                'embed': () => showEmbedModal(quill),
                 'source': () => showSourceCodeModal(quill)
             }
         }
@@ -202,49 +203,49 @@ function insertTable(quill) {
     }
 }
 
-function showH5PModal(quill) {
+function showEmbedModal(quill) {
     window.currentQuill = quill;
-    document.getElementById('h5p-modal').style.display = 'block';
+    document.getElementById('embed-modal').style.display = 'block';
     document.getElementById('emoji-overlay').style.display = 'block';
 }
 
-function closeH5PModal() {
-    document.getElementById('h5p-modal').style.display = 'none';
+function closeEmbedModal() {
+    document.getElementById('embed-modal').style.display = 'none';
     document.getElementById('emoji-overlay').style.display = 'none';
-    document.getElementById('h5p-input').value = '';
+    document.getElementById('embed-input').value = '';
 }
 
-function insertH5P() {
-    const input = document.getElementById('h5p-input').value.trim();
+function insertEmbed() {
+    const input = document.getElementById('embed-input').value.trim();
     if (!input || !window.currentQuill) return;
 
     let url = input;
-    // Extract URL from iframe if needed
+    // Extract URL from iframe tag if the user pasted full iframe HTML
     if (input.includes('<iframe')) {
         const match = input.match(/src=["']([^"']+)["']/);
         if (match) url = match[1];
     }
 
     const range = window.currentQuill.getSelection(true);
-    const embedCode = `<div class="h5p-embed-container" style="position:relative;width:100%;padding-bottom:75%;height:0;overflow:hidden;margin:20px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="H5P Interactive Content"></iframe></div>`;
-    
+    const embedCode = `<div class="h5p-embed-container" style="position:relative;width:100%;padding-bottom:75%;height:0;overflow:hidden;margin:20px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="Embedded Interactive Content"></iframe></div>`;
+
     // Insert the HTML
     window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, embedCode);
-    
-    // CRITICAL: Mark as custom HTML to prevent Quill from stripping styles
+
+    // Mark as custom HTML to prevent Quill from stripping styles
     window.currentQuill.root.setAttribute('data-custom-html', 'true');
-    
-    // CRITICAL: Update the hidden textarea immediately
-    const textarea = document.getElementById('content-editor') || 
+
+    // Update the hidden textarea immediately
+    const textarea = document.getElementById('content-editor') ||
                      document.getElementById('announcement-content') ||
                      document.getElementById('course-description');
     if (textarea) {
         textarea.value = window.currentQuill.root.innerHTML;
-        console.log('✅ H5P embedded and textarea updated');
+        console.log('✅ Embed inserted and textarea updated');
     }
-    
-    console.log('✅ H5P URL:', url);
-    closeH5PModal();
+
+    console.log('✅ Embed URL:', url);
+    closeEmbedModal();
 }
 
 // Source Code Editor

@@ -1,24 +1,38 @@
-*.md
-venv/
-__pycache__/
-.env
-*.pycflask_session/
-flask_session/
+# =======================
+# Pace Academy .gitignore
+# =======================
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environment
+# Virtual environments
 venv/
-.env/
 .venv/
 env/
+.env/
+
+# Environment variables — never commit secrets
+.env
 
 # Flask session & instance folders
 flask_session/
 instance/
+
+# Database files (SQLite)
+*.db
+*.sqlite3
+
+# Logs and temp files
+*.log
+*.tmp
+server.log
+server_debug.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
 
 # IDEs and editor settings
 .vscode/
@@ -27,29 +41,13 @@ instance/
 *.sublime-project
 *.sublime-workspace
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Migrations (optional — only if you recreate them regularly)
-#migrations/
-
-# Database files (SQLite, if used)
-*.db
-*.sqlite3
-
-# Logs and temp
-*.log
-*.tmp
-
-# Environment variables
-.env
+# Migrations (uncomment if you recreate them regularly)
+# migrations/
 
 # Coverage and testing
 .coverage
 htmlcov/
-pytest_cache/
+.pytest_cache/
 
-
-#Ignore vscode AI rules
+# Ignore vscode AI rules
 .github/instructions/codacy.instructions.md

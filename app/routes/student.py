@@ -568,20 +568,38 @@ def generate_certificate(enrollment_id):
     c.setFont("Helvetica", 12)
     c.setFillColor(HexColor('#333333'))
     completion_date = datetime.utcnow().strftime('%B %d, %Y')
-    c.drawString(120, 200, "Date of Completion:")
+    c.drawString(70, 180, "Date of Completion:")
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(120, 180, completion_date)
+    c.drawString(70, 160, completion_date)
     
-    # Signature line and text
+    # --- Dual Signatures ---
+    
+    # 1. Course Teacher Signature
+    teacher_name = enrollment.course.teacher.username or enrollment.course.teacher.email.split('@')[0]
     c.setFont("Helvetica", 12)
     c.setFillColor(HexColor('#333333'))
-    c.drawString(width - 250, 200, "Authorized Signature:")
+    c.drawString(width / 2 - 60, 180, "Course Instructor:")
     # Signature line
     c.setStrokeColor(HexColor('#000000'))
     c.setLineWidth(1)
-    c.line(width - 250, 175, width - 80, 175)
-    c.setFont("Helvetica-Oblique", 10)
-    c.drawString(width - 220, 160, "Pace Academy")
+    c.line(width / 2 - 60, 155, width / 2 + 80, 155)
+    # Teacher Name (Cursive-style fallback)
+    c.setFont("Helvetica-Oblique", 11)
+    c.drawCentredString(width / 2 + 10, 140, teacher_name)
+    
+    # 2. Adam Dono Signature (Head of Curriculum)
+    c.setFont("Helvetica", 12)
+    c.setFillColor(HexColor('#333333'))
+    c.drawString(width - 220, 180, "Head of Curriculum:")
+    # Signature line
+    c.setStrokeColor(HexColor('#000000'))
+    c.setLineWidth(1)
+    c.line(width - 220, 155, width - 50, 155)
+    # Signature Name
+    c.setFont("Helvetica-BoldOblique", 11)
+    c.drawCentredString(width - 135, 140, "Adam Dono")
+    c.setFont("Helvetica", 9)
+    c.drawCentredString(width - 135, 125, "Pace Academy")
     
     # ===== SEAL/BADGE =====
     # Draw a circular seal
