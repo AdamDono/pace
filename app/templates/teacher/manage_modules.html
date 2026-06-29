@@ -140,7 +140,7 @@
                                 </span>
                             </div>
                             {% if module.description %}
-                            <p class="text-gray-600 ml-12">{{ module.description }}</p>
+                            <div class="text-gray-600 ml-12 ql-editor prose prose-sm max-w-none">{{ module.description|safe }}</div>
                             {% endif %}
                         </div>
 
@@ -257,8 +257,7 @@
                                         <div class="mb-3">
                                             <p class="text-sm font-medium text-gray-700 mb-1">Content:</p>
                                             <div class="text-gray-600 text-sm bg-gray-50 p-3 rounded">
-                                                {{ section.content[:200] }}{% if section.content|length > 200 %}...{%
-                                                endif %}
+                                                {{ section.content|striptags|truncate(200) }}
                                             </div>
                                         </div>
                                         {% endif %}
@@ -363,11 +362,10 @@
                                                         <div class="flex-1">
                                                             <h5 class="font-medium text-green-900">{{ assignment.title
                                                                 }}</h5>
-                                                            {% if assignment.description %}
-                                                            <p class="text-sm text-green-700 mt-1">{{
-                                                                assignment.description[:100] }}{% if
-                                                                assignment.description|length > 100 %}...{% endif %}</p>
-                                                            {% endif %}
+                                                             {% if assignment.description %}
+                                                             <p class="text-sm text-green-700 mt-1">{{
+                                                                 assignment.description|striptags|truncate(100) }}</p>
+                                                             {% endif %}
                                                             {% if assignment.due_date %}
                                                             <p class="text-xs text-green-600 mt-1">📅 Due: {{
                                                                 assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</p>

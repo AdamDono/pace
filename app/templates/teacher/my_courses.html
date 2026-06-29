@@ -2,8 +2,23 @@
 {% block page_title %}My Courses{% endblock %}
 {% block content %}
 <div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">Teacher Courses</h1>
-    <p>Welcome, {{ current_user.email }}!</p>
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">My Courses</h1>
+            <p class="text-sm text-gray-500 mt-1">Welcome, {{ current_user.email }}</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+            <a href="{{ url_for('teacher.create_course_wizard') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                ✏️ Create Course
+            </a>
+            <a href="{{ url_for('importer.import_form') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+               title="Import a .mbz course backup from Moodle">
+                📦 Import from Moodle
+            </a>
+        </div>
+    </div>
 
     <!-- Filter Tabs -->
     <div class="flex space-x-4 mb-6 border-b">

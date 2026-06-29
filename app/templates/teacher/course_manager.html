@@ -5,7 +5,7 @@
   <!-- Course Header -->
   <div class="mb-6 p-6 bg-white rounded-lg shadow">
     <h1 class="text-2xl font-bold">{{ course.title }}</h1>
-    <p class="mt-2 text-gray-600">{{ course.description }}</p>
+    <div class="mt-2 text-gray-600 ql-editor prose prose-sm max-w-none">{{ course.description|safe }}</div>
   </div>
 
   <!-- Sections List -->

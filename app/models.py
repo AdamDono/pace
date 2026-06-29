@@ -4,6 +4,20 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 
+# ---------------------------------------------------------------------------
+# Activity type system (Moodle-inspired Level 2)
+# Each Section has one of these types. The type determines what the teacher
+# fills in and how the student sees the content.
+# ---------------------------------------------------------------------------
+ACTIVITY_TYPES = {
+    'lesson':     {'label': 'Lesson',      'icon': '📖', 'color': 'blue'},
+    'video':      {'label': 'Video',       'icon': '🎥', 'color': 'purple'},
+    'quiz':       {'label': 'Quiz',        'icon': '❓', 'color': 'amber'},
+    'assignment': {'label': 'Assignment',  'icon': '📝', 'color': 'pink'},
+    'resource':   {'label': 'Resource',    'icon': '📎', 'color': 'gray'},
+    'url':        {'label': 'Link',        'icon': '🔗', 'color': 'green'},
+}
+
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
     

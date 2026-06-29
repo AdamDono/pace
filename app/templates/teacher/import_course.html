@@ -1,0 +1,553 @@
+{% extends "teacher/base_teacher.html" %}
+{% block page_title %}Import Moodle Course{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Design tokens ── */
+  :root {
+    --blue:   #2563eb;
+    --indigo: #4f46e5;
+    --green:  #16a34a;
+    --amber:  #d97706;
+    --red:    #dc2626;
+    --gray-50:  #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-600: #4b5563;
+    --gray-900: #111827;
+  }
+
+  .import-wrap {
+    max-width: 780px;
+    margin: 40px auto;
+    padding: 0 16px 80px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* ── Hero header ── */
+  .import-hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    border-radius: 16px;
+    padding: 36px 40px;
+    color: #fff;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .import-hero .icon {
+    font-size: 48px;
+    line-height: 1;
+  }
+  .import-hero h1 { margin: 0 0 4px; font-size: 24px; font-weight: 700; }
+  .import-hero p  { margin: 0; opacity: 0.85; font-size: 14px; }
+
+  /* ── Card ── */
+  .card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.06);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Drop zone ── */
+  #drop-zone {
+    border: 2px dashed var(--gray-200);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .25s;
+    background: var(--gray-50);
+    position: relative;
+  }
+  #drop-zone.dragover {
+    border-color: var(--blue);
+    background: #eff6ff;
+  }
+  #drop-zone.file-selected {
+    border-color: var(--green);
+    background: #f0fdf4;
+  }
+  #drop-zone .dz-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+  #drop-zone h3 { margin: 0 0 6px; font-size: 17px; font-weight: 600; color: var(--gray-900); }
+  #drop-zone p  { margin: 0; color: var(--gray-600); font-size: 14px; }
+  #drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  /* ── File badge ── */
+  #file-badge {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 16px;
+  }
+  #file-badge .badge-icon { font-size: 28px; }
+  #file-badge .badge-info { flex: 1; }
+  #file-badge .badge-name { font-weight: 600; font-size: 14px; color: var(--gray-900); }
+  #file-badge .badge-size { font-size: 12px; color: var(--gray-600); }
+  #file-badge .badge-remove {
+    background: none; border: none; font-size: 18px; cursor: pointer; color: var(--gray-600);
+    padding: 4px; border-radius: 6px; transition: background .2s;
+  }
+  #file-badge .badge-remove:hover { background: #fee2e2; color: var(--red); }
+
+  /* ── Preview panel ── */
+  #preview-panel { display: none; }
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .preview-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+  .preview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-box {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-box .stat-num { font-size: 26px; font-weight: 700; color: var(--blue); }
+  .stat-box .stat-label { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+
+  /* ── Section accordion ── */
+  .module-list { list-style: none; padding: 0; margin: 0; }
+  .module-item {
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .module-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--gray-50);
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--gray-900);
+  }
+  .module-header:hover { background: #eff6ff; }
+  .module-header .toggle-icon { margin-left: auto; font-size: 16px; transition: transform .2s; }
+  .module-header.open .toggle-icon { transform: rotate(90deg); }
+  .module-body { display: none; padding: 0 16px 12px; }
+  .module-body.open { display: block; }
+  .act-list { list-style: none; padding: 0; margin: 8px 0 0; }
+  .act-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    font-size: 13px; color: var(--gray-600);
+    transition: background .15s;
+  }
+  .act-item:hover { background: var(--gray-100); }
+  .act-badge {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 20px; letter-spacing: .04em;
+    background: #dbeafe; color: #1d4ed8;
+    white-space: nowrap;
+  }
+  .act-badge.quiz     { background: #fef3c7; color: #92400e; }
+  .act-badge.assign   { background: #fce7f3; color: #9d174d; }
+  .act-badge.label    { background: #f3f4f6; color: #6b7280; }
+  .act-badge.url      { background: #ecfdf5; color: #065f46; }
+  .act-badge.resource { background: #f5f3ff; color: #5b21b6; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--indigo), var(--blue));
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity .2s, transform .15s;
+    text-decoration: none;
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .btn-outline {
+    background: #fff;
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 13px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: background .2s;
+  }
+  .btn-outline:hover { background: var(--gray-50); }
+
+  /* ── Spinner ── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── What's imported info ── */
+  .support-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .support-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: var(--gray-600);
+  }
+  .support-item .s-icon { font-size: 18px; flex-shrink: 0; }
+  .support-item .s-text strong { display: block; color: var(--gray-900); font-size: 13px; }
+</style>
+
+<div class="import-wrap">
+
+  <!-- Hero -->
+  <div class="import-hero">
+    <div class="icon">📦</div>
+    <div>
+      <h1>Import from Moodle</h1>
+      <p>Upload a Moodle course backup (.mbz) and we'll convert it into a Pace Academy course automatically.</p>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div style="padding:14px 18px;border-radius:10px;margin-bottom:16px;font-size:14px;
+          background:{{ '#dcfce7' if category=='success' else ('#fef3c7' if category=='warning' else '#fee2e2') }};
+          color:{{ '#166534' if category=='success' else ('#92400e' if category=='warning' else '#991b1b') }};
+          border:1px solid {{ '#bbf7d0' if category=='success' else ('#fde68a' if category=='warning' else '#fecaca') }};">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Import form wraps the entire flow to avoid fragile file-copying logic -->
+  <form id="import-form" method="POST"
+        action="{{ url_for('importer.run_import') }}"
+        enctype="multipart/form-data"
+        data-loading="true">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Drop zone card -->
+    <div class="card">
+      <div class="card-title">📂 Select .mbz File</div>
+
+      <div id="drop-zone">
+        <span class="dz-icon" id="dz-icon">⬆️</span>
+        <h3 id="dz-title">Drag & drop your .mbz file here</h3>
+        <p>or click to browse — max 100 MB</p>
+        <input type="file" id="mbz-input" name="mbz_file" accept=".mbz" />
+      </div>
+
+      <div id="file-badge">
+        <span class="badge-icon">📦</span>
+        <div class="badge-info">
+          <div class="badge-name" id="badge-name"></div>
+          <div class="badge-size" id="badge-size"></div>
+        </div>
+        <button type="button" class="badge-remove" onclick="clearFile()" title="Remove">✕</button>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button type="button" class="btn-primary" id="preview-btn" onclick="doPreview()" disabled>
+          <span id="preview-spin" class="spinner"></span>
+          🔍 Preview Import
+        </button>
+        <span style="font-size:13px;color:#6b7280;">
+          Preview shows what will be imported without touching the database.
+        </span>
+      </div>
+    </div>
+
+    <!-- Preview results -->
+    <div class="card" id="preview-panel" style="display:none;">
+      <div class="preview-header">
+        <span style="font-size:22px;">📋</span>
+        <h2 id="preview-course-title">Course Preview</h2>
+      </div>
+
+      <div class="preview-stats" id="preview-stats"></div>
+
+      <p style="font-size:13px;font-weight:600;color:#374151;margin:0 0 10px;">Modules &amp; Activities</p>
+      <ul class="module-list" id="module-list"></ul>
+
+      <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button type="submit" class="btn-primary" id="import-btn" onclick="prepareImport(event)">
+          <span id="import-spin" class="spinner"></span>
+          🚀 Import Course
+        </button>
+        <a href="{{ url_for('teacher.my_courses') }}" class="btn-outline">Cancel</a>
+        <span style="font-size:12px;color:#6b7280;">
+          Course will be created as a <strong>draft</strong> for your review.
+        </span>
+      </div>
+    </div>
+  </form>
+
+  <!-- What gets imported -->
+  <div class="card">
+    <div class="card-title">ℹ️ What Gets Imported</div>
+    <div class="support-grid">
+      <div class="support-item"><span class="s-icon">📄</span><div class="s-text"><strong>Pages &amp; Resources</strong>Become text sections with full HTML content</div></div>
+      <div class="support-item"><span class="s-icon">🔗</span><div class="s-text"><strong>URL Activities</strong>Become clickable link sections</div></div>
+      <div class="support-item"><span class="s-icon">📝</span><div class="s-text"><strong>Assignments</strong>Become assignment sections with due dates</div></div>
+      <div class="support-item"><span class="s-icon">🧠</span><div class="s-text"><strong>Quizzes (MCQ only)</strong>Multiple-choice questions are fully imported</div></div>
+      <div class="support-item"><span class="s-icon">📁</span><div class="s-text"><strong>Folders</strong>Become resource sections</div></div>
+      <div class="support-item"><span class="s-icon">📎</span><div class="s-text"><strong>Uploaded Files</strong>Copied to your uploads directory</div></div>
+    </div>
+    <div style="margin-top:14px;padding:12px 16px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a;font-size:13px;color:#92400e;">
+      ⚠️ <strong>Not imported:</strong> Forums, SCORM packages, Workshop activities, student grades/data, or essay-type quiz questions.
+    </div>
+  </div>
+
+</div>
+
+<script>
+let selectedFile = null;
+
+// ── Drag & drop ──
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('mbz-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave',  () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) setFile(file, true);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) setFile(fileInput.files[0], false);
+});
+
+function setFile(file, isDragDrop) {
+  if (!file.name.toLowerCase().endsWith('.mbz')) {
+    alert('Only .mbz files are accepted.');
+    return;
+  }
+  if (file.size > 100 * 1024 * 1024) {
+    alert('File is too large (max 100 MB).');
+    return;
+  }
+  selectedFile = file;
+
+  // Sync with fileInput only if dragged & dropped
+  if (isDragDrop) {
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+    } catch (e) {
+      console.warn("DataTransfer not supported or blocked: ", e);
+    }
+  }
+
+  // Update drop zone
+  dropZone.classList.add('file-selected');
+  document.getElementById('dz-icon').textContent = '✅';
+  document.getElementById('dz-title').textContent = 'File selected';
+  // Show badge
+  document.getElementById('badge-name').textContent = file.name;
+  document.getElementById('badge-size').textContent = formatSize(file.size);
+  document.getElementById('file-badge').style.display = 'flex';
+  // Enable preview
+  document.getElementById('preview-btn').disabled = false;
+  // Hide old preview
+  document.getElementById('preview-panel').style.display = 'none';
+}
+
+function clearFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  dropZone.classList.remove('file-selected');
+  document.getElementById('dz-icon').textContent = '⬆️';
+  document.getElementById('dz-title').textContent = 'Drag & drop your .mbz file here';
+  document.getElementById('file-badge').style.display = 'none';
+  document.getElementById('preview-btn').disabled = true;
+  document.getElementById('preview-panel').style.display = 'none';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+// ── Preview ──
+async function doPreview() {
+  if (!selectedFile) return;
+  const btn = document.getElementById('preview-btn');
+  const spin = document.getElementById('preview-spin');
+  btn.disabled = true;
+  spin.style.display = 'block';
+
+  const fd = new FormData();
+  fd.append('mbz_file', selectedFile);
+  fd.append('csrf_token', document.querySelector('input[name=csrf_token]').value);
+
+  try {
+    const res = await fetch('{{ url_for("importer.preview") }}', { method:'POST', body: fd });
+    const data = await res.json();
+    if (data.error) { alert('Preview error: ' + data.error); return; }
+    renderPreview(data);
+  } catch(e) {
+    alert('Network error during preview: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    spin.style.display = 'none';
+  }
+}
+
+function renderPreview(data) {
+  document.getElementById('preview-course-title').textContent = data.course_title || 'Course';
+
+  // Stats
+  const stats = document.getElementById('preview-stats');
+  stats.innerHTML = `
+    <div class="stat-box"><div class="stat-num">${data.section_count||0}</div><div class="stat-label">Modules</div></div>
+    <div class="stat-box"><div class="stat-num">${data.activity_count||0}</div><div class="stat-label">Activities</div></div>
+  `;
+
+  // Module accordion
+  const list = document.getElementById('module-list');
+  list.innerHTML = '';
+  (data.sections || []).forEach((sec, i) => {
+    const acts = sec.activities || [];
+    const item = document.createElement('li');
+    item.className = 'module-item';
+    item.innerHTML = `
+      <div class="module-header" onclick="toggleModule(this)">
+        📚 ${escHtml(sec.name)}
+        <span style="margin-left:8px;font-size:12px;color:#6b7280;font-weight:400;">${acts.length} activit${acts.length===1?'y':'ies'}</span>
+        <span class="toggle-icon">›</span>
+      </div>
+      <div class="module-body">
+        <ul class="act-list">
+          ${acts.map(a => `
+            <li class="act-item">
+              <span class="act-badge ${a.type||''}">${a.type||'page'}</span>
+              ${escHtml(a.name||'Untitled')}
+            </li>`).join('')}
+          ${acts.length===0 ? '<li class="act-item" style="color:#9ca3af;">No activities</li>' : ''}
+        </ul>
+      </div>`;
+    list.appendChild(item);
+  });
+
+  document.getElementById('preview-panel').style.display = 'block';
+  document.getElementById('preview-panel').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function toggleModule(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// ── Import ──
+async function prepareImport(e) {
+  e.preventDefault();
+  try {
+    if (!selectedFile) { alert('Please select a file first.'); return; }
+
+    const btn = document.getElementById('import-btn');
+    const spin = document.getElementById('import-spin');
+    btn.disabled = true;
+    spin.style.display = 'block';
+
+    const fd = new FormData();
+    fd.append('mbz_file', selectedFile);
+    
+    const csrfEl = document.querySelector('input[name=csrf_token]');
+    if (!csrfEl) {
+      throw new Error("CSRF token input field not found on the page!");
+    }
+    fd.append('csrf_token', csrfEl.value);
+
+    const targetUrl = '{{ url_for("importer.run_import") }}';
+    console.log("Submitting import to URL: " + targetUrl);
+
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json'
+      },
+      body: fd
+    });
+    
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Server returned status ${res.status}: ${errText.substring(0, 100)}`);
+    }
+
+    const data = await res.json();
+    if (data.error) {
+      alert('Import failed: ' + data.error);
+    } else if (data.redirect) {
+      window.location.href = data.redirect;
+    } else {
+      window.location.reload();
+    }
+  } catch(err) {
+    alert('Import error occurred:\n' + (err.stack || err.message));
+  } finally {
+    const btn = document.getElementById('import-btn');
+    const spin = document.getElementById('import-spin');
+    if (btn) btn.disabled = false;
+    if (spin) spin.style.display = 'none';
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}

@@ -22,7 +22,7 @@
                     Required</span>
                 {% endif %}
             </div>
-            <p class="text-gray-500 text-sm">Course Content Builder</p>
+            <p class="text-gray-500 text-sm">Course Content Builder — <span class="text-blue-600 font-medium">Topics &amp; Activities</span></p>
         </div>
         <div class="flex items-center space-x-3">
             {% if course.status in ['draft', 'rejected'] %}
@@ -95,8 +95,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea name="description" rows="4"
-                            class="w-full p-2 border rounded-lg">{{ course.description }}</textarea>
+                        {% include 'components/quill_editor.html' with {field_id: 'course-description', field_name: 'description', initial_value: course.description|default(''), height: '200px'} %}
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -136,10 +135,10 @@
 
         {% if modules %}
         {% for module in modules %}
-        <!-- Lesson (Module) Container -->
+        <!-- Topic Container -->
         <div class="lesson-container bg-white border border-gray-200 rounded-lg mb-4 shadow-sm group"
             data-module-id="{{ module.id }}">
-            <!-- Lesson Header -->
+            <!-- Topic Header -->
             <div class="p-4 border-b border-gray-100 flex items-center hover:bg-gray-50 transition-colors cursor-pointer"
                 onclick="toggleLesson('lesson-{{ module.id }}')">
                 <div class="mr-3 text-gray-400 cursor-grab handle">
@@ -149,7 +148,11 @@
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-lg font-semibold text-gray-800">{{ module.title }}</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">Topic</span>
+                        <h3 class="text-lg font-semibold text-gray-800">{{ module.title }}</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ module.sections|length }} activit{{ 'y' if module.sections|length == 1 else 'ies' }}</p>
                 </div>
                 <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onclick="editLesson({{ module.id }}, '{{ module.title }}'); event.stopPropagation();"
@@ -189,35 +192,45 @@
                                     d="M4 8h16M4 16h16"></path>
                             </svg>
                         </div>
-                        <div class="mr-3 text-2xl">
+                        <div class="mr-3 text-xl w-8 text-center">
                             {% if section.section_type == 'video' %}🎥
                             {% elif section.section_type == 'quiz' %}❓
                             {% elif section.section_type == 'assignment' %}📝
-                            {% else %}📄{% endif %}
+                            {% elif section.section_type == 'resource' %}📎
+                            {% elif section.section_type == 'url' %}🔗
+                            {% else %}📖{% endif %}
                         </div>
-                        <div class="flex-1">
-                            <h4 class="font-medium text-gray-800 text-sm">{{ section.title }}</h4>
-                            <p class="text-xs text-gray-500 truncate max-w-lg">{{ section.content[:50] if
-                                section.content else '' }}...</p>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-medium px-1.5 py-0.5 rounded
+                                    {% if section.section_type == 'quiz' %}bg-amber-100 text-amber-700
+                                    {% elif section.section_type == 'assignment' %}bg-pink-100 text-pink-700
+                                    {% elif section.section_type == 'video' %}bg-purple-100 text-purple-700
+                                    {% elif section.section_type == 'resource' %}bg-gray-100 text-gray-600
+                                    {% elif section.section_type == 'url' %}bg-green-100 text-green-700
+                                    {% else %}bg-blue-100 text-blue-700{% endif %}">{{ section.section_type|title }}</span>
+                                <h4 class="font-medium text-gray-800 text-sm truncate">{{ section.title }}</h4>
+                            </div>
                         </div>
                         <div
                             class="flex items-center space-x-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
                             <a href="{{ url_for('teacher.edit_section_content', course_id=course.id, section_id=section.id) }}"
                                 class="px-2 py-1 text-xs border border-gray-200 bg-white hover:bg-gray-50 rounded text-gray-600">
-                                Edit Content
+                                ✏️ Edit
                             </a>
-                            <!-- Attach Activity Buttons -->
+                            {% if section.section_type == 'quiz' and section.quizzes %}
                             <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}"
-                                class="px-2 py-1 text-xs border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded text-blue-600">
-                                + Quiz
+                                class="px-2 py-1 text-xs border border-amber-200 bg-amber-50 hover:bg-amber-100 rounded text-amber-700">
+                                + Questions
                             </a>
+                            {% elif section.section_type == 'assignment' and section.assignments %}
                             <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
-                                class="px-2 py-1 text-xs border border-green-200 bg-green-50 hover:bg-green-100 rounded text-green-600">
-                                + Assignment
+                                class="px-2 py-1 text-xs border border-pink-200 bg-pink-50 hover:bg-pink-100 rounded text-pink-700">
+                                Edit Details
                             </a>
-
+                            {% endif %}
                             <button onclick="deleteSection({{ section.id }});"
-                                class="text-gray-400 hover:text-red-500 p-1 ml-1">
+                                class="text-gray-300 hover:text-red-500 p-1 ml-1 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M6 18L18 6M6 6l12 12"></path>
@@ -228,74 +241,102 @@
                     {% endfor %}
                 </div>
 
-                <!-- Quick Add Actions -->
-                <div class="flex space-x-2">
-                    <button onclick="quickAddText({{ module.id }})"
-                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all text-sm font-medium flex items-center justify-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                            </path>
-                        </svg>
-                        + Text/Article
-                    </button>
-                    <button onclick="quickAddVideo({{ module.id }})"
-                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all text-sm font-medium flex items-center justify-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
-                            </path>
-                        </svg>
-                        + Video
-                    </button>
-                    <button onclick="quickAddQuiz({{ module.id }})"
-                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-all text-sm font-medium flex items-center justify-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                            </path>
-                        </svg>
-                        + Quiz
-                    </button>
-                    <button onclick="quickAddAssignment({{ module.id }})"
-                        class="flex-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-yellow-400 hover:text-yellow-600 hover:bg-yellow-50 transition-all text-sm font-medium flex items-center justify-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                            </path>
-                        </svg>
-                        + Assignment
-                    </button>
-                </div>
+                <!-- Add Activity Button -->
+                <button onclick="showActivityPicker({{ module.id }})"
+                    class="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all text-sm font-medium flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Activity
+                </button>
             </div>
         </div>
         {% endfor %}
         {% else %}
         <div class="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-            <p class="text-gray-500 mb-2">Start by creating your first lesson container. Think of it as a Week or
-                Chapter.</p>
+            <p class="text-gray-500 mb-2">Start by creating your first <strong>Topic</strong>. Think of it as a Week or Chapter.</p>
         </div>
         {% endif %}
 
-        <!-- Add New Lesson Button -->
+        <!-- Add New Topic Button -->
         <button onclick="showAddLessonModal()"
-            class="w-full py-4 bg-white border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-semibold hover:bg-blue-50 hover:border-blue-500 transition-all shadow-sm">
-            + Add New Lesson / Module
+            class="w-full py-4 bg-white border-2 border-dashed border-indigo-300 rounded-xl text-indigo-600 font-semibold hover:bg-indigo-50 hover:border-indigo-500 transition-all shadow-sm">
+            + Add New Topic
         </button>
     </div>
 </div>
 
-<!-- Modal: Add Lesson -->
+<!-- Modal: Add Topic -->
 <div id="addLessonModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-    <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-xl transform transition-all scale-100">
-        <h3 class="text-lg font-bold mb-4">New Lesson</h3>
+    <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-xl">
+        <h3 class="text-lg font-bold mb-1">New Topic</h3>
+        <p class="text-sm text-gray-500 mb-4">Topics group related activities together (e.g. "Week 1", "Introduction").</p>
         <input type="text" id="newLessonTitle" placeholder="e.g. Introduction to Variables"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4" autofocus>
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-4" autofocus>
         <div class="flex justify-end space-x-3">
             <button onclick="closeModal('addLessonModal')"
                 class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
             <button onclick="createLesson()"
-                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Create</button>
+                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Create Topic</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Activity Picker -->
+<div id="activityPickerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Add an Activity</h3>
+                <p class="text-sm text-gray-500">Pick a type, then enter a title.</p>
+            </div>
+            <button onclick="closeModal('activityPickerModal')" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- Type picker grid -->
+        <div class="grid grid-cols-3 gap-3 mb-5" id="activity-type-grid">
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer" data-type="lesson">
+                <span class="text-3xl mb-1">📖</span>
+                <span class="text-sm font-semibold text-gray-700">Lesson</span>
+                <span class="text-xs text-gray-400">Rich text content</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer" data-type="video">
+                <span class="text-3xl mb-1">🎥</span>
+                <span class="text-sm font-semibold text-gray-700">Video</span>
+                <span class="text-xs text-gray-400">YouTube or upload</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer" data-type="quiz">
+                <span class="text-3xl mb-1">❓</span>
+                <span class="text-sm font-semibold text-gray-700">Quiz</span>
+                <span class="text-xs text-gray-400">MCQ questions</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-pink-400 hover:bg-pink-50 transition-all cursor-pointer" data-type="assignment">
+                <span class="text-3xl mb-1">📝</span>
+                <span class="text-sm font-semibold text-gray-700">Assignment</span>
+                <span class="text-xs text-gray-400">File submission</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer" data-type="resource">
+                <span class="text-3xl mb-1">📎</span>
+                <span class="text-sm font-semibold text-gray-700">Resource</span>
+                <span class="text-xs text-gray-400">File download</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all cursor-pointer" data-type="url">
+                <span class="text-3xl mb-1">🔗</span>
+                <span class="text-sm font-semibold text-gray-700">Link</span>
+                <span class="text-xs text-gray-400">External URL</span>
+            </button>
+        </div>
+
+        <!-- Title input (shown after type selected) -->
+        <div id="activity-title-row" class="hidden">
+            <div class="flex items-center gap-2 mb-3">
+                <span id="selected-type-icon" class="text-2xl"></span>
+                <span id="selected-type-label" class="font-semibold text-gray-700"></span>
+            </div>
+            <input type="text" id="newActivityTitle" placeholder="Enter activity title…"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-4">
+            <div class="flex justify-end gap-3">
+                <button onclick="resetActivityPicker()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">← Back</button>
+                <button onclick="createActivity()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold">Create Activity</button>
+            </div>
         </div>
     </div>
 </div>
@@ -363,51 +404,75 @@
             });
     }
 
-    // Quick Add Content Functions
-    function quickAddText(moduleId) {
-        createSection(moduleId, 'text', 'New Text Lesson');
+    // ── Activity type metadata ──
+    const ACTIVITY_TYPES = {
+        lesson:     { icon: '📖', label: 'Lesson' },
+        video:      { icon: '🎥', label: 'Video' },
+        quiz:       { icon: '❓', label: 'Quiz' },
+        assignment: { icon: '📝', label: 'Assignment' },
+        resource:   { icon: '📎', label: 'Resource' },
+        url:        { icon: '🔗', label: 'Link' },
+    };
+
+    let _currentPickerModuleId = null;
+    let _selectedActivityType  = null;
+
+    function showActivityPicker(moduleId) {
+        _currentPickerModuleId = moduleId;
+        _selectedActivityType  = null;
+        resetActivityPicker();
+        document.getElementById('activityPickerModal').classList.remove('hidden');
     }
 
-    function quickAddVideo(moduleId) {
-        createSection(moduleId, 'video', 'New Video Lesson');
+    function resetActivityPicker() {
+        _selectedActivityType = null;
+        document.getElementById('activity-type-grid').classList.remove('hidden');
+        document.getElementById('activity-title-row').classList.add('hidden');
+        document.querySelectorAll('.activity-type-card').forEach(c => c.classList.remove('border-indigo-500', 'bg-indigo-50'));
     }
 
-    function quickAddQuiz(moduleId) {
-        createSection(moduleId, 'quiz', 'New Quiz', true);
-    }
+    // Wire up type cards
+    document.querySelectorAll('.activity-type-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const type = card.dataset.type;
+            _selectedActivityType = type;
+            document.getElementById('activity-type-grid').classList.add('hidden');
+            document.getElementById('selected-type-icon').textContent  = ACTIVITY_TYPES[type].icon;
+            document.getElementById('selected-type-label').textContent = ACTIVITY_TYPES[type].label;
+            document.getElementById('newActivityTitle').value = '';
+            document.getElementById('activity-title-row').classList.remove('hidden');
+            document.getElementById('newActivityTitle').focus();
+        });
+    });
 
-    function quickAddAssignment(moduleId) {
-        createSection(moduleId, 'assignment', 'New Assignment', true);
-    }
+    function createActivity() {
+        const title = document.getElementById('newActivityTitle').value.trim();
+        if (!title || !_selectedActivityType || !_currentPickerModuleId) return;
 
-    function createSection(moduleId, type, title, isWrapper = false) {
         fetch(`/teacher/course/${courseId}/quick-create-section`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                module_id: moduleId,
-                type: type,
-                title: title
-            })
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ module_id: _currentPickerModuleId, type: _selectedActivityType, title })
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (isWrapper) {
-                        if (type === 'quiz') {
-                            window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-quiz`;
-                        } else if (type === 'assignment') {
-                            window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-assignment`;
-                        }
-                    } else {
-                        window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/edit-content`;
-                    }
-                }
-            });
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            closeModal('activityPickerModal');
+            // Route to the right editor
+            if (data.activity_type === 'quiz') {
+                window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-quiz`;
+            } else if (data.activity_type === 'assignment') {
+                window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-assignment`;
+            } else {
+                window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/edit-content`;
+            }
+        });
     }
+
+    // Enter key submits activity title
+    document.getElementById('newActivityTitle')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') createActivity();
+    });
 
     function deleteLesson(id) {
         if (!confirm('Delete this lesson and all its content?')) return;

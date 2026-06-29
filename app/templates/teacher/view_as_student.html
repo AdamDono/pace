@@ -88,7 +88,7 @@
                                         <div>
                                             <h3 class="font-semibold text-gray-900">{{ module.title }}</h3>
                                             {% if module.description %}
-                                            <p class="text-sm text-gray-600">{{ module.description }}</p>
+                                            <div class="text-sm text-gray-600 ql-editor prose prose-sm max-w-none">{{ module.description|safe }}</div>
                                             {% endif %}
                                         </div>
                                     </div>

@@ -1,55 +1,57 @@
 <div id="section-content-{{ section.id }}">
+    {% set type_labels = {'lesson':'Lesson','video':'Video','quiz':'Quiz','assignment':'Assignment','resource':'Resource','url':'Link'} %}
     <p class="text-gray-600 mb-2">Duration: {{ section.duration }} minutes</p>
-    <p class="text-gray-600 mb-4">Type: {{ section.section_type.capitalize() }}</p>
+    <p class="text-gray-600 mb-4">Type: {{ type_labels.get(section.section_type, section.section_type.capitalize()) }}</p>
 
     <!-- Content Rendering -->
     {% if not section.content and not section.video_url and not section.media_file %}
         <p class="text-red-500">No content available for this section.</p>
-    {% elif section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
-        <!-- Use Modern Video Player for uploaded videos or direct URLs -->
-        {% if section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
-            {% include 'student/_video_player.html' %}
+    {% elif section.section_type == 'resource' %}
+        {% if section.media_file %}
+        <div class="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <span class="text-3xl">📎</span>
+            <div class="flex-1">
+                <p class="font-medium text-gray-800">{{ section.media_file }}</p>
+                <p class="text-sm text-gray-500">Click to download</p>
+            </div>
+            <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" download
+               class="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-800">Download</a>
+        </div>
         {% else %}
-            <!-- Fallback for YouTube videos -->
-            {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
-            {% if youtube_id and youtube_id|length == 11 %}
+        <div class="ql-editor prose max-w-none mt-2">{{ section.content|safe }}</div>
+        {% endif %}
+    {% elif section.section_type == 'url' %}
+        {% set ext_url = section.content|trim %}
+        <div class="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <span class="text-3xl">🔗</span>
+            <div class="flex-1">
+                <p class="font-medium text-gray-800">{{ section.title }}</p>
+                <p class="text-sm text-gray-500 truncate">{{ ext_url }}</p>
+            </div>
+            <a href="{{ ext_url }}" target="_blank" rel="noopener"
+               class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">Open Link ↗</a>
+        </div>
+    {% elif section.section_type in ('video', 'lesson') or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
+        {% if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
+            {% if section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
+                {% include 'student/_video_player.html' %}
+            {% else %}
+                {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
+                {% if youtube_id and youtube_id|length == 11 %}
                 <div class="aspect-w-16 aspect-h-9">
-                    <iframe id="youtube-player-{{ section.id }}" 
-                            class="w-full h-64 md:h-96" 
-                            src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1" 
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    <iframe id="youtube-player-{{ section.id }}" class="w-full h-64 md:h-96"
+                            src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1"
+                            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowfullscreen></iframe>
                 </div>
-            {% else %}
+                {% else %}
                 <p class="text-red-500">Invalid video content. Please check the URL.</p>
+                {% endif %}
             {% endif %}
         {% endif %}
-    {% elif section.section_type == 'image' %}
-        <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" alt="Section Image" class="mt-2 w-64 h-64 object-cover">
-    {% elif section.section_type == 'audio' %}
-        <audio controls class="mt-2">
-            <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg">
-        </audio>
-    {% elif section.section_type == 'presentation' %}
-        <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" target="_blank" class="text-blue-600 hover:underline">View Presentation (PDF)</a>
-    {% elif section.section_type == 'pdf' %}
-        {% set pdf_url = url_for('student.view_pdf', section_id=section.id) %}
         {% if section.content %}
-            <a href="{{ pdf_url }}" class="text-blue-600 hover:underline flex items-center" target="_blank">
-                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                </svg>
-                View PDF
-            </a>
-        {% else %}
-            <p class="text-red-500">No PDF file associated.</p>
+        <div class="ql-editor prose max-w-none mt-4">{{ section.content|safe }}</div>
         {% endif %}
-    {% else %}
-        <div class="ql-editor prose max-w-none mt-2">
-            {{ section.content|safe }}
-        </div>
-    {% endif %}
 
     <!-- Assignments -->
     <h4 class="font-medium mt-4">Assignments</h4>

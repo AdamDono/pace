@@ -1123,7 +1123,7 @@ def edit_module(course_id, module_id):
         module.title = request.form.get('title')
         module.description = request.form.get('description')
         db.session.commit()
-        flash('Module updated successfully!', 'success')
+        flash('Topic updated successfully!', 'success')
         return redirect(url_for('teacher.course_builder', course_id=course_id))
 
     return render_template('teacher/edit_module.html', course=course, module=module)
@@ -1153,7 +1153,7 @@ def edit_section(course_id, section_id):
     if request.method == 'POST':
         section.title = request.form.get('title')
         section.content = request.form.get('content')
-        section.section_type = request.form.get('section_type', 'text')
+        section.section_type = request.form.get('section_type', 'lesson')
         section.duration = int(request.form.get('duration', 0)) if request.form.get('duration') else None
         section.video_url = request.form.get('video_url') or None
 
@@ -1630,36 +1630,60 @@ def quick_create_module(course_id):
 @teacher_bp.route('/course/<int:course_id>/quick-create-section', methods=['POST'])
 @teacher_required
 def quick_create_section(course_id):
-    from app.models import Course, Section, Module, db
+    from app.models import Course, Section, Module, Quiz, Assignment, db, ACTIVITY_TYPES
     from sqlalchemy import func
     course = Course.query.get_or_404(course_id)
     if course.teacher_id != current_user.id:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
+
     data = request.get_json()
     module_id = data.get('module_id')
-    section_type = data.get('type')
-    title = data.get('title')
-    
+    activity_type = data.get('type', 'lesson')
+    title = data.get('title', 'Untitled')
+
+    # Validate type
+    if activity_type not in ACTIVITY_TYPES:
+        activity_type = 'lesson'
+
     module = Module.query.get(module_id)
     if not module or module.course_id != course_id:
-        return jsonify({'success': False, 'message': 'Invalid module'}), 400
-        
-    # Get max order in module
+        return jsonify({'success': False, 'message': 'Invalid topic'}), 400
+
     max_order = db.session.query(func.max(Section.order)).filter_by(module_id=module_id).scalar() or 0
-    
+
     section = Section(
         title=title,
-        section_type=section_type,
+        section_type=activity_type,
         course_id=course_id,
         module_id=module_id,
         order=max_order + 1,
-        content='' # Empty content initially
+        content=''
     )
     db.session.add(section)
+    db.session.flush()  # get section.id
+
+    # Auto-create the Quiz or Assignment row so teachers can immediately add content
+    if activity_type == 'quiz':
+        quiz = Quiz(
+            section_id=section.id,
+            title=title,
+            passing_score=70.0,
+            time_limit=30,
+            max_attempts=3,
+            show_correct_answers=True,
+        )
+        db.session.add(quiz)
+    elif activity_type == 'assignment':
+        assignment = Assignment(
+            section_id=section.id,
+            title=title,
+            description='',
+            allow_file_upload=True,
+        )
+        db.session.add(assignment)
+
     db.session.commit()
-    
-    return jsonify({'success': True, 'section_id': section.id})
+    return jsonify({'success': True, 'section_id': section.id, 'activity_type': activity_type})
 
 @teacher_bp.route('/teacher/delete-module/<int:module_id>', methods=['POST'])
 @teacher_required

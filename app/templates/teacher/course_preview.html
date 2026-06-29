@@ -228,12 +228,12 @@
                             <div>
                                 <h2 class="text-xl font-semibold text-gray-900">{{ module.title }}</h2>
                                 {% if module.description %}
-                                <p class="text-gray-600 mt-1">{{ module.description }}</p>
+                                <div class="text-gray-600 mt-1 ql-editor prose prose-sm max-w-none">{{ module.description|safe }}</div>
                                 {% endif %}
                             </div>
                         </div>
                         <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ module.sections|length
-                            }} lessons</span>
+                            }} activities</span>
                     </div>
                 </div>
 
