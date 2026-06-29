@@ -30,7 +30,9 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.description.label }}</label>
-                    {% include 'components/quill_editor.html' with {field_id: 'description', field_name: 'description', initial_value: form.description.data|default(''), height: '250px'} %}
+                    {% with field_id='description', field_name='description', initial_value=form.description.data|default(''), height='250px' %}
+                        {% include 'components/quill_editor.html' %}
+                    {% endwith %}
                     {% for error in form.description.errors %}
                         <span class="text-red-500 text-sm">{{ error }}</span>
                     {% endfor %}

@@ -97,6 +97,10 @@
                             <div class="mt-4 flex items-center gap-2">
                                 <a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}"
                                     class="flex-1 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">Manage</a>
+                                {% if course.status == 'approved' %}
+                                <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
+                                    class="inline-flex items-center text-sm bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-2 rounded-lg transition-colors">View</a>
+                                {% endif %}
                                 <a href="{{ url_for('teacher.course_analytics', course_id=course.id) }}"
                                     class="inline-flex items-center text-sm text-gray-700 hover:text-gray-900 px-3 py-2 border rounded-lg">Analytics</a>
                             </div>

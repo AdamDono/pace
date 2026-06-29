@@ -1001,9 +1001,8 @@
 
         function generateCertificate() {
             console.log('Generate Certificate button clicked');
-            const enrollmentId = {{ enrollment.id if enrollment else 'null' }
-        };
-        console.log('Enrollment ID:', enrollmentId);
+            const enrollmentId = {{ enrollment.id if enrollment else 'null' }};
+            console.log('Enrollment ID:', enrollmentId);
         if (enrollmentId) {
             const baseUrl = '{{ url_for("student.generate_certificate", enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);
             console.log('Fetching URL:', baseUrl);

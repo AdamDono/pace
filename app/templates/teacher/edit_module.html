@@ -27,7 +27,9 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    {% include 'components/quill_editor.html' with {field_id: 'module-description', field_name: 'description', initial_value: module.description|default(''), height: '200px'} %}
+                    {% with field_id='module-description', field_name='description', initial_value=module.description|default(''), height='200px' %}
+                        {% include 'components/quill_editor.html' %}
+                    {% endwith %}
                     <p class="text-sm text-gray-500 mt-1">Optional description of the module's content and objectives</p>
                 </div>
 

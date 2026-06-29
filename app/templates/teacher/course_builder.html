@@ -95,7 +95,9 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        {% include 'components/quill_editor.html' with {field_id: 'course-description', field_name: 'description', initial_value: course.description|default(''), height: '200px'} %}
+                        {% with field_id='course-description', field_name='description', initial_value=course.description|default(''), height='200px' %}
+                            {% include 'components/quill_editor.html' %}
+                        {% endwith %}
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>

@@ -52,6 +52,10 @@
                 {% endif %}
             </div>
             <div class="space-x-2 flex items-center">
+                {% if course.status == 'approved' %}
+                <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
+                    class="text-green-600 hover:underline font-medium">View Course</a>
+                {% endif %}
                 <a href="{{ url_for('teacher.course_builder', course_id=course.id) }}"
                     class="text-blue-600 hover:underline font-medium">Edit Course & Content</a>
                 <a href="{{ url_for('teacher.enroll_students', course_id=course.id) }}"

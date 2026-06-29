@@ -135,95 +135,95 @@ def course_progress():
 
 @student_bp.route('/course/<int:course_id>')
 @login_required
-@student_required
 def course_detail(course_id):
-    if not student_enrolled(course_id):
-        return redirect(url_for('auth.login'))
-
     course = Course.query.get_or_404(course_id)
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
-    if not enrollment:
-        return redirect(url_for('student.dashboard'))
+    
+    # Check authorization based on role
+    if current_user.role == 'student':
+        if not student_enrolled(course_id):
+            flash('You are not enrolled in this course.', 'danger')
+            return redirect(url_for('student.dashboard'))
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
+        if not enrollment:
+            return redirect(url_for('student.dashboard'))
+        enrollment_sections = {es.section_id: es for es in enrollment.sections}
+        total_sections = len(course.sections)
+        completed_sections = sum(1 for es in enrollment_sections.values() if es.completed)
+        completion_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
+    elif current_user.role == 'admin' or (current_user.role == 'teacher' and course.teacher_id == current_user.id):
+        # Admin or course teacher is allowed to preview
+        enrollment = None
+        enrollment_sections = {}
+        completion_percentage = 0
+    else:
+        abort(403)
 
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
-    enrollment_sections = {es.section_id: es for es in enrollment.sections}
-
-    total_sections = len(sections)
-    completed_sections = sum(1 for es in enrollment_sections.values() if es.completed)
-    completion_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
-
     locked_sections = set()
-    for i, section in enumerate(sections):
-        es = enrollment_sections.get(section.id)
-        if i == 0:
-            continue
-        prev_section = sections[i-1]
-        prev_es = enrollment_sections.get(prev_section.id)
-        if not prev_es or not prev_es.completed:
-            locked_sections.add(section.id)
 
     return render_template('student/course_detail.html', 
-                         course=course, 
-                         sections=sections,
-                         enrollment_sections=enrollment_sections,
-                         locked_sections=locked_sections,
-                         completion_percentage=completion_percentage,
-                         enrollment=enrollment)
+                          course=course, 
+                          sections=sections,
+                          enrollment_sections=enrollment_sections,
+                          locked_sections=locked_sections,
+                          completion_percentage=completion_percentage,
+                          enrollment=enrollment)
 
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required
-@student_required
 def get_section_content(section_id):
     section = Section.query.get_or_404(section_id)
     course = Course.query.get_or_404(section.course_id)
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
-
-    # Section locking logic
-    sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
-    section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
-    if section_idx > 0:
-        prev_section = sections[section_idx - 1]
-        prev_es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=prev_section.id).first()
-        if not prev_es or not prev_es.completed:
-            flash('Please complete the previous section first.', 'error')
-            return redirect(url_for('student.course_detail', course_id=course.id))
-
-    # Create EnrollmentSection if it doesn't exist
-    enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
-    if not enrollment_section:
-        enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
-        db.session.add(enrollment_section)
     
-    # Update tracking: increment view count and update last accessed
-    enrollment_section.view_count = (enrollment_section.view_count or 0) + 1
-    enrollment_section.last_accessed = datetime.utcnow()
-    db.session.commit()
+    # Check authorization based on role
+    if current_user.role == 'student':
+        # Student must be enrolled
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
+        
 
-    # Handle marking as complete
-    if request.method == 'POST' and 'mark_completed' in request.form:
-        enrollment_section.completed = True
-        enrollment_section.completed_at = datetime.utcnow()
+
+        # Create EnrollmentSection if it doesn't exist
+        enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
+        if not enrollment_section:
+            enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+            db.session.add(enrollment_section)
+        
+        # Update tracking: increment view count and update last accessed
+        enrollment_section.view_count = (enrollment_section.view_count or 0) + 1
+        enrollment_section.last_accessed = datetime.utcnow()
         db.session.commit()
-        flash('Section marked as completed.', 'success')
 
-        # Check if the entire course is completed
-        all_sections = Section.query.filter_by(course_id=course.id).all()
-        all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
-        if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
-            # Mark enrollment as completed
-            enrollment.completed = True
-            enrollment.completed_at = datetime.utcnow()
+        # Handle marking as complete
+        if request.method == 'POST' and 'mark_completed' in request.form:
+            enrollment_section.completed = True
+            enrollment_section.completed_at = datetime.utcnow()
             db.session.commit()
-            flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
-            return jsonify({
-                'status': 'completed', 
-                'course_id': course.id, 
-                'course_title': course.title,
-                'enrollment_id': enrollment.id,
-                'show_celebration': True,
-                'redirect': None
-            })
-        return jsonify({'status': 'updated', 'message': 'Section updated.'})
+            flash('Section marked as completed.', 'success')
+
+            # Check if the entire course is completed
+            all_sections = Section.query.filter_by(course_id=course.id).all()
+            all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+            if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+                # Mark enrollment as completed
+                enrollment.completed = True
+                enrollment.completed_at = datetime.utcnow()
+                db.session.commit()
+                flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
+                return jsonify({
+                    'status': 'completed', 
+                    'course_id': course.id, 
+                    'course_title': course.title,
+                    'enrollment_id': enrollment.id,
+                    'show_celebration': True,
+                    'redirect': None
+                })
+            return jsonify({'status': 'updated', 'message': 'Section updated.'})
+    elif current_user.role == 'admin' or (current_user.role == 'teacher' and course.teacher_id == current_user.id):
+        # Admin or Course Teacher is allowed
+        enrollment_section = None
+    else:
+        # Unauthorized role or other teacher
+        abort(403)
 
     # Get interactive questions and subtitles for video sections
     interactive_questions = []

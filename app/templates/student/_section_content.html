@@ -52,6 +52,7 @@
         {% if section.content %}
         <div class="ql-editor prose max-w-none mt-4">{{ section.content|safe }}</div>
         {% endif %}
+    {% endif %}
 
     <!-- Assignments -->
     <h4 class="font-medium mt-4">Assignments</h4>
@@ -83,14 +84,16 @@
     {% endif %}
 
     <!-- Mark as Complete Button -->
-    {% if not enrollment_section.completed %}
-        <form method="POST" class="mt-4" hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}" hx-target="#section-content-{{ section.id }}" hx-swap="innerHTML">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                Mark as Completed
-            </button>
-        </form>
-    {% else %}
-        <p class="mt-4 text-green-600">Completed ✔</p>
+    {% if enrollment_section %}
+        {% if not enrollment_section.completed %}
+            <form method="POST" class="mt-4" hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}" hx-target="#section-content-{{ section.id }}" hx-swap="innerHTML">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Mark as Completed
+                </button>
+            </form>
+        {% else %}
+            <p class="mt-4 text-green-600">Completed ✔</p>
+        {% endif %}
     {% endif %}
 </div>
