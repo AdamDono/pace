@@ -239,9 +239,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 flex flex-col md:flex-row pt-16">
-    <!-- Left Sidebar: Course Menu -->
-    <div class="w-full md:w-80 bg-white border-b md:border-r border-gray-200 flex-shrink-0 flex flex-col h-[calc(100vh-4rem)] md:sticky md:top-16">
+<div class="h-screen bg-gray-50 flex flex-col pt-16 overflow-hidden">
+    <div id="flashed-messages-data" class="hidden" data-messages='{{ get_flashed_messages(with_categories=true)|tojson }}'></div>
+    <div class="flex-grow flex flex-col md:flex-row overflow-hidden">
+        <!-- Left Sidebar: Course Menu -->
+        <div class="w-full md:w-80 bg-white border-b md:border-r border-gray-200 flex-shrink-0 flex flex-col h-full overflow-y-auto">
         <!-- Sidebar Header -->
         <div class="p-6 border-b border-gray-150">
             <a href="{{ url_for('student.dashboard') }}" class="inline-flex items-center text-xs text-indigo-600 hover:text-indigo-800 font-semibold mb-4 transition-colors">
@@ -374,7 +376,7 @@
     </div>
 
     <!-- Right Column: Reader Area -->
-    <div class="flex-1 bg-white flex flex-col min-w-0 h-[calc(100vh-4rem)] overflow-y-auto">
+    <div class="flex-1 bg-white flex flex-col min-w-0 h-full overflow-y-auto">
         <!-- Path Header / Breadcrumbs -->
         <div class="px-8 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider" id="reader-breadcrumbs">
@@ -417,6 +419,7 @@
             </div>
         </div>
     </div>
+    </div>
 </div>
 
 <!-- Rating Popup -->
@@ -451,6 +454,44 @@
 </div>
 
 <script>
+    // Premium Toast Notification System
+    function showToast(message, category = 'success') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'fixed top-20 right-6 z-[9999] flex flex-col gap-3 pointer-events-none';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'bg-gray-900 text-white text-sm font-semibold px-4 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 border border-gray-800 transition-all duration-300 transform translate-x-12 opacity-0 pointer-events-auto max-w-sm';
+        
+        const icon = category === 'success' ? '🎉' : '⚠️';
+        toast.innerHTML = `
+            <span class="text-emerald-400 text-lg flex-shrink-0">${icon}</span>
+            <div class="flex-grow">${message}</div>
+            <button class="text-gray-400 hover:text-white transition-colors flex-shrink-0" onclick="this.parentElement.remove()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        `;
+
+        container.appendChild(toast);
+
+        // Animate entrance
+        setTimeout(() => {
+            toast.classList.remove('translate-x-12', 'opacity-0');
+        }, 10);
+
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+            toast.classList.add('translate-x-12', 'opacity-0');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 4000);
+    }
+
     // Toggle module visibility helper
     function toggleSidebarModule(moduleId) {
         const content = document.getElementById(moduleId);
@@ -462,6 +503,49 @@
         } else {
             content.classList.add('hidden');
             if (arrow) arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // Dynamic Navigation Buttons Updater
+    function updateNavigationButtons() {
+        const prevBtn = document.getElementById('prev-activity-nav');
+        const nextBtn = document.getElementById('next-activity-nav');
+        if (!prevBtn && !nextBtn) return;
+
+        const currentLink = document.querySelector('.sidebar-section-link.bg-indigo-50');
+        if (!currentLink) return;
+
+        const allLinks = Array.from(document.querySelectorAll('.sidebar-section-link:not([disabled])'));
+        const currentIndex = allLinks.indexOf(currentLink);
+
+        // Handle Previous button
+        if (currentIndex > 0) {
+            const prevLink = allLinks[currentIndex - 1];
+            if (prevBtn) {
+                prevBtn.classList.remove('hidden');
+                prevBtn.onclick = function() {
+                    prevLink.click();
+                    // Scroll active item into view inside sidebar if overflowed
+                    prevLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                };
+            }
+        } else {
+            if (prevBtn) prevBtn.classList.add('hidden');
+        }
+
+        // Handle Next button
+        if (currentIndex < allLinks.length - 1) {
+            const nextLink = allLinks[currentIndex + 1];
+            if (nextBtn) {
+                nextBtn.classList.remove('hidden');
+                nextBtn.onclick = function() {
+                    nextLink.click();
+                    // Scroll active item into view inside sidebar if overflowed
+                    nextLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                };
+            }
+        } else {
+            if (nextBtn) nextBtn.classList.add('hidden');
         }
     }
 
@@ -503,6 +587,15 @@
                 }, 200);
             });
         });
+
+        // Register HTMX event to update buttons after content is loaded/swapped
+        const readerContent = document.getElementById('main-reader-content');
+        if (readerContent) {
+            readerContent.addEventListener('htmx:afterSwap', function(evt) {
+                console.log('HTMX content loaded, updating navigation buttons...');
+                updateNavigationButtons();
+            });
+        }
 
         // Auto-select active section on load (sessionStorage, or first_section)
         const savedSectionId = sessionStorage.getItem('activeSectionId');
@@ -555,6 +648,19 @@
             }
         }
         
+        // Render any flashed messages as premium toasts
+        const messagesData = document.getElementById('flashed-messages-data');
+        if (messagesData) {
+            try {
+                const messages = JSON.parse(messagesData.getAttribute('data-messages') || '[]');
+                messages.forEach(([category, message]) => {
+                    showToast(message, category);
+                });
+            } catch (e) {
+                console.error('Error parsing flashed messages:', e);
+            }
+        }
+
         // Initial youtube hook
         enhanceYouTubeEmbeds(document);
     });
