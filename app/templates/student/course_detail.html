@@ -433,13 +433,25 @@
                                 {% if section.id in locked_sections %}disabled{% endif %}>
                                 <div class="flex items-center space-x-4 flex-1">
                                     {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
-                                    <div class="flex-shrink-0 w-10 h-10 {% if section_completed %}bg-gradient-to-br from-green-500 to-emerald-600{% else %}bg-gradient-to-br from-indigo-600 to-purple-600{% endif %} text-white rounded-full flex items-center justify-center font-bold text-sm relative">
+                                    <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center relative">
                                         {% if section_completed %}
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                        </svg>
+                                        <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-full flex items-center justify-center">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
                                         {% else %}
-                                        {{ loop.index }}
+                                            {% if section.section_type == 'video' %}
+                                            <span class="text-2xl">🎥</span>
+                                            {% elif section.section_type == 'quiz' %}
+                                            <span class="text-2xl">❓</span>
+                                            {% elif section.section_type == 'assignment' %}
+                                            <span class="text-2xl">📝</span>
+                                            {% elif section.section_type == 'presentation' %}
+                                            <span class="text-2xl">📊</span>
+                                            {% else %}
+                                            <span class="text-2xl">📄</span>
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                     <div class="flex-1">
@@ -499,13 +511,25 @@
                             hx-target="#section-content-area-{{ section.id }}" hx-swap="innerHTML">
                             <div class="flex items-center space-x-4 flex-1">
                                 {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
-                                <div class="flex-shrink-0 w-10 h-10 {% if section_completed %}bg-gradient-to-br from-green-500 to-emerald-600{% else %}bg-gradient-to-br from-indigo-600 to-purple-600{% endif %} text-white rounded-full flex items-center justify-center font-bold text-sm relative">
+                                <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center relative">
                                     {% if section_completed %}
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                    </svg>
+                                    <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
                                     {% else %}
-                                    {{ loop.index }}
+                                        {% if section.section_type == 'video' %}
+                                        <span class="text-2xl">🎥</span>
+                                        {% elif section.section_type == 'quiz' %}
+                                        <span class="text-2xl">❓</span>
+                                        {% elif section.section_type == 'assignment' %}
+                                        <span class="text-2xl">📝</span>
+                                        {% elif section.section_type == 'presentation' %}
+                                        <span class="text-2xl">📊</span>
+                                        {% else %}
+                                        <span class="text-2xl">📄</span>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                                 <div class="flex-1">
@@ -628,6 +652,25 @@
                     if (arrow) {
                         arrow.style.transform = 'rotate(180deg)';
                     }
+
+                    // Start time tracking
+                    setTimeout(function () {
+                        stopTimeTracking(); // Stop previous tracking
+                        startTimeTracking(sectionId);
+                    }, 100);
+
+                    // Fetch content manually via HTMX if not loaded yet
+                    const contentArea = document.getElementById('section-content-area-' + sectionId);
+                    if (contentArea && contentArea.innerHTML.includes('Loading content...')) {
+                        const url = button.getAttribute('hx-get');
+                        if (url && typeof htmx !== 'undefined') {
+                            console.log('Fetching content from URL via HTMX:', url);
+                            htmx.ajax('GET', url, {target: '#section-content-area-' + sectionId, swap: 'innerHTML'});
+                        } else {
+                            console.warn('HTMX is not defined or URL is missing');
+                        }
+                    }
+
                     // Enhance any YouTube links inside this section's rich text
                     enhanceYouTubeEmbeds(content);
                     console.log('✓ Opened section:', sectionId);
@@ -636,6 +679,8 @@
                     if (arrow) {
                         arrow.style.transform = 'rotate(0deg)';
                     }
+                    // Stop time tracking
+                    stopTimeTracking();
                     console.log('✓ Closed section:', sectionId);
                 }
             });
@@ -688,7 +733,10 @@
             const sectionId = btn.getAttribute('data-section-id');
             const contentArea = document.getElementById('section-content-area-' + sectionId);
             if (contentArea && contentArea.innerHTML.includes('Loading content...')) {
-                htmx.trigger(btn, 'click');
+                const url = btn.getAttribute('hx-get');
+                if (url && typeof htmx !== 'undefined') {
+                    htmx.ajax('GET', url, {target: '#section-content-area-' + sectionId, swap: 'innerHTML'});
+                }
             }
         });
 
@@ -784,90 +832,39 @@
             .catch(error => console.error('Time tracking error:', error));
     }
 
-    // Track time when section is expanded
-    document.addEventListener('DOMContentLoaded', function () {
-        const toggleButtons = document.querySelectorAll('.section-toggle');
-
-        toggleButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                const sectionId = this.getAttribute('data-section-id');
-                const content = document.getElementById('section-' + sectionId);
-
-                // If opening a section, start tracking
-                if (content && content.classList.contains('hidden')) {
-                    // Section is about to be opened
-                    setTimeout(function () {
-                        stopTimeTracking(); // Stop previous tracking
-                        startTimeTracking(sectionId);
-                    }, 100);
-                } else {
-                    // Section is being closed
-                    stopTimeTracking();
-                }
-            });
-        });
-    });
-
     // Stop tracking when leaving page
     window.addEventListener('beforeunload', function () {
         stopTimeTracking();
     });
 
-    // Keep existing DOMContentLoaded for other functions
     document.addEventListener('DOMContentLoaded', function () {
-
-        const buttons = document.querySelectorAll('button[onclick^="toggleSection"]');
-        buttons.forEach(button => {
-            button.addEventListener('click', function (e) {
-                const sectionId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
-                toggleSection(sectionId);
+        const ratingForm = document.getElementById('ratingForm');
+        if (ratingForm) {
+            ratingForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert(data.message);
+                            document.getElementById('certificateSection').classList.remove('hidden');
+                            document.querySelectorAll('#ratingForm input, #ratingForm textarea, #ratingForm button[type="submit"]').forEach(el => el.disabled = true);
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
             });
-        });
+        }
 
-        {% for section in sections %}
-        document.getElementById('complete-form-{{ section.id }}').addEventListener('submit', function (e) {
-            e.preventDefault();
-            fetch(this.action, {
-                method: 'POST',
-                body: new FormData(this)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'updated') {
-                        alert(data.message);
-                        location.reload();
-                    } else if (data.status === 'completed') {
-                        document.getElementById('ratingModal').classList.remove('hidden');
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        });
-        {% endfor %}
-
-        document.getElementById('ratingForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            fetch(this.action, {
-                method: 'POST',
-                body: new FormData(this)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert(data.message);
-                        document.getElementById('certificateSection').classList.remove('hidden');
-                        document.querySelectorAll('#ratingForm input, #ratingForm textarea, #ratingForm button[type="submit"]').forEach(el => el.disabled = true);
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        });
-
-        // Add event listener for the Generate Certificate button
         const generateCertificateBtn = document.getElementById('generateCertificateBtn');
         if (generateCertificateBtn) {
             generateCertificateBtn.addEventListener('click', generateCertificate);
         }
+    });
 
         function generateCertificate() {
             console.log('Generate Certificate button clicked');
@@ -912,7 +909,6 @@
             alert('Enrollment ID is not available.');
         }
     }
-    });
 
     function closeModal() {
         document.getElementById('ratingModal').classList.add('hidden');
