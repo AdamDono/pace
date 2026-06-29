@@ -494,6 +494,35 @@
         }, 4000);
     }
 
+    // Success Confetti bursts from both corners
+    function triggerSuccessConfetti() {
+        if (typeof confetti === 'function') {
+            const duration = 2 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 3,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.8 },
+                    colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B']
+                });
+                confetti({
+                    particleCount: 3,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1, y: 0.8 },
+                    colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+    }
+
     // Toggle module visibility helper
     function toggleSidebarModule(moduleId) {
         const content = document.getElementById(moduleId);
@@ -657,6 +686,10 @@
                 const messages = JSON.parse(messagesData.getAttribute('data-messages') || '[]');
                 messages.forEach(([category, message]) => {
                     showToast(message, category);
+                    // Celebrate completions
+                    if (message.includes('Quiz completed!') || message.includes('Section marked as completed.')) {
+                        triggerSuccessConfetti();
+                    }
                 });
             } catch (e) {
                 console.error('Error parsing flashed messages:', e);

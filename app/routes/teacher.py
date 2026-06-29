@@ -983,12 +983,43 @@ def reorder_sections(course_id):
         abort(403)
 
     try:
-        order_data = request.get_json()
-        for idx, section_id in enumerate(order_data):
+        data = request.get_json()
+        if isinstance(data, dict):
+            section_ids = data.get('section_ids', [])
+            module_id = data.get('module_id')
+        else:
+            section_ids = data
+            module_id = None
+
+        for idx, section_id in enumerate(section_ids):
             section = Section.query.get(section_id)
-            section.order = idx + 1
+            if section and section.course_id == course_id:
+                section.order = idx + 1
+                if module_id:
+                    section.module_id = module_id
         db.session.commit()
         return jsonify({"message": "Sections reordered successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@teacher_bp.route('/course/<int:course_id>/reorder-modules', methods=['POST'])
+@teacher_required
+def reorder_modules(course_id):
+    from app.models import Course, Module, db
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id:
+        abort(403)
+
+    try:
+        order_data = request.get_json()
+        for idx, module_id in enumerate(order_data):
+            module = Module.query.get(module_id)
+            if module and module.course_id == course_id:
+                module.order = idx + 1
+        db.session.commit()
+        return jsonify({"message": "Modules reordered successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500

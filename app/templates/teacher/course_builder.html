@@ -499,7 +499,19 @@
             handle: '.handle',
             animation: 150,
             onEnd: function (evt) {
-                // Future: implementation for reordering modules
+                const moduleIds = Array.from(document.getElementById('course-content-root').querySelectorAll('.lesson-container'))
+                                       .map(el => parseInt(el.getAttribute('data-module-id')));
+                
+                fetch(`/teacher/course/${courseId}/reorder-modules`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify(moduleIds)
+                })
+                .then(r => r.json())
+                .then(data => {
+                    console.log('Modules reordered:', data.message);
+                })
+                .catch(err => console.error('Error reordering modules:', err));
             }
         });
 
@@ -510,7 +522,24 @@
                 handle: '.section-handle',
                 animation: 150,
                 onEnd: function (evt) {
-                    // Future: implementation for reordering sections
+                    const destList = evt.to;
+                    const moduleId = destList.getAttribute('data-module-id');
+                    const sectionIds = Array.from(destList.querySelectorAll('[data-section-id]'))
+                                            .map(el => parseInt(el.getAttribute('data-section-id')));
+                    
+                    fetch(`/teacher/course/${courseId}/reorder-sections`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                        body: JSON.stringify({
+                            section_ids: sectionIds,
+                            module_id: moduleId ? parseInt(moduleId) : null
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log('Sections reordered:', data.message);
+                    })
+                    .catch(err => console.error('Error reordering sections:', err));
                 }
             });
         });
