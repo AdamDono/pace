@@ -2,6 +2,7 @@
 
 {% block head %}
 {{ super() }}
+<script src="https://unpkg.com/htmx.org@1.9.6"></script>
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <style>
     /* ---------------------------------------------------------
@@ -395,327 +396,167 @@
                 {{ total_sections|default(sections|length) }} lessons •
                 {% set quiz_count = sections|selectattr('quizzes')|list|length %}
                 {% set assignment_count = sections|selectattr('assignments')|list|length %}
-                {{ assignment_count }} projects • {{ quiz_count }} quizzes
-            </p>
-            {% if sections %}
-            <div class="space-y-4">
-                {% for section in sections %}
-                <div
-                    class="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-indigo-400 hover:shadow-md transition-all duration-200 {% if section.id in locked_sections %} opacity-60 {% endif %}">
-                    <button type="button"
-                        class="section-toggle w-full text-left p-6 bg-white hover:bg-gray-50 flex items-center justify-between focus:outline-none group transition-all duration-200 {% if section.id in locked_sections %} cursor-not-allowed opacity-60 {% else %} cursor-pointer {% endif %}"
-                        data-section-id="{{ section.id }}" data-section-title="{{ section.title }}" {% if section.id in
-                        locked_sections %}disabled{% endif %}>
-                        <div class="flex items-center space-x-4 flex-1">
-                            {% set section_completed = enrollment_sections.get(section.id) and
-                            enrollment_sections.get(section.id).completed %}
-                            <div
-                                class="flex-shrink-0 w-10 h-10 {% if section_completed %}bg-gradient-to-br from-green-500 to-emerald-600{% else %}bg-gradient-to-br from-indigo-600 to-purple-600{% endif %} text-white rounded-full flex items-center justify-center font-bold text-sm relative">
-                                {% if section_completed %}
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M5 13l4 4L19 7" />
+                            {% if modules %}
+            <div class="space-y-6">
+                {% for module in modules %}
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+                    <!-- Module Header -->
+                    <div class="p-6 bg-gray-50 border-b border-gray-200 cursor-pointer flex justify-between items-center transition-colors hover:bg-gray-100"
+                        onclick="toggleModule('module-{{ module.id }}')">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-gray-400 transition-transform duration-300" id="module-arrow-{{ module.id }}">
+                                <svg class="w-6 h-6 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
-                                {% else %}
-                                {{ loop.index }}
+                            </span>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">{{ module.title }}</h2>
+                                {% if module.description %}
+                                <div class="text-sm text-gray-500 mt-1 ql-editor prose prose-sm max-w-none">{{ module.description|safe }}</div>
                                 {% endif %}
                             </div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{
-                                    section.title }}</h3>
-                                <p class="text-sm text-gray-500 mt-1">
-                                    {% if section.section_type == 'video' %}🎥 Video
-                                    {% elif section.section_type == 'text' %}📄 Reading
-                                    {% elif section.section_type == 'quiz' %}❓ Quiz
-                                    {% elif section.section_type == 'assignment' %}📝 Assignment
-                                    {% elif section.section_type == 'presentation' %}📊 Presentation
-                                    {% else %}📖 Lesson
-                                    {% endif %}
-                                    {% if section.duration %} • {{ section.duration }} min{% endif %}
-                                </p>
-                            </div>
                         </div>
-                        <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200 section-arrow"
-                            id="arrow-{{ section.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                            fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                    <div id="section-{{ section.id }}"
-                        class="section-content p-8 bg-gray-50 border-t-2 border-gray-200 hidden"
-                        data-section-id="{{ section.id }}">
-                        <!-- Main Content Card -->
-                        <div class="space-y-6">
-                            {% if section.content %}
-                            <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                <div class="ql-editor prose prose-gray max-w-none text-gray-700">{{ section.content|safe
-                                    }}</div>
-                            </div>
-                            {% endif %}
+                        <span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">
+                            {{ module.sections|length }} Activities
+                        </span>
+                    </div>
 
-                            {% if section.section_type == 'video' and section.video_url %}
-                            {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in
-                            section.video_url else section.video_url.split('/')[-1] %}
-                            {% if youtube_id and youtube_id|length == 11 %}
-                            <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                <h4
-                                    class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                    <span class="text-red-500 text-lg mr-2">🎥</span>
-                                    Video Content
-                                </h4>
-                                <div class="flex justify-center">
-                                    <div class="max-w-4xl w-full">
-                                        <div class="relative rounded-lg overflow-hidden shadow-md"
-                                            style="padding-bottom: 56.25%; height: 0;">
-                                            <iframe class="absolute top-0 left-0 w-full h-full"
-                                                src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1&rel=0&modestbranding=1"
-                                                frameborder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                allowfullscreen></iframe>
-                                        </div>
+                    <!-- Module Sections -->
+                    <div id="module-{{ module.id }}" class="divide-y divide-gray-100 hidden">
+                        {% for section in module.sections %}
+                        <div class="border-b border-gray-100 last:border-b-0">
+                            <button type="button"
+                                class="section-toggle w-full text-left p-6 bg-white hover:bg-gray-50 flex items-center justify-between focus:outline-none group transition-all duration-200 {% if section.id in locked_sections %} cursor-not-allowed opacity-60 {% else %} cursor-pointer {% endif %}"
+                                data-section-id="{{ section.id }}" data-section-title="{{ section.title }}"
+                                hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                                hx-target="#section-content-area-{{ section.id }}" hx-swap="innerHTML"
+                                {% if section.id in locked_sections %}disabled{% endif %}>
+                                <div class="flex items-center space-x-4 flex-1">
+                                    {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
+                                    <div class="flex-shrink-0 w-10 h-10 {% if section_completed %}bg-gradient-to-br from-green-500 to-emerald-600{% else %}bg-gradient-to-br from-indigo-600 to-purple-600{% endif %} text-white rounded-full flex items-center justify-center font-bold text-sm relative">
+                                        {% if section_completed %}
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        {% else %}
+                                        {{ loop.index }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ section.title }}</h3>
+                                        <p class="text-sm text-gray-500 mt-1">
+                                            {% if section.section_type == 'video' %}🎥 Video
+                                            {% elif section.section_type == 'text' %}📄 Reading
+                                            {% elif section.section_type == 'quiz' %}❓ Quiz
+                                            {% elif section.section_type == 'assignment' %}📝 Assignment
+                                            {% elif section.section_type == 'presentation' %}📊 Presentation
+                                            {% else %}📖 Lesson
+                                            {% endif %}
+                                            {% if section.duration %} • {{ section.duration }} min{% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200 section-arrow"
+                                    id="arrow-{{ section.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <div id="section-{{ section.id }}"
+                                class="section-content p-8 bg-gray-50 border-t border-gray-100 hidden"
+                                data-section-id="{{ section.id }}">
+                                <div id="section-content-area-{{ section.id }}">
+                                    <!-- Loading indicator -->
+                                    <div class="flex items-center justify-center p-4">
+                                        <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span class="ml-2 text-sm text-gray-500">Loading content...</span>
                                     </div>
                                 </div>
                             </div>
-                            {% else %}
-                            <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-                                <p class="text-red-600 text-sm">⚠️ Invalid video URL</p>
-                            </div>
-                            {% endif %}
-                            {% endif %}
-
-                            {% if section.section_type == 'image' and section.media_file %}
-                            <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                <h4
-                                    class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                    <span class="text-blue-500 text-lg mr-2">🖼️</span>
-                                    Image
-                                </h4>
-                                <div class="flex justify-center">
-                                    <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                        alt="{{ section.title }}" class="max-w-4xl w-full h-auto rounded-lg shadow-md">
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            {% if section.section_type == 'audio' and section.media_file %}
-                            <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                <h4
-                                    class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                    <span class="text-purple-500 text-lg mr-2">🎵</span>
-                                    Audio Content
-                                </h4>
-                                <audio controls class="w-full">
-                                    <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                        type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>
-                            </div>
-                            {% endif %}
-
-                            {% if section.section_type == 'presentation' and section.media_file %}
-                            <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                <h4
-                                    class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                    <span class="text-orange-500 text-lg mr-2">📊</span>
-                                    Presentation
-                                </h4>
-                                <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
-                                    target="_blank">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    View Presentation (PDF)
-                                </a>
-                            </div>
-                            {% endif %}
-
-                            <!-- Assignments -->
-                            {% if section.assignments %}
-                            {% for assignment in section.assignments %}
-                            <div
-                                class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
-                                <h4
-                                    class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                    <span class="text-green-600 text-lg mr-2">📝</span>
-                                    Assignment
-                                </h4>
-                                <h5 class="text-xl font-bold text-gray-900 mb-2">{{ assignment.title }}</h5>
-                                <p class="text-gray-700 mb-3">{{ assignment.description }}</p>
-                                <div class="flex items-center text-sm text-gray-600 mb-4">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    Due: {{ assignment.due_date.strftime('%B %d, %Y at %I:%M %p') if assignment.due_date
-                                    else 'No due date' }}
-                                </div>
-                                {% set submissions = assignment.submissions|selectattr('student_id', 'equalto',
-                                current_user.id)|list %}
-                                {% set submission = submissions|last if submissions else none %}
-                                <div class="mt-2">
-                                    {% if submissions and submissions|length < 3 %} <a
-                                        href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}"
-                                        class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                        {% if submission and submission.reviewed %} Update with Feedback {% else %}
-                                        Submit Assignment {% endif %}
-                                        </a>
-                                        <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 -
-                                            submissions|length }}</div>
-                                        {% elif submission %}
-                                        <p class="text-green-600 text-sm">Submitted: {{
-                                            submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                                        {% if submission.file_path %}
-                                        <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}"
-                                            class="text-blue-600 hover:text-blue-800 text-sm transition-colors duration-200"
-                                            target="_blank">
-                                            View/Download File
-                                        </a>
-                                        {% endif %}
-                                        {% if submission.reviewed %}
-                                        <div
-                                            class="mt-3 p-4 {% if submission.grade is not none %}{% if submission.grade >= 70 %}bg-green-50 border-green-200{% elif submission.grade >= 50 %}bg-yellow-50 border-yellow-200{% else %}bg-red-50 border-red-200{% endif %}{% else %}bg-blue-50 border-blue-200{% endif %} rounded-lg border-2">
-                                            {% if submission.grade is not none %}
-                                            <div class="flex items-center justify-between mb-3">
-                                                <span class="text-sm font-medium text-gray-600">Your Grade:</span>
-                                                <span
-                                                    class="text-3xl font-bold {% if submission.grade >= 70 %}text-green-700{% elif submission.grade >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">
-                                                    {{ submission.grade }}%
-                                                </span>
-                                            </div>
-                                            <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
-                                                <div class="{% if submission.grade >= 70 %}bg-green-600{% elif submission.grade >= 50 %}bg-yellow-600{% else %}bg-red-600{% endif %} h-2 rounded-full transition-all"
-                                                    style="width: {{ submission.grade }}%"></div>
-                                            </div>
-                                            {% endif %}
-                                            {% if submission.feedback %}
-                                            <p class="font-semibold text-gray-800 mb-1">📝 Teacher Feedback:</p>
-                                            <p class="text-gray-700 whitespace-pre-wrap">{{ submission.feedback }}</p>
-                                            {% else %}
-                                            <p class="text-gray-600 italic">No written feedback provided</p>
-                                            {% endif %}
-                                        </div>
-                                        {% else %}
-                                        <p class="text-yellow-600 text-sm mt-2 flex items-center">
-                                            <svg class="w-4 h-4 mr-1 animate-spin" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                                </path>
-                                            </svg>
-                                            Awaiting review...
-                                        </p>
-                                        {% endif %}
-                                        <div class="text-xs text-gray-500 mt-1">Draft: {{ submissions|length }}/3</div>
-                                        {% else %}
-                                        <p class="text-red-500">Debug: No submissions found for user {{ current_user.id
-                                            }}</p>
-                                        <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}"
-                                            class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                            Submit Assignment
-                                        </a>
-                                        <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 -
-                                            submissions|length }}</div>
-                                        {% endif %}
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-
-                        <!-- Quizzes -->
-                        {% if section.quizzes %}
-                        {% for quiz in section.quizzes %}
-                        <div
-                            class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
-                            <h4
-                                class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                <span class="text-purple-600 text-lg mr-2">❓</span>
-                                Quiz
-                            </h4>
-                            <h5 class="text-xl font-bold text-gray-900 mb-4">{{ quiz.title }}</h5>
-                            {% set attempt_count = quiz.attempts|selectattr('student_id', 'equalto',
-                            current_user.id)|list|length %}
-                            {% set best_score = quiz.attempts|selectattr('student_id', 'equalto',
-                            current_user.id)|map(attribute='score')|max|default(0) %}
-
-                            {% if attempt_count > 0 %}
-                            <div class="bg-white/60 rounded-lg p-3 mb-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-600">Best Score:</span>
-                                    <span class="text-lg font-bold text-purple-700">{{ best_score|round(1) }}%</span>
-                                </div>
-                                <div class="flex justify-between items-center mt-1">
-                                    <span class="text-sm text-gray-600">Attempts:</span>
-                                    <span class="text-sm font-medium text-gray-700">{{ attempt_count }}/3</span>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            {% if attempt_count < 3 %} <a
-                                href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}"
-                                class="inline-flex items-center px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
-                                {{ 'Retake Quiz' if attempt_count > 0 else 'Start Quiz' }} ({{ 3 - attempt_count }}
-                                attempts left)
-                                </a>
-                                {% else %}
-                                <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                                    <p class="text-red-700 font-medium">🔒 Maximum attempts reached</p>
-                                    <p class="text-red-600 text-sm mt-1">Final score: {{ best_score|round(1) }}%</p>
-                                </div>
-                                {% endif %}
                         </div>
                         {% endfor %}
-                        {% endif %}
-
-                        <!-- Mark as Complete Button -->
-                        {% set enrollment_section = enrollment_sections.get(section.id) %}
-                        <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-                            <form id="complete-form-{{ section.id }}"
-                                action="{{ url_for('student.get_section_content', section_id=section.id) }}"
-                                method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="mark_completed" value="true">
-                                <button type="submit"
-                                    class="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-all duration-200 {% if enrollment_section and enrollment_section.completed %}bg-gray-300 text-gray-600 cursor-not-allowed{% else %}bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl{% endif %}"
-                                    {% if enrollment_section and enrollment_section.completed %}disabled{% endif %}>
-                                    {% if enrollment_section and enrollment_section.completed %}
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    ✓ Completed
-                                    {% else %}
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Mark as Complete
-                                    {% endif %}
-                                </button>
-                            </form>
-                        </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% endif %}
+
+            <!-- Unassigned Sections (if any exist) -->
+            {% set unassigned_sections = sections|rejectattr('module_id')|list %}
+            {% if unassigned_sections %}
+            <div class="mt-8">
+                <h3 class="text-lg font-bold text-gray-700 mb-4">Unassigned Activities</h3>
+                <div class="space-y-4">
+                    {% for section in unassigned_sections %}
+                    <div class="border-2 border-gray-200 rounded-xl overflow-hidden bg-white">
+                        <button type="button"
+                            class="section-toggle w-full text-left p-6 bg-white hover:bg-gray-50 flex items-center justify-between focus:outline-none group transition-all duration-200"
+                            data-section-id="{{ section.id }}" data-section-title="{{ section.title }}"
+                            hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                            hx-target="#section-content-area-{{ section.id }}" hx-swap="innerHTML">
+                            <div class="flex items-center space-x-4 flex-1">
+                                {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
+                                <div class="flex-shrink-0 w-10 h-10 {% if section_completed %}bg-gradient-to-br from-green-500 to-emerald-600{% else %}bg-gradient-to-br from-indigo-600 to-purple-600{% endif %} text-white rounded-full flex items-center justify-center font-bold text-sm relative">
+                                    {% if section_completed %}
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    {% else %}
+                                    {{ loop.index }}
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ section.title }}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        {% if section.section_type == 'video' %}🎥 Video
+                                        {% elif section.section_type == 'text' %}📄 Reading
+                                        {% elif section.section_type == 'quiz' %}❓ Quiz
+                                        {% elif section.section_type == 'assignment' %}📝 Assignment
+                                        {% elif section.section_type == 'presentation' %}📊 Presentation
+                                        {% else %}📖 Lesson
+                                        {% endif %}
+                                        {% if section.duration %} • {{ section.duration }} min{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200 section-arrow"
+                                id="arrow-{{ section.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div id="section-{{ section.id }}"
+                            class="section-content p-8 bg-gray-50 border-t border-gray-100 hidden"
+                            data-section-id="{{ section.id }}">
+                            <div id="section-content-area-{{ section.id }}">
+                                <!-- Loading indicator -->
+                                <div class="flex items-center justify-center p-4">
+                                    <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span class="ml-2 text-sm text-gray-500">Loading content...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if not modules and not sections %}
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">📭</div>
+                <p class="text-gray-500 text-lg">No sections available yet.</p>
+                <p class="text-gray-400 text-sm mt-2">Check back soon for course content!</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="text-center py-12">
-            <div class="text-6xl mb-4">📭</div>
-            <p class="text-gray-500 text-lg">No sections available yet.</p>
-            <p class="text-gray-400 text-sm mt-2">Check back soon for course content!</p>
-        </div>
-        {% endif %}
     </div>
-</div>
 </div>
 
 <!-- Rating Popup -->
@@ -761,9 +602,6 @@
         // Add click event to each button
         toggleButtons.forEach(function (button) {
             button.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-
                 // Get section ID from data attribute
                 const sectionId = this.getAttribute('data-section-id');
                 console.log('Clicked section:', sectionId);
@@ -807,11 +645,35 @@
         enhanceYouTubeEmbeds(document);
     });
 
+    // Toggle module visibility helper
+    function toggleModule(moduleId) {
+        const content = document.getElementById(moduleId);
+        const arrow = document.getElementById('module-arrow-' + moduleId.split('-')[1]);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            if (arrow) arrow.querySelector('svg').style.transform = 'rotate(180deg)';
+        } else {
+            content.classList.add('hidden');
+            if (arrow) arrow.querySelector('svg').style.transform = 'rotate(0deg)';
+        }
+    }
+
     // Expand all sections function
     function expandAllSections() {
         console.log('Expanding all sections...');
+        
+        // Expand all modules first
+        const allModules = document.querySelectorAll('[id^="module-"]');
+        allModules.forEach(function (mod) {
+            mod.classList.remove('hidden');
+            const modId = mod.id.split('-')[1];
+            const arrow = document.getElementById('module-arrow-' + modId);
+            if (arrow) arrow.querySelector('svg').style.transform = 'rotate(180deg)';
+        });
+
         const allContents = document.querySelectorAll('.section-content');
         const allArrows = document.querySelectorAll('.section-arrow');
+        const toggleButtons = document.querySelectorAll('.section-toggle');
 
         allContents.forEach(function (content) {
             content.classList.remove('hidden');
@@ -821,8 +683,16 @@
             arrow.style.transform = 'rotate(180deg)';
         });
 
+        // Trigger HTMX load for all sections
+        toggleButtons.forEach(btn => {
+            const sectionId = btn.getAttribute('data-section-id');
+            const contentArea = document.getElementById('section-content-area-' + sectionId);
+            if (contentArea && contentArea.innerHTML.includes('Loading content...')) {
+                htmx.trigger(btn, 'click');
+            }
+        });
+
         console.log('✓ All sections expanded');
-        // Enhance embeds for all now-visible sections
         enhanceYouTubeEmbeds(document);
     }
 
@@ -1066,6 +936,14 @@
     function closeCelebrationModal() {
         document.getElementById('celebrationModal').classList.add('hidden');
     }
+
+    // Listen for HTMX course completed event
+    document.body.addEventListener('course-completed', function(evt) {
+        console.log('Course completed event received');
+        {% if enrollment %}
+        showCelebrationModal('{{ course.title }}', '{{ enrollment.id }}');
+        {% endif %}
+    });
 </script>
 
 <!-- Celebration Modal -->

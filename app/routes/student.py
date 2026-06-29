@@ -158,12 +158,15 @@ def course_detail(course_id):
     else:
         abort(403)
 
+    from app.models import Module
+    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
     locked_sections = set()
 
     return render_template('student/course_detail.html', 
                           course=course, 
                           sections=sections,
+                          modules=modules,
                           enrollment_sections=enrollment_sections,
                           locked_sections=locked_sections,
                           completion_percentage=completion_percentage,
@@ -194,7 +197,7 @@ def get_section_content(section_id):
         db.session.commit()
 
         # Handle marking as complete
-        if request.method == 'POST' and 'mark_completed' in request.form:
+        if request.method == 'POST' and ('mark_completed' in request.form or (request.json and request.json.get('mark_completed'))):
             enrollment_section.completed = True
             enrollment_section.completed_at = datetime.utcnow()
             db.session.commit()
@@ -203,12 +206,32 @@ def get_section_content(section_id):
             # Check if the entire course is completed
             all_sections = Section.query.filter_by(course_id=course.id).all()
             all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
-            if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+            is_course_completed = all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections)
+            if is_course_completed:
                 # Mark enrollment as completed
                 enrollment.completed = True
                 enrollment.completed_at = datetime.utcnow()
                 db.session.commit()
                 flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
+
+            # If HTMX request, render HTML and send HX-Trigger header
+            if request.headers.get('HX-Request'):
+                interactive_questions = []
+                subtitles = []
+                if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
+                    interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
+                    subtitles = section.subtitles if hasattr(section, 'subtitles') else []
+                resp = make_response(render_template('student/_section_content.html', 
+                                     section=section, 
+                                     course=course, 
+                                     enrollment_section=enrollment_section,
+                                     interactive_questions=interactive_questions,
+                                     subtitles=subtitles))
+                if is_course_completed:
+                    resp.headers['HX-Trigger'] = 'course-completed'
+                return resp
+
+            if is_course_completed:
                 return jsonify({
                     'status': 'completed', 
                     'course_id': course.id, 
