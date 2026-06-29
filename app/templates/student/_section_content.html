@@ -90,9 +90,11 @@
                   hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}" 
                   hx-target="#section-content-{{ section.id }}" 
                   hx-swap="innerHTML"
-                  hx-on::after-request="if (event.detail.successful) { alert('Section marked as completed!'); location.reload(); }">
+                  hx-on::after-request="if (event.detail.xhr.status === 200) { setTimeout(function() { location.reload(); }, 1200); }">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" name="mark_completed" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                <button type="submit" name="mark_completed" 
+                        onclick="showToast('Section marked as completed!');" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                     Mark as Completed
                 </button>
             </form>
