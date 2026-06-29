@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort
+from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort, make_response
 from flask_login import login_required, current_user
 from app.decorators import student_required, student_enrolled, admin_required, teacher_required
 from app import db
@@ -163,6 +163,14 @@ def course_detail(course_id):
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
     locked_sections = set()
 
+    first_section = None
+    for module in modules:
+        if module.sections:
+            first_section = module.sections[0]
+            break
+    if not first_section and sections:
+        first_section = sections[0]
+
     return render_template('student/course_detail.html', 
                           course=course, 
                           sections=sections,
@@ -170,7 +178,8 @@ def course_detail(course_id):
                           enrollment_sections=enrollment_sections,
                           locked_sections=locked_sections,
                           completion_percentage=completion_percentage,
-                          enrollment=enrollment)
+                          enrollment=enrollment,
+                          first_section=first_section)
 
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required

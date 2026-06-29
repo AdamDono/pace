@@ -16,6 +16,7 @@
         --tw-prose-code: #d63384 !important;
     }
 
+
     /* 1. CODE TAGS (Pink/Magenta) - Targeting ALL variations */
     .ql-editor code,
     .prose code,
@@ -33,6 +34,7 @@
         border: 1px solid #f1c0d0 !important;
     }
 
+
     /* 2. PRE BLOCKS (Code blocks) */
     .ql-editor pre,
     .prose pre,
@@ -46,6 +48,8 @@
         overflow-x: auto !important;
         font-family: 'Courier New', Courier, monospace !important;
     }
+
+    
 
     /* FIX: Ensure code INSIDE pre removes its own background/border to blend in, BUT keeps color */
     .ql-editor pre code,
@@ -235,350 +239,182 @@
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
-    <!-- Breadcrumbs -->
-    <div class="bg-white border-b">
-        <div class="container mx-auto px-6 py-3">
-            <nav class="flex items-center space-x-2 text-sm">
-                <a href="{{ url_for('student.dashboard') }}" class="text-gray-600 hover:text-blue-600 transition">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-                <span class="text-gray-400">/</span>
-                <span class="text-gray-900 font-medium">{{ course.title[:50] }}{{ '...' if course.title|length > 50 else
-                    '' }}</span>
-            </nav>
-        </div>
-    </div>
-
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white relative">
-        <div class="container mx-auto px-6 py-12">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <!-- Left: Course Info -->
-                <div class="lg:col-span-2">
-                    <div
-                        class="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium mb-4">
-                        {% if course.price and course.price > 0 %}
-                        ${{ course.price }}
-                        {% else %}
-                        <span class="text-green-200">✓ Free Course</span>
-                        {% endif %}
-                    </div>
-                    <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">{{ course.title }}</h1>
-                    <p class="text-lg text-white/90 mb-6 leading-relaxed">{{ course.description|striptags }}</p>
-
-                    <div class="flex flex-wrap items-center gap-4 text-sm mb-6">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-2xl">⭐</span>
-                            <span class="font-semibold">{{ course.average_rating|default(0)|round(1) }}</span>
-                            <span class="text-white/80">({{ course.ratings|length if course.ratings else 0 }}
-                                ratings)</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xl">👥</span>
-                            <span class="text-white/90">{{ course.enrollments|length if course.enrollments else 0 }}
-                                learners enrolled</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center space-x-2 text-white/80">
-                        <span class="text-lg">👨‍🏫</span>
-                        <span>Created by <span class="font-medium text-white">{{ course.teacher.email.split('@')[0]
-                                }}</span></span>
-                    </div>
-
-                    {% if completion_percentage is defined %}
-                    <div class="mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-medium">📈 Your Progress</span>
-                            <span
-                                class="text-lg font-bold {% if completion_percentage == 100 %}text-green-300{% else %}text-white{% endif %}">
-                                {{ completion_percentage|round|int }}%
-                            </span>
-                        </div>
-                        <div class="w-full bg-white/20 rounded-full h-3 overflow-hidden shadow-inner">
-                            <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-3 rounded-full transition-all duration-500 {% if completion_percentage == 100 %}animate-pulse{% endif %}"
-                                style="width: {{ completion_percentage }}%"></div>
-                        </div>
-                        <p class="text-xs text-white/80 mt-2 flex items-center justify-between">
-                            <span>{{ completed_sections|default(0) }} of {{ total_sections|default(sections|length) }}
-                                lessons completed</span>
-                            {% if completion_percentage == 100 %}
-                            <span class="text-green-300 font-semibold">✓ Complete!</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
+<div class="min-h-screen bg-gray-50 flex flex-col md:flex-row pt-16">
+    <!-- Left Sidebar: Course Menu -->
+    <div class="w-full md:w-80 bg-white border-b md:border-r border-gray-200 flex-shrink-0 flex flex-col h-[calc(100vh-4rem)] md:sticky md:top-16">
+        <!-- Sidebar Header -->
+        <div class="p-6 border-b border-gray-150">
+            <a href="{{ url_for('student.dashboard') }}" class="inline-flex items-center text-xs text-indigo-600 hover:text-indigo-800 font-semibold mb-4 transition-colors">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                Back to Dashboard
+            </a>
+            <h2 class="text-base font-bold text-gray-900 leading-tight mb-2">{{ course.title }}</h2>
+            
+            {% if completion_percentage is defined %}
+            <div class="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Your Progress</span>
+                    <span class="text-xs font-bold text-indigo-600">{{ completion_percentage|round|int }}%</span>
                 </div>
-
-                <!-- Right: Course Highlights Card -->
-                <div class="lg:sticky lg:top-6">
-                    <div class="bg-white rounded-xl shadow-2xl p-6">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">📚 This course includes</h3>
-                        <ul class="space-y-3 text-sm">
-                            {% if modules %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-indigo-600 text-lg flex-shrink-0">📖</span>
-                                <span class="text-gray-700">{{ modules|length }} modules with {{
-                                    total_sections|default(sections|length) }} lessons</span>
-                            </li>
-                            {% endif %}
-                            {% if sections|selectattr('quizzes')|list|length > 0 %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-purple-600 text-lg flex-shrink-0">✅</span>
-                                <span class="text-gray-700">Quizzes to test your knowledge</span>
-                            </li>
-                            {% endif %}
-                            {% if sections|selectattr('assignments')|list|length > 0 %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-green-600 text-lg flex-shrink-0">📝</span>
-                                <span class="text-gray-700">Projects to apply new skills</span>
-                            </li>
-                            {% endif %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-blue-600 text-lg flex-shrink-0">🎓</span>
-                                <span class="text-gray-700">A certificate of completion</span>
-                            </li>
-                            <li class="flex items-start space-x-3">
-                                <span class="text-yellow-600 text-lg flex-shrink-0">♾️</span>
-                                <span class="text-gray-700">Lifetime access to materials</span>
-                            </li>
-                        </ul>
-                    </div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-500" style="width: {{ completion_percentage }}%"></div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="container mx-auto px-6 py-12">
-        <!-- Course Stats Bar -->
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <div class="flex flex-col items-center">
-                    <div class="text-indigo-600 text-3xl mb-2">📊</div>
-                    <div class="text-sm text-gray-500 mb-1">Skill level</div>
-                    <div class="font-semibold text-gray-800">{{ course.level|default('Beginner')|title }}</div>
-                </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-purple-600 text-3xl mb-2">⏱️</div>
-                    <div class="text-sm text-gray-500 mb-1">Time to complete</div>
-                    <div class="font-semibold text-gray-800">{{ course.duration|default('Self-paced') }}</div>
-                </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-green-600 text-3xl mb-2">🎯</div>
-                    <div class="text-sm text-gray-500 mb-1">Projects</div>
-                    <div class="font-semibold text-gray-800">{{
-                        sections|selectattr('assignments')|list|length|default(0) }}</div>
-                </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-orange-600 text-3xl mb-2">📋</div>
-                    <div class="text-sm text-gray-500 mb-1">Prerequisites</div>
-                    <div class="font-semibold text-gray-800">
-                        {% if course.prerequisites %}
-                        {{ course.prerequisites }}
-                        {% else %}
-                        None
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+            {% endif %}
         </div>
 
-        <!-- Syllabus Section -->
-        <div class="bg-white rounded-xl shadow-md p-8 mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">📋 Course Syllabus</h2>
-                <button onclick="expandAllSections()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                    Expand all sections
-                </button>
-            </div>
-            <p class="text-gray-600 mb-6">
-                {{ total_sections|default(sections|length) }} lessons •
-                {% set quiz_count = sections|selectattr('quizzes')|list|length %}
-                {% set assignment_count = sections|selectattr('assignments')|list|length %}
-                            {% if modules %}
-            <div class="space-y-6">
+        <!-- Modules List Accordion -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="sidebar-accordion">
+            {% if modules %}
                 {% for module in modules %}
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-                    <!-- Module Header -->
-                    <div class="p-6 bg-gray-50 border-b border-gray-200 cursor-pointer flex justify-between items-center transition-colors hover:bg-gray-100"
-                        onclick="toggleModule('module-{{ module.id }}')">
-                        <div class="flex items-center space-x-3">
-                            <span class="text-gray-400 transition-transform duration-300" id="module-arrow-{{ module.id }}">
-                                <svg class="w-6 h-6 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="border border-gray-150 rounded-lg overflow-hidden bg-white shadow-sm">
+                    <!-- Module Header (Clickable accordion) -->
+                    <button type="button" 
+                            class="w-full text-left p-3.5 bg-gray-50 hover:bg-gray-100/70 flex justify-between items-center transition-colors focus:outline-none"
+                            onclick="toggleSidebarModule('module-{{ module.id }}')">
+                        <div class="flex items-center space-x-2 min-w-0">
+                            <span id="module-arrow-{{ module.id }}" class="text-gray-400 transition-transform duration-200 flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </span>
-                            <div>
-                                <h2 class="text-xl font-bold text-gray-900">{{ module.title }}</h2>
-                                {% if module.description %}
-                                <div class="text-sm text-gray-500 mt-1 ql-editor prose prose-sm max-w-none">{{ module.description|safe }}</div>
-                                {% endif %}
-                            </div>
+                            <span class="font-bold text-gray-800 text-sm truncate pr-2">{{ module.title }}</span>
                         </div>
-                        <span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">
-                            {{ module.sections|length }} Activities
+                        <span class="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full flex-shrink-0">
+                            {{ module.sections|length }}
                         </span>
-                    </div>
+                    </button>
 
-                    <!-- Module Sections -->
+                    <!-- Module Sections Links -->
                     <div id="module-{{ module.id }}" class="divide-y divide-gray-100 hidden">
                         {% for section in module.sections %}
-                        <div class="border-b border-gray-100 last:border-b-0">
-                            <button type="button"
-                                class="section-toggle w-full text-left p-6 bg-white hover:bg-gray-50 flex items-center justify-between focus:outline-none group transition-all duration-200 {% if section.id in locked_sections %} cursor-not-allowed opacity-60 {% else %} cursor-pointer {% endif %}"
-                                data-section-id="{{ section.id }}" data-section-title="{{ section.title }}"
+                        <button type="button"
+                                id="sidebar-link-{{ section.id }}"
+                                class="sidebar-section-link w-full text-left px-4 py-3 bg-white hover:bg-indigo-50/30 flex items-center justify-between transition-all duration-150 border-l-4 border-transparent text-sm {% if section.id in locked_sections %} cursor-not-allowed opacity-50 {% else %} cursor-pointer {% endif %}"
+                                data-section-id="{{ section.id }}"
+                                data-parent-module-id="module-{{ module.id }}"
                                 hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
-                                hx-target="#section-content-area-{{ section.id }}" hx-swap="innerHTML"
+                                hx-target="#main-reader-content"
+                                hx-swap="innerHTML"
                                 {% if section.id in locked_sections %}disabled{% endif %}>
-                                <div class="flex items-center space-x-4 flex-1">
-                                    {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
-                                    <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center relative">
-                                        {% if section_completed %}
-                                        <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-full flex items-center justify-center">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </div>
-                                        {% else %}
-                                            {% if section.section_type == 'video' %}
-                                            <span class="text-2xl">🎥</span>
-                                            {% elif section.section_type == 'quiz' %}
-                                            <span class="text-2xl">❓</span>
-                                            {% elif section.section_type == 'assignment' %}
-                                            <span class="text-2xl">📝</span>
-                                            {% elif section.section_type == 'presentation' %}
-                                            <span class="text-2xl">📊</span>
-                                            {% else %}
-                                            <span class="text-2xl">📄</span>
-                                            {% endif %}
+                            <div class="flex items-center space-x-2 flex-1 min-w-0">
+                                {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
+                                <div class="flex-shrink-0 flex items-center justify-center w-5 h-5">
+                                    {% if section_completed %}
+                                    <span class="text-green-600 font-bold text-base">✓</span>
+                                    {% else %}
+                                        {% if section.section_type == 'video' %}🎥
+                                        {% elif section.section_type == 'quiz' %}❓
+                                        {% elif section.section_type == 'assignment' %}📝
+                                        {% elif section.section_type == 'presentation' %}📊
+                                        {% else %}📄
                                         {% endif %}
-                                    </div>
-                                    <div class="flex-1">
-                                        <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ section.title }}</h3>
-                                        <p class="text-sm text-gray-500 mt-1">
-                                            {% if section.section_type == 'video' %}🎥 Video
-                                            {% elif section.section_type == 'text' %}📄 Reading
-                                            {% elif section.section_type == 'quiz' %}❓ Quiz
-                                            {% elif section.section_type == 'assignment' %}📝 Assignment
-                                            {% elif section.section_type == 'presentation' %}📊 Presentation
-                                            {% else %}📖 Lesson
-                                            {% endif %}
-                                            {% if section.duration %} • {{ section.duration }} min{% endif %}
-                                        </p>
-                                    </div>
+                                    {% endif %}
                                 </div>
-                                <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200 section-arrow"
-                                    id="arrow-{{ section.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                                    fill="currentColor">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <div id="section-{{ section.id }}"
-                                class="section-content p-8 bg-gray-50 border-t border-gray-100 hidden"
-                                data-section-id="{{ section.id }}">
-                                <div id="section-content-area-{{ section.id }}">
-                                    <!-- Loading indicator -->
-                                    <div class="flex items-center justify-center p-4">
-                                        <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        <span class="ml-2 text-sm text-gray-500">Loading content...</span>
-                                    </div>
-                                </div>
+                                <span class="truncate text-gray-700 font-medium group-hover:text-indigo-600">{{ section.title }}</span>
                             </div>
-                        </div>
+                        </button>
                         {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
-            </div>
             {% endif %}
 
             <!-- Unassigned Sections (if any exist) -->
             {% set unassigned_sections = sections|rejectattr('module_id')|list %}
             {% if unassigned_sections %}
-            <div class="mt-8">
-                <h3 class="text-lg font-bold text-gray-700 mb-4">Unassigned Activities</h3>
-                <div class="space-y-4">
-                    {% for section in unassigned_sections %}
-                    <div class="border-2 border-gray-200 rounded-xl overflow-hidden bg-white">
+                <div class="border border-gray-150 rounded-lg overflow-hidden bg-white shadow-sm">
+                    <button type="button" 
+                            class="w-full text-left p-3.5 bg-gray-50 hover:bg-gray-100/70 flex justify-between items-center transition-colors focus:outline-none"
+                            onclick="toggleSidebarModule('module-unassigned')">
+                        <div class="flex items-center space-x-2">
+                            <span id="module-arrow-unassigned" class="text-gray-400 transition-transform duration-200">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </span>
+                            <span class="font-bold text-gray-800 text-sm">Unassigned Activities</span>
+                        </div>
+                        <span class="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                            {{ unassigned_sections|length }}
+                        </span>
+                    </button>
+                    <div id="module-unassigned" class="divide-y divide-gray-100 hidden">
+                        {% for section in unassigned_sections %}
                         <button type="button"
-                            class="section-toggle w-full text-left p-6 bg-white hover:bg-gray-50 flex items-center justify-between focus:outline-none group transition-all duration-200"
-                            data-section-id="{{ section.id }}" data-section-title="{{ section.title }}"
-                            hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
-                            hx-target="#section-content-area-{{ section.id }}" hx-swap="innerHTML">
-                            <div class="flex items-center space-x-4 flex-1">
+                                id="sidebar-link-{{ section.id }}"
+                                class="sidebar-section-link w-full text-left px-4 py-3 bg-white hover:bg-indigo-50/30 flex items-center justify-between transition-all duration-150 border-l-4 border-transparent text-sm cursor-pointer"
+                                data-section-id="{{ section.id }}"
+                                data-parent-module-id="module-unassigned"
+                                hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                                hx-target="#main-reader-content"
+                                hx-swap="innerHTML">
+                            <div class="flex items-center space-x-2 flex-1 min-w-0">
                                 {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
-                                <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center relative">
+                                <div class="flex-shrink-0 flex items-center justify-center w-5 h-5">
                                     {% if section_completed %}
-                                    <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-full flex items-center justify-center">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
+                                    <span class="text-green-600 font-bold text-base">✓</span>
                                     {% else %}
-                                        {% if section.section_type == 'video' %}
-                                        <span class="text-2xl">🎥</span>
-                                        {% elif section.section_type == 'quiz' %}
-                                        <span class="text-2xl">❓</span>
-                                        {% elif section.section_type == 'assignment' %}
-                                        <span class="text-2xl">📝</span>
-                                        {% elif section.section_type == 'presentation' %}
-                                        <span class="text-2xl">📊</span>
-                                        {% else %}
-                                        <span class="text-2xl">📄</span>
+                                        {% if section.section_type == 'video' %}🎥
+                                        {% elif section.section_type == 'quiz' %}❓
+                                        {% elif section.section_type == 'assignment' %}📝
+                                        {% elif section.section_type == 'presentation' %}📊
+                                        {% else %}📄
                                         {% endif %}
                                     {% endif %}
                                 </div>
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ section.title }}</h3>
-                                    <p class="text-sm text-gray-500 mt-1">
-                                        {% if section.section_type == 'video' %}🎥 Video
-                                        {% elif section.section_type == 'text' %}📄 Reading
-                                        {% elif section.section_type == 'quiz' %}❓ Quiz
-                                        {% elif section.section_type == 'assignment' %}📝 Assignment
-                                        {% elif section.section_type == 'presentation' %}📊 Presentation
-                                        {% else %}📖 Lesson
-                                        {% endif %}
-                                        {% if section.duration %} • {{ section.duration }} min{% endif %}
-                                    </p>
-                                </div>
+                                <span class="truncate text-gray-700 font-medium">{{ section.title }}</span>
                             </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200 section-arrow"
-                                id="arrow-{{ section.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                                fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
                         </button>
-                        <div id="section-{{ section.id }}"
-                            class="section-content p-8 bg-gray-50 border-t border-gray-100 hidden"
-                            data-section-id="{{ section.id }}">
-                            <div id="section-content-area-{{ section.id }}">
-                                <!-- Loading indicator -->
-                                <div class="flex items-center justify-center p-4">
-                                    <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span class="ml-2 text-sm text-gray-500">Loading content...</span>
-                                </div>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
             {% endif %}
+        </div>
+    </div>
 
-            {% if not modules and not sections %}
-            <div class="text-center py-12">
-                <div class="text-6xl mb-4">📭</div>
-                <p class="text-gray-500 text-lg">No sections available yet.</p>
-                <p class="text-gray-400 text-sm mt-2">Check back soon for course content!</p>
+    <!-- Right Column: Reader Area -->
+    <div class="flex-1 bg-white flex flex-col min-w-0 h-[calc(100vh-4rem)] overflow-y-auto">
+        <!-- Path Header / Breadcrumbs -->
+        <div class="px-8 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider" id="reader-breadcrumbs">
+                Select an activity to begin learning
+            </div>
+            <!-- Certificate Generation (If 100% complete) -->
+            {% if completion_percentage == 100 and enrollment %}
+            <div id="quick-certificate-box">
+                <button type="button" onclick="document.getElementById('ratingModal').classList.remove('hidden')"
+                        class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow transition">
+                    🎓 Claim Certificate
+                </button>
             </div>
             {% endif %}
+        </div>
+
+        <!-- Reader Canvas -->
+        <div class="flex-1 p-8 md:p-12 max-w-4xl mx-auto w-full">
+            <div id="main-reader-content" class="prose prose-indigo max-w-none">
+                {% if first_section %}
+                    <!-- Dynamic Load of first section on load -->
+                    <div class="flex items-center justify-center py-20"
+                         hx-get="{{ url_for('student.get_section_content', section_id=first_section.id) }}"
+                         hx-trigger="load"
+                         hx-target="#main-reader-content"
+                         hx-swap="innerHTML">
+                        <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="ml-3 text-gray-600 font-medium">Loading first activity...</span>
+                    </div>
+                {% else %}
+                    <div class="text-center py-20">
+                        <div class="text-6xl mb-4">📭</div>
+                        <h3 class="text-lg font-bold text-gray-800">No sections available yet</h3>
+                        <p class="text-gray-500 text-sm mt-1">This course does not contain any lessons yet.</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -615,134 +451,113 @@
 </div>
 
 <script>
-    // Wait for DOM to be ready
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('Page loaded, initializing toggles...');
-
-        // Get all toggle buttons
-        const toggleButtons = document.querySelectorAll('.section-toggle');
-        console.log('Found toggle buttons:', toggleButtons.length);
-
-        // Add click event to each button
-        toggleButtons.forEach(function (button) {
-            button.addEventListener('click', function (e) {
-                // Get section ID from data attribute
-                const sectionId = this.getAttribute('data-section-id');
-                console.log('Clicked section:', sectionId);
-
-                if (!sectionId) {
-                    console.error('No section ID found');
-                    return;
-                }
-
-                // Get the content div and arrow
-                const content = document.getElementById('section-' + sectionId);
-                const arrow = document.getElementById('arrow-' + sectionId);
-
-                if (!content) {
-                    console.error('Content not found for section:', sectionId);
-                    return;
-                }
-
-                // Toggle visibility
-                const isHidden = content.classList.contains('hidden');
-
-                if (isHidden) {
-                    content.classList.remove('hidden');
-                    if (arrow) {
-                        arrow.style.transform = 'rotate(180deg)';
-                    }
-
-                    // Start time tracking
-                    setTimeout(function () {
-                        stopTimeTracking(); // Stop previous tracking
-                        startTimeTracking(sectionId);
-                    }, 100);
-
-                    // Fetch content manually via HTMX if not loaded yet
-                    const contentArea = document.getElementById('section-content-area-' + sectionId);
-                    if (contentArea && contentArea.innerHTML.includes('Loading content...')) {
-                        const url = button.getAttribute('hx-get');
-                        if (url && typeof htmx !== 'undefined') {
-                            console.log('Fetching content from URL via HTMX:', url);
-                            htmx.ajax('GET', url, {target: '#section-content-area-' + sectionId, swap: 'innerHTML'});
-                        } else {
-                            console.warn('HTMX is not defined or URL is missing');
-                        }
-                    }
-
-                    // Enhance any YouTube links inside this section's rich text
-                    enhanceYouTubeEmbeds(content);
-                    console.log('✓ Opened section:', sectionId);
-                } else {
-                    content.classList.add('hidden');
-                    if (arrow) {
-                        arrow.style.transform = 'rotate(0deg)';
-                    }
-                    // Stop time tracking
-                    stopTimeTracking();
-                    console.log('✓ Closed section:', sectionId);
-                }
-            });
-        });
-
-        // Run once at load for any pre-opened content (unlikely but safe)
-        enhanceYouTubeEmbeds(document);
-    });
-
     // Toggle module visibility helper
-    function toggleModule(moduleId) {
+    function toggleSidebarModule(moduleId) {
         const content = document.getElementById(moduleId);
-        const arrow = document.getElementById('module-arrow-' + moduleId.split('-')[1]);
+        const moduleNum = moduleId.replace('module-', '');
+        const arrow = document.getElementById('module-arrow-' + moduleNum);
         if (content.classList.contains('hidden')) {
             content.classList.remove('hidden');
-            if (arrow) arrow.querySelector('svg').style.transform = 'rotate(180deg)';
+            if (arrow) arrow.style.transform = 'rotate(180deg)';
         } else {
             content.classList.add('hidden');
-            if (arrow) arrow.querySelector('svg').style.transform = 'rotate(0deg)';
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
         }
     }
 
-    // Expand all sections function
-    function expandAllSections() {
-        console.log('Expanding all sections...');
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Page loaded, initializing sidebar toggles...');
+
+        const links = document.querySelectorAll('.sidebar-section-link');
         
-        // Expand all modules first
-        const allModules = document.querySelectorAll('[id^="module-"]');
-        allModules.forEach(function (mod) {
-            mod.classList.remove('hidden');
-            const modId = mod.id.split('-')[1];
-            const arrow = document.getElementById('module-arrow-' + modId);
-            if (arrow) arrow.querySelector('svg').style.transform = 'rotate(180deg)';
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                const sectionId = this.getAttribute('data-section-id');
+                const parentModuleId = this.getAttribute('data-parent-module-id');
+                
+                // Track time
+                stopTimeTracking();
+                startTimeTracking(sectionId);
+                
+                // Save current section to sessionStorage so progress isn't lost on refresh
+                sessionStorage.setItem('activeSectionId', sectionId);
+                
+                // Highlight active link
+                links.forEach(l => {
+                    l.classList.remove('bg-indigo-50', 'text-indigo-700', 'font-bold', 'border-l-4', 'border-indigo-600');
+                    l.classList.add('border-transparent');
+                });
+                this.classList.remove('border-transparent');
+                this.classList.add('bg-indigo-50', 'text-indigo-700', 'font-bold', 'border-l-4', 'border-indigo-600');
+                
+                // Update breadcrumbs in header
+                const parentHeader = document.querySelector(`button[onclick="toggleSidebarModule('${parentModuleId}')"]`);
+                const moduleTitle = parentHeader ? parentHeader.querySelector('.font-bold').textContent.trim() : 'Course';
+                const sectionTitle = this.querySelector('span.truncate').textContent.trim();
+                document.getElementById('reader-breadcrumbs').textContent = `${moduleTitle} / ${sectionTitle}`;
+                
+                // Trigger YouTube embed enhancement after content swaps (give it a small delay for HTMX swap)
+                setTimeout(() => {
+                    enhanceYouTubeEmbeds(document.getElementById('main-reader-content'));
+                }, 200);
+            });
         });
 
-        const allContents = document.querySelectorAll('.section-content');
-        const allArrows = document.querySelectorAll('.section-arrow');
-        const toggleButtons = document.querySelectorAll('.section-toggle');
-
-        allContents.forEach(function (content) {
-            content.classList.remove('hidden');
-        });
-
-        allArrows.forEach(function (arrow) {
-            arrow.style.transform = 'rotate(180deg)';
-        });
-
-        // Trigger HTMX load for all sections
-        toggleButtons.forEach(btn => {
-            const sectionId = btn.getAttribute('data-section-id');
-            const contentArea = document.getElementById('section-content-area-' + sectionId);
-            if (contentArea && contentArea.innerHTML.includes('Loading content...')) {
-                const url = btn.getAttribute('hx-get');
-                if (url && typeof htmx !== 'undefined') {
-                    htmx.ajax('GET', url, {target: '#section-content-area-' + sectionId, swap: 'innerHTML'});
+        // Auto-select active section on load (sessionStorage, or first_section)
+        const savedSectionId = sessionStorage.getItem('activeSectionId');
+        let targetLink = null;
+        
+        if (savedSectionId) {
+            targetLink = document.getElementById('sidebar-link-' + savedSectionId);
+        }
+        
+        if (!targetLink) {
+            // Fallback to first available section link
+            targetLink = document.querySelector('.sidebar-section-link');
+        }
+        
+        if (targetLink) {
+            const parentModuleId = targetLink.getAttribute('data-parent-module-id');
+            // Expand the parent module of the active link
+            if (parentModuleId) {
+                const parentModuleContent = document.getElementById(parentModuleId);
+                if (parentModuleContent) {
+                    parentModuleContent.classList.remove('hidden');
+                    const moduleNum = parentModuleId.replace('module-', '');
+                    const arrow = document.getElementById('module-arrow-' + moduleNum);
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
                 }
             }
-        });
+            
+            // Highlight it and set breadcrumbs (without triggering a second network fetch since first_section auto-loads)
+            targetLink.classList.remove('border-transparent');
+            targetLink.classList.add('bg-indigo-50', 'text-indigo-700', 'font-bold', 'border-l-4', 'border-indigo-600');
+            
+            const parentHeader = document.querySelector(`button[onclick="toggleSidebarModule('${parentModuleId}')"]`);
+            const moduleTitle = parentHeader ? parentHeader.querySelector('.font-bold').textContent.trim() : 'Course';
+            const sectionTitle = targetLink.querySelector('span.truncate').textContent.trim();
+            document.getElementById('reader-breadcrumbs').textContent = `${moduleTitle} / ${sectionTitle}`;
+            
+            // If the loaded section is not the first section, trigger htmx load for it manually!
+            const firstSectionId = "{{ first_section.id if first_section else '' }}";
+            if (savedSectionId && savedSectionId !== firstSectionId) {
+                const url = targetLink.getAttribute('hx-get');
+                if (url && typeof htmx !== 'undefined') {
+                    htmx.ajax('GET', url, {target: '#main-reader-content', swap: 'innerHTML'});
+                }
+            }
 
-        console.log('✓ All sections expanded');
+            // Start time tracking
+            const activeSectionId = targetLink.getAttribute('data-section-id');
+            if (activeSectionId) {
+                startTimeTracking(activeSectionId);
+            }
+        }
+        
+        // Initial youtube hook
         enhanceYouTubeEmbeds(document);
-    }
+    });
 
     // Replace plain YouTube links with responsive iframe embeds inside rich text
     function enhanceYouTubeEmbeds(root) {
