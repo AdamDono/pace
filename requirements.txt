@@ -16,3 +16,4 @@ reportlab
 pillow
 gunicorn==21.2.0
 apscheduler>=3.10,<4
+email-validator>=2.0.0
