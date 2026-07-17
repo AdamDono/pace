@@ -93,6 +93,9 @@ def profile():
         current_user.email = form.email.data
         current_user.bio = form.bio.data
         current_user.contact = form.contact.data
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.specialization = form.specialization.data
 
         # Handle profile image upload (optional)
         file = request.files.get('profile_image')
@@ -100,18 +103,23 @@ def profile():
             allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
             ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
             if ext in allowed:
-                # Remove old image if any
-                if getattr(current_user, 'profile_image', None):
-                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
-                    try:
-                        if os.path.exists(old_path):
-                            os.remove(old_path)
-                    except Exception:
-                        pass
-                new_name = f"avatar_teacher_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
-                save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
-                file.save(save_path)
-                current_user.profile_image = new_name
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_avatars")
+                if cloudinary_url:
+                    current_user.profile_image = cloudinary_url
+                else:
+                    # Remove old image if any
+                    if getattr(current_user, 'profile_image', None) and not current_user.profile_image.startswith('http'):
+                        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
+                        try:
+                            if os.path.exists(old_path):
+                                os.remove(old_path)
+                        except Exception:
+                            pass
+                    new_name = f"avatar_teacher_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+                    save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
+                    file.save(save_path)
+                    current_user.profile_image = new_name
 
         if form.new_password.data:
             current_user.password = form.new_password.data
@@ -126,6 +134,9 @@ def profile():
         form.email.data = current_user.email
         form.bio.data = getattr(current_user, 'bio', '')
         form.contact.data = getattr(current_user, 'contact', '')
+        form.first_name.data = getattr(current_user, 'first_name', '')
+        form.last_name.data = getattr(current_user, 'last_name', '')
+        form.specialization.data = getattr(current_user, 'specialization', '')
 
     return render_template('teacher/profile.html', form=form)
 
@@ -456,10 +467,15 @@ def create_course_wizard():
                 banner_file = request.files.get('banner_image')
                 if banner_file and banner_file.filename:
                     if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
-                        ext = os.path.splitext(banner_file.filename)[1]
-                        filename = f"banner_{uuid.uuid4().hex}{ext}"
-                        banner_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-                        course.banner_image = filename
+                        from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                        cloudinary_url = upload_file_to_cloudinary(banner_file, folder="pace_banners")
+                        if cloudinary_url:
+                            course.banner_image = cloudinary_url
+                        else:
+                            ext = os.path.splitext(banner_file.filename)[1]
+                            filename = f"banner_{uuid.uuid4().hex}{ext}"
+                            banner_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                            course.banner_image = filename
                 
                 db.session.commit()
                 flash('Course created! You can now add modules and content.', 'success')
@@ -565,10 +581,15 @@ def handle_autosave():
         banner_file = request.files.get('banner_image')
         if banner_file and banner_file.filename:
             if allowed_file(banner_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'webp'}):
-                banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
-                banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
-                banner_file.save(banner_save_path)
-                course.banner_image = banner_filename
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(banner_file, folder="pace_banners")
+                if cloudinary_url:
+                    course.banner_image = cloudinary_url
+                else:
+                    banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
+                    banner_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], banner_filename)
+                    banner_file.save(banner_save_path)
+                    course.banner_image = banner_filename
 
         course.last_autosave = datetime.utcnow()
         db.session.commit()
@@ -623,22 +644,27 @@ def edit_course(course_id):
             # Handle banner image upload
             banner_file = request.files.get('banner_image')
             if banner_file and banner_file.filename:
-                if course.banner_image:
-                    old_banner_path = os.path.join(current_app.config['UPLOAD_FOLDER'], course.banner_image)
-                    if os.path.exists(old_banner_path):
-                        os.remove(old_banner_path)
-                
-                if not allowed_file(banner_file.filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif'}):
-                    flash('Only image files (PNG, JPG, JPEG, GIF) are allowed for banner', 'danger')
+                if not allowed_file(banner_file.filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif', 'webp'}):
+                    flash('Only image files (PNG, JPG, JPEG, GIF, WEBP) are allowed for banner', 'danger')
                     return redirect(url_for('teacher.edit_course', course_id=course_id))
-                
-                banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
-                banner_save_path = os.path.join(
-                    current_app.config['UPLOAD_FOLDER'],
-                    banner_filename
-                )
-                banner_file.save(banner_save_path)
-                course.banner_image = banner_filename
+
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(banner_file, folder="pace_banners")
+                if cloudinary_url:
+                    course.banner_image = cloudinary_url
+                else:
+                    if course.banner_image and not course.banner_image.startswith('http'):
+                        old_banner_path = os.path.join(current_app.config['UPLOAD_FOLDER'], course.banner_image)
+                        if os.path.exists(old_banner_path):
+                            os.remove(old_banner_path)
+                    
+                    banner_filename = f"banner_{uuid.uuid4().hex}{os.path.splitext(banner_file.filename)[1]}"
+                    banner_save_path = os.path.join(
+                        current_app.config['UPLOAD_FOLDER'],
+                        banner_filename
+                    )
+                    banner_file.save(banner_save_path)
+                    course.banner_image = banner_filename
 
             # Handle intro video URL
             intro_video_url = request.form.get('intro_video')

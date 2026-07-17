@@ -304,9 +304,14 @@ def submit_assignment(section_id, assignment_id):
                 # Accept common code extensions
                 code_exts = {'py', 'js', 'java', 'cpp', 'c', 'hpp', 'h', 'ts', 'tsx', 'html', 'css', 'sql', 'txt'}
                 if file and allowed_file(file.filename, allowed_extensions=code_exts):
-                    filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                    file_path = filename
-                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                    from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
+                    if cloudinary_url:
+                        file_path = cloudinary_url
+                    else:
+                        filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                        file_path = filename
+                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
             if not code and not file_path:
                 flash('Please write code or upload a code file before submitting.', 'danger')
@@ -335,9 +340,14 @@ def submit_assignment(section_id, assignment_id):
         if 'file' in request.files and request.files['file'].filename:
             file = request.files['file']
             if file and allowed_file(file.filename):
-                filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                file_path = filename
-                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
+                if cloudinary_url:
+                    file_path = cloudinary_url
+                else:
+                    filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                    file_path = filename
+                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
         submission = AssignmentSubmission(
             assignment_id=assignment_id,
@@ -503,7 +513,7 @@ def generate_certificate(enrollment_id):
     if not all(es.completed for es in enrollment.sections) or not Rating.query.filter_by(course_id=enrollment.course_id, user_id=current_user.id).first():
         return jsonify({'status': 'error', 'message': 'Course not fully completed or rated.'}), 403
 
-    user_name = current_user.username or current_user.email.split('@')[0]
+    user_name = f"{current_user.first_name} {current_user.last_name}" if (current_user.first_name and current_user.last_name) else (current_user.username or current_user.email.split('@')[0])
     certificate_filename = f"certificate_{enrollment.id}_{int(datetime.utcnow().timestamp())}.pdf"
     certificate_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate_filename)
 
@@ -756,6 +766,9 @@ def profile():
         current_user.email = form.email.data
         current_user.bio = form.bio.data
         current_user.contact = form.contact.data
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.specialization = form.specialization.data
         
         # Handle profile image upload (optional field)
         file = request.files.get('profile_image')
@@ -764,19 +777,24 @@ def profile():
             allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
             ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
             if ext in allowed:
-                # Remove old image if exists
-                if getattr(current_user, 'profile_image', None):
-                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
-                    try:
-                        if os.path.exists(old_path):
-                            os.remove(old_path)
-                    except Exception:
-                        pass
-                # Save new image
-                new_name = f"avatar_student_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
-                save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
-                file.save(save_path)
-                current_user.profile_image = new_name
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_avatars")
+                if cloudinary_url:
+                    current_user.profile_image = cloudinary_url
+                else:
+                    # Remove old image if exists
+                    if getattr(current_user, 'profile_image', None) and not current_user.profile_image.startswith('http'):
+                        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
+                        try:
+                            if os.path.exists(old_path):
+                                os.remove(old_path)
+                        except Exception:
+                            pass
+                    # Save new image
+                    new_name = f"avatar_student_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+                    save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
+                    file.save(save_path)
+                    current_user.profile_image = new_name
         
         # Update password if provided
         if form.new_password.data:
@@ -792,6 +810,9 @@ def profile():
         form.email.data = current_user.email
         form.bio.data = current_user.bio
         form.contact.data = current_user.contact
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.specialization.data = current_user.specialization
     
     return render_template('student/profile.html', form=form)
 

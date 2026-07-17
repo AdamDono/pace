@@ -186,9 +186,17 @@ def create_app():
     def internal_server_error(e):
         return render_template('errors/500.html'), 500
     
-    @app.errorhandler(403)
-    def forbidden(e):
-        return render_template('errors/403.html'), 403
+    # Context processor to override url_for for Cloudinary URLs
+    from flask import url_for as flask_url_for
+    @app.context_processor
+    def override_url_for():
+        def custom_url_for(endpoint, **values):
+            if endpoint == 'static' and values.get('filename', '').startswith('uploads/http'):
+                return values['filename'].replace('uploads/', '', 1)
+            if endpoint in ('teacher.media', 'admin.serve_pdf') and values.get('filename', '').startswith('http'):
+                return values['filename']
+            return flask_url_for(endpoint, **values)
+        return dict(url_for=custom_url_for)
 
     return app
 
