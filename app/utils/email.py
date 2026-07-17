@@ -13,6 +13,7 @@ def send_async_email(app, msg):
         # Check if an HTTPS API Key is configured to bypass blocked SMTP ports on Render Free Tier
         sendgrid_key = os.getenv('SENDGRID_API_KEY')
         resend_key = os.getenv('RESEND_API_KEY')
+        brevo_key = os.getenv('BREVO_API_KEY')
         
         if sendgrid_key:
             try:
@@ -82,6 +83,46 @@ def send_async_email(app, msg):
                         raise Exception(f"Resend API returned status {response.status}")
             except Exception as api_err:
                 logger.error(f"Resend HTTP API failed: {str(api_err)}. Falling back to SMTP...")
+
+        elif brevo_key:
+            try:
+                import urllib.request
+                import json
+                
+                url = "https://api.brevo.com/v3/smtp/email"
+                headers = {
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json"
+                }
+                
+                sender_email = msg.sender or app.config['MAIL_DEFAULT_SENDER']
+                sender_name = "Pace Academy"
+                if "<" in sender_email:
+                    parts = sender_email.split("<")
+                    sender_name = parts[0].strip()
+                    sender_email = parts[1].replace(">", "").strip()
+                    
+                payload = {
+                    "sender": {"email": sender_email, "name": sender_name},
+                    "to": [{"email": r} for r in msg.recipients],
+                    "subject": msg.subject,
+                    "htmlContent": msg.html
+                }
+                
+                req = urllib.request.Request(
+                    url, 
+                    data=json.dumps(payload).encode('utf-8'), 
+                    headers=headers, 
+                    method='POST'
+                )
+                with urllib.request.urlopen(req) as response:
+                    if response.status in [200, 201, 202]:
+                        logger.info(f"Email sent successfully via Brevo HTTP API to {msg.recipients}")
+                        return
+                    else:
+                        raise Exception(f"Brevo API returned status {response.status}")
+            except Exception as api_err:
+                logger.error(f"Brevo HTTP API failed: {str(api_err)}. Falling back to SMTP...")
 
         # Standard SMTP fallback
         try:
