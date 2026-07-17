@@ -1,3 +1,4 @@
+import os
 from flask import current_app, render_template
 from flask_mail import Message
 from app import mail
@@ -7,8 +8,82 @@ import logging
 logger = logging.getLogger(__name__)
 
 def send_async_email(app, msg):
-    """Send email asynchronously"""
+    """Send email asynchronously (SMTP with HTTPS Web API fallback)"""
     with app.app_context():
+        # Check if an HTTPS API Key is configured to bypass blocked SMTP ports on Render Free Tier
+        sendgrid_key = os.getenv('SENDGRID_API_KEY')
+        resend_key = os.getenv('RESEND_API_KEY')
+        
+        if sendgrid_key:
+            try:
+                import urllib.request
+                import json
+                
+                url = "https://api.sendgrid.com/v3/mail/send"
+                headers = {
+                    "Authorization": f"Bearer {sendgrid_key}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "personalizations": [{
+                        "to": [{"email": r} for r in msg.recipients],
+                        "subject": msg.subject
+                    }],
+                    "from": {"email": msg.sender or app.config['MAIL_DEFAULT_SENDER']},
+                    "content": [{
+                        "type": "text/html",
+                        "value": msg.html
+                    }]
+                }
+                
+                req = urllib.request.Request(
+                    url, 
+                    data=json.dumps(payload).encode('utf-8'), 
+                    headers=headers, 
+                    method='POST'
+                )
+                with urllib.request.urlopen(req) as response:
+                    if response.status in [200, 202]:
+                        logger.info(f"Email sent successfully via SendGrid HTTP API to {msg.recipients}")
+                        return
+                    else:
+                        raise Exception(f"SendGrid API returned status {response.status}")
+            except Exception as api_err:
+                logger.error(f"SendGrid HTTP API failed: {str(api_err)}. Falling back to SMTP...")
+
+        elif resend_key:
+            try:
+                import urllib.request
+                import json
+                
+                url = "https://api.resend.com/emails"
+                headers = {
+                    "Authorization": f"Bearer {resend_key}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "from": msg.sender or app.config['MAIL_DEFAULT_SENDER'],
+                    "to": msg.recipients,
+                    "subject": msg.subject,
+                    "html": msg.html
+                }
+                
+                req = urllib.request.Request(
+                    url, 
+                    data=json.dumps(payload).encode('utf-8'), 
+                    headers=headers, 
+                    method='POST'
+                )
+                with urllib.request.urlopen(req) as response:
+                    if response.status in [200, 201]:
+                        logger.info(f"Email sent successfully via Resend HTTP API to {msg.recipients}")
+                        return
+                    else:
+                        raise Exception(f"Resend API returned status {response.status}")
+            except Exception as api_err:
+                logger.error(f"Resend HTTP API failed: {str(api_err)}. Falling back to SMTP...")
+
+        # Standard SMTP fallback
         try:
             mail.send(msg)
             logger.info(f"Email sent successfully to {msg.recipients}")
