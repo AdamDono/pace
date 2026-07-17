@@ -50,6 +50,7 @@ def create_app():
     # Configure database
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
+    app.config['BASE_URL'] = os.getenv('BASE_URL', 'http://localhost:5000')
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
