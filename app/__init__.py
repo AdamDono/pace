@@ -63,9 +63,7 @@ def create_app():
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@paceacademy.com')
 
-    # Configure session
-    app.config['SESSION_TYPE'] = 'filesystem'
-    Session(app)
+    # Configure session (using Flask's default secure cookie sessions for cloud compatibility)
 
     # Create upload directory if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
