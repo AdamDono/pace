@@ -9,7 +9,13 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/')
 def home():
-    return redirect(url_for('auth.login'))
+    if current_user.is_authenticated:
+        return redirect_based_on_role()
+    
+    from app.models import Course
+    # Get up to 6 approved courses for public display on the landing page
+    courses = Course.query.filter_by(status='approved').limit(6).all()
+    return render_template('auth/landing.html', courses=courses)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():

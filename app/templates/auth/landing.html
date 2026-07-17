@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pace Academy - Learning Excellence Platform</title>
+    <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
+    <script>
+        if (!document.querySelector('link[href*="tailwind.min.css"]').sheet) {
+            document.write('<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">');
+        }
+    </script>
+    <style>
+        .modern-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%);
+            position: relative;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+        }
+        .glass-header {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+        .text-gradient {
+            background: linear-gradient(to right, #ffffff, #c7d2fe, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .cta-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            transition: all 0.3s ease;
+        }
+        .cta-btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="modern-bg min-h-screen text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+
+    <!-- Header / Navbar -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-header">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="#" class="flex items-center space-x-2">
+                <span class="text-2xl font-black tracking-tight">
+                    <span class="text-indigo-400">Pace</span>
+                    <span class="text-white">Academy</span>
+                </span>
+            </a>
+            <div class="flex items-center space-x-6">
+                <a href="{{ url_for('auth.login') }}" class="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                    Browse Catalog
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="cta-btn text-sm font-semibold text-white px-5 py-2.5 rounded-xl">
+                    Sign In
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative pt-36 pb-20 px-6 hero-gradient overflow-hidden">
+        <div class="max-w-7xl mx-auto text-center relative z-10">
+            <!-- Decorative Badge -->
+            <div class="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-full mb-8">
+                <span class="w-2 h-2 bg-indigo-400 rounded-full animate-ping"></span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-indigo-300">Learning Excellence Hub</span>
+            </div>
+
+            <!-- Big Heading -->
+            <h1 class="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-8">
+                Elevate Your <span class="text-gradient">Academic Journey</span>
+            </h1>
+
+            <!-- Subheading -->
+            <p class="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed mb-12">
+                Unlock structured syllabus progress, browser-based sandbox coding playgrounds, verified course certifications, and collaborative feedback portals.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <a href="{{ url_for('auth.login') }}" class="cta-btn text-base font-bold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center">
+                    Enter Learning Hub
+                </a>
+                <a href="#courses" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-base font-semibold text-slate-200 px-8 py-4 rounded-2xl transition-all duration-300 w-full sm:w-auto text-center">
+                    Explore Courses
+                </a>
+            </div>
+        </div>
+
+        <!-- Floating Decorative Blobs -->
+        <div class="absolute top-1/4 -left-64 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-3xl floating"></div>
+        <div class="absolute bottom-10 -right-48 w-96 h-96 bg-purple-500/10 rounded-full filter blur-3xl floating" style="animation-delay: -3s;"></div>
+    </section>
+
+    <!-- Interactive Features Grid -->
+    <section class="py-20 px-6 border-t border-slate-800/40 bg-slate-950/20">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">State-of-the-Art Classroom Tools</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto">Pace Academy bridges the gap between learning theory and practical implementation.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="glass-card p-8 rounded-3xl">
+                    <div class="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                        📖
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Split-View Course Reader</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Navigate assignments, text sheets, and video modules side-by-side. Track progress and skip seamlessly through topics without losing your active lesson index.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="glass-card p-8 rounded-3xl">
+                    <div class="w-14 h-14 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                        💻
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">WASM Code Playground</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Compile Python and SQL assignments in real-time inside your browser using Pyodide sandbox instances. Achieve correct criteria to trigger confetti awards.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="glass-card p-8 rounded-3xl">
+                    <div class="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                        🏅
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Verified Course Credentials</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Complete curriculum requirements to generate high-fidelity verification PDF certificates featuring your official profile details and verified academic markers.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Courses Section -->
+    <section id="courses" class="py-20 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-16">
+                <div class="mb-6 md:mb-0">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Explore Our Curriculums</h2>
+                    <p class="text-slate-400 max-w-xl">Browse approved courses designed and maintained by professional domain specialists.</p>
+                </div>
+                <a href="{{ url_for('auth.login') }}" class="text-indigo-400 hover:text-indigo-300 font-semibold text-sm flex items-center space-x-1.5 transition-colors">
+                    <span>View all courses</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <!-- Dynamic Courses Grid -->
+            {% if courses %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {% for course in courses %}
+                        <div class="glass-card rounded-3xl overflow-hidden flex flex-col h-full">
+                            <!-- Course Cover / Category Fallback -->
+                            <div class="h-48 relative overflow-hidden bg-slate-900 border-b border-slate-800">
+                                {% if course.banner_image %}
+                                    <img src="{{ url_for('static', filename='uploads/' ~ course.banner_image) if not course.banner_image.startswith('http') else course.banner_image }}" 
+                                         alt="{{ course.title }}" 
+                                         class="w-full h-full object-cover"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                {% endif %}
+                                <div class="w-full h-full bg-gradient-to-br from-indigo-950 to-indigo-900 flex flex-col items-center justify-center p-6 text-center {% if course.banner_image %}absolute inset-0{% endif %}" {% if course.banner_image %}style="display: none;"{% endif %}>
+                                    <span class="text-4xl mb-3">🎓</span>
+                                    <span class="text-xs uppercase tracking-widest font-black text-indigo-400">{{ course.category or 'Academy' }}</span>
+                                </div>
+                                <span class="absolute top-4 right-4 bg-indigo-600/90 text-white font-bold text-xs uppercase px-3 py-1.5 rounded-full backdrop-blur-md">
+                                    {{ course.difficulty_level or 'General' }}
+                                </span>
+                            </div>
+
+                            <!-- Course Info -->
+                            <div class="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center space-x-2 text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+                                        <span>{{ course.category or 'Academy' }}</span>
+                                        <span>•</span>
+                                        <span>{{ course.estimated_duration or 'Self-paced' }} hours</span>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-white mb-2 line-clamp-1">{{ course.title }}</h3>
+                                    <p class="text-slate-400 text-sm leading-relaxed mb-6 line-clamp-2">{{ course.description }}</p>
+                                </div>
+
+                                <div class="flex items-center justify-between pt-4 border-t border-slate-800/40">
+                                    <span class="text-xs text-slate-400">By {{ course.teacher.first_name or course.teacher.username if course.teacher else 'Staff' }}</span>
+                                    <a href="{{ url_for('auth.login') }}" class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs transition-colors">
+                                        Enroll Now →
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card p-12 text-center rounded-3xl">
+                    <span class="text-4xl mb-4 block">📚</span>
+                    <h3 class="text-lg font-bold text-white mb-2">No Active Courses Found</h3>
+                    <p class="text-slate-400 text-sm max-w-md mx-auto">Our instructors are currently preparing curriculum paths. Check back soon or register to join the waiting list!</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Call to Action Banner -->
+    <section class="py-20 px-6 bg-gradient-to-t from-slate-950 to-slate-900">
+        <div class="max-w-4xl mx-auto glass-card p-12 md:p-16 rounded-3xl text-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-indigo-500/5 filter blur-2xl"></div>
+            <div class="relative z-10">
+                <h2 class="text-3xl md:text-5xl font-black mb-6">Ready to Accelerate Your Learning?</h2>
+                <p class="text-slate-400 text-base max-w-lg mx-auto leading-relaxed mb-10">
+                    Join Pace Academy today and access your structured course syllabus, exercises, and verified credentials.
+                </p>
+                <a href="{{ url_for('auth.login') }}" class="cta-btn text-base font-bold text-white px-8 py-4 rounded-2xl inline-block">
+                    Enter the Learning Hub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 border-t border-slate-800/40 text-center">
+        <p class="text-xs text-slate-500">
+            © 2026 Pace Academy. All rights reserved. Empowering academic excellence.
+        </p>
+    </footer>
+
+</body>
+</html>
