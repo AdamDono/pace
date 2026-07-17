@@ -29,6 +29,11 @@ def create_app():
     load_dotenv()
 
     app = Flask(__name__)
+
+    # Enable ProxyFix middleware for Render HTTPS proxy support
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     app.jinja_env.filters['datetimeformat'] = format_datetime
 
     # Register custom Jinja filter for average
