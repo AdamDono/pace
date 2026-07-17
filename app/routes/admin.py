@@ -102,7 +102,6 @@ def dashboard():
 @admin_required
 def pending_approvals():
     pending_courses = Course.query.filter_by(status='pending').all()
-    print("Pending courses:", [(course.id, course.title, course.status) for course in pending_courses])  # Debug log
     return render_template('admin/approvals.html', courses=pending_courses)
 
 @admin_bp.route('/approve-course/<int:course_id>')
@@ -129,6 +128,33 @@ def reject_course(course_id):
 def manage_courses():
     approved_courses = Course.query.filter_by(status='approved').all()
     return render_template('admin/courses.html', courses=approved_courses)
+
+@admin_bp.route('/course/<int:course_id>/delete', methods=['POST'])
+@admin_required
+def delete_course(course_id):
+    """Hard delete a course (draft or non-draft). Admin-only.
+
+    Accepts optional 'return_url' in form data to redirect back to the originating page.
+    This will cascade-delete related entities according to SQLAlchemy relationships.
+    """
+    course = Course.query.get_or_404(course_id)
+
+    try:
+        title = course.title
+        db.session.delete(course)
+        db.session.commit()
+        flash(f"Course '{title}' has been deleted.", 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to delete course: {str(e)}', 'danger')
+
+    return_url = request.form.get('return_url')
+    if return_url:
+        return redirect(return_url)
+    # Default fallback destinations based on former status
+    if getattr(course, 'is_draft', False) or getattr(course, 'status', '') == 'draft':
+        return redirect(url_for('admin.dashboard'))
+    return redirect(url_for('admin.manage_courses'))
 
 @admin_bp.route('/course/<int:course_id>')
 @admin_required
@@ -342,10 +368,11 @@ def profile():
     form = ProfileForm()
     
     if form.validate_on_submit():
-        # Verify current password
-        if not current_user.verify_password(form.current_password.data):
-            flash('Current password is incorrect', 'danger')
-            return render_template('admin/profile.html', form=form)
+        # Only require current password when changing password
+        if form.new_password.data:
+            if not current_user.verify_password(form.current_password.data or ''):
+                flash('Current password is incorrect', 'danger')
+                return render_template('admin/profile.html', form=form)
         
         # Check if email is already taken by another user
         if form.email.data != current_user.email:
@@ -367,6 +394,27 @@ def profile():
         current_user.bio = form.bio.data
         current_user.contact = form.contact.data
         
+        # Handle profile image upload (optional field)
+        file = request.files.get('profile_image')
+        if file and file.filename:
+            # Basic validation
+            allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
+            if ext in allowed:
+                # Remove old image if exists
+                if getattr(current_user, 'profile_image', None):
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
+                    try:
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    except Exception:
+                        pass
+                # Save new image
+                new_name = f"avatar_admin_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+                save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
+                file.save(save_path)
+                current_user.profile_image = new_name
+
         # Update password if provided
         if form.new_password.data:
             current_user.password = form.new_password.data

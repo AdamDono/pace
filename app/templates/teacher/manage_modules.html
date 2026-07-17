@@ -9,23 +9,46 @@
             <p class="text-gray-600 mt-1">Organize your course into modules and chapters</p>
         </div>
         <div class="flex space-x-3">
-            <a href="{{ url_for('teacher.course_analytics', course_id=course.id) }}"
-               class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors inline-flex items-center shadow-md">
+            <a href="{{ url_for('notifications.create_announcement', course_id=course.id) }}"
+                class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-colors inline-flex items-center shadow-md">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z">
+                    </path>
+                </svg>
+                📢 Announce
+            </a>
+            <a href="{{ url_for('teacher.course_analytics', course_id=course.id) }}"
+                class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors inline-flex items-center shadow-md">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                    </path>
                 </svg>
                 📊 Analytics
             </a>
-            <a href="{{ url_for('teacher.preview_course', course_id=course.id) }}" target="_blank"
-               class="px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors inline-flex items-center">
+            <a href="{{ url_for('teacher.preview_course', course_id=course.id) }}"
+                class="px-4 py-2 border-2 border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors inline-flex items-center">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                    </path>
                 </svg>
-                Preview Course
+                👁️ View as Student
+            </a>
+            <a href="{{ url_for('teacher.course_calendar', course_id=course.id) }}"
+                class="px-4 py-2 border border-orange-600 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                    </path>
+                </svg>
+                📅 Calendar
             </a>
             <a href="{{ url_for('teacher.my_courses') }}"
-               class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                 ← Back to Courses
             </a>
         </div>
@@ -43,7 +66,7 @@
                 <div class="text-2xl font-bold text-green-600">
                     {% set total_sections = 0 %}
                     {% for module in modules %}
-                        {% set total_sections = total_sections + module.sections|length %}
+                    {% set total_sections = total_sections + module.sections|length %}
                     {% endfor %}
                     {{ total_sections }}
                 </div>
@@ -66,17 +89,18 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Module Title *</label>
                     <input type="text" name="title" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="e.g., Introduction to Programming">
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., Introduction to Programming">
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
                     <textarea name="description" rows="3"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                              placeholder="Brief description of what this module covers..."></textarea>
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        placeholder="Brief description of what this module covers..."></textarea>
                 </div>
             </div>
-            <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <button type="submit"
+                class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 + Add Module
             </button>
         </form>
@@ -89,21 +113,25 @@
         {% if modules %}
         <div id="modules-list" class="space-y-4">
             {% for module in modules %}
-            <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-300" data-id="{{ module.id }}">
+            <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-300"
+                data-id="{{ module.id }}">
                 <!-- Module Header - Clickable Toggle -->
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 cursor-pointer module-header hover:from-blue-100 hover:to-indigo-100 transition-colors"
-                     onclick="toggleModule('module-{{ module.id }}')">
+                    onclick="toggleModule('module-{{ module.id }}')">
                     <div class="flex justify-between items-start">
                         <div class="flex-1">
                             <div class="flex items-center space-x-3 mb-2">
                                 <!-- Toggle Icon -->
-                                <button type="button" class="toggle-icon text-gray-600 hover:text-blue-600 transition-transform duration-300">
+                                <button type="button"
+                                    class="toggle-icon text-gray-600 hover:text-blue-600 transition-transform duration-300">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </button>
-                                
-                                <span class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+
+                                <span
+                                    class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
                                     {{ loop.index }}
                                 </span>
                                 <h3 class="text-xl font-semibold text-gray-900">{{ module.title }}</h3>
@@ -112,27 +140,27 @@
                                 </span>
                             </div>
                             {% if module.description %}
-                            <p class="text-gray-600 ml-12">{{ module.description }}</p>
+                            <div class="text-gray-600 ml-12 ql-editor prose prose-sm max-w-none">{{ module.description|safe }}</div>
                             {% endif %}
                         </div>
 
                         <!-- Action Buttons -->
                         <div class="flex items-center space-x-2" onclick="event.stopPropagation()">
                             <a href="{{ url_for('teacher.manage_module_sections', course_id=course.id, module_id=module.id) }}"
-                               class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm">
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm">
                                 ➕ Add Sections
                             </a>
                             <a href="{{ url_for('teacher.edit_module', course_id=course.id, module_id=module.id) }}"
-                               class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
                                 ✏️ Edit
                             </a>
                             <form method="POST" class="inline"
-                                  onsubmit="return confirm('Delete this module and all its sections?')">
+                                onsubmit="return confirm('Delete this module and all its sections?')">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="delete_module">
                                 <input type="hidden" name="module_id" value="{{ module.id }}">
                                 <button type="submit"
-                                        class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors text-sm">
+                                    class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors text-sm">
                                     🗑️ Delete
                                 </button>
                             </form>
@@ -147,19 +175,23 @@
                         <div class="space-y-3">
                             {% for section in module.sections %}
                             <!-- Section Item - Nested Toggle -->
-                            <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-sm transition-all duration-200">
+                            <div
+                                class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-sm transition-all duration-200">
                                 <!-- Section Header -->
                                 <div class="bg-gray-50 p-4 cursor-pointer section-header hover:bg-gray-100 transition-colors"
-                                     onclick="toggleSection('section-{{ section.id }}')">
+                                    onclick="toggleSection('section-{{ section.id }}')">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center space-x-3 flex-1">
                                             <!-- Nested Toggle Icon -->
-                                            <button type="button" class="toggle-icon text-gray-500 hover:text-blue-600 transition-transform duration-300">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            <button type="button"
+                                                class="toggle-icon text-gray-500 hover:text-blue-600 transition-transform duration-300">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M9 5l7 7-7 7"></path>
                                                 </svg>
                                             </button>
-                                            
+
                                             <!-- Section Type Icon -->
                                             <span class="text-2xl">
                                                 {% if section.section_type == 'video' %}🎥
@@ -171,21 +203,24 @@
                                                 {% else %}📄
                                                 {% endif %}
                                             </span>
-                                            
+
                                             <div class="flex-1">
                                                 <h4 class="font-semibold text-gray-900">{{ section.title }}</h4>
                                                 <div class="flex items-center space-x-3 mt-1 text-xs text-gray-500">
-                                                    <span class="px-2 py-1 bg-gray-200 rounded">{{ section.section_type|title }}</span>
+                                                    <span class="px-2 py-1 bg-gray-200 rounded">{{
+                                                        section.section_type|title }}</span>
                                                     {% if section.duration %}
                                                     <span>⏱️ {{ section.duration }} min</span>
                                                     {% endif %}
                                                     <span>
                                                         {% if section.is_published %}
-                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                                        <span
+                                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
                                                             ✓ Published
                                                         </span>
                                                         {% else %}
-                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-600">
+                                                        <span
+                                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-600">
                                                             📝 Draft
                                                         </span>
                                                         {% endif %}
@@ -193,20 +228,20 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Section Actions -->
                                         <div class="flex items-center space-x-2" onclick="event.stopPropagation()">
                                             <a href="{{ url_for('teacher.edit_section', course_id=course.id, section_id=section.id) }}"
-                                               class="px-3 py-1 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors">
+                                                class="px-3 py-1 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors">
                                                 Edit
                                             </a>
                                             <form method="POST" class="inline"
-                                                  onsubmit="return confirm('Delete this section?')">
+                                                onsubmit="return confirm('Delete this section?')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="hidden" name="action" value="delete_section">
                                                 <input type="hidden" name="section_id" value="{{ section.id }}">
                                                 <button type="submit"
-                                                        class="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50 transition-colors">
+                                                    class="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50 transition-colors">
                                                     Delete
                                                 </button>
                                             </form>
@@ -215,13 +250,14 @@
                                 </div>
 
                                 <!-- Section Content - Nested Collapsible -->
-                                <div id="section-{{ section.id }}" class="section-content hidden bg-white p-4 border-t border-gray-200">
+                                <div id="section-{{ section.id }}"
+                                    class="section-content hidden bg-white p-4 border-t border-gray-200">
                                     <div class="prose max-w-none">
                                         {% if section.content %}
                                         <div class="mb-3">
                                             <p class="text-sm font-medium text-gray-700 mb-1">Content:</p>
                                             <div class="text-gray-600 text-sm bg-gray-50 p-3 rounded">
-                                                {{ section.content[:200] }}{% if section.content|length > 200 %}...{% endif %}
+                                                {{ section.content|striptags|truncate(200) }}
                                             </div>
                                         </div>
                                         {% endif %}
@@ -230,69 +266,78 @@
                                         {% if section.video_url or section.media_file %}
                                         <div class="mb-4 space-y-3">
                                             {% if section.video_url %}
-                                                {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
-                                                {% if youtube_id and youtube_id|length == 11 %}
-                                                <div class="bg-gray-50 p-3 rounded-lg">
-                                                    <div class="flex items-center justify-between mb-2">
-                                                        <span class="text-sm font-medium text-gray-700">🎥 Video Preview</span>
-                                                        <a href="{{ section.video_url }}" target="_blank" class="text-xs text-blue-600 hover:underline">Open in YouTube ↗</a>
-                                                    </div>
-                                                    <div class="aspect-w-16 aspect-h-9">
-                                                        <iframe class="w-full h-32 rounded border"
-                                                                src="https://www.youtube.com/embed/{{ youtube_id }}"
-                                                                frameborder="0"
-                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                allowfullscreen></iframe>
-                                                    </div>
+                                            {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v='
+                                            in section.video_url else section.video_url.split('/')[-1] %}
+                                            {% if youtube_id and youtube_id|length == 11 %}
+                                            <div class="bg-gray-50 p-3 rounded-lg">
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <span class="text-sm font-medium text-gray-700">🎥 Video
+                                                        Preview</span>
+                                                    <a href="{{ section.video_url }}" target="_blank"
+                                                        class="text-xs text-blue-600 hover:underline">Open in YouTube
+                                                        ↗</a>
                                                 </div>
-                                                {% else %}
-                                                <div class="bg-red-50 p-3 rounded-lg">
-                                                    <span class="text-sm text-red-700">⚠️ Invalid YouTube URL format</span>
-                                                    <a href="{{ section.video_url }}" target="_blank" class="text-xs text-red-600 hover:underline ml-2">Check URL</a>
+                                                <div class="aspect-w-16 aspect-h-9">
+                                                    <iframe class="w-full h-32 rounded border"
+                                                        src="https://www.youtube.com/embed/{{ youtube_id }}"
+                                                        frameborder="0"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowfullscreen></iframe>
                                                 </div>
-                                                {% endif %}
+                                            </div>
+                                            {% else %}
+                                            <div class="bg-red-50 p-3 rounded-lg">
+                                                <span class="text-sm text-red-700">⚠️ Invalid YouTube URL format</span>
+                                                <a href="{{ section.video_url }}" target="_blank"
+                                                    class="text-xs text-red-600 hover:underline ml-2">Check URL</a>
+                                            </div>
+                                            {% endif %}
                                             {% endif %}
 
                                             {% if section.media_file %}
                                             <div class="bg-gray-50 p-3 rounded-lg">
                                                 {% if section.media_file.lower().endswith('.pdf') %}
-                                                    <div class="flex items-center justify-between">
-                                                        <span class="text-sm font-medium text-gray-700">📄 PDF Document</span>
-                                                        <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                                           target="_blank"
-                                                           class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
-                                                            View PDF ↗
-                                                        </a>
-                                                    </div>
-                                                    <div class="mt-2">
-                                                        <iframe src="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                                                class="w-full h-48 border rounded"
-                                                                type="application/pdf"></iframe>
-                                                    </div>
-                                                {% elif section.media_file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) %}
-                                                    <div class="flex items-center justify-between">
-                                                        <span class="text-sm font-medium text-gray-700">🖼️ Image</span>
-                                                        <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                                           target="_blank"
-                                                           class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
-                                                            View Full Size ↗
-                                                        </a>
-                                                    </div>
-                                                    <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                                         alt="Section media"
-                                                         class="mt-2 max-w-full h-32 object-cover rounded border">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-sm font-medium text-gray-700">📄 PDF
+                                                        Document</span>
+                                                    <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}"
+                                                        target="_blank"
+                                                        class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
+                                                        View PDF ↗
+                                                    </a>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <iframe
+                                                        src="{{ url_for('static', filename='uploads/' + section.media_file) }}"
+                                                        class="w-full h-48 border rounded"
+                                                        type="application/pdf"></iframe>
+                                                </div>
+                                                {% elif section.media_file.lower().endswith(('.jpg', '.jpeg', '.png',
+                                                '.gif')) %}
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-sm font-medium text-gray-700">🖼️ Image</span>
+                                                    <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}"
+                                                        target="_blank"
+                                                        class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
+                                                        View Full Size ↗
+                                                    </a>
+                                                </div>
+                                                <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}"
+                                                    alt="Section media"
+                                                    class="mt-2 max-w-full h-32 object-cover rounded border">
                                                 {% else %}
-                                                    <div class="flex items-center justify-between">
-                                                        <span class="text-sm font-medium text-gray-700">📎 Media File</span>
-                                                        <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}"
-                                                           target="_blank"
-                                                           class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700">
-                                                            Download ↗
-                                                        </a>
-                                                    </div>
-                                                    <div class="mt-2 p-4 bg-white border rounded text-center">
-                                                        <span class="text-gray-500">{{ section.media_file.split('.')[-1].upper() }} file</span>
-                                                    </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-sm font-medium text-gray-700">📎 Media File</span>
+                                                    <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}"
+                                                        target="_blank"
+                                                        class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700">
+                                                        Download ↗
+                                                    </a>
+                                                </div>
+                                                <div class="mt-2 p-4 bg-white border rounded text-center">
+                                                    <span class="text-gray-500">{{
+                                                        section.media_file.split('.')[-1].upper() }} file</span>
+                                                </div>
                                                 {% endif %}
                                             </div>
                                             {% endif %}
@@ -303,9 +348,10 @@
                                         {% if section.assignments %}
                                         <div class="mb-4">
                                             <div class="flex items-center justify-between mb-2">
-                                                <h4 class="text-sm font-semibold text-gray-800">📝 Assignments ({{ section.assignments|length }})</h4>
+                                                <h4 class="text-sm font-semibold text-gray-800">📝 Assignments ({{
+                                                    section.assignments|length }})</h4>
                                                 <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
-                                                   class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors">
+                                                    class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors">
                                                     + Add Assignment
                                                 </a>
                                             </div>
@@ -314,17 +360,20 @@
                                                 <div class="bg-green-50 p-3 rounded border border-green-200">
                                                     <div class="flex items-start justify-between">
                                                         <div class="flex-1">
-                                                            <h5 class="font-medium text-green-900">{{ assignment.title }}</h5>
-                                                            {% if assignment.description %}
-                                                            <p class="text-sm text-green-700 mt-1">{{ assignment.description[:100] }}{% if assignment.description|length > 100 %}...{% endif %}</p>
-                                                            {% endif %}
+                                                            <h5 class="font-medium text-green-900">{{ assignment.title
+                                                                }}</h5>
+                                                             {% if assignment.description %}
+                                                             <p class="text-sm text-green-700 mt-1">{{
+                                                                 assignment.description|striptags|truncate(100) }}</p>
+                                                             {% endif %}
                                                             {% if assignment.due_date %}
-                                                            <p class="text-xs text-green-600 mt-1">📅 Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                                                            <p class="text-xs text-green-600 mt-1">📅 Due: {{
+                                                                assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</p>
                                                             {% endif %}
                                                         </div>
                                                         <div class="flex space-x-2 ml-4">
                                                             <a href="{{ url_for('teacher.view_submissions', course_id=course.id, section_id=section.id) }}"
-                                                               class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
+                                                                class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
                                                                 View Submissions
                                                             </a>
                                                         </div>
@@ -338,7 +387,7 @@
                                             <div class="flex items-center justify-between mb-2">
                                                 <h4 class="text-sm font-semibold text-gray-800">📝 Assignments</h4>
                                                 <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
-                                                   class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors">
+                                                    class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors">
                                                     + Add First Assignment
                                                 </a>
                                             </div>
@@ -350,9 +399,10 @@
                                         {% if section.quizzes %}
                                         <div class="mb-4">
                                             <div class="flex items-center justify-between mb-2">
-                                                <h4 class="text-sm font-semibold text-gray-800">❓ Quizzes ({{ section.quizzes|length }})</h4>
+                                                <h4 class="text-sm font-semibold text-gray-800">❓ Quizzes ({{
+                                                    section.quizzes|length }})</h4>
                                                 <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}"
-                                                   class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
+                                                    class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
                                                     + Add Quiz
                                                 </a>
                                             </div>
@@ -362,11 +412,12 @@
                                                     <div class="flex items-start justify-between">
                                                         <div class="flex-1">
                                                             <h5 class="font-medium text-blue-900">{{ quiz.title }}</h5>
-                                                            <p class="text-xs text-blue-600 mt-1">📊 {{ quiz.questions|length }} questions</p>
+                                                            <p class="text-xs text-blue-600 mt-1">📊 {{
+                                                                quiz.questions|length }} questions</p>
                                                         </div>
                                                         <div class="flex space-x-2 ml-4">
                                                             <a href="{{ url_for('teacher.view_quiz_attempts', course_id=course.id, section_id=section.id) }}"
-                                                               class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700">
+                                                                class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700">
                                                                 View Attempts
                                                             </a>
                                                         </div>
@@ -380,18 +431,20 @@
                                             <div class="flex items-center justify-between mb-2">
                                                 <h4 class="text-sm font-semibold text-gray-800">❓ Quizzes</h4>
                                                 <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}"
-                                                   class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
+                                                    class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
                                                     + Add First Quiz
                                                 </a>
                                             </div>
                                             <p class="text-sm text-gray-500 italic">No quizzes added yet</p>
                                         </div>
                                         {% endif %}
-                                        
-                                        <div class="flex items-center space-x-4 text-xs text-gray-500 mt-3 pt-3 border-t border-gray-200">
+
+                                        <div
+                                            class="flex items-center space-x-4 text-xs text-gray-500 mt-3 pt-3 border-t border-gray-200">
                                             <span>🆔 ID: {{ section.id }}</span>
                                             <span>📋 Order: {{ section.order }}</span>
-                                            <span>📅 Created: {{ section.created_at.strftime('%Y-%m-%d') if section.created_at else 'N/A' }}</span>
+                                            <span>📅 Created: {{ section.created_at.strftime('%Y-%m-%d') if
+                                                section.created_at else 'N/A' }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -401,7 +454,8 @@
                     </div>
                     {% else %}
                     <div class="bg-white p-6 border-t border-gray-200 text-center">
-                        <p class="text-gray-500 italic">📭 No sections added yet. Click "Add Sections" to get started!</p>
+                        <p class="text-gray-500 italic">📭 No sections added yet. Click "Add Sections" to get started!
+                        </p>
                     </div>
                     {% endif %}
                 </div>
@@ -412,17 +466,21 @@
         <!-- Drag and Drop Hint -->
         <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
             <p class="text-sm text-blue-700">
-                💡 <strong>Pro Tip:</strong> Click on any module to expand/collapse and see all sections. You can drag and drop modules to reorder them!
+                💡 <strong>Pro Tip:</strong> Click on any module to expand/collapse and see all sections. You can drag
+                and drop modules to reorder them!
             </p>
         </div>
 
         {% else %}
         <div class="text-center py-12">
             <svg class="mx-auto h-24 w-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                </path>
             </svg>
             <h3 class="text-lg font-medium text-gray-900 mb-2">No modules yet</h3>
-            <p class="text-gray-600 mb-6">Create your first module using the form above to start building your course structure.</p>
+            <p class="text-gray-600 mb-6">Create your first module using the form above to start building your course
+                structure.</p>
         </div>
         {% endif %}
     </div>
@@ -430,135 +488,135 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-// 🔥 NESTED ACCORDION TOGGLE FUNCTIONS 🔥
+    // 🔥 NESTED ACCORDION TOGGLE FUNCTIONS 🔥
 
-// Toggle Module (Parent Level)
-function toggleModule(moduleId) {
-    const moduleContent = document.getElementById(moduleId);
-    const moduleHeader = moduleContent.previousElementSibling;
-    const toggleIcon = moduleHeader.querySelector('.toggle-icon svg');
-    
-    if (moduleContent.classList.contains('hidden')) {
-        // Expand with smooth animation
-        moduleContent.classList.remove('hidden');
-        moduleContent.style.maxHeight = '0px';
-        moduleContent.style.overflow = 'hidden';
-        moduleContent.style.transition = 'max-height 0.4s ease-out';
-        
-        setTimeout(() => {
-            moduleContent.style.maxHeight = moduleContent.scrollHeight + 'px';
-        }, 10);
-        
-        setTimeout(() => {
-            moduleContent.style.maxHeight = 'none';
-            moduleContent.style.overflow = 'visible';
-        }, 400);
-        
-        // Rotate arrow down
-        toggleIcon.style.transform = 'rotate(0deg)';
-    } else {
-        // Collapse with smooth animation
-        moduleContent.style.maxHeight = moduleContent.scrollHeight + 'px';
-        moduleContent.style.overflow = 'hidden';
-        
-        setTimeout(() => {
+    // Toggle Module (Parent Level)
+    function toggleModule(moduleId) {
+        const moduleContent = document.getElementById(moduleId);
+        const moduleHeader = moduleContent.previousElementSibling;
+        const toggleIcon = moduleHeader.querySelector('.toggle-icon svg');
+
+        if (moduleContent.classList.contains('hidden')) {
+            // Expand with smooth animation
+            moduleContent.classList.remove('hidden');
             moduleContent.style.maxHeight = '0px';
-        }, 10);
-        
-        setTimeout(() => {
-            moduleContent.classList.add('hidden');
-            moduleContent.style.maxHeight = 'none';
-        }, 400);
-        
-        // Rotate arrow up
-        toggleIcon.style.transform = 'rotate(-90deg)';
-    }
-}
+            moduleContent.style.overflow = 'hidden';
+            moduleContent.style.transition = 'max-height 0.4s ease-out';
 
-// Toggle Section (Nested Level)
-function toggleSection(sectionId) {
-    const sectionContent = document.getElementById(sectionId);
-    const sectionHeader = sectionContent.previousElementSibling;
-    const toggleIcon = sectionHeader.querySelector('.toggle-icon svg');
-    
-    if (sectionContent.classList.contains('hidden')) {
-        // Expand with smooth animation
-        sectionContent.classList.remove('hidden');
-        sectionContent.style.maxHeight = '0px';
-        sectionContent.style.overflow = 'hidden';
-        sectionContent.style.transition = 'max-height 0.3s ease-out';
-        
-        setTimeout(() => {
-            sectionContent.style.maxHeight = sectionContent.scrollHeight + 'px';
-        }, 10);
-        
-        setTimeout(() => {
-            sectionContent.style.maxHeight = 'none';
-            sectionContent.style.overflow = 'visible';
-        }, 300);
-        
-        // Rotate arrow to point down
-        toggleIcon.style.transform = 'rotate(90deg)';
-    } else {
-        // Collapse with smooth animation
-        sectionContent.style.maxHeight = sectionContent.scrollHeight + 'px';
-        sectionContent.style.overflow = 'hidden';
-        
-        setTimeout(() => {
+            setTimeout(() => {
+                moduleContent.style.maxHeight = moduleContent.scrollHeight + 'px';
+            }, 10);
+
+            setTimeout(() => {
+                moduleContent.style.maxHeight = 'none';
+                moduleContent.style.overflow = 'visible';
+            }, 400);
+
+            // Rotate arrow down
+            toggleIcon.style.transform = 'rotate(0deg)';
+        } else {
+            // Collapse with smooth animation
+            moduleContent.style.maxHeight = moduleContent.scrollHeight + 'px';
+            moduleContent.style.overflow = 'hidden';
+
+            setTimeout(() => {
+                moduleContent.style.maxHeight = '0px';
+            }, 10);
+
+            setTimeout(() => {
+                moduleContent.classList.add('hidden');
+                moduleContent.style.maxHeight = 'none';
+            }, 400);
+
+            // Rotate arrow up
+            toggleIcon.style.transform = 'rotate(-90deg)';
+        }
+    }
+
+    // Toggle Section (Nested Level)
+    function toggleSection(sectionId) {
+        const sectionContent = document.getElementById(sectionId);
+        const sectionHeader = sectionContent.previousElementSibling;
+        const toggleIcon = sectionHeader.querySelector('.toggle-icon svg');
+
+        if (sectionContent.classList.contains('hidden')) {
+            // Expand with smooth animation
+            sectionContent.classList.remove('hidden');
             sectionContent.style.maxHeight = '0px';
-        }, 10);
-        
-        setTimeout(() => {
-            sectionContent.classList.add('hidden');
-            sectionContent.style.maxHeight = 'none';
-        }, 300);
-        
-        // Rotate arrow to point right
-        toggleIcon.style.transform = 'rotate(0deg)';
-    }
-}
+            sectionContent.style.overflow = 'hidden';
+            sectionContent.style.transition = 'max-height 0.3s ease-out';
 
-// Initialize Sortable.js for drag and drop
-document.addEventListener('DOMContentLoaded', function() {
-    const modulesList = document.getElementById('modules-list');
-    if (modulesList) {
-        new Sortable(modulesList, {
-            animation: 150,
-            handle: '.module-header',
-            onEnd: function(evt) {
-                const items = Array.from(modulesList.children).map(item => item.dataset.id);
-                fetch(`{{ url_for('teacher.manage_modules', course_id=course.id) }}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        action: 'reorder_modules',
-                        order: items
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    }
-                });
-            }
-        });
+            setTimeout(() => {
+                sectionContent.style.maxHeight = sectionContent.scrollHeight + 'px';
+            }, 10);
+
+            setTimeout(() => {
+                sectionContent.style.maxHeight = 'none';
+                sectionContent.style.overflow = 'visible';
+            }, 300);
+
+            // Rotate arrow to point down
+            toggleIcon.style.transform = 'rotate(90deg)';
+        } else {
+            // Collapse with smooth animation
+            sectionContent.style.maxHeight = sectionContent.scrollHeight + 'px';
+            sectionContent.style.overflow = 'hidden';
+
+            setTimeout(() => {
+                sectionContent.style.maxHeight = '0px';
+            }, 10);
+
+            setTimeout(() => {
+                sectionContent.classList.add('hidden');
+                sectionContent.style.maxHeight = 'none';
+            }, 300);
+
+            // Rotate arrow to point right
+            toggleIcon.style.transform = 'rotate(0deg)';
+        }
     }
-    
-    // Initialize all toggle icons to collapsed state
-    document.querySelectorAll('.module-header .toggle-icon svg').forEach(icon => {
-        icon.style.transform = 'rotate(-90deg)';
-        icon.style.transition = 'transform 0.3s ease';
+
+    // Initialize Sortable.js for drag and drop
+    document.addEventListener('DOMContentLoaded', function () {
+        const modulesList = document.getElementById('modules-list');
+        if (modulesList) {
+            new Sortable(modulesList, {
+                animation: 150,
+                handle: '.module-header',
+                onEnd: function (evt) {
+                    const items = Array.from(modulesList.children).map(item => item.dataset.id);
+                    fetch(`{{ url_for('teacher.manage_modules', course_id=course.id) }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            action: 'reorder_modules',
+                            order: items
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload();
+                            }
+                        });
+                }
+            });
+        }
+
+        // Initialize all toggle icons to collapsed state
+        document.querySelectorAll('.module-header .toggle-icon svg').forEach(icon => {
+            icon.style.transform = 'rotate(-90deg)';
+            icon.style.transition = 'transform 0.3s ease';
+        });
+
+        document.querySelectorAll('.section-header .toggle-icon svg').forEach(icon => {
+            icon.style.transform = 'rotate(0deg)';
+            icon.style.transition = 'transform 0.3s ease';
+        });
     });
-    
-    document.querySelectorAll('.section-header .toggle-icon svg').forEach(icon => {
-        icon.style.transform = 'rotate(0deg)';
-        icon.style.transition = 'transform 0.3s ease';
-    });
-});
 </script>
 
 {% endblock %}

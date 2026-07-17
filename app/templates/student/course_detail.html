@@ -1,606 +1,924 @@
 {% extends "base.html" %}
 
+{% block flash_messages %}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script src="https://unpkg.com/htmx.org@1.9.6"></script>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<style>
+    /* ---------------------------------------------------------
+       NUCLEAR LEVEL STYLING OVERRIDES (High Specificity)
+       --------------------------------------------------------- */
+
+    /* Force specific variables if Tailwind puts them in */
+    .prose {
+        --tw-prose-pre-bg: #f5f5f5 !important;
+        --tw-prose-pre-code: #d63384 !important;
+        --tw-prose-code: #d63384 !important;
+    }
+
+
+    /* 1. CODE TAGS (Pink/Magenta) - Targeting ALL variations */
+    .ql-editor code,
+    .prose code,
+    code,
+    pre code,
+    .ql-editor pre code {
+        background-color: #f9f2f4 !important;
+        color: #d63384 !important;
+        /* Magenta text */
+        font-family: 'Courier New', Courier, monospace !important;
+        font-weight: 500 !important;
+        font-size: 0.9em !important;
+        padding: 2px 4px !important;
+        border-radius: 4px !important;
+        border: 1px solid #f1c0d0 !important;
+    }
+
+
+    /* 2. PRE BLOCKS (Code blocks) */
+    .ql-editor pre,
+    .prose pre,
+    pre {
+        background-color: #f5f5f5 !important;
+        border: 1px solid #e3e3e3 !important;
+        color: #333 !important;
+        border-radius: 5px !important;
+        padding: 15px !important;
+        margin: 15px 0 !important;
+        overflow-x: auto !important;
+        font-family: 'Courier New', Courier, monospace !important;
+    }
+
+    
+
+    /* FIX: Ensure code INSIDE pre removes its own background/border to blend in, BUT keeps color */
+    .ql-editor pre code,
+    .prose pre code,
+    pre code {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        color: #d63384 !important;
+        /* KEEP PINK TEXT properly */
+    }
+
+    /* 3. COLLAPSIBLE SECTIONS (<details>) */
+    .ql-editor details,
+    .prose details {
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+        margin-bottom: 10px !important;
+        background: #fff !important;
+        padding: 0 !important;
+    }
+
+    .ql-editor summary,
+    .prose summary {
+        background-color: #f8f9fa !important;
+        /* Moodle gray for header */
+        color: #333 !important;
+        padding: 12px 15px !important;
+        cursor: pointer !important;
+        font-weight: bold !important;
+        list-style: none !important;
+        /* Hide default arrow */
+        position: relative !important;
+        padding-left: 40px !important;
+        /* Space for Custom Arrow */
+        border-bottom: 1px solid transparent !important;
+        transition: background-color 0.2s;
+    }
+
+    .ql-editor summary:hover,
+    .prose summary:hover {
+        background-color: #e9ecef !important;
+    }
+
+    /* Custom Arrow using ::before */
+    .ql-editor summary::before,
+    .prose summary::before {
+        content: '▶';
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+        color: #666;
+        transition: transform 0.2s;
+    }
+
+    .ql-editor details[open] summary,
+    .prose details[open] summary {
+        border-bottom: 1px solid #ddd !important;
+    }
+
+    .ql-editor details[open] summary::before,
+    .prose details[open] summary::before {
+        transform: translateY(-50%) rotate(90deg);
+    }
+
+    /* Hide default marker specifically */
+    .ql-editor summary::-webkit-details-marker,
+    .prose summary::-webkit-details-marker {
+        display: none !important;
+    }
+
+    /* Content inside details */
+    .ql-editor details .details-content,
+    .ql-editor details>div:not(summary),
+    .ql-editor details>p,
+    .prose details>* {
+        padding: 15px !important;
+        margin: 0 !important;
+    }
+
+    /* 4. H5P & IFRAME CONTAINERS */
+    .h5p-embed-container {
+        position: relative;
+        width: 100%;
+        height: 0;
+        padding-bottom: 56.25%;
+        /* 16:9 Aspect Ratio by default */
+        background: #f1f1f1;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 20px 0;
+    }
+
+    .h5p-embed-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    /* Ensure Lumi iframes are styled even if missing the container class initially */
+    iframe[src*="lumi.education"],
+    iframe[src*="h5p.org"] {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        border: 0;
+        border-radius: 8px;
+        margin: 20px 0;
+        min-height: 400px;
+        /* Force minimum height for visibility */
+    }
+</style>
+
+<!-- H5P Resizer from H5P.org -->
+<script src="https://h5p.org/sites/all/modules/h5p/library/js/h5p-resizer.js" charset="UTF-8"></script>
+
+<!-- Content Auto-Formatter Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('🎨 Initializing Custom Styles & H5P processing...');
+
+        const editorContent = document.querySelector('.ql-editor');
+        if (!editorContent) return;
+
+        // 1. Wrap raw iframes (Lumi AND H5P.org) if they are not wrapped
+        const rawIframes = editorContent.querySelectorAll('iframe[src*="lumi.education"]:not(.h5p-embed-container iframe), iframe[src*="h5p.org"]:not(.h5p-embed-container iframe)');
+        rawIframes.forEach(iframe => {
+            console.log('🔄 Finding raw iframe:', iframe.src);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'h5p-embed-container';
+            // Adjust aspect ratio if possible, otherwise default
+            wrapper.style.paddingBottom = '70%'; // slightly taller default
+
+            // Insert wrapper before iframe
+            iframe.parentNode.insertBefore(wrapper, iframe);
+            // Move iframe into wrapper
+            wrapper.appendChild(iframe);
+            console.log('✅ Wrapped raw H5P/Lumi iframe');
+        });
+
+        // 2. Handle ".h5p-placeholder" divs (created by our editor script)
+        const placeholders = editorContent.querySelectorAll('.h5p-placeholder');
+        placeholders.forEach(function (placeholder) {
+            const content = placeholder.textContent.trim();
+
+            if (content.includes('lumi.education') || content.includes('h5p.org/h5p/embed')) {
+                // It's a valid embed URL
+                const container = document.createElement('div');
+                container.className = 'h5p-embed-container';
+                container.innerHTML = `<iframe src="${content}" allowfullscreen="allowfullscreen" allow="geolocation *; microphone *; camera *; midi *; encrypted-media *"></iframe>`;
+                placeholder.parentNode.replaceChild(container, placeholder);
+                console.log('✅ Converted placeholder to H5P iframe');
+            } else {
+                // It's likely a file path or Moodle draft URL
+                const alertBox = document.createElement('div');
+                alertBox.style.cssText = "background:#fff3cd; color:#856404; padding:15px; border:1px solid #ffeeba; border-radius:5px; margin:10px 0; font-size:0.9em;";
+                alertBox.innerHTML = `<strong>⚠️ H5P Content Link Detected:</strong><br><span style="font-family:monospace">${content}</span><br><br>To view this content, please upload the .h5p file to <a href="https://lumi.education" target="_blank" style="text-decoration:underline;">Lumi.education</a> and paste the <strong>Embed Link</strong> using the H5P button in the editor.`;
+                placeholder.parentNode.replaceChild(alertBox, placeholder);
+            }
+        });
+
+        // 3. Scan for raw text URLs that look like Moodle Draft files (failed imports)
+        // This is a robust fallback to find raw text nodes containing "draftfile.php"
+        const walker = document.createTreeWalker(editorContent, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        const nodesToReplace = [];
+
+        while (node = walker.nextNode()) {
+            if (node.nodeValue && node.nodeValue.includes('draftfile.php') && node.nodeValue.includes('.h5p')) {
+                nodesToReplace.push(node);
+            }
+        }
+
+        nodesToReplace.forEach(textNode => {
+            const span = document.createElement('span');
+            span.innerHTML = `<div style="background:#f8d7da; color:#721c24; padding:10px; border:1px solid #f5c6cb; border-radius:4px; margin:10px 0;"><strong>⚠️ Content Migration Needed:</strong> This appears to be a link to a Moodle draft file which cannot be accessed. Please re-upload the H5P file to Lumi.education and update the content.</div>`;
+            textNode.parentNode.replaceChild(span, textNode);
+        });
+    });
+</script>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white relative">
-        <div class="container mx-auto px-6 py-12">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <!-- Left: Course Info -->
-                <div class="lg:col-span-2">
-                    <div class="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium mb-4">
-                        {% if course.price and course.price > 0 %}
-                            ${{ course.price }}
-                        {% else %}
-                            <span class="text-green-200">✓ Free Course</span>
-                        {% endif %}
-                    </div>
-                    <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">{{ course.title }}</h1>
-                    <p class="text-lg text-white/90 mb-6 leading-relaxed">{{ course.description }}</p>
-                    
-                    <div class="flex flex-wrap items-center gap-4 text-sm mb-6">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-2xl">⭐</span>
-                            <span class="font-semibold">{{ course.average_rating|default(0)|round(1) }}</span>
-                            <span class="text-white/80">({{ course.ratings|length if course.ratings else 0 }} ratings)</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xl">👥</span>
-                            <span class="text-white/90">{{ course.enrollments|length if course.enrollments else 0 }} learners enrolled</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center space-x-2 text-white/80">
-                        <span class="text-lg">👨‍🏫</span>
-                        <span>Created by <span class="font-medium text-white">{{ course.teacher.email.split('@')[0] }}</span></span>
-                    </div>
-
-                    {% if completion_percentage is defined %}
-                    <div class="mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-medium">📈 Your Progress</span>
-                            <span class="text-lg font-bold {% if completion_percentage == 100 %}text-green-300{% else %}text-white{% endif %}">
-                                {{ completion_percentage|round|int }}%
-                            </span>
-                        </div>
-                        <div class="w-full bg-white/20 rounded-full h-3 overflow-hidden shadow-inner">
-                            <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-3 rounded-full transition-all duration-500 {% if completion_percentage == 100 %}animate-pulse{% endif %}" 
-                                 style="width: {{ completion_percentage }}%"></div>
-                        </div>
-                        <p class="text-xs text-white/80 mt-2 flex items-center justify-between">
-                            <span>{{ completed_sections|default(0) }} of {{ total_sections|default(sections|length) }} lessons completed</span>
-                            {% if completion_percentage == 100 %}
-                                <span class="text-green-300 font-semibold">✓ Complete!</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
+<div class="h-screen bg-gray-50 flex flex-col pt-16 overflow-hidden">
+    <div id="flashed-messages-data" class="hidden" data-messages='{{ get_flashed_messages(with_categories=true)|tojson }}'></div>
+    <div class="flex-grow flex flex-col md:flex-row overflow-hidden">
+        <!-- Left Sidebar: Course Menu -->
+        <div class="w-full md:w-80 bg-white border-b md:border-r border-gray-200 flex-shrink-0 flex flex-col h-full overflow-y-auto">
+        <!-- Sidebar Header -->
+        <div class="p-6 border-b border-gray-150">
+            <a href="{{ url_for('student.dashboard') }}" class="inline-flex items-center text-xs text-indigo-600 hover:text-indigo-800 font-semibold mb-4 transition-colors">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                Back to Dashboard
+            </a>
+            <h2 class="text-base font-bold text-gray-900 leading-tight mb-2">{{ course.title }}</h2>
+            
+            {% if completion_percentage is defined %}
+            <div class="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Your Progress</span>
+                    <span class="text-xs font-bold text-indigo-600">{{ completion_percentage|round|int }}%</span>
                 </div>
-
-                <!-- Right: Course Highlights Card -->
-                <div class="lg:sticky lg:top-6">
-                    <div class="bg-white rounded-xl shadow-2xl p-6">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">📚 This course includes</h3>
-                        <ul class="space-y-3 text-sm">
-                            {% if modules %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-indigo-600 text-lg flex-shrink-0">📖</span>
-                                <span class="text-gray-700">{{ modules|length }} modules with {{ total_sections|default(sections|length) }} lessons</span>
-                            </li>
-                            {% endif %}
-                            {% if sections|selectattr('quizzes')|list|length > 0 %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-purple-600 text-lg flex-shrink-0">✅</span>
-                                <span class="text-gray-700">Quizzes to test your knowledge</span>
-                            </li>
-                            {% endif %}
-                            {% if sections|selectattr('assignments')|list|length > 0 %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-green-600 text-lg flex-shrink-0">📝</span>
-                                <span class="text-gray-700">Projects to apply new skills</span>
-                            </li>
-                            {% endif %}
-                            <li class="flex items-start space-x-3">
-                                <span class="text-blue-600 text-lg flex-shrink-0">🎓</span>
-                                <span class="text-gray-700">A certificate of completion</span>
-                            </li>
-                            <li class="flex items-start space-x-3">
-                                <span class="text-yellow-600 text-lg flex-shrink-0">♾️</span>
-                                <span class="text-gray-700">Lifetime access to materials</span>
-                            </li>
-                        </ul>
-                    </div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-500" style="width: {{ completion_percentage }}%"></div>
                 </div>
             </div>
+            {% endif %}
+        </div>
+
+        <!-- Modules List Accordion -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="sidebar-accordion">
+            {% if modules %}
+                {% for module in modules %}
+                <div class="border border-gray-150 rounded-lg overflow-hidden bg-white shadow-sm">
+                    <!-- Module Header (Clickable accordion) -->
+                    <button type="button" 
+                            class="w-full text-left p-3.5 bg-gray-50 hover:bg-gray-100/70 flex justify-between items-center transition-colors focus:outline-none"
+                            onclick="toggleSidebarModule('module-{{ module.id }}')">
+                        <div class="flex items-center space-x-2 min-w-0">
+                            <span id="module-arrow-{{ module.id }}" class="text-gray-400 transition-transform duration-200 flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </span>
+                            <span class="font-bold text-gray-800 text-sm truncate pr-2">{{ module.title }}</span>
+                        </div>
+                        <span class="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full flex-shrink-0">
+                            {{ module.sections|length }}
+                        </span>
+                    </button>
+
+                    <!-- Module Sections Links -->
+                    <div id="module-{{ module.id }}" class="divide-y divide-gray-100 hidden">
+                        {% for section in module.sections %}
+                        <button type="button"
+                                id="sidebar-link-{{ section.id }}"
+                                class="sidebar-section-link w-full text-left px-4 py-3 bg-white hover:bg-indigo-50/30 flex items-center justify-between transition-all duration-150 border-l-4 border-transparent text-sm {% if section.id in locked_sections %} cursor-not-allowed opacity-50 {% else %} cursor-pointer {% endif %}"
+                                data-section-id="{{ section.id }}"
+                                data-parent-module-id="module-{{ module.id }}"
+                                hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                                hx-target="#main-reader-content"
+                                hx-swap="innerHTML"
+                                {% if section.id in locked_sections %}disabled{% endif %}>
+                            <div class="flex items-center space-x-2 flex-1 min-w-0">
+                                {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
+                                <div class="flex-shrink-0 flex items-center justify-center w-5 h-5">
+                                    {% if section_completed %}
+                                    <span class="text-green-600 font-bold text-base">✓</span>
+                                    {% else %}
+                                        {% if section.section_type == 'video' %}🎥
+                                        {% elif section.section_type == 'quiz' %}❓
+                                        {% elif section.section_type == 'assignment' %}📝
+                                        {% elif section.section_type == 'presentation' %}📊
+                                        {% else %}📄
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <span class="truncate text-gray-700 font-medium group-hover:text-indigo-600">{{ section.title }}</span>
+                            </div>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Unassigned Sections (if any exist) -->
+            {% set unassigned_sections = sections|rejectattr('module_id')|list %}
+            {% if unassigned_sections %}
+                <div class="border border-gray-150 rounded-lg overflow-hidden bg-white shadow-sm">
+                    <button type="button" 
+                            class="w-full text-left p-3.5 bg-gray-50 hover:bg-gray-100/70 flex justify-between items-center transition-colors focus:outline-none"
+                            onclick="toggleSidebarModule('module-unassigned')">
+                        <div class="flex items-center space-x-2">
+                            <span id="module-arrow-unassigned" class="text-gray-400 transition-transform duration-200">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </span>
+                            <span class="font-bold text-gray-800 text-sm">Unassigned Activities</span>
+                        </div>
+                        <span class="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                            {{ unassigned_sections|length }}
+                        </span>
+                    </button>
+                    <div id="module-unassigned" class="divide-y divide-gray-100 hidden">
+                        {% for section in unassigned_sections %}
+                        <button type="button"
+                                id="sidebar-link-{{ section.id }}"
+                                class="sidebar-section-link w-full text-left px-4 py-3 bg-white hover:bg-indigo-50/30 flex items-center justify-between transition-all duration-150 border-l-4 border-transparent text-sm cursor-pointer"
+                                data-section-id="{{ section.id }}"
+                                data-parent-module-id="module-unassigned"
+                                hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                                hx-target="#main-reader-content"
+                                hx-swap="innerHTML">
+                            <div class="flex items-center space-x-2 flex-1 min-w-0">
+                                {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
+                                <div class="flex-shrink-0 flex items-center justify-center w-5 h-5">
+                                    {% if section_completed %}
+                                    <span class="text-green-600 font-bold text-base">✓</span>
+                                    {% else %}
+                                        {% if section.section_type == 'video' %}🎥
+                                        {% elif section.section_type == 'quiz' %}❓
+                                        {% elif section.section_type == 'assignment' %}📝
+                                        {% elif section.section_type == 'presentation' %}📊
+                                        {% else %}📄
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <span class="truncate text-gray-700 font-medium">{{ section.title }}</span>
+                            </div>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 
-    <div class="container mx-auto px-6 py-12">
-        <!-- Course Stats Bar -->
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <div class="flex flex-col items-center">
-                    <div class="text-indigo-600 text-3xl mb-2">📊</div>
-                    <div class="text-sm text-gray-500 mb-1">Skill level</div>
-                    <div class="font-semibold text-gray-800">{{ course.level|default('Beginner')|title }}</div>
-                </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-purple-600 text-3xl mb-2">⏱️</div>
-                    <div class="text-sm text-gray-500 mb-1">Time to complete</div>
-                    <div class="font-semibold text-gray-800">{{ course.duration|default('Self-paced') }}</div>
-                </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-green-600 text-3xl mb-2">🎯</div>
-                    <div class="text-sm text-gray-500 mb-1">Projects</div>
-                    <div class="font-semibold text-gray-800">{{ sections|selectattr('assignments')|list|length|default(0) }}</div>
-                </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-orange-600 text-3xl mb-2">📋</div>
-                    <div class="text-sm text-gray-500 mb-1">Prerequisites</div>
-                    <div class="font-semibold text-gray-800">
-                        {% if course.prerequisites %}
-                            {{ course.prerequisites }}
-                        {% else %}
-                            None
-                        {% endif %}
-                    </div>
-                </div>
+    <!-- Right Column: Reader Area -->
+    <div class="flex-1 bg-white flex flex-col min-w-0 h-full overflow-y-auto">
+        <!-- Path Header / Breadcrumbs -->
+        <div class="px-8 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider" id="reader-breadcrumbs">
+                Select an activity to begin learning
             </div>
-        </div>
-
-        <!-- Syllabus Section -->
-        <div class="bg-white rounded-xl shadow-md p-8 mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">📋 Course Syllabus</h2>
-                <button onclick="expandAllSections()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                    Expand all sections
+            <!-- Certificate Generation (If 100% complete) -->
+            {% if completion_percentage == 100 and enrollment %}
+            <div id="quick-certificate-box">
+                <button type="button" onclick="document.getElementById('ratingModal').classList.remove('hidden')"
+                        class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow transition">
+                    🎓 Claim Certificate
                 </button>
             </div>
-            <p class="text-gray-600 mb-6">
-                {{ total_sections|default(sections|length) }} lessons • 
-                {% set quiz_count = sections|selectattr('quizzes')|list|length %}
-                {% set assignment_count = sections|selectattr('assignments')|list|length %}
-                {{ assignment_count }} projects • {{ quiz_count }} quizzes
-            </p>
-        {% if sections %}
-            <div class="space-y-4">
-                {% for section in sections %}
-                    <div class="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-indigo-400 hover:shadow-md transition-all duration-200 {% if section.id in locked_sections %} opacity-60 {% endif %}">
-                        <button type="button" 
-                                class="section-toggle w-full text-left p-6 bg-white hover:bg-gray-50 flex items-center justify-between focus:outline-none group transition-all duration-200 {% if section.id in locked_sections %} cursor-not-allowed opacity-60 {% else %} cursor-pointer {% endif %}"
-                                data-section-id="{{ section.id }}"
-                                data-section-title="{{ section.title }}"
-                                {% if section.id in locked_sections %}disabled{% endif %}>
-                            <div class="flex items-center space-x-4 flex-1">
-                                {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
-                                <div class="flex-shrink-0 w-10 h-10 {% if section_completed %}bg-gradient-to-br from-green-500 to-emerald-600{% else %}bg-gradient-to-br from-indigo-600 to-purple-600{% endif %} text-white rounded-full flex items-center justify-center font-bold text-sm relative">
-                                    {% if section_completed %}
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                    {% else %}
-                                        {{ loop.index }}
-                                    {% endif %}
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ section.title }}</h3>
-                                    <p class="text-sm text-gray-500 mt-1">
-                                        {% if section.section_type == 'video' %}🎥 Video
-                                        {% elif section.section_type == 'text' %}📄 Reading
-                                        {% elif section.section_type == 'quiz' %}❓ Quiz
-                                        {% elif section.section_type == 'assignment' %}📝 Assignment
-                                        {% elif section.section_type == 'presentation' %}📊 Presentation
-                                        {% else %}📖 Lesson
-                                        {% endif %}
-                                        {% if section.duration %} • {{ section.duration }} min{% endif %}
-                                    </p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200 section-arrow" id="arrow-{{ section.id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div id="section-{{ section.id }}" class="section-content p-8 bg-gray-50 border-t-2 border-gray-200 hidden" data-section-id="{{ section.id }}">
-                            <!-- Main Content Card -->
-                            <div class="space-y-6">
-                                {% if section.content %}
-                                <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                    <div class="prose prose-gray max-w-none text-gray-700" style="white-space: pre-wrap;">{{ section.content|safe }}</div>
-                                </div>
-                                {% endif %}
-                                
-                                {% if section.section_type == 'video' and section.video_url %}
-                                    {% set youtube_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1] %}
-                                    {% if youtube_id and youtube_id|length == 11 %}
-                                    <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                            <span class="text-red-500 text-lg mr-2">🎥</span>
-                                            Video Content
-                                        </h4>
-                                        <div class="flex justify-center">
-                                            <div class="max-w-4xl w-full">
-                                                <div class="relative rounded-lg overflow-hidden shadow-md" style="padding-bottom: 56.25%; height: 0;">
-                                                    <iframe class="absolute top-0 left-0 w-full h-full" 
-                                                            src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1&rel=0&modestbranding=1" 
-                                                            frameborder="0" 
-                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                            allowfullscreen></iframe>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% else %}
-                                    <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-                                        <p class="text-red-600 text-sm">⚠️ Invalid video URL</p>
-                                    </div>
-                                    {% endif %}
-                                {% endif %}
-                                
-                                {% if section.section_type == 'image' and section.media_file %}
-                                <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                    <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                        <span class="text-blue-500 text-lg mr-2">🖼️</span>
-                                        Image
-                                    </h4>
-                                    <div class="flex justify-center">
-                                        <img src="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
-                                             alt="{{ section.title }}" 
-                                             class="max-w-4xl w-full h-auto rounded-lg shadow-md">
-                                    </div>
-                                </div>
-                                {% endif %}
-                                
-                                {% if section.section_type == 'audio' and section.media_file %}
-                                <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                    <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                        <span class="text-purple-500 text-lg mr-2">🎵</span>
-                                        Audio Content
-                                    </h4>
-                                    <audio controls class="w-full">
-                                        <source src="{{ url_for('static', filename='uploads/' + section.media_file) }}" type="audio/mpeg">
-                                        Your browser does not support the audio element.
-                                    </audio>
-                                </div>
-                                {% endif %}
-                                
-                                {% if section.section_type == 'presentation' and section.media_file %}
-                                <div class="bg-white border border-gray-200 rounded-xl p-6">
-                                    <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                        <span class="text-orange-500 text-lg mr-2">📊</span>
-                                        Presentation
-                                    </h4>
-                                    <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" 
-                                       class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200" 
-                                       target="_blank">
-                                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                       </svg>
-                                       View Presentation (PDF)
-                                    </a>
-                                </div>
-                                {% endif %}
+            {% endif %}
+        </div>
 
-                            <!-- Assignments -->
-                            {% if section.assignments %}
-                                {% for assignment in section.assignments %}
-                                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
-                                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                            <span class="text-green-600 text-lg mr-2">📝</span>
-                                            Assignment
-                                        </h4>
-                                        <h5 class="text-xl font-bold text-gray-900 mb-2">{{ assignment.title }}</h5>
-                                        <p class="text-gray-700 mb-3">{{ assignment.description }}</p>
-                                        <div class="flex items-center text-sm text-gray-600 mb-4">
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                            </svg>
-                                            Due: {{ assignment.due_date.strftime('%B %d, %Y at %I:%M %p') if assignment.due_date else 'No due date' }}
-                                        </div>
-                                            {% set submissions = assignment.submissions|selectattr('student_id', 'equalto', current_user.id)|list %}
-                                            {% set submission = submissions|last if submissions else none %}
-                                            <div class="mt-2">
-                                                {% if submissions and submissions|length < 3 %}
-                                                    <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
-                                                       class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                                       {% if submission and submission.reviewed %} Update with Feedback {% else %} Submit Assignment {% endif %}
-                                                    </a>
-                                                    <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length }}</div>
-                                                {% elif submission %}
-                                                    <p class="text-green-600 text-sm">Submitted: {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                                                    {% if submission.file_path %}
-                                                        <a href="{{ url_for('static', filename='uploads/' + submission.file_path) }}" 
-                                                           class="text-blue-600 hover:text-blue-800 text-sm transition-colors duration-200" 
-                                                           target="_blank">
-                                                           View/Download File
-                                                        </a>
-                                                    {% endif %}
-                                                    {% if submission.reviewed %}
-                                                        <div class="mt-3 p-4 {% if submission.grade is not none %}{% if submission.grade >= 70 %}bg-green-50 border-green-200{% elif submission.grade >= 50 %}bg-yellow-50 border-yellow-200{% else %}bg-red-50 border-red-200{% endif %}{% else %}bg-blue-50 border-blue-200{% endif %} rounded-lg border-2">
-                                                            {% if submission.grade is not none %}
-                                                                <div class="flex items-center justify-between mb-3">
-                                                                    <span class="text-sm font-medium text-gray-600">Your Grade:</span>
-                                                                    <span class="text-3xl font-bold {% if submission.grade >= 70 %}text-green-700{% elif submission.grade >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">
-                                                                        {{ submission.grade }}%
-                                                                    </span>
-                                                                </div>
-                                                                <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
-                                                                    <div class="{% if submission.grade >= 70 %}bg-green-600{% elif submission.grade >= 50 %}bg-yellow-600{% else %}bg-red-600{% endif %} h-2 rounded-full transition-all" style="width: {{ submission.grade }}%"></div>
-                                                                </div>
-                                                            {% endif %}
-                                                            {% if submission.feedback %}
-                                                                <p class="font-semibold text-gray-800 mb-1">📝 Teacher Feedback:</p>
-                                                                <p class="text-gray-700 whitespace-pre-wrap">{{ submission.feedback }}</p>
-                                                            {% else %}
-                                                                <p class="text-gray-600 italic">No written feedback provided</p>
-                                                            {% endif %}
-                                                        </div>
-                                                    {% else %}
-                                                        <p class="text-yellow-600 text-sm mt-2 flex items-center">
-                                                            <svg class="w-4 h-4 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                                            </svg>
-                                                            Awaiting review...
-                                                        </p>
-                                                    {% endif %}
-                                                    <div class="text-xs text-gray-500 mt-1">Draft: {{ submissions|length }}/3</div>
-                                                {% else %}
-                                                    <p class="text-red-500">Debug: No submissions found for user {{ current_user.id }}</p>
-                                                    <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" 
-                                                       class="mt-2 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                                       Submit Assignment
-                                                    </a>
-                                                    <div class="text-xs text-gray-500 mt-1">Drafts remaining: {{ 3 - submissions|length }}</div>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-
-                            <!-- Quizzes -->
-                            {% if section.quizzes %}
-                                {% for quiz in section.quizzes %}
-                                    <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
-                                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center">
-                                            <span class="text-purple-600 text-lg mr-2">❓</span>
-                                            Quiz
-                                        </h4>
-                                        <h5 class="text-xl font-bold text-gray-900 mb-4">{{ quiz.title }}</h5>
-                                        {% set attempt_count = quiz.attempts|selectattr('student_id', 'equalto', current_user.id)|list|length %}
-                                        {% set best_score = quiz.attempts|selectattr('student_id', 'equalto', current_user.id)|map(attribute='score')|max|default(0) %}
-                                        
-                                        {% if attempt_count > 0 %}
-                                        <div class="bg-white/60 rounded-lg p-3 mb-4">
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-sm text-gray-600">Best Score:</span>
-                                                <span class="text-lg font-bold text-purple-700">{{ best_score|round(1) }}%</span>
-                                            </div>
-                                            <div class="flex justify-between items-center mt-1">
-                                                <span class="text-sm text-gray-600">Attempts:</span>
-                                                <span class="text-sm font-medium text-gray-700">{{ attempt_count }}/3</span>
-                                            </div>
-                                        </div>
-                                        {% endif %}
-                                        
-                                        {% if attempt_count < 3 %}
-                                            <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" 
-                                               class="inline-flex items-center px-5 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium">
-                                               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                               </svg>
-                                               {{ 'Retake Quiz' if attempt_count > 0 else 'Start Quiz' }} ({{ 3 - attempt_count }} attempts left)
-                                            </a>
-                                        {% else %}
-                                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                                                <p class="text-red-700 font-medium">🔒 Maximum attempts reached</p>
-                                                <p class="text-red-600 text-sm mt-1">Final score: {{ best_score|round(1) }}%</p>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
-                            
-                            <!-- Mark as Complete Button -->
-                            {% set enrollment_section = enrollment_sections.get(section.id) %}
-                            <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-                                <form id="complete-form-{{ section.id }}" action="{{ url_for('student.get_section_content', section_id=section.id) }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="mark_completed" value="true">
-                                    <button type="submit" 
-                                            class="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-all duration-200 {% if enrollment_section and enrollment_section.completed %}bg-gray-300 text-gray-600 cursor-not-allowed{% else %}bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl{% endif %}" 
-                                            {% if enrollment_section and enrollment_section.completed %}disabled{% endif %}>
-                                        {% if enrollment_section and enrollment_section.completed %}
-                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                            ✓ Completed
-                                        {% else %}
-                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                            Mark as Complete
-                                        {% endif %}
-                                    </button>
-                                </form>
-                            </div>
-                            </div>
-                        </div>
+        <!-- Reader Canvas -->
+        <div class="flex-1 p-8 md:p-12 max-w-4xl mx-auto w-full">
+            <div id="main-reader-content" class="prose prose-indigo max-w-none">
+                {% if first_section %}
+                    <!-- Dynamic Load of first section on load -->
+                    <div class="flex items-center justify-center py-20"
+                         hx-get="{{ url_for('student.get_section_content', section_id=first_section.id) }}"
+                         hx-trigger="load"
+                         hx-target="#main-reader-content"
+                         hx-swap="innerHTML">
+                        <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="ml-3 text-gray-600 font-medium">Loading first activity...</span>
                     </div>
-                {% endfor %}
+                {% else %}
+                    <div class="text-center py-20">
+                        <div class="text-6xl mb-4">📭</div>
+                        <h3 class="text-lg font-bold text-gray-800">No sections available yet</h3>
+                        <p class="text-gray-500 text-sm mt-1">This course does not contain any lessons yet.</p>
+                    </div>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="text-center py-12">
-                <div class="text-6xl mb-4">📭</div>
-                <p class="text-gray-500 text-lg">No sections available yet.</p>
-                <p class="text-gray-400 text-sm mt-2">Check back soon for course content!</p>
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- Rating Popup -->
+<div id="ratingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+        <h2 class="text-xl font-bold mb-4">Rate This Course</h2>
+        <form id="ratingForm" action="{{ url_for('student.rate_course', course_id=course.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-4">
+                <label for="rating" class="block text-sm font-medium text-gray-700">Rating (0-5)</label>
+                <input type="number" name="rating" id="rating" min="0" max="5" step="0.1" required
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
             </div>
-        {% endif %}
+            <div class="mb-4">
+                <label for="comment" class="block text-sm font-medium text-gray-700">Comment</label>
+                <textarea name="comment" id="comment" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    rows="3"></textarea>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="closeModal()"
+                    class="mr-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit</button>
+            </div>
+        </form>
+        <div id="certificateSection" class="mt-4 hidden">
+            <button id="generateCertificateBtn"
+                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Generate Certificate</button>
+            <a id="certificateLink" href="#" class="ml-2 text-blue-600 hover:underline hidden">View/Download
+                Certificate</a>
         </div>
     </div>
 </div>
 
-    <!-- Rating Popup -->
-    <div id="ratingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 class="text-xl font-bold mb-4">Rate This Course</h2>
-            <form id="ratingForm" action="{{ url_for('student.rate_course', course_id=course.id) }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-4">
-                    <label for="rating" class="block text-sm font-medium text-gray-700">Rating (0-5)</label>
-                    <input type="number" name="rating" id="rating" min="0" max="5" step="0.1" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                </div>
-                <div class="mb-4">
-                    <label for="comment" class="block text-sm font-medium text-gray-700">Comment</label>
-                    <textarea name="comment" id="comment" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" rows="3"></textarea>
-                </div>
-                <div class="flex justify-end">
-                    <button type="button" onclick="closeModal()" class="mr-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit</button>
-                </div>
-            </form>
-            <div id="certificateSection" class="mt-4 hidden">
-                <button id="generateCertificateBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Generate Certificate</button>
-                <a id="certificateLink" href="#" class="ml-2 text-blue-600 hover:underline hidden">View/Download Certificate</a>
-            </div>
-        </div>
-    </div>
+<script>
+    // Premium Toast Notification System
+    function showToast(message, category = 'success') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'fixed top-20 right-6 z-[9999] flex flex-col gap-3 pointer-events-none';
+            document.body.appendChild(container);
+        }
 
-    <script>
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Page loaded, initializing toggles...');
-            
-            // Get all toggle buttons
-            const toggleButtons = document.querySelectorAll('.section-toggle');
-            console.log('Found toggle buttons:', toggleButtons.length);
-            
-            // Add click event to each button
-            toggleButtons.forEach(function(button) {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Get section ID from data attribute
-                    const sectionId = this.getAttribute('data-section-id');
-                    console.log('Clicked section:', sectionId);
-                    
-                    if (!sectionId) {
-                        console.error('No section ID found');
-                        return;
-                    }
-                    
-                    // Get the content div and arrow
-                    const content = document.getElementById('section-' + sectionId);
-                    const arrow = document.getElementById('arrow-' + sectionId);
-                    
-                    if (!content) {
-                        console.error('Content not found for section:', sectionId);
-                        return;
-                    }
-                    
-                    // Toggle visibility
-                    const isHidden = content.classList.contains('hidden');
-                    
-                    if (isHidden) {
-                        content.classList.remove('hidden');
-                        if (arrow) {
-                            arrow.style.transform = 'rotate(180deg)';
-                        }
-                        // Enhance any YouTube links inside this section's rich text
-                        enhanceYouTubeEmbeds(content);
-                        console.log('✓ Opened section:', sectionId);
-                    } else {
-                        content.classList.add('hidden');
-                        if (arrow) {
-                            arrow.style.transform = 'rotate(0deg)';
-                        }
-                        console.log('✓ Closed section:', sectionId);
-                    }
+        const toast = document.createElement('div');
+        toast.className = 'bg-gray-900 text-white text-sm font-semibold px-4 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 border border-gray-800 transition-all duration-300 transform translate-x-12 opacity-0 pointer-events-auto max-w-sm';
+        
+        const icon = category === 'success' ? '🎉' : '⚠️';
+        toast.innerHTML = `
+            <span class="text-emerald-400 text-lg flex-shrink-0">${icon}</span>
+            <div class="flex-grow">${message}</div>
+            <button class="text-gray-400 hover:text-white transition-colors flex-shrink-0" onclick="this.parentElement.remove()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        `;
+
+        container.appendChild(toast);
+
+        // Animate entrance
+        setTimeout(() => {
+            toast.classList.remove('translate-x-12', 'opacity-0');
+        }, 10);
+
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+            toast.classList.add('translate-x-12', 'opacity-0');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 4000);
+    }
+
+    // Success Confetti bursts from both corners
+    function triggerSuccessConfetti() {
+        if (typeof confetti === 'function') {
+            const duration = 2 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 3,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.8 },
+                    colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B']
                 });
-            });
+                confetti({
+                    particleCount: 3,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1, y: 0.8 },
+                    colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B']
+                });
 
-            // Run once at load for any pre-opened content (unlikely but safe)
-            enhanceYouTubeEmbeds(document);
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+    }
+
+    // Toggle module visibility helper
+    function toggleSidebarModule(moduleId) {
+        const content = document.getElementById(moduleId);
+        const moduleNum = moduleId.replace('module-', '');
+        const arrow = document.getElementById('module-arrow-' + moduleNum);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            if (arrow) arrow.style.transform = 'rotate(180deg)';
+        } else {
+            content.classList.add('hidden');
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // Dynamic Navigation Buttons Updater
+    function updateNavigationButtons() {
+        const prevBtn = document.getElementById('prev-activity-nav');
+        const nextBtn = document.getElementById('next-activity-nav');
+        if (!prevBtn && !nextBtn) return;
+
+        const currentLink = document.querySelector('.sidebar-section-link.bg-indigo-50');
+        if (!currentLink) return;
+
+        const allLinks = Array.from(document.querySelectorAll('.sidebar-section-link:not([disabled])'));
+        const currentIndex = allLinks.indexOf(currentLink);
+
+        // Handle Previous button
+        if (currentIndex > 0) {
+            const prevLink = allLinks[currentIndex - 1];
+            if (prevBtn) {
+                prevBtn.classList.remove('hidden');
+                prevBtn.onclick = function() {
+                    prevLink.click();
+                    // Scroll active item into view inside sidebar if overflowed
+                    prevLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                };
+            }
+        } else {
+            if (prevBtn) prevBtn.classList.add('hidden');
+        }
+
+        // Handle Next button
+        if (currentIndex < allLinks.length - 1) {
+            const nextLink = allLinks[currentIndex + 1];
+            if (nextBtn) {
+                nextBtn.classList.remove('hidden');
+                nextBtn.onclick = function() {
+                    nextLink.click();
+                    // Scroll active item into view inside sidebar if overflowed
+                    nextLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                };
+            }
+        } else {
+            if (nextBtn) nextBtn.classList.add('hidden');
+        }
+    }
+
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Page loaded, initializing sidebar toggles...');
+
+        const links = document.querySelectorAll('.sidebar-section-link');
+        
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                const sectionId = this.getAttribute('data-section-id');
+                const parentModuleId = this.getAttribute('data-parent-module-id');
+                
+                // Track time
+                stopTimeTracking();
+                startTimeTracking(sectionId);
+                
+                // Save current section to sessionStorage so progress isn't lost on refresh
+                sessionStorage.setItem('activeSectionId', sectionId);
+                
+                // Highlight active link
+                links.forEach(l => {
+                    l.classList.remove('bg-indigo-50', 'text-indigo-700', 'font-bold', 'border-l-4', 'border-indigo-600');
+                    l.classList.add('border-transparent');
+                });
+                this.classList.remove('border-transparent');
+                this.classList.add('bg-indigo-50', 'text-indigo-700', 'font-bold', 'border-l-4', 'border-indigo-600');
+                
+                // Update breadcrumbs in header
+                const parentHeader = document.querySelector(`button[onclick="toggleSidebarModule('${parentModuleId}')"]`);
+                const moduleTitle = parentHeader ? parentHeader.querySelector('.font-bold').textContent.trim() : 'Course';
+                const sectionTitle = this.querySelector('span.truncate').textContent.trim();
+                document.getElementById('reader-breadcrumbs').textContent = `${moduleTitle} / ${sectionTitle}`;
+                
+                // Trigger YouTube embed enhancement after content swaps (give it a small delay for HTMX swap)
+                setTimeout(() => {
+                    enhanceYouTubeEmbeds(document.getElementById('main-reader-content'));
+                }, 200);
+            });
         });
 
-        // Expand all sections function
-        function expandAllSections() {
-            console.log('Expanding all sections...');
-            const allContents = document.querySelectorAll('.section-content');
-            const allArrows = document.querySelectorAll('.section-arrow');
-            
-            allContents.forEach(function(content) {
-                content.classList.remove('hidden');
+        // Register HTMX event to update buttons after content is loaded/swapped
+        const readerContent = document.getElementById('main-reader-content');
+        if (readerContent) {
+            readerContent.addEventListener('htmx:afterSwap', function(evt) {
+                console.log('HTMX content loaded, updating navigation buttons...');
+                updateNavigationButtons();
             });
-            
-            allArrows.forEach(function(arrow) {
-                arrow.style.transform = 'rotate(180deg)';
-            });
-            
-            console.log('✓ All sections expanded');
-            // Enhance embeds for all now-visible sections
-            enhanceYouTubeEmbeds(document);
         }
 
-        // Replace plain YouTube links with responsive iframe embeds inside rich text
-        function enhanceYouTubeEmbeds(root) {
+        // Auto-select active section on load (sessionStorage, or first_section)
+        const savedSectionId = sessionStorage.getItem('activeSectionId');
+        let targetLink = null;
+        
+        if (savedSectionId) {
+            targetLink = document.getElementById('sidebar-link-' + savedSectionId);
+        }
+        
+        if (!targetLink) {
+            // Fallback to first available section link
+            targetLink = document.querySelector('.sidebar-section-link');
+        }
+        
+        if (targetLink) {
+            const parentModuleId = targetLink.getAttribute('data-parent-module-id');
+            // Expand the parent module of the active link
+            if (parentModuleId) {
+                const parentModuleContent = document.getElementById(parentModuleId);
+                if (parentModuleContent) {
+                    parentModuleContent.classList.remove('hidden');
+                    const moduleNum = parentModuleId.replace('module-', '');
+                    const arrow = document.getElementById('module-arrow-' + moduleNum);
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+                }
+            }
+            
+            // Highlight it and set breadcrumbs (without triggering a second network fetch since first_section auto-loads)
+            targetLink.classList.remove('border-transparent');
+            targetLink.classList.add('bg-indigo-50', 'text-indigo-700', 'font-bold', 'border-l-4', 'border-indigo-600');
+            
+            const parentHeader = document.querySelector(`button[onclick="toggleSidebarModule('${parentModuleId}')"]`);
+            const moduleTitle = parentHeader ? parentHeader.querySelector('.font-bold').textContent.trim() : 'Course';
+            const sectionTitle = targetLink.querySelector('span.truncate').textContent.trim();
+            document.getElementById('reader-breadcrumbs').textContent = `${moduleTitle} / ${sectionTitle}`;
+            
+            // If the loaded section is not the first section, trigger htmx load for it manually!
+            const firstSectionId = "{{ first_section.id if first_section else '' }}";
+            if (savedSectionId && savedSectionId !== firstSectionId) {
+                const url = targetLink.getAttribute('hx-get');
+                if (url && typeof htmx !== 'undefined') {
+                    htmx.ajax('GET', url, {target: '#main-reader-content', swap: 'innerHTML'});
+                }
+            }
+
+            // Start time tracking
+            const activeSectionId = targetLink.getAttribute('data-section-id');
+            if (activeSectionId) {
+                startTimeTracking(activeSectionId);
+            }
+        }
+        
+        // Render any flashed messages as premium toasts
+        const messagesData = document.getElementById('flashed-messages-data');
+        if (messagesData) {
             try {
-                const containers = (root && root.querySelectorAll) ? root.querySelectorAll('.prose, .content, .rich-text') : [];
-                const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/;
-                containers.forEach(container => {
-                    // Convert anchor tags pointing to YouTube
-                    container.querySelectorAll('a[href*="youtube.com/watch"], a[href*="youtu.be/"]').forEach(a => {
-                        const href = a.getAttribute('href');
-                        const match = href && href.match(ytRegex);
-                        if (!match) return;
-                        const id = match[1];
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'max-w-4xl w-full mx-auto';
-                        wrapper.innerHTML = `
-                            <div class="relative rounded-lg overflow-hidden shadow-md" style="padding-bottom:56.25%;height:0;">
-                                <iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/${id}?rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                            </div>
-                        `;
-                        a.replaceWith(wrapper);
-                    });
+                const messages = JSON.parse(messagesData.getAttribute('data-messages') || '[]');
+                messages.forEach(([category, message]) => {
+                    showToast(message, category);
+                    // Celebrate completions
+                    if (message.includes('Quiz completed!') || message.includes('Section marked as completed.')) {
+                        triggerSuccessConfetti();
+                    }
                 });
             } catch (e) {
-                console.warn('enhanceYouTubeEmbeds error:', e);
+                console.error('Error parsing flashed messages:', e);
             }
         }
 
-        // Time tracking system
-        let sectionStartTime = null;
-        let currentSectionId = null;
-        let timeTrackingInterval = null;
-        
-        function startTimeTracking(sectionId) {
-            console.log('Starting time tracking for section:', sectionId);
-            currentSectionId = sectionId;
-            sectionStartTime = Date.now();
-            
-            // Send time updates every 30 seconds
-            if (timeTrackingInterval) {
-                clearInterval(timeTrackingInterval);
-            }
-            
-            timeTrackingInterval = setInterval(function() {
-                if (currentSectionId && sectionStartTime) {
-                    const timeSpent = Math.floor((Date.now() - sectionStartTime) / 1000);
-                    sendTimeTracking(currentSectionId, timeSpent);
-                    sectionStartTime = Date.now(); // Reset for next interval
-                }
-            }, 30000); // Every 30 seconds
+        // Initial youtube hook
+        enhanceYouTubeEmbeds(document);
+    });
+
+    // Global player queue to handle HTMX dynamic swaps and script load races
+    window.ytPlayersToInit = window.ytPlayersToInit || [];
+    const activeYtTimers = {};
+
+    // Global callback for YT Iframe API
+    window.onYouTubeIframeAPIReady = function() {
+        console.log('YouTube IFrame API Ready');
+        processYtQueue();
+    };
+
+    function processYtQueue() {
+        if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') return;
+        while (window.ytPlayersToInit.length > 0) {
+            const task = window.ytPlayersToInit.shift();
+            initSingleYtPlayer(task.elementId, task.videoId, task.sectionId);
         }
+    }
+
+    function initSingleYtPlayer(elementId, videoId, sectionId) {
+        if (!document.getElementById(elementId)) return;
         
-        function stopTimeTracking() {
-            if (timeTrackingInterval) {
-                clearInterval(timeTrackingInterval);
+        console.log(`Initializing YT Player for element ${elementId}, video ${videoId}, section ${sectionId}`);
+        const player = new YT.Player(elementId, {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: {
+                'rel': 0,
+                'modestbranding': 1,
+                'enablejsapi': 1
+            },
+            events: {
+                'onReady': function(event) {
+                    console.log('YT Player Ready for section:', sectionId);
+                    // Retrieve and seek to saved progress
+                    fetch('/student/video-progress/' + sectionId)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.current_time > 0) {
+                                player.seekTo(data.current_time, true);
+                                showToast('Resuming YouTube video from ' + formatTimeYt(data.current_time));
+                            }
+                        })
+                        .catch(err => console.error('Error fetching YT progress:', err));
+                },
+                'onStateChange': function(event) {
+                    // Event code 1 = PLAYING, 2 = PAUSED, 0 = ENDED
+                    if (event.data === 1) {
+                        console.log('YT Video Playing. Starting progress saves.');
+                        if (activeYtTimers[sectionId]) clearInterval(activeYtTimers[sectionId]);
+                        activeYtTimers[sectionId] = setInterval(() => {
+                            const currentTime = player.getCurrentTime();
+                            const duration = player.getDuration();
+                            if (duration > 0) {
+                                const percent = (currentTime / duration) * 100;
+                                saveYtProgress(sectionId, currentTime, duration, percent);
+                            }
+                        }, 5000);
+                    } else {
+                        console.log('YT Video Stopped/Paused. Stopping progress saves.');
+                        if (activeYtTimers[sectionId]) {
+                            clearInterval(activeYtTimers[sectionId]);
+                            delete activeYtTimers[sectionId];
+                        }
+                        const currentTime = player.getCurrentTime();
+                        const duration = player.getDuration();
+                        if (duration > 0) {
+                            const percent = (currentTime / duration) * 100;
+                            saveYtProgress(sectionId, currentTime, duration, percent);
+                        }
+                    }
+                }
             }
+        });
+    }
+
+    function saveYtProgress(sectionId, currentTime, duration, percent) {
+        fetch('/student/video-progress/' + sectionId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                current_time: currentTime,
+                duration: duration,
+                watch_percentage: percent,
+                total_watch_time: 0,
+                playback_speed: 1.0,
+                play_count: 1
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Auto reload sidebar to show checkmarks if marked completed via watch completion
+            if (percent >= 90 && data.completed) {
+                const activeLink = document.getElementById('sidebar-link-' + sectionId);
+                if (activeLink && !activeLink.querySelector('.text-green-600')) {
+                    location.reload();
+                }
+            }
+        })
+        .catch(err => console.error('Error saving YT progress:', err));
+    }
+
+    function formatTimeYt(seconds) {
+        if (isNaN(seconds)) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+
+    // Replace plain YouTube links with responsive iframe embeds inside rich text
+    function enhanceYouTubeEmbeds(root) {
+        try {
+            const containers = (root && root.querySelectorAll) ? root.querySelectorAll('.prose, .content, .rich-text') : [];
+            const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/;
             
-            // Send final time update
+            // Ensure YT API script is loaded
+            if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+                if (!document.getElementById('yt-iframe-api-script')) {
+                    const tag = document.createElement('script');
+                    tag.id = 'yt-iframe-api-script';
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                }
+            }
+
+            containers.forEach(container => {
+                container.querySelectorAll('a[href*="youtube.com/watch"], a[href*="youtu.be/"]').forEach(a => {
+                    const href = a.getAttribute('href');
+                    const match = href && href.match(ytRegex);
+                    if (!match) return;
+                    const id = match[1];
+                    
+                    // Find containing section ID
+                    const parentContainer = a.closest('div[id^="section-content-"]');
+                    const sectionId = parentContainer ? parentContainer.id.replace('section-content-', '') : null;
+                    if (!sectionId) return;
+
+                    const elementId = `yt-player-${id}-${sectionId}`;
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'max-w-4xl w-full mx-auto my-6';
+                    wrapper.innerHTML = `
+                        <div class="relative rounded-lg overflow-hidden shadow-md" style="padding-bottom:56.25%;height:0;">
+                            <div id="${elementId}" class="absolute top-0 left-0 w-full h-full"></div>
+                        </div>
+                    `;
+                    a.replaceWith(wrapper);
+
+                    // Add player to initialization queue
+                    window.ytPlayersToInit.push({
+                        elementId: elementId,
+                        videoId: id,
+                        sectionId: sectionId
+                    });
+                });
+            });
+
+            // Initialize players if the API is ready
+            processYtQueue();
+        } catch (e) {
+            console.warn('enhanceYouTubeEmbeds error:', e);
+        }
+    }
+
+    // Time tracking system
+    let sectionStartTime = null;
+    let currentSectionId = null;
+    let timeTrackingInterval = null;
+
+    function startTimeTracking(sectionId) {
+        console.log('Starting time tracking for section:', sectionId);
+        currentSectionId = sectionId;
+        sectionStartTime = Date.now();
+
+        // Send time updates every 30 seconds
+        if (timeTrackingInterval) {
+            clearInterval(timeTrackingInterval);
+        }
+
+        timeTrackingInterval = setInterval(function () {
             if (currentSectionId && sectionStartTime) {
                 const timeSpent = Math.floor((Date.now() - sectionStartTime) / 1000);
                 sendTimeTracking(currentSectionId, timeSpent);
+                sectionStartTime = Date.now(); // Reset for next interval
             }
-            
-            currentSectionId = null;
-            sectionStartTime = null;
+        }, 30000); // Every 30 seconds
+    }
+
+    function stopTimeTracking() {
+        if (timeTrackingInterval) {
+            clearInterval(timeTrackingInterval);
         }
-        
-        function sendTimeTracking(sectionId, timeSpent) {
-            if (timeSpent < 1) return; // Don't send if less than 1 second
-            
-            const csrfToken = '{{ csrf_token() }}';
-            
-            fetch('/student/track-time/' + sectionId, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({ time_spent: timeSpent })
-            })
+
+        // Send final time update
+        if (currentSectionId && sectionStartTime) {
+            const timeSpent = Math.floor((Date.now() - sectionStartTime) / 1000);
+            sendTimeTracking(currentSectionId, timeSpent);
+        }
+
+        currentSectionId = null;
+        sectionStartTime = null;
+    }
+
+    function sendTimeTracking(sectionId, timeSpent) {
+        if (timeSpent < 1) return; // Don't send if less than 1 second
+
+        const csrfToken = '{{ csrf_token() }}';
+
+        fetch('/student/track-time/' + sectionId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ time_spent: timeSpent })
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -608,141 +926,143 @@
                 }
             })
             .catch(error => console.error('Time tracking error:', error));
-        }
-        
-        // Track time when section is expanded
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleButtons = document.querySelectorAll('.section-toggle');
-            
-            toggleButtons.forEach(function(button) {
-                button.addEventListener('click', function() {
-                    const sectionId = this.getAttribute('data-section-id');
-                    const content = document.getElementById('section-' + sectionId);
-                    
-                    // If opening a section, start tracking
-                    if (content && content.classList.contains('hidden')) {
-                        // Section is about to be opened
-                        setTimeout(function() {
-                            stopTimeTracking(); // Stop previous tracking
-                            startTimeTracking(sectionId);
-                        }, 100);
-                    } else {
-                        // Section is being closed
-                        stopTimeTracking();
-                    }
-                });
-            });
-        });
-        
-        // Stop tracking when leaving page
-        window.addEventListener('beforeunload', function() {
-            stopTimeTracking();
-        });
+    }
 
-        // Keep existing DOMContentLoaded for other functions
-        document.addEventListener('DOMContentLoaded', function() {
+    // Stop tracking when leaving page
+    window.addEventListener('beforeunload', function () {
+        stopTimeTracking();
+    });
 
-            const buttons = document.querySelectorAll('button[onclick^="toggleSection"]');
-            buttons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    const sectionId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    toggleSection(sectionId);
-                });
-            });
-
-            {% for section in sections %}
-                document.getElementById('complete-form-{{ section.id }}').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    fetch(this.action, {
-                        method: 'POST',
-                        body: new FormData(this)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'updated') {
-                            alert(data.message);
-                            location.reload();
-                        } else if (data.status === 'completed') {
-                            document.getElementById('ratingModal').classList.remove('hidden');
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                });
-            {% endfor %}
-
-            document.getElementById('ratingForm').addEventListener('submit', function(e) {
+    document.addEventListener('DOMContentLoaded', function () {
+        const ratingForm = document.getElementById('ratingForm');
+        if (ratingForm) {
+            ratingForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 fetch(this.action, {
                     method: 'POST',
                     body: new FormData(this)
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert(data.message);
-                        document.getElementById('certificateSection').classList.remove('hidden');
-                        document.querySelectorAll('#ratingForm input, #ratingForm textarea, #ratingForm button[type="submit"]').forEach(el => el.disabled = true);
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            });
-
-            // Add event listener for the Generate Certificate button
-            const generateCertificateBtn = document.getElementById('generateCertificateBtn');
-            if (generateCertificateBtn) {
-                generateCertificateBtn.addEventListener('click', generateCertificate);
-            }
-
-            function generateCertificate() {
-                console.log('Generate Certificate button clicked');
-                const enrollmentId = {{ enrollment.id if enrollment else 'null' }};
-                console.log('Enrollment ID:', enrollmentId);
-                if (enrollmentId) {
-                    const baseUrl = '{{ url_for('student.generate_certificate', enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);
-                    console.log('Fetching URL:', baseUrl);
-                    
-                    // Get CSRF token from meta tag or cookie
-                    const csrfToken = '{{ csrf_token() }}';
-                    
-                    fetch(baseUrl, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
-                        }
-                    })
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
-                        console.log('Response data:', data);
                         if (data.status === 'success') {
-                            const certificateLink = document.getElementById('certificateLink');
-                            certificateLink.href = '{{ url_for('student.serve_certificate', enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);
-                            certificateLink.classList.remove('hidden');
-                            document.getElementById('generateCertificateBtn').disabled = true;
                             alert(data.message);
+                            document.getElementById('certificateSection').classList.remove('hidden');
+                            document.querySelectorAll('#ratingForm input, #ratingForm textarea, #ratingForm button[type="submit"]').forEach(el => el.disabled = true);
                         } else {
                             alert(data.message);
                         }
                     })
-                    .catch(error => {
-                        console.error('Fetch error:', error);
-                        alert('An error occurred while generating the certificate. Check console for details.');
-                    });
-                } else {
-                    console.log('Enrollment ID is null');
-                    alert('Enrollment ID is not available.');
-                }
-            }
+                    .catch(error => console.error('Error:', error));
+            });
+        }
 
-            function closeModal() {
-                document.getElementById('ratingModal').classList.add('hidden');
-            }
+        const generateCertificateBtn = document.getElementById('generateCertificateBtn');
+        if (generateCertificateBtn) {
+            generateCertificateBtn.addEventListener('click', generateCertificate);
+        }
+    });
+
+        function generateCertificate() {
+            console.log('Generate Certificate button clicked');
+            const enrollmentId = {{ enrollment.id if enrollment else 'null' }};
+            console.log('Enrollment ID:', enrollmentId);
+        if (enrollmentId) {
+            const baseUrl = '{{ url_for("student.generate_certificate", enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);
+            console.log('Fetching URL:', baseUrl);
+
+            // Get CSRF token from meta tag or cookie
+            const csrfToken = '{{ csrf_token() }}';
+
+            fetch(baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.status === 'success') {
+                        const certificateLink = document.getElementById('certificateLink');
+                        certificateLink.href = '{{ url_for("student.serve_certificate", enrollment_id=0) }}'.replace('/0', '/' + enrollmentId);
+                        certificateLink.classList.remove('hidden');
+                        document.getElementById('generateCertificateBtn').disabled = true;
+                        alert(data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('An error occurred while generating the certificate. Check console for details.');
+                });
+        } else {
+            console.log('Enrollment ID is null');
+            alert('Enrollment ID is not available.');
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('ratingModal').classList.add('hidden');
+    }
+
+    // Show celebration modal when course is completed
+    function showCelebrationModal(courseTitle, enrollmentId) {
+        const modal = document.getElementById('celebrationModal');
+        document.getElementById('celebrationCourseTitle').textContent = courseTitle;
+        document.getElementById('celebrationEnrollmentId').value = enrollmentId;
+        modal.classList.remove('hidden');
+
+        // Confetti animation
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
         });
-    </script>
+    }
+
+    function closeCelebrationModal() {
+        document.getElementById('celebrationModal').classList.add('hidden');
+    }
+
+    // Listen for HTMX course completed event
+    document.body.addEventListener('course-completed', function(evt) {
+        console.log('Course completed event received');
+        {% if enrollment %}
+        showCelebrationModal('{{ course.title }}', '{{ enrollment.id }}');
+        {% endif %}
+    });
+</script>
+
+<!-- Celebration Modal -->
+<div id="celebrationModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center transform transition-all">
+        <div class="text-6xl mb-4 animate-bounce">🎉</div>
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+        <p class="text-gray-600 mb-1">You've completed</p>
+        <p id="celebrationCourseTitle" class="text-xl font-bold text-blue-600 mb-6"></p>
+        <div class="space-y-3">
+            <form method="POST" action="{{ url_for('student.generate_certificate', enrollment_id=0) }}"
+                id="celebrationCertForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" id="celebrationEnrollmentId" name="enrollment_id" value="" />
+                <button type="submit"
+                    class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-green-700 font-medium transition">
+                    <i class="fas fa-award mr-2"></i>Get Your Certificate 📜
+                </button>
+            </form>
+            <button onclick="closeCelebrationModal()" class="w-full text-gray-600 hover:text-gray-900 py-2">
+                Continue Learning
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </div>
 {% endblock %}

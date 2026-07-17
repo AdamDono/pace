@@ -68,7 +68,10 @@ class ProfileForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     bio = TextAreaField('Bio/About', validators=[Optional(), Length(max=500)])
     contact = StringField('Contact Information', validators=[Optional(), Length(max=120)])
-    current_password = PasswordField('Current Password (required to save changes)', validators=[DataRequired()])
+    first_name = StringField('First Name', validators=[Optional(), Length(max=80)])
+    last_name = StringField('Last Name', validators=[Optional(), Length(max=80)])
+    specialization = StringField('Specialization / Area of Interest', validators=[Optional(), Length(max=200)])
+    current_password = PasswordField('Current Password (only needed when changing password)', validators=[Optional()])
     new_password = PasswordField('New Password (leave blank to keep current)', validators=[Optional(), Length(min=6)])
     confirm_password = PasswordField('Confirm New Password', validators=[
         EqualTo('new_password', message='Passwords must match')

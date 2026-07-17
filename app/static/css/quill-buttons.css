@@ -1,0 +1,41 @@
+/* Custom Quill Toolbar Buttons */
+.ql-emoji::before {
+    content: '😀';
+    font-size: 16px;
+}
+
+.ql-table::before {
+    content: '📊';
+    font-size: 16px;
+}
+
+.ql-h5p::before {
+    content: '🎮';
+    font-size: 16px;
+}
+
+.ql-source::before {
+    content: '</>';
+    font-size: 14px;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* Raw HTML blocks in editor */
+.raw-html-block {
+    margin: 10px 0;
+    border: 1px dashed #ccc;
+    padding: 2px;
+    position: relative;
+}
+
+.raw-html-block::before {
+    content: 'Custom HTML';
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    background: white;
+    padding: 0 5px;
+    font-size: 10px;
+    color: #999;
+}

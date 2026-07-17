@@ -211,7 +211,7 @@ function openModal(submissionData) {
         // Also show file if uploaded
         if (submissionData.file_path) {
             document.getElementById('filePreview').classList.remove('hidden');
-            document.getElementById('fileLink').href = `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
+            document.getElementById('fileLink').href = submissionData.file_path.startsWith('http') ? submissionData.file_path : `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
         }
     } else {
         // Show text submission
@@ -222,7 +222,7 @@ function openModal(submissionData) {
         // Show file if uploaded
         if (submissionData.file_path) {
             document.getElementById('filePreview').classList.remove('hidden');
-            document.getElementById('fileLink').href = `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
+            document.getElementById('fileLink').href = submissionData.file_path.startsWith('http') ? submissionData.file_path : `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
         }
     }
     

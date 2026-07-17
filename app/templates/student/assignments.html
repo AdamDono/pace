@@ -1,0 +1,121 @@
+{% extends "student/base_student.html" %}
+{% block page_title %}Assignments{% endblock %}
+{% block content %}
+<div class="p-6">
+  <h1 class="text-2xl font-bold text-gray-900 mb-6">My Assignments</h1>
+
+  <!-- Tabs -->
+  <div class="border-b border-gray-200 mb-6">
+    <nav class="-mb-px flex space-x-8">
+      <button onclick="showTab('pending')" id="tab-pending" class="tab-btn border-b-2 border-blue-600 py-4 px-1 text-sm font-medium text-blue-600">
+        Pending ({{ pending|length }})
+      </button>
+      <button onclick="showTab('submitted')" id="tab-submitted" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+        Submitted ({{ submitted|length }})
+      </button>
+      <button onclick="showTab('graded')" id="tab-graded" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+        Graded ({{ graded|length }})
+      </button>
+    </nav>
+  </div>
+
+  <!-- Pending Assignments -->
+  <div id="content-pending" class="tab-content">
+    {% if pending %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for item in pending %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition">
+        <div class="flex items-start justify-between mb-3">
+          <h3 class="font-semibold text-gray-900">{{ item.assignment.title }}</h3>
+          <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">Due</span>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">{{ item.assignment.section.course.title }}</p>
+        <p class="text-xs text-gray-500 mb-4">Due: {{ item.assignment.due_date.strftime('%b %d, %Y %H:%M') if item.assignment.due_date else 'No deadline' }}</p>
+        <a href="{{ url_for('student.submit_assignment', section_id=item.assignment.section_id, assignment_id=item.assignment.id) }}" class="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+          Submit Assignment
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i>
+      <p class="text-gray-600">No pending assignments!</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Submitted Assignments -->
+  <div id="content-submitted" class="tab-content hidden">
+    {% if submitted %}
+    <div class="space-y-4">
+      {% for item in submitted %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">{{ item.assignment.title }}</h3>
+            <p class="text-sm text-gray-600 mt-1">{{ item.assignment.section.course.title }}</p>
+            <p class="text-xs text-gray-500 mt-2">Submitted: {{ item.submission.submitted_at.strftime('%b %d, %Y %H:%M') }}</p>
+          </div>
+          <span class="bg-yellow-100 text-yellow-700 text-xs px-3 py-1 rounded-full">Pending Review</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <p class="text-gray-600">No submitted assignments awaiting review.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Graded Assignments -->
+  <div id="content-graded" class="tab-content hidden">
+    {% if graded %}
+    <div class="space-y-4">
+      {% for item in graded %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">{{ item.assignment.title }}</h3>
+            <p class="text-sm text-gray-600 mt-1">{{ item.assignment.section.course.title }}</p>
+            <p class="text-xs text-gray-500 mt-2">Graded: {{ item.submission.graded_at.strftime('%b %d, %Y') if item.submission.graded_at else 'Recently' }}</p>
+            {% if item.submission.feedback %}
+            <p class="text-sm text-gray-700 mt-3 bg-gray-50 p-3 rounded-lg">{{ item.submission.feedback }}</p>
+            {% endif %}
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-bold {{ 'text-green-600' if item.submission.grade >= 70 else 'text-red-600' }}">
+              {{ item.submission.grade }}%
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <p class="text-gray-600">No graded assignments yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function showTab(tab) {
+  // Hide all content
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  // Remove active state from all tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('border-blue-600', 'text-blue-600');
+    btn.classList.add('border-transparent', 'text-gray-500');
+  });
+  // Show selected content
+  document.getElementById('content-' + tab).classList.remove('hidden');
+  // Activate selected tab
+  const activeTab = document.getElementById('tab-' + tab);
+  activeTab.classList.remove('border-transparent', 'text-gray-500');
+  activeTab.classList.add('border-blue-600', 'text-blue-600');
+}
+</script>
+{% endblock %}

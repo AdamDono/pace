@@ -52,6 +52,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
     app.config['WTF_CSRF_ENABLED'] = True  # Enabled for security
+    app.config['WTF_CSRF_TIME_LIMIT'] = None  # Do not expire CSRF tokens during session
     app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx'}  # Updated to match forms
 
     # Configure email
@@ -82,6 +83,79 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
+    # Context processor for sidebar counts
+    @app.context_processor
+    def inject_sidebar_counts():
+        from flask_login import current_user
+        from app.models import Assignment, AssignmentSubmission, Enrollment, Section, Announcement, Notification
+        from datetime import datetime
+        
+        if current_user.is_authenticated and current_user.role == 'student':
+            try:
+                # Get enrolled course IDs
+                enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+                
+                # Count pending assignments (not submitted)
+                all_assignments = Assignment.query.join(Section).filter(
+                    Section.course_id.in_(enrolled_course_ids) if enrolled_course_ids else False
+                ).all()
+                
+                pending_assignments = 0
+                for assignment in all_assignments:
+                    submission = AssignmentSubmission.query.filter_by(
+                        assignment_id=assignment.id,
+                        student_id=current_user.id
+                    ).first()
+                    if not submission:
+                        pending_assignments += 1
+                
+                # Count unread announcements (last 7 days as "new")
+                from datetime import timedelta
+                week_ago = datetime.utcnow() - timedelta(days=7)
+                unread_announcements = Announcement.query.filter(
+                    Announcement.course_id.in_(enrolled_course_ids) if enrolled_course_ids else False,
+                    Announcement.created_at >= week_ago
+                ).count()
+                
+                # Count unread notifications
+                unread_notifications = Notification.query.filter_by(
+                    user_id=current_user.id,
+                    read=False
+                ).count() if hasattr(Notification, 'read') else 0
+                
+                # Count completed courses
+                completed_courses = Enrollment.query.filter_by(
+                    student_id=current_user.id,
+                    completed=True
+                ).count()
+                
+                return {
+                    'sidebar_counts': {
+                        'pending_assignments': pending_assignments,
+                        'unread_announcements': unread_announcements,
+                        'unread_notifications': unread_notifications,
+                        'completed_courses': completed_courses
+                    }
+                }
+            except Exception as e:
+                # Fallback to zero counts if there's an error
+                return {
+                    'sidebar_counts': {
+                        'pending_assignments': 0,
+                        'unread_announcements': 0,
+                        'unread_notifications': 0,
+                        'completed_courses': 0
+                    }
+                }
+        return {
+            'sidebar_counts': {
+                'pending_assignments': 0,
+                'unread_announcements': 0,
+                'unread_notifications': 0,
+                'completed_courses': 0
+            }
+        }
 
     # Import decorators after app initialization
     from .decorators import student_required, teacher_required
@@ -93,6 +167,7 @@ def create_app():
     from app.routes.student import student_bp
     from app.routes.notifications import notifications_bp
     from app.routes.code_execution import code_execution_bp
+    from app.routes.importer import importer_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -100,6 +175,7 @@ def create_app():
     app.register_blueprint(student_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(code_execution_bp)
+    app.register_blueprint(importer_bp)
 
     # Register error handlers
     @app.errorhandler(404)
@@ -110,9 +186,17 @@ def create_app():
     def internal_server_error(e):
         return render_template('errors/500.html'), 500
     
-    @app.errorhandler(403)
-    def forbidden(e):
-        return render_template('errors/403.html'), 403
+    # Context processor to override url_for for Cloudinary URLs
+    from flask import url_for as flask_url_for
+    @app.context_processor
+    def override_url_for():
+        def custom_url_for(endpoint, **values):
+            if endpoint == 'static' and values.get('filename', '').startswith('uploads/http'):
+                return values['filename'].replace('uploads/', '', 1)
+            if endpoint in ('teacher.media', 'admin.serve_pdf') and values.get('filename', '').startswith('http'):
+                return values['filename']
+            return flask_url_for(endpoint, **values)
+        return dict(url_for=custom_url_for)
 
     return app
 

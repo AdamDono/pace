@@ -1,813 +1,206 @@
-<!-- templates/teacher/create_course_wizard.html -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto p-6">
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Create New Course</h1>
-        <p class="text-gray-600">Build your course step by step with our guided wizard.</p>
+        <p class="text-gray-600">Create the shell for your course. You can add lessons, quizzes, and content later.</p>
     </div>
 
-    <!-- Progress Bar -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
-            {% for step in range(1, 5) %}
-            <div class="flex items-center">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full {{ 'bg-blue-600 text-white' if current_step >= step else 'bg-gray-300 text-gray-600' if current_step > step else 'bg-blue-600 text-white' }}">
-                    <span class="text-sm font-medium">{{ step }}</span>
-                </div>
-                <span class="ml-2 text-sm font-medium {{ 'text-blue-600' if current_step >= step else 'text-gray-400' }}">
-                    {% if step == 1 %}Basic Info
-                    {% elif step == 2 %}Media & Resources
-                    {% elif step == 3 %}Course Structure
-                    {% elif step == 4 %}Settings & Publish{% endif %}
-                </span>
-                {% if step < 4 %}
-                <div class="w-12 h-0.5 mx-4 {{ 'bg-blue-600' if current_step > step else 'bg-gray-300' }}"></div>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Step Content -->
+    <!-- Single Page Form -->
     <div class="bg-white rounded-lg shadow-lg p-8">
         <form method="POST" enctype="multipart/form-data" id="course-form">
             {{ form.hidden_tag() }}
-            <input type="hidden" name="current_step" value="{{ current_step }}">
 
-            <!-- Step 1: Template Selection & Basic Information -->
-            {% if current_step == 1 %}
             <div class="space-y-6">
+                <!-- Essential Information -->
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Choose a Template & Basic Information</h2>
-                    <p class="text-gray-600 mb-6">Start with a template or create from scratch - tell us about your course.</p>
-                </div>
-
-                <!-- Template Selection -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Choose a Starting Template</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="template-grid">
-                        <div class="template-card border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors selected" data-template="blank">
-                            <div class="flex items-center mb-3">
-                                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-900">Blank Course</h4>
-                                    <p class="text-sm text-gray-600">Start from scratch</p>
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-600">Create a completely custom course with your own structure and content.</p>
-                        </div>
-
-                        <div class="template-card border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors" data-template="beginner">
-                            <div class="flex items-center mb-3">
-                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-900">Beginner Course</h4>
-                                    <p class="text-sm text-gray-600">For complete newcomers</p>
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-600">Perfect for teaching fundamentals with hands-on exercises and clear explanations.</p>
-                        </div>
-
-                        <div class="template-card border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors" data-template="intermediate">
-                            <div class="flex items-center mb-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-900">Intermediate Course</h4>
-                                    <p class="text-sm text-gray-600">Build on existing knowledge</p>
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-600">Advanced techniques and professional practices for experienced learners.</p>
-                        </div>
-
-                        <div class="template-card border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors" data-template="project">
-                            <div class="flex items-center mb-3">
-                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-900">Project-Based Course</h4>
-                                    <p class="text-sm text-gray-600">Learn by building</p>
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-600">Complete real-world projects while learning modern development practices.</p>
-                        </div>
-                    </div>
-                    <input type="hidden" name="selected_template" id="selected_template" value="blank">
-                </div>
-
-                <!-- Subject Selection (shown when template selected) -->
-                <div id="subject-section" class="mb-6" style="display: none;">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">What subject will you teach?</label>
-                    <input type="text" name="subject" id="subject-input"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="e.g., Python Programming, Web Development, Data Science">
-                    <p class="text-sm text-gray-500 mt-1">This helps us customize the template for your course.</p>
-                </div>
-
-                <!-- Basic Course Information -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Course Title *</label>
-                        <input type="text" name="title" id="course-title" required
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="Enter your course title">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Course Description *</label>
-                        <div id="course-description-editor" style="height: 250px;"></div>
-                        <textarea name="description" id="course-description" class="hidden" required></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                        <select name="category" id="course-category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select a category</option>
-                            <option value="programming">Programming & Development</option>
-                            <option value="design">Design & Creative</option>
-                            <option value="business">Business & Marketing</option>
-                            <option value="data">Data Science & Analytics</option>
-                            <option value="languages">Languages</option>
-                            <option value="personal">Personal Development</option>
-                            <option value="health">Health & Fitness</option>
-                            <option value="music">Music & Arts</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
-                        <select name="difficulty_level" id="course-difficulty" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="beginner">Beginner - No prior knowledge needed</option>
-                            <option value="intermediate" selected>Intermediate - Some basic knowledge required</option>
-                            <option value="advanced">Advanced - Prior experience recommended</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration</label>
-                        <div class="relative">
-                            <input type="number" name="estimated_duration" id="course-duration" min="1" max="1000"
-                                   class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   placeholder="e.g., 20">
-                            <span class="absolute right-3 top-3 text-gray-500 text-sm">hours</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                        <select name="language" id="course-language" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="english" selected>English</option>
-                            <option value="spanish">Spanish</option>
-                            <option value="french">French</option>
-                            <option value="german">German</option>
-                            <option value="chinese">Chinese</option>
-                            <option value="japanese">Japanese</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Step 2: Media & Resources -->
-            {% if current_step == 2 %}
-            <div class="space-y-6">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Media & Resources</h2>
-                    <p class="text-gray-600 mb-6">Add visual appeal and supplementary materials.</p>
-                </div>
-
-                <div class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Course Banner Image</label>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                            <input type="file" name="banner_image" id="banner_image" accept="image/*" class="hidden">
-                            <label for="banner_image" class="cursor-pointer">
-                                <div class="text-gray-500 mb-2">
-                                    <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    </svg>
-                                </div>
-                                <p class="text-sm">Click to upload banner image</p>
-                                <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB • Recommended: 1280x720px</p>
-                            </label>
-                        </div>
-                        <div id="banner-preview" class="mt-4 hidden">
-                            <img id="banner-img" class="max-w-full h-auto rounded-lg shadow" alt="Banner preview">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Intro Video URL</label>
-                        <input type="url" name="intro_video" id="intro_video"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="https://www.youtube.com/watch?v=...">
-                        <p class="text-sm text-gray-500 mt-1">Add a YouTube video to introduce your course</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Course PDF/Syllabus (Optional)</label>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                            {{ form.pdf_upload(class="hidden", id="pdf_upload") }}
-                            <label for="pdf_upload" class="cursor-pointer">
-                                <div class="text-gray-500 mb-2">
-                                    <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                        <polyline points="14,2 14,8 20,8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                                        <line x1="16" y1="13" x2="8" y2="13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></line>
-                                        <line x1="16" y1="17" x2="8" y2="17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></line>
-                                        <polyline points="10,9 9,9 8,9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                                    </svg>
-                                </div>
-                                <p class="text-sm">Click to upload course PDF or syllabus</p>
-                                <p class="text-xs text-gray-500 mt-1">PDF files up to 16MB</p>
-                            </label>
-                        </div>
-                        <div id="pdf-info" class="mt-2 hidden">
-                            <span class="text-sm text-green-600">✓ PDF uploaded successfully</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Step 3: Course Structure -->
-            {% if current_step == 3 %}
-            <div class="space-y-6">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Course Structure</h2>
-                    <p class="text-gray-600 mb-6">Define what students will learn and how the course is organized.</p>
-                </div>
-
-                <div class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Learning Objectives</label>
-                        <textarea name="learning_objectives" rows="4"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                  placeholder="What will students be able to do after completing this course?&#10;&#10;• Build complete web applications&#10;• Master advanced JavaScript concepts&#10;• Deploy applications to production">{{ template_data.learning_objectives if template_data else '' }}</textarea>
-                        <p class="text-sm text-gray-500 mt-1">List the key skills and knowledge students will gain</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Prerequisites</label>
-                        <textarea name="prerequisites" rows="3"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                  placeholder="What knowledge or experience do students need before taking this course?&#10;&#10;• Basic understanding of HTML and CSS&#10;• Familiarity with programming concepts&#10;• No prior JavaScript experience required">{{ template_data.prerequisites if template_data else '' }}</textarea>
-                        <p class="text-sm text-gray-500 mt-1">What should students know before starting?</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Course Tags</label>
-                        <input type="text" name="tags"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="web-development, javascript, react, node.js"
-                               value="{{ template_data.tags if template_data else '' }}">
-                        <p class="text-sm text-gray-500 mt-1">Comma-separated keywords to help students find your course</p>
-                    </div>
-
-                    <div class="bg-blue-50 p-4 rounded-lg">
-                        <h3 class="font-medium text-blue-900 mb-2">Course Content Planning</h3>
-                        <p class="text-sm text-blue-700 mb-3">You'll be able to add detailed course content (modules, sections, assignments, quizzes) in the next step after creating the basic course structure.</p>
-                        <p class="text-sm text-blue-600">This wizard focuses on the course overview - content creation happens separately.</p>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Step 4: Settings & Publish -->
-            {% if current_step == 4 %}
-            <div class="space-y-6">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Settings & Publish</h2>
-                    <p class="text-gray-600 mb-6">Final settings before publishing your course.</p>
-                </div>
-
-                <div class="space-y-6">
-                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-yellow-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                            </svg>
-                            <div>
-                                <h3 class="font-medium text-yellow-800">Course Review Required</h3>
-                                <p class="text-sm text-yellow-700 mt-1">Your course will be submitted for admin approval. You'll receive an email notification once it's reviewed.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Course Details</h2>
+                    <div class="grid grid-cols-1 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Course Visibility</label>
-                            <div class="space-y-2">
-                                <label class="flex items-center">
-                                    <input type="radio" name="status" value="draft" checked class="text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-2 text-sm">Save as Draft (private, can edit)</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="radio" name="status" value="pending" class="text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-2 text-sm">Submit for Review (admin approval needed)</span>
-                                </label>
-                            </div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Course Title *</label>
+                            <input type="text" name="title" id="course-title" required
+                                value="{{ course.title if course else '' }}"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="e.g. Introduction to Python">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Auto-save</label>
-                            <div class="flex items-center">
-                                <input type="checkbox" name="auto_save" checked id="auto-save" class="text-blue-600 focus:ring-blue-500">
-                                <label for="auto-save" class="ml-2 text-sm text-gray-700">Enable auto-save (recommended)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                            <div id="course-description-editor" style="height: 200px;">
+                                {% if course and course.description %}
+                                {{ course.description|safe }}
+                                {% endif %}
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Automatically saves your progress every 30 seconds</p>
+                            <textarea name="description" id="course-description" class="hidden"
+                                required>{{ course.description if course else '' }}</textarea>
                         </div>
                     </div>
+                </div>
 
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-medium text-gray-900 mb-2">Ready to Publish?</h3>
-                        <ul class="text-sm text-gray-600 space-y-1">
-                            <li>✓ Course information is complete</li>
-                            <li>✓ Media and resources uploaded</li>
-                            <li>✓ Learning objectives defined</li>
-                            <li>✓ Content structure planned</li>
-                        </ul>
-                        <p class="text-sm text-gray-500 mt-3">You can always edit your course after creation!</p>
+                <!-- Optional Details -->
+                <div class="pt-6 border-t border-gray-200">
+                    <button type="button" onclick="toggleOptional()"
+                        class="flex items-center text-blue-600 hover:text-blue-800 font-medium">
+                        <span id="optional-toggle-icon" class="mr-2">▸</span> Show Optional Details
+                    </button>
+
+                    <div id="optional-details" class="hidden mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                            <select name="category"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Select a category</option>
+                                <option value="programming" {% if course and course.category=='programming' %}selected{%
+                                    endif %}>Programming & Development</option>
+                                <option value="design" {% if course and course.category=='design' %}selected{% endif %}>
+                                    Design & Creative</option>
+                                <option value="business" {% if course and course.category=='business' %}selected{% endif
+                                    %}>Business & Marketing</option>
+                                <option value="data" {% if course and course.category=='data' %}selected{% endif %}>Data
+                                    Science & Analytics</option>
+                                <option value="languages" {% if course and course.category=='languages' %}selected{%
+                                    endif %}>Languages</option>
+                                <option value="personal" {% if course and course.category=='personal' %}selected{% endif
+                                    %}>Personal Development</option>
+                                <option value="health" {% if course and course.category=='health' %}selected{% endif %}>
+                                    Health & Fitness</option>
+                                <option value="music" {% if course and course.category=='music' %}selected{% endif %}>
+                                    Music & Arts</option>
+                                <option value="other" {% if course and course.category=='other' %}selected{% endif %}>
+                                    Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
+                            <select name="difficulty_level"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="beginner" {% if course and course.difficulty_level=='beginner'
+                                    %}selected{% endif %}>Beginner</option>
+                                <option value="intermediate" {% if course and course.difficulty_level=='intermediate'
+                                    %}selected{% endif %}>Intermediate</option>
+                                <option value="advanced" {% if course and course.difficulty_level=='advanced'
+                                    %}selected{% endif %}>Advanced</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration
+                                (Hours)</label>
+                            <input type="number" name="estimated_duration" min="0"
+                                value="{{ course.estimated_duration if course else '' }}"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Language</label>
+                            <select name="language"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="english" {% if course and course.language=='english' %}selected{% endif
+                                    %}>English</option>
+                                <option value="spanish" {% if course and course.language=='spanish' %}selected{% endif
+                                    %}>Spanish</option>
+                                <option value="french" {% if course and course.language=='french' %}selected{% endif %}>
+                                    French</option>
+                                <option value="german" {% if course and course.language=='german' %}selected{% endif %}>
+                                    German</option>
+                                <option value="chinese" {% if course and course.language=='chinese' %}selected{% endif
+                                    %}>Chinese</option>
+                                <option value="japanese" {% if course and course.language=='japanese' %}selected{% endif
+                                    %}>Japanese</option>
+                                <option value="other" {% if course and course.language=='other' %}selected{% endif %}>
+                                    Other</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Banner Image</label>
+                            <input type="file" name="banner_image" accept="image/*"
+                                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-xs text-gray-500 mt-1">Recommended size: 1280x720px</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {% endif %}
 
-            <!-- Navigation Buttons -->
-            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-8 pt-6 border-t gap-4">
-                {% if current_step > 1 %}
-                <button type="submit" name="action" value="previous"
-                        class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1">
-                    ← Previous
-                </button>
-                {% else %}
-                <div class="order-2 sm:order-1"></div>
-                {% endif %}
-
-                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 order-1 sm:order-2">
-                    <button type="button" onclick="saveDraft()"
-                            class="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-center">
-                        Save Draft
+                <!-- Submit Button -->
+                <div class="pt-6 border-t border-gray-200 flex justify-end">
+                    <button type="submit"
+                        class="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-lg shadow-md">
+                        {{ 'Update Course' if course else 'Create Course' }}
                     </button>
-
-                    {% if course %}
-                    <a href="{{ url_for('teacher.preview_course', course_id=course.id) }}" target="_blank"
-                       class="px-6 py-3 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors inline-flex items-center justify-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        Preview
-                    </a>
-                    {% endif %}
-
-                    {% if current_step < 4 %}
-                    <button type="submit" name="action" value="next"
-                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Next →
-                    </button>
-                    {% else %}
-                    <button type="submit" name="action" value="create"
-                            class="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium w-full sm:w-auto">
-                        🎉 Create Course
-                    </button>
-                    {% endif %}
                 </div>
             </div>
         </form>
     </div>
 </div>
 
+<!-- Scripts -->
 <script>
-let autoSaveInterval;
-let isAutoSaveEnabled = true;
-
-// Initialize auto-save
-document.addEventListener('DOMContentLoaded', function() {
-    const autoSaveCheckbox = document.getElementById('auto-save');
-    if (autoSaveCheckbox) {
-        isAutoSaveEnabled = autoSaveCheckbox.checked;
-        autoSaveCheckbox.addEventListener('change', function() {
-            isAutoSaveEnabled = this.checked;
-            if (isAutoSaveEnabled) {
-                startAutoSave();
-            } else {
-                stopAutoSave();
-            }
-        });
-    }
-
-    if (isAutoSaveEnabled) {
-        startAutoSave();
-    }
-
-    // File preview functionality
-    setupFilePreviews();
-
-    // Template selection functionality
-    setupTemplateSelection();
-});
-
-function startAutoSave() {
-    if (autoSaveInterval) clearInterval(autoSaveInterval);
-    autoSaveInterval = setInterval(() => {
-        if (isAutoSaveEnabled) {
-            saveDraft(true); // Silent save
-        }
-    }, 30000); // 30 seconds
-}
-
-function stopAutoSave() {
-    if (autoSaveInterval) {
-        clearInterval(autoSaveInterval);
-        autoSaveInterval = null;
-    }
-}
-
-function saveDraft(silent = false) {
-    const formData = new FormData(document.getElementById('course-form'));
-
-    // Add draft flag
-    formData.append('is_draft', 'true');
-
-    fetch('/teacher/save-course-draft', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            if (!silent) {
-                showNotification('Draft saved successfully!', 'success');
-            }
+    function toggleOptional() {
+        const details = document.getElementById('optional-details');
+        const icon = document.getElementById('optional-toggle-icon');
+        if (details.classList.contains('hidden')) {
+            details.classList.remove('hidden');
+            icon.textContent = '▾';
         } else {
-            if (!silent) {
-                showNotification('Failed to save draft: ' + data.message, 'error');
-            }
+            details.classList.add('hidden');
+            icon.textContent = '▸';
         }
-    })
-    .catch(error => {
-        if (!silent) {
-            showNotification('Error saving draft', 'error');
-        }
-    });
-}
-
-function setupFilePreviews() {
-    // Banner image preview
-    const bannerInput = document.getElementById('banner_image');
-    const bannerPreview = document.getElementById('banner-preview');
-    const bannerImg = document.getElementById('banner-img');
-
-    if (bannerInput) {
-        bannerInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    bannerImg.src = e.target.result;
-                    bannerPreview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        });
     }
-
-    // PDF upload feedback
-    const pdfInput = document.getElementById('pdf_upload');
-    const pdfInfo = document.getElementById('pdf-info');
-
-    if (pdfInput) {
-        pdfInput.addEventListener('change', function(e) {
-            if (e.target.files[0]) {
-                pdfInfo.classList.remove('hidden');
-            }
-        });
-    }
-}
-
-function showNotification(message, type) {
-    // Simple notification system
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 ${
-        type === 'success' ? 'bg-green-600' : 'bg-red-600'
-    }`;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
-// Form validation before next step
-document.getElementById('course-form').addEventListener('submit', function(e) {
-    // Add any client-side validation here if needed
-});
-
-function setupTemplateSelection() {
-    const templateCards = document.querySelectorAll('.template-card');
-    const selectedTemplateInput = document.getElementById('selected_template');
-    const subjectSection = document.getElementById('subject-section');
-    const subjectInput = document.getElementById('subject-input');
-    const courseTitleInput = document.getElementById('course-title');
-    const courseDescriptionTextarea = document.getElementById('course-description');
-    const courseCategorySelect = document.getElementById('course-category');
-    const courseDifficultySelect = document.getElementById('course-difficulty');
-    const courseDurationInput = document.getElementById('course-duration');
-
-    // Course templates data
-    const templates = {
-        blank: {
-            title: '',
-            description: '',
-            category: '',
-            difficulty: 'intermediate',
-            duration: '',
-            objectives: '',
-            prerequisites: '',
-            tags: ''
-        },
-        beginner: {
-            title: 'Introduction to [Subject]',
-            description: 'A comprehensive beginner-friendly course designed for complete newcomers. This course covers all the fundamental concepts and provides hands-on practice to build a strong foundation in [subject].',
-            category: 'programming',
-            difficulty: 'beginner',
-            duration: 20,
-            objectives: '• Understand the basic concepts and terminology\n• Learn fundamental principles and techniques\n• Practice with real-world examples\n• Build confidence through hands-on exercises',
-            prerequisites: '• No prior experience required\n• Basic computer skills\n• Willingness to learn and practice',
-            tags: 'beginner, fundamentals, introduction, basics'
-        },
-        intermediate: {
-            title: 'Advanced [Subject] Techniques',
-            description: 'Take your skills to the next level with intermediate to advanced techniques. This course assumes basic knowledge and dives deep into professional practices, best patterns, and real-world applications.',
-            category: 'programming',
-            difficulty: 'intermediate',
-            duration: 40,
-            objectives: '• Master advanced concepts and techniques\n• Learn industry best practices and patterns\n• Build complex, real-world projects\n• Optimize performance and efficiency\n• Collaborate on professional-grade applications',
-            prerequisites: '• Basic understanding of [subject] fundamentals\n• Experience with simple projects\n• Familiarity with development environment',
-            tags: 'intermediate, advanced, professional, best-practices'
-        },
-        project: {
-            title: 'Build a Complete [Subject] Project',
-            description: 'Learn by doing in this project-based course. Starting from scratch, you\'ll build a complete, production-ready [subject] application while learning modern development practices and industry standards.',
-            category: 'programming',
-            difficulty: 'intermediate',
-            duration: 60,
-            objectives: '• Plan and architect a complete application\n• Implement all major features and functionality\n• Apply modern development practices\n• Deploy and maintain a production application\n• Collaborate with other developers',
-            prerequisites: '• Solid foundation in [subject] basics\n• Experience with version control\n• Understanding of web development concepts',
-            tags: 'project, full-stack, production, real-world'
-        }
-    };
-
-    templateCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const templateType = this.dataset.template;
-
-            // Update selected template
-            selectedTemplateInput.value = templateType;
-
-            // Remove selected class from all cards
-            templateCards.forEach(c => c.classList.remove('selected', 'border-blue-500'));
-            templateCards.forEach(c => c.classList.add('border-gray-200'));
-
-            // Add selected class to clicked card
-            this.classList.add('selected', 'border-blue-500');
-            this.classList.remove('border-gray-200');
-
-            // Show/hide subject input
-            if (templateType === 'blank') {
-                subjectSection.style.display = 'none';
-                subjectInput.value = '';
-            } else {
-                subjectSection.style.display = 'block';
-            }
-        });
-    });
-
-    // Handle subject input changes to update template
-    subjectInput.addEventListener('input', function() {
-        const subject = this.value.trim();
-        const templateType = selectedTemplateInput.value;
-
-        if (subject && templateType !== 'blank' && templates[templateType]) {
-            const template = templates[templateType];
-            const subjectName = subject || '[Subject]';
-            const subjectLower = subjectName.toLowerCase();
-
-            // Update form fields with template data
-            courseTitleInput.value = template.title.replace('[Subject]', subjectName).replace('[subject]', subjectLower);
-            courseDescriptionTextarea.value = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
-            courseCategorySelect.value = template.category;
-            courseDifficultySelect.value = template.difficulty;
-            courseDurationInput.value = template.duration;
-
-            // Update hidden fields (we'll add these to the form)
-            updateHiddenFields(template, subjectName, subjectLower);
-        }
-    });
-
-    function updateHiddenFields(template, subjectName, subjectLower) {
-        // Update or create hidden fields for objectives, prerequisites, tags
-        updateHiddenField('learning_objectives', template.objectives.replace('[subject]', subjectLower).replace('[Subject]', subjectName));
-        updateHiddenField('prerequisites', template.prerequisites.replace('[subject]', subjectLower).replace('[Subject]', subjectName));
-        updateHiddenField('tags', template.tags);
-    }
-
-    function updateHiddenField(name, value) {
-        let field = document.querySelector(`input[name="${name}"][type="hidden"]`);
-        if (!field) {
-            field = document.createElement('input');
-            field.type = 'hidden';
-            field.name = name;
-            document.getElementById('course-form').appendChild(field);
-        }
-        field.value = value;
-    }
-}
-
-// ===== QUILL RICH TEXT EDITOR =====
 </script>
 
 <!-- Quill CSS -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <style>
-.ql-editor {
-    font-size: 15px;
-    line-height: 1.6;
-}
-.ql-toolbar.ql-snow {
-    border-radius: 8px 8px 0 0;
-    background: #f9fafb;
-}
-.ql-container.ql-snow {
-    border-radius: 0 0 8px 8px;
-}
+    .ql-editor {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    .ql-toolbar.ql-snow {
+        border-radius: 8px 8px 0 0;
+        background: #f9fafb;
+    }
+
+    .ql-container.ql-snow {
+        border-radius: 0 0 8px 8px;
+    }
 </style>
 
 <!-- Quill JS -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-// Initialize Quill for course description
-var descriptionQuill = new Quill('#course-description-editor', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [2, 3, false] }],
-            ['bold', 'italic', 'underline'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link'],
-            [{ 'color': [] }],
-            ['clean']
-        ]
-    },
-    placeholder: 'Describe what students will learn, course objectives, prerequisites, and what they will achieve...'
-});
-
-// Sync Quill content to hidden textarea
-descriptionQuill.on('text-change', function() {
-    document.getElementById('course-description').value = descriptionQuill.root.innerHTML;
-});
-
-// Update the template selection to work with Quill
-const originalCourseDescriptionTextarea = document.getElementById('course-description');
-
-// Override the template update to use Quill
-const originalTemplateUpdate = setupTemplateSelection;
-setupTemplateSelection = function() {
-    const templateCards = document.querySelectorAll('.template-card');
-    const selectedTemplateInput = document.getElementById('selected_template');
-    const subjectSection = document.getElementById('subject-section');
-    const subjectInput = document.getElementById('subject-input');
-    const courseTitleInput = document.getElementById('course-title');
-    const courseCategorySelect = document.getElementById('course-category');
-    const courseDifficultySelect = document.getElementById('course-difficulty');
-    const courseDurationInput = document.getElementById('course-duration');
-
-    // Course templates data
-    const templates = {
-        blank: {
-            title: '',
-            description: '',
-            category: '',
-            difficulty: 'intermediate',
-            duration: '',
-            objectives: '',
-            prerequisites: '',
-            tags: ''
+    var quill = new Quill('#course-description-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                ['link'],
+                ['clean']
+            ]
         },
-        beginner: {
-            title: 'Introduction to [Subject]',
-            description: 'A comprehensive beginner-friendly course designed for complete newcomers. This course covers all the fundamental concepts and provides hands-on practice to build a strong foundation in [subject].',
-            category: 'programming',
-            difficulty: 'beginner',
-            duration: 20,
-            objectives: '• Understand the basic concepts and terminology\n• Learn fundamental principles and techniques\n• Practice with real-world examples\n• Build confidence through hands-on exercises',
-            prerequisites: '• No prior experience required\n• Basic computer skills\n• Willingness to learn and practice',
-            tags: 'beginner, fundamentals, introduction'
-        },
-        intermediate: {
-            title: 'Advanced [Subject] Techniques',
-            description: 'Take your skills to the next level with intermediate to advanced techniques. This course assumes basic knowledge and dives deep into professional practices, best patterns, and real-world applications.',
-            category: 'programming',
-            difficulty: 'intermediate',
-            duration: 40,
-            objectives: '• Master advanced concepts and techniques\n• Implement professional best practices\n• Solve complex real-world problems\n• Build production-ready applications',
-            prerequisites: '• Basic knowledge of [subject]\n• Understanding of fundamental concepts\n• 6+ months of practice experience',
-            tags: 'advanced, professional, best-practices'
-        },
-        project: {
-            title: 'Build a Complete [Subject] Project',
-            description: 'Learn by doing in this project-based course. Starting from scratch, you\'ll build a complete, production-ready [subject] application while learning modern development practices and industry standards.',
-            category: 'programming',
-            difficulty: 'intermediate',
-            duration: 60,
-            objectives: '• Build a complete project from scratch\n• Learn modern development workflows\n• Implement industry-standard practices\n• Deploy to production environment',
-            prerequisites: '• Intermediate knowledge of [subject]\n• Familiarity with development tools\n• Problem-solving skills',
-            tags: 'project-based, hands-on, practical, production'
-        }
-    };
-
-    templateCards.forEach(card => {
-        card.addEventListener('click', function() {
-            // Remove selected state from all cards
-            templateCards.forEach(c => c.classList.remove('ring-4', 'ring-blue-500', 'border-blue-500'));
-
-            // Add selected state to clicked card
-            this.classList.add('ring-4', 'ring-blue-500', 'border-blue-500');
-
-            // Get template ID
-            const templateId = this.dataset.template;
-            selectedTemplateInput.value = templateId;
-
-            // Show/hide subject input based on template
-            if (templateId !== 'blank') {
-                subjectSection.classList.remove('hidden');
-            } else {
-                subjectSection.classList.add('hidden');
-            }
-
-            // Update fields based on template
-            const template = templates[templateId];
-            const subjectName = subjectInput.value || '[Subject]';
-            const subjectLower = subjectName.toLowerCase();
-
-            // Update form fields with template data
-            courseTitleInput.value = template.title.replace('[Subject]', subjectName).replace('[subject]', subjectLower);
-            
-            // Update Quill editor instead of textarea
-            const descContent = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
-            descriptionQuill.root.innerHTML = descContent;
-            originalCourseDescriptionTextarea.value = descContent;
-            
-            courseCategorySelect.value = template.category;
-            courseDifficultySelect.value = template.difficulty;
-            courseDurationInput.value = template.duration;
-        });
+        placeholder: 'What will students learn in this course?'
     });
 
-    // Update fields when subject changes
-    subjectInput.addEventListener('input', function() {
-        const selectedTemplate = selectedTemplateInput.value;
-        if (selectedTemplate && selectedTemplate !== 'blank') {
-            const template = templates[selectedTemplate];
-            const subjectName = this.value || '[Subject]';
-            const subjectLower = subjectName.toLowerCase();
+    // Populate editor with existing content if any
+    const existingContent = document.getElementById('course-description').value;
+    if (existingContent) {
+        quill.root.innerHTML = existingContent;
+    }
 
-            courseTitleInput.value = template.title.replace('[Subject]', subjectName).replace('[subject]', subjectLower);
-            
-            const descContent = template.description.replace('[subject]', subjectLower).replace('[Subject]', subjectName);
-            descriptionQuill.root.innerHTML = descContent;
-            originalCourseDescriptionTextarea.value = descContent;
+    // Update textarea on change
+    quill.on('text-change', function () {
+        document.getElementById('course-description').value = quill.root.innerHTML;
+    });
+
+    // Validations
+    document.getElementById('course-form').addEventListener('submit', function (e) {
+        if (quill.getText().trim().length === 0) {
+            e.preventDefault();
+            alert('Please enter a course description.');
         }
     });
-};
-
-// Re-initialize template selection
-setupTemplateSelection();
-
-console.log('✅ Quill editor initialized for course description');
 </script>
-
 {% endblock %}

@@ -1,43 +1,114 @@
-from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort
+from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort, make_response
 from flask_login import login_required, current_user
 from app.decorators import student_required, student_enrolled, admin_required, teacher_required
-from app.forms import SubmissionForm, ProfileForm
-import logging
-import os
-from uuid import uuid4
+from app import db
+from app.models import Course, Enrollment, Section, EnrollmentSection, Assignment, AssignmentSubmission, Quiz, QuizQuestion, QuizAttempt, QuizAnswer, Rating, Announcement, Notification, VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse
+from app.forms import ProfileForm, SubmissionForm
+from app.utils.file_helpers import allowed_file, allowed_file_size
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
-from reportlab.lib.units import inch
-from app.models import Course, Enrollment, Section, EnrollmentSection, User, Rating, Quiz, Assignment, QuizAttempt, AssignmentSubmission, QuizQuestion, QuizAnswer, VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse, db  # Correct imports
+from uuid import uuid4
+import logging
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 student_bp = Blueprint('student', __name__, url_prefix='/student')
 
-# Define allowed_file locally
-def allowed_file(filename, allowed_extensions=None):
-    if allowed_extensions is None:
-        allowed_extensions = {'pdf', 'doc', 'docx'}  # Default allowed extensions
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
-
 @student_bp.route('/dashboard')
 @login_required
 @student_required
 def dashboard():
-    enrolled_courses = Course.query.join(Enrollment)\
-        .filter(Enrollment.student_id == current_user.id)\
-        .filter(Course.status == 'approved')\
+    """Learner dashboard: enrolled courses, progress, and upcoming items."""
+    # Enrolled approved courses
+    enrolled_courses = Course.query.join(Enrollment) \
+        .filter(Enrollment.student_id == current_user.id) \
+        .filter(Course.status == 'approved') \
         .all()
-    for course in enrolled_courses:
-        logger.debug(f"Course ID: {course.id}, Title: {course.title}, intro_text: {course.intro_text}")
-    new_enrollments = [c for c in enrolled_courses if not hasattr(current_user, 'last_seen') or c.created_at > getattr(current_user, 'last_seen', None)]
-    if new_enrollments:
-        flash(f"You’ve been enrolled in {', '.join(c.title for c in new_enrollments)}!", 'success')
-    return render_template('student/courses.html', courses=enrolled_courses)
+
+    # Simple course progress per course
+    progress_by_course = {}
+    continue_learning = []  # recently accessed sections
+    upcoming = []  # assignments due soon
+    estimated_time = {}  # estimated completion time per course
+
+    try:
+        # Preload enrollments
+        enrollments = {e.course_id: e for e in Enrollment.query.filter_by(student_id=current_user.id).all()}
+
+        for course in enrolled_courses:
+            sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
+            total_sections = len(sections)
+            enrollment = enrollments.get(course.id)
+
+            completed_sections = 0
+            last_accessed = None
+            
+            # Calculate estimated time (sum of section durations)
+            total_duration = sum(s.duration or 0 for s in sections)  # duration in minutes
+            estimated_time[course.id] = total_duration
+            
+            if enrollment:
+                # Map enrollment sections
+                es_list = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+                completed_sections = sum(1 for es in es_list if es.completed)
+                # Continue learning: pick most recent section
+                if es_list:
+                    last_es = max(es_list, key=lambda es: es.last_accessed or datetime.min)
+                    if last_es and last_es.last_accessed:
+                        last_accessed = last_es
+                        # Ensure section exists
+                        try:
+                            cont_section = Section.query.get(last_es.section_id)
+                            if cont_section:
+                                continue_learning.append({'course': course, 'section': cont_section, 'last_accessed': last_es.last_accessed})
+                        except Exception:
+                            pass
+
+            completion = (completed_sections / total_sections * 100) if total_sections > 0 else 0
+            progress_by_course[course.id] = round(completion, 1)
+
+        # Upcoming assignments within 7 days across all enrolled courses
+        upcoming = Assignment.query.join(Section).join(Course) \
+            .filter(Course.id.in_([c.id for c in enrolled_courses])) \
+            .filter(Assignment.due_date.isnot(None)) \
+            .order_by(Assignment.due_date.asc()) \
+            .limit(10).all()
+    except Exception as e:
+        logger.warning(f"Dashboard aggregation fallback: {e}")
+
+    # Calculate quick stats
+    total_enrolled = len(enrolled_courses)
+    completed_courses = Enrollment.query.filter_by(
+        student_id=current_user.id,
+        completed=True
+    ).count()
+    total_certificates = Enrollment.query.filter_by(
+        student_id=current_user.id,
+        completed=True
+    ).filter(Enrollment.certificate_path.isnot(None)).count()
+    in_progress = total_enrolled - completed_courses
+
+    return render_template(
+        'student/dashboard.html',
+        courses=enrolled_courses,
+        progress_by_course=progress_by_course,
+        continue_learning=sorted(continue_learning, key=lambda x: x['last_accessed'], reverse=True)[:6],
+        upcoming=upcoming,
+        estimated_time=estimated_time,
+        stats={
+            'enrolled': total_enrolled,
+            'completed': completed_courses,
+            'certificates': total_certificates,
+            'in_progress': in_progress
+        }
+    )
 
 @student_bp.route('/course-progress')
 @login_required
@@ -64,83 +135,127 @@ def course_progress():
 
 @student_bp.route('/course/<int:course_id>')
 @login_required
-@student_required
 def course_detail(course_id):
-    if not student_enrolled(course_id):
-        return redirect(url_for('auth.login'))
-
     course = Course.query.get_or_404(course_id)
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
-    if not enrollment:
-        return redirect(url_for('student.dashboard'))
+    
+    # Check authorization based on role
+    if current_user.role == 'student':
+        if not student_enrolled(course_id):
+            flash('You are not enrolled in this course.', 'danger')
+            return redirect(url_for('student.dashboard'))
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
+        if not enrollment:
+            return redirect(url_for('student.dashboard'))
+        enrollment_sections = {es.section_id: es for es in enrollment.sections}
+        total_sections = len(course.sections)
+        completed_sections = sum(1 for es in enrollment_sections.values() if es.completed)
+        completion_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
+    elif current_user.role == 'admin' or (current_user.role == 'teacher' and course.teacher_id == current_user.id):
+        # Admin or course teacher is allowed to preview
+        enrollment = None
+        enrollment_sections = {}
+        completion_percentage = 0
+    else:
+        abort(403)
 
+    from app.models import Module
+    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
-    enrollment_sections = {es.section_id: es for es in enrollment.sections}
-
-    total_sections = len(sections)
-    completed_sections = sum(1 for es in enrollment_sections.values() if es.completed)
-    completion_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
-
     locked_sections = set()
-    for i, section in enumerate(sections):
-        es = enrollment_sections.get(section.id)
-        if i == 0:
-            continue
-        prev_section = sections[i-1]
-        prev_es = enrollment_sections.get(prev_section.id)
-        if not prev_es or not prev_es.completed:
-            locked_sections.add(section.id)
+
+    first_section = None
+    for module in modules:
+        if module.sections:
+            first_section = module.sections[0]
+            break
+    if not first_section and sections:
+        first_section = sections[0]
 
     return render_template('student/course_detail.html', 
-                         course=course, 
-                         sections=sections,
-                         enrollment_sections=enrollment_sections,
-                         locked_sections=locked_sections,
-                         completion_percentage=completion_percentage,
-                         enrollment=enrollment)
+                          course=course, 
+                          sections=sections,
+                          modules=modules,
+                          enrollment_sections=enrollment_sections,
+                          locked_sections=locked_sections,
+                          completion_percentage=completion_percentage,
+                          enrollment=enrollment,
+                          first_section=first_section)
 
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required
-@student_required
 def get_section_content(section_id):
     section = Section.query.get_or_404(section_id)
     course = Course.query.get_or_404(section.course_id)
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
-
-    # Section locking logic
-    sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
-    section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
-    if section_idx > 0:
-        prev_section = sections[section_idx - 1]
-        prev_es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=prev_section.id).first()
-        if not prev_es or not prev_es.completed:
-            flash('Please complete the previous section first.', 'error')
-            return redirect(url_for('student.course_detail', course_id=course.id))
-
-    # Create EnrollmentSection if it doesn't exist
-    enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
-    if not enrollment_section:
-        enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
-        db.session.add(enrollment_section)
     
-    # Update tracking: increment view count and update last accessed
-    enrollment_section.view_count = (enrollment_section.view_count or 0) + 1
-    enrollment_section.last_accessed = datetime.utcnow()
-    db.session.commit()
+    # Check authorization based on role
+    if current_user.role == 'student':
+        # Student must be enrolled
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
+        
 
-    # Handle marking as complete
-    if request.method == 'POST' and 'mark_completed' in request.form:
-        enrollment_section.completed = True
-        enrollment_section.completed_at = datetime.utcnow()
+
+        # Create EnrollmentSection if it doesn't exist
+        enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
+        if not enrollment_section:
+            enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+            db.session.add(enrollment_section)
+        
+        # Update tracking: increment view count and update last accessed
+        enrollment_section.view_count = (enrollment_section.view_count or 0) + 1
+        enrollment_section.last_accessed = datetime.utcnow()
         db.session.commit()
-        flash('Section marked as completed.', 'success')
 
-        # Check if the entire course is completed
-        all_sections = Section.query.filter_by(course_id=course.id).all()
-        all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
-        if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
-            return jsonify({'status': 'completed', 'course_id': course.id, 'redirect': None})
-        return jsonify({'status': 'updated', 'message': 'Section updated.'})
+        # Handle marking as complete
+        if request.method == 'POST' and ('mark_completed' in request.form or (request.json and request.json.get('mark_completed'))):
+            enrollment_section.completed = True
+            enrollment_section.completed_at = datetime.utcnow()
+            db.session.commit()
+            flash('Section marked as completed.', 'success')
+
+            # Check if the entire course is completed
+            all_sections = Section.query.filter_by(course_id=course.id).all()
+            all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+            is_course_completed = all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections)
+            if is_course_completed:
+                # Mark enrollment as completed
+                enrollment.completed = True
+                enrollment.completed_at = datetime.utcnow()
+                db.session.commit()
+                flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
+
+            # If HTMX request, render HTML and send HX-Trigger header
+            if request.headers.get('HX-Request'):
+                interactive_questions = []
+                subtitles = []
+                if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
+                    interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
+                    subtitles = section.subtitles if hasattr(section, 'subtitles') else []
+                resp = make_response(render_template('student/_section_content.html', 
+                                     section=section, 
+                                     course=course, 
+                                     enrollment_section=enrollment_section,
+                                     interactive_questions=interactive_questions,
+                                     subtitles=subtitles))
+                if is_course_completed:
+                    resp.headers['HX-Trigger'] = 'course-completed'
+                return resp
+
+            if is_course_completed:
+                return jsonify({
+                    'status': 'completed', 
+                    'course_id': course.id, 
+                    'course_title': course.title,
+                    'enrollment_id': enrollment.id,
+                    'show_celebration': True,
+                    'redirect': None
+                })
+            return jsonify({'status': 'updated', 'message': 'Section updated.'})
+    elif current_user.role == 'admin' or (current_user.role == 'teacher' and course.teacher_id == current_user.id):
+        # Admin or Course Teacher is allowed
+        enrollment_section = None
+    else:
+        # Unauthorized role or other teacher
+        abort(403)
 
     # Get interactive questions and subtitles for video sections
     interactive_questions = []
@@ -189,9 +304,14 @@ def submit_assignment(section_id, assignment_id):
                 # Accept common code extensions
                 code_exts = {'py', 'js', 'java', 'cpp', 'c', 'hpp', 'h', 'ts', 'tsx', 'html', 'css', 'sql', 'txt'}
                 if file and allowed_file(file.filename, allowed_extensions=code_exts):
-                    filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                    file_path = filename
-                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                    from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
+                    if cloudinary_url:
+                        file_path = cloudinary_url
+                    else:
+                        filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                        file_path = filename
+                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
             if not code and not file_path:
                 flash('Please write code or upload a code file before submitting.', 'danger')
@@ -220,9 +340,14 @@ def submit_assignment(section_id, assignment_id):
         if 'file' in request.files and request.files['file'].filename:
             file = request.files['file']
             if file and allowed_file(file.filename):
-                filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                file_path = filename
-                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
+                if cloudinary_url:
+                    file_path = cloudinary_url
+                else:
+                    filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                    file_path = filename
+                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
         submission = AssignmentSubmission(
             assignment_id=assignment_id,
@@ -305,6 +430,13 @@ def mark_section_completed(section_id):
         es.completed = True
         es.completed_at = datetime.utcnow()
     
+    # Check if all sections are completed to mark course as complete
+    all_sections = Section.query.filter_by(course_id=section.course_id).all()
+    all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+    if all(es_item.completed for es_item in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+        enrollment.completed = True
+        enrollment.completed_at = datetime.utcnow()
+    
     db.session.commit()
     return "Section marked as completed", 200
 
@@ -337,54 +469,6 @@ def view_pdf(section_id):
     
     db.session.commit()
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], section.content)
-
-@student_bp.route('/section/<int:section_id>/content_new', methods=['GET', 'POST'])
-@student_required
-def get_section_content_new(section_id):
-    section = Section.query.get_or_404(section_id)
-    course = Course.query.get_or_404(section.course_id)
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
-
-    # Section locking logic
-    sections = Section.query.filter_by(course_id=section.course_id).order_by(Section.order).all()
-    section_idx = next(i for i, s in enumerate(sections) if s.id == section_id)
-    if section_idx > 0:
-        prev_section = sections[section_idx - 1]
-        prev_es = EnrollmentSection.query.filter_by(
-            enrollment_id=enrollment.id, section_id=prev_section.id
-        ).first()
-        if not prev_es or not prev_es.completed:
-            return "Section locked", 403
-
-    # Create EnrollmentSection if it doesn't exist
-    enrollment_section = EnrollmentSection.query.filter_by(
-        enrollment_id=enrollment.id, section_id=section_id
-    ).first()
-    if not enrollment_section:
-        enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
-        db.session.add(enrollment_section)
-        db.session.commit()
-
-    # Handle marking as complete
-    if request.method == 'POST' and 'mark_completed' in request.form:
-        enrollment_section.completed = True
-        enrollment_section.completed_at = datetime.utcnow()
-        db.session.commit()
-        flash('Section marked as completed.', 'success')
-
-    # Get interactive questions and subtitles for video sections
-    interactive_questions = []
-    subtitles = []
-    if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
-        interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
-        subtitles = section.subtitles if hasattr(section, 'subtitles') else []
-    
-    return render_template('student/_section_content.html', 
-                         section=section, 
-                         course=course, 
-                         enrollment_section=enrollment_section,
-                         interactive_questions=interactive_questions,
-                         subtitles=subtitles)
 
 @student_bp.route('/course/<int:course_id>/rate', methods=['POST'])
 @login_required
@@ -429,7 +513,7 @@ def generate_certificate(enrollment_id):
     if not all(es.completed for es in enrollment.sections) or not Rating.query.filter_by(course_id=enrollment.course_id, user_id=current_user.id).first():
         return jsonify({'status': 'error', 'message': 'Course not fully completed or rated.'}), 403
 
-    user_name = current_user.username or current_user.email.split('@')[0]
+    user_name = f"{current_user.first_name} {current_user.last_name}" if (current_user.first_name and current_user.last_name) else (current_user.username or current_user.email.split('@')[0])
     certificate_filename = f"certificate_{enrollment.id}_{int(datetime.utcnow().timestamp())}.pdf"
     certificate_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate_filename)
 
@@ -526,20 +610,38 @@ def generate_certificate(enrollment_id):
     c.setFont("Helvetica", 12)
     c.setFillColor(HexColor('#333333'))
     completion_date = datetime.utcnow().strftime('%B %d, %Y')
-    c.drawString(120, 200, "Date of Completion:")
+    c.drawString(70, 180, "Date of Completion:")
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(120, 180, completion_date)
+    c.drawString(70, 160, completion_date)
     
-    # Signature line and text
+    # --- Dual Signatures ---
+    
+    # 1. Course Teacher Signature
+    teacher_name = enrollment.course.teacher.username or enrollment.course.teacher.email.split('@')[0]
     c.setFont("Helvetica", 12)
     c.setFillColor(HexColor('#333333'))
-    c.drawString(width - 250, 200, "Authorized Signature:")
+    c.drawString(width / 2 - 60, 180, "Course Instructor:")
     # Signature line
     c.setStrokeColor(HexColor('#000000'))
     c.setLineWidth(1)
-    c.line(width - 250, 175, width - 80, 175)
-    c.setFont("Helvetica-Oblique", 10)
-    c.drawString(width - 220, 160, "Pace Academy")
+    c.line(width / 2 - 60, 155, width / 2 + 80, 155)
+    # Teacher Name (Cursive-style fallback)
+    c.setFont("Helvetica-Oblique", 11)
+    c.drawCentredString(width / 2 + 10, 140, teacher_name)
+    
+    # 2. Adam Dono Signature (Head of Curriculum)
+    c.setFont("Helvetica", 12)
+    c.setFillColor(HexColor('#333333'))
+    c.drawString(width - 220, 180, "Head of Curriculum:")
+    # Signature line
+    c.setStrokeColor(HexColor('#000000'))
+    c.setLineWidth(1)
+    c.line(width - 220, 155, width - 50, 155)
+    # Signature Name
+    c.setFont("Helvetica-BoldOblique", 11)
+    c.drawCentredString(width - 135, 140, "Adam Dono")
+    c.setFont("Helvetica", 9)
+    c.drawCentredString(width - 135, 125, "Pace Academy")
     
     # ===== SEAL/BADGE =====
     # Draw a circular seal
@@ -575,7 +677,9 @@ def generate_certificate(enrollment_id):
     db.session.commit()
     logger.info(f"Certificate generated successfully for enrollment_id: {enrollment_id}")
     flash('Certificate generated successfully!', 'success')
-    return jsonify({'status': 'success', 'message': 'Certificate generated', 'certificate_path': certificate_filename})
+    
+    # Redirect to download the certificate immediately
+    return redirect(url_for('student.serve_certificate', enrollment_id=enrollment_id))
 
 @student_bp.route('/serve_certificate/<int:enrollment_id>')
 @login_required
@@ -637,10 +741,11 @@ def profile():
     form = ProfileForm()
     
     if form.validate_on_submit():
-        # Verify current password
-        if not current_user.verify_password(form.current_password.data):
-            flash('Current password is incorrect', 'danger')
-            return render_template('student/profile.html', form=form)
+        # Only require current password when changing password
+        if form.new_password.data:
+            if not current_user.verify_password(form.current_password.data or ''):
+                flash('Current password is incorrect', 'danger')
+                return render_template('student/profile.html', form=form)
         
         # Check if email is already taken by another user
         if form.email.data != current_user.email:
@@ -661,6 +766,35 @@ def profile():
         current_user.email = form.email.data
         current_user.bio = form.bio.data
         current_user.contact = form.contact.data
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.specialization = form.specialization.data
+        
+        # Handle profile image upload (optional field)
+        file = request.files.get('profile_image')
+        if file and file.filename:
+            # Basic validation
+            allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
+            if ext in allowed:
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_avatars")
+                if cloudinary_url:
+                    current_user.profile_image = cloudinary_url
+                else:
+                    # Remove old image if exists
+                    if getattr(current_user, 'profile_image', None) and not current_user.profile_image.startswith('http'):
+                        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
+                        try:
+                            if os.path.exists(old_path):
+                                os.remove(old_path)
+                        except Exception:
+                            pass
+                    # Save new image
+                    new_name = f"avatar_student_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+                    save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
+                    file.save(save_path)
+                    current_user.profile_image = new_name
         
         # Update password if provided
         if form.new_password.data:
@@ -676,6 +810,9 @@ def profile():
         form.email.data = current_user.email
         form.bio.data = current_user.bio
         form.contact.data = current_user.contact
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.specialization.data = current_user.specialization
     
     return render_template('student/profile.html', form=form)
 
@@ -738,6 +875,20 @@ def video_progress(section_id):
             if not enrollment_section.completed:
                 enrollment_section.completed = True
                 enrollment_section.completed_at = datetime.utcnow()
+                
+                # Check if all sections are completed to mark course as complete
+                section = Section.query.get(section_id)
+                enrollment = Enrollment.query.filter_by(
+                    student_id=current_user.id,
+                    course_id=section.course_id
+                ).first()
+                
+                if enrollment:
+                    all_sections = Section.query.filter_by(course_id=section.course_id).all()
+                    all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+                    if all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections):
+                        enrollment.completed = True
+                        enrollment.completed_at = datetime.utcnow()
         
         db.session.commit()
         
@@ -818,3 +969,219 @@ def respond_video_question():
     except Exception as e:
         logger.error(f"Error submitting video question response: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# ===== NEW SIDEBAR ROUTES =====
+
+@student_bp.route('/assignments')
+@login_required
+@student_required
+def assignments():
+    """View all assignments across enrolled courses"""
+    from sqlalchemy import or_
+    
+    # Get all assignments for enrolled courses
+    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+    
+    assignments = Assignment.query.join(Section).filter(
+        Section.course_id.in_(enrolled_course_ids)
+    ).order_by(Assignment.due_date.asc()).all()
+    
+    # Categorize assignments
+    pending = []
+    submitted = []
+    graded = []
+    
+    for assignment in assignments:
+        submission = AssignmentSubmission.query.filter_by(
+            assignment_id=assignment.id,
+            student_id=current_user.id
+        ).first()
+        
+        if submission:
+            if submission.grade is not None:
+                graded.append({'assignment': assignment, 'submission': submission})
+            else:
+                submitted.append({'assignment': assignment, 'submission': submission})
+        else:
+            pending.append({'assignment': assignment, 'submission': None})
+    
+    return render_template('student/assignments.html',
+                         pending=pending,
+                         submitted=submitted,
+                         graded=graded)
+
+@student_bp.route('/certificates')
+@login_required
+@student_required
+def certificates():
+    """View all earned certificates"""
+    # Get all completed enrollments
+    completed_enrollments = Enrollment.query.filter_by(
+        student_id=current_user.id,
+        completed=True
+    ).all()
+    
+    # Build certificates list with course info
+    certificates = []
+    for enrollment in completed_enrollments:
+        course = Course.query.get(enrollment.course_id)
+        if course:
+            certificates.append({
+                'enrollment': enrollment,
+                'course': course,
+                'has_certificate': bool(enrollment.certificate_path),
+                'completed_at': enrollment.completed_at
+            })
+    
+    return render_template('student/certificates.html', certificates=certificates)
+
+@student_bp.route('/calendar')
+@login_required
+@student_required
+def calendar():
+    """Calendar view of all deadlines"""
+    from datetime import datetime, timedelta
+    
+    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+    
+    # Get all assignments with due dates
+    assignments = Assignment.query.join(Section).filter(
+        Section.course_id.in_(enrolled_course_ids),
+        Assignment.due_date.isnot(None)
+    ).order_by(Assignment.due_date).all()
+    
+    # Group by date
+    calendar_data = {}
+    today = datetime.utcnow().date()
+    
+    for assignment in assignments:
+        date_key = assignment.due_date.date()
+        if date_key not in calendar_data:
+            calendar_data[date_key] = {
+                'date': date_key,
+                'assignments': [],
+                'is_past': date_key < today,
+                'is_today': date_key == today
+            }
+        calendar_data[date_key]['assignments'].append(assignment)
+    
+    calendar_items = sorted(calendar_data.values(), key=lambda x: x['date'])
+    
+    return render_template('student/calendar.html', calendar_items=calendar_items)
+
+@student_bp.route('/announcements')
+@login_required
+@student_required
+def announcements():
+    """View all course announcements"""
+    from app.models import Announcement
+    
+    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+    
+    announcements = Announcement.query.filter(
+        Announcement.course_id.in_(enrolled_course_ids)
+    ).order_by(Announcement.created_at.desc()).all()
+    
+    return render_template('student/announcements.html', announcements=announcements)
+
+@student_bp.route('/notifications')
+@login_required
+@student_required
+def notifications_list():
+    """View all notifications"""
+    from app.models import Notification
+    
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).limit(50).all()
+    
+    return render_template('student/notifications.html', notifications=notifications)
+
+@student_bp.route('/help')
+@login_required
+@student_required
+def help():
+    return render_template('student/help.html')
+
+@student_bp.route('/grades')
+@login_required
+@student_required
+def grades():
+    """Student gradebook showing all grades across enrolled courses"""
+    # Get all enrolled courses
+    enrolled_courses = Course.query.join(Enrollment).filter(
+        Enrollment.student_id == current_user.id,
+        Course.status == 'approved'
+    ).all()
+    
+    grade_data = []
+    
+    for course in enrolled_courses:
+        # Get assignments and quizzes for this course
+        assignments = Assignment.query.join(Section).filter(Section.course_id == course.id).all()
+        quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
+        
+        # Get student's submissions
+        assignment_grades = []
+        for assignment in assignments:
+            submission = AssignmentSubmission.query.filter_by(
+                assignment_id=assignment.id,
+                student_id=current_user.id
+            ).first()
+            
+            assignment_grades.append({
+                'assignment': assignment,
+                'submission': submission,
+                'grade': submission.grade if submission else None,
+                'status': 'graded' if submission and submission.reviewed else 'submitted' if submission else 'not_submitted'
+            })
+        
+        # Get quiz attempts
+        quiz_grades = []
+        for quiz in quizzes:
+            attempts = QuizAttempt.query.filter_by(
+                quiz_id=quiz.id,
+                student_id=current_user.id
+            ).order_by(QuizAttempt.attempted_at.desc()).all()
+            
+            best_score = max([a.score for a in attempts]) if attempts else None
+            
+            quiz_grades.append({
+                'quiz': quiz,
+                'attempts': attempts,
+                'best_score': best_score,
+                'status': 'completed' if attempts else 'not_attempted'
+            })
+        
+        # Calculate course average
+        assignment_scores = [g['grade'] for g in assignment_grades if g['grade'] is not None]
+        quiz_scores = [g['best_score'] for g in quiz_grades if g['best_score'] is not None]
+        
+        assignment_avg = sum(assignment_scores) / len(assignment_scores) if assignment_scores else None
+        quiz_avg = sum(quiz_scores) / len(quiz_scores) if quiz_scores else None
+        
+        # Overall grade (60% assignments, 40% quizzes)
+        overall_grade = None
+        if assignment_avg is not None or quiz_avg is not None:
+            overall_grade = (assignment_avg or 0) * 0.6 + (quiz_avg or 0) * 0.4
+        
+        grade_data.append({
+            'course': course,
+            'assignment_grades': assignment_grades,
+            'quiz_grades': quiz_grades,
+            'assignment_avg': round(assignment_avg, 1) if assignment_avg else None,
+            'quiz_avg': round(quiz_avg, 1) if quiz_avg else None,
+            'overall_grade': round(overall_grade, 1) if overall_grade else None,
+            'total_assignments': len(assignments),
+            'graded_assignments': sum(1 for g in assignment_grades if g['status'] == 'graded'),
+            'total_quizzes': len(quizzes),
+            'attempted_quizzes': sum(1 for g in quiz_grades if g['status'] == 'completed')
+        })
+    
+    # Calculate overall GPA
+    all_grades = [g['overall_grade'] for g in grade_data if g['overall_grade'] is not None]
+    overall_gpa = sum(all_grades) / len(all_grades) if all_grades else None
+    
+    return render_template('student/grades.html',
+                         grade_data=grade_data,
+                         overall_gpa=round(overall_gpa, 1) if overall_gpa else None)

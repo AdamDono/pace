@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-5xl">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <div class="flex items-center space-x-2 mb-1">
+                <h1 class="text-2xl font-bold">{{ course.title }}</h1>
+                {% if course.status == 'draft' %}
+                <span
+                    class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full border border-gray-200">Draft</span>
+                {% elif course.status == 'pending' %}
+                <span
+                    class="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full border border-yellow-200">Pending
+                    Approval</span>
+                {% elif course.status == 'approved' %}
+                <span
+                    class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full border border-green-200">Approved</span>
+                {% elif course.status == 'rejected' %}
+                <span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full border border-red-200">Action
+                    Required</span>
+                {% endif %}
+            </div>
+            <p class="text-gray-500 text-sm">Course Content Builder — <span class="text-blue-600 font-medium">Topics &amp; Activities</span></p>
+        </div>
+        <div class="flex items-center space-x-3">
+            {% if course.status in ['draft', 'rejected'] %}
+            <form action="{{ url_for('teacher.submit_course_for_review', course_id=course.id) }}" method="POST"
+                class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                    class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                        </path>
+                    </svg>
+                    Submit for Review
+                </button>
+            </form>
+            {% endif %}
+
+            <button onclick="showSettingsModal()"
+                class="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Settings
+            </button>
+
+            <a href="{{ url_for('teacher.preview_course', course_id=course.id) }}" target="_blank"
+                class="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                    </path>
+                </svg>
+                Preview
+            </a>
+            <a href="{{ url_for('teacher.my_courses') }}"
+                class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                Done
+            </a>
+        </div>
+    </div>
+
+    <!-- Course Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-2xl p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Course Settings</h2>
+                <button onclick="closeModal('settingsModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <form action="{{ url_for('teacher.edit_course', course_id=course.id) }}" method="POST"
+                enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
+                        <input type="text" name="title" value="{{ course.title }}" required
+                            class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        {% with field_id='course-description', field_name='description', initial_value=course.description|default(''), height='200px' %}
+                            {% include 'components/quill_editor.html' %}
+                        {% endwith %}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select name="category" class="w-full p-2 border rounded-lg">
+                                <option value="programming" {% if course.category=='programming' %}selected{% endif %}>
+                                    Programming</option>
+                                <option value="design" {% if course.category=='design' %}selected{% endif %}>Design
+                                </option>
+                                <option value="business" {% if course.category=='business' %}selected{% endif %}>
+                                    Business</option>
+                                <option value="academic" {% if course.category=='academic' %}selected{% endif %}>
+                                    Academic</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Learning Duration (hrs)</label>
+                            <input type="number" name="estimated_duration" value="{{ course.estimated_duration or '' }}"
+                                class="w-full p-2 border rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('settingsModal')"
+                        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="submit"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">Save
+                        Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content Builder Area -->
+    <div class="space-y-6" id="course-content-root">
+
+        {% if modules %}
+        {% for module in modules %}
+        <!-- Topic Container -->
+        <div class="lesson-container bg-white border border-gray-200 rounded-lg mb-4 shadow-sm group"
+            data-module-id="{{ module.id }}">
+            <!-- Topic Header -->
+            <div class="p-4 border-b border-gray-100 flex items-center hover:bg-gray-50 transition-colors cursor-pointer"
+                onclick="toggleLesson('lesson-{{ module.id }}')">
+                <div class="mr-3 text-gray-400 cursor-grab handle">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16">
+                        </path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">Topic</span>
+                        <h3 class="text-lg font-semibold text-gray-800">{{ module.title }}</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ module.sections|length }} activit{{ 'y' if module.sections|length == 1 else 'ies' }}</p>
+                </div>
+                <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="editLesson({{ module.id }}, '{{ module.title }}'); event.stopPropagation();"
+                        class="p-1.5 text-gray-500 hover:text-blue-600 rounded hover:bg-blue-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                            </path>
+                        </svg>
+                    </button>
+                    <button onclick="deleteLesson({{ module.id }}); event.stopPropagation();"
+                        class="p-1.5 text-gray-500 hover:text-red-600 rounded hover:bg-red-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ml-2 transform transition-transform duration-200" id="arrow-lesson-{{ module.id }}">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Lesson Content (Sections) -->
+            <div id="lesson-{{ module.id }}" class="lesson-content p-4 bg-gray-50/50 hidden">
+                <!-- Content List -->
+                <div class="space-y-3 mb-4 section-list" data-module-id="{{ module.id }}">
+                    {% for section in module.sections %}
+                    <div class="bg-white border border-gray-200 p-3 rounded shadow-sm flex items-center group/item hover:border-blue-300 transition-colors"
+                        data-section-id="{{ section.id }}">
+                        <div class="mr-3 text-gray-300 cursor-grab section-handle hover:text-gray-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 8h16M4 16h16"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-3 text-xl w-8 text-center">
+                            {% if section.section_type == 'video' %}🎥
+                            {% elif section.section_type == 'quiz' %}❓
+                            {% elif section.section_type == 'assignment' %}📝
+                            {% elif section.section_type == 'resource' %}📎
+                            {% elif section.section_type == 'url' %}🔗
+                            {% else %}📖{% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-medium px-1.5 py-0.5 rounded
+                                    {% if section.section_type == 'quiz' %}bg-amber-100 text-amber-700
+                                    {% elif section.section_type == 'assignment' %}bg-pink-100 text-pink-700
+                                    {% elif section.section_type == 'video' %}bg-purple-100 text-purple-700
+                                    {% elif section.section_type == 'resource' %}bg-gray-100 text-gray-600
+                                    {% elif section.section_type == 'url' %}bg-green-100 text-green-700
+                                    {% else %}bg-blue-100 text-blue-700{% endif %}">{{ section.section_type|title }}</span>
+                                <h4 class="font-medium text-gray-800 text-sm truncate">{{ section.title }}</h4>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center space-x-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <a href="{{ url_for('teacher.edit_section_content', course_id=course.id, section_id=section.id) }}"
+                                class="px-2 py-1 text-xs border border-gray-200 bg-white hover:bg-gray-50 rounded text-gray-600">
+                                ✏️ Edit
+                            </a>
+                            {% if section.section_type == 'quiz' and section.quizzes %}
+                            <a href="{{ url_for('teacher.add_quiz', course_id=course.id, section_id=section.id) }}"
+                                class="px-2 py-1 text-xs border border-amber-200 bg-amber-50 hover:bg-amber-100 rounded text-amber-700">
+                                + Questions
+                            </a>
+                            {% elif section.section_type == 'assignment' and section.assignments %}
+                            <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
+                                class="px-2 py-1 text-xs border border-pink-200 bg-pink-50 hover:bg-pink-100 rounded text-pink-700">
+                                Edit Details
+                            </a>
+                            {% endif %}
+                            <button onclick="deleteSection({{ section.id }});"
+                                class="text-gray-300 hover:text-red-500 p-1 ml-1 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Activity Button -->
+                <button onclick="showActivityPicker({{ module.id }})"
+                    class="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all text-sm font-medium flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Activity
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <p class="text-gray-500 mb-2">Start by creating your first <strong>Topic</strong>. Think of it as a Week or Chapter.</p>
+        </div>
+        {% endif %}
+
+        <!-- Add New Topic Button -->
+        <button onclick="showAddLessonModal()"
+            class="w-full py-4 bg-white border-2 border-dashed border-indigo-300 rounded-xl text-indigo-600 font-semibold hover:bg-indigo-50 hover:border-indigo-500 transition-all shadow-sm">
+            + Add New Topic
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Add Topic -->
+<div id="addLessonModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-xl">
+        <h3 class="text-lg font-bold mb-1">New Topic</h3>
+        <p class="text-sm text-gray-500 mb-4">Topics group related activities together (e.g. "Week 1", "Introduction").</p>
+        <input type="text" id="newLessonTitle" placeholder="e.g. Introduction to Variables"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-4" autofocus>
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeModal('addLessonModal')"
+                class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+            <button onclick="createLesson()"
+                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Create Topic</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Activity Picker -->
+<div id="activityPickerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Add an Activity</h3>
+                <p class="text-sm text-gray-500">Pick a type, then enter a title.</p>
+            </div>
+            <button onclick="closeModal('activityPickerModal')" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- Type picker grid -->
+        <div class="grid grid-cols-3 gap-3 mb-5" id="activity-type-grid">
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer" data-type="lesson">
+                <span class="text-3xl mb-1">📖</span>
+                <span class="text-sm font-semibold text-gray-700">Lesson</span>
+                <span class="text-xs text-gray-400">Rich text content</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer" data-type="video">
+                <span class="text-3xl mb-1">🎥</span>
+                <span class="text-sm font-semibold text-gray-700">Video</span>
+                <span class="text-xs text-gray-400">YouTube or upload</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer" data-type="quiz">
+                <span class="text-3xl mb-1">❓</span>
+                <span class="text-sm font-semibold text-gray-700">Quiz</span>
+                <span class="text-xs text-gray-400">MCQ questions</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-pink-400 hover:bg-pink-50 transition-all cursor-pointer" data-type="assignment">
+                <span class="text-3xl mb-1">📝</span>
+                <span class="text-sm font-semibold text-gray-700">Assignment</span>
+                <span class="text-xs text-gray-400">File submission</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer" data-type="resource">
+                <span class="text-3xl mb-1">📎</span>
+                <span class="text-sm font-semibold text-gray-700">Resource</span>
+                <span class="text-xs text-gray-400">File download</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all cursor-pointer" data-type="url">
+                <span class="text-3xl mb-1">🔗</span>
+                <span class="text-sm font-semibold text-gray-700">Link</span>
+                <span class="text-xs text-gray-400">External URL</span>
+            </button>
+        </div>
+
+        <!-- Title input (shown after type selected) -->
+        <div id="activity-title-row" class="hidden">
+            <div class="flex items-center gap-2 mb-3">
+                <span id="selected-type-icon" class="text-2xl"></span>
+                <span id="selected-type-label" class="font-semibold text-gray-700"></span>
+            </div>
+            <input type="text" id="newActivityTitle" placeholder="Enter activity title…"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-4">
+            <div class="flex justify-end gap-3">
+                <button onclick="resetActivityPicker()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">← Back</button>
+                <button onclick="createActivity()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold">Create Activity</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    const courseId = {{ course.id }};
+    const csrfToken = "{{ csrf_token() }}";
+
+    function toggleLesson(id) {
+        const content = document.getElementById(id);
+        const arrow = document.getElementById('arrow-' + id);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            content.classList.add('hidden');
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function showAddLessonModal() {
+        document.getElementById('addLessonModal').classList.remove('hidden');
+        document.getElementById('newLessonTitle').focus();
+    }
+
+    function showSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    function editLesson(moduleId, currentTitle) {
+        const newTitle = prompt('Enter new title for this lesson:', currentTitle);
+        if (newTitle && newTitle !== currentTitle) {
+            fetch(`/teacher/course/${courseId}/module/${moduleId}/edit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `title=${encodeURIComponent(newTitle)}`
+            }).then(() => location.reload());
+        }
+    }
+
+    function createLesson() {
+        const title = document.getElementById('newLessonTitle').value;
+        if (!title.trim()) return;
+
+        fetch(`/teacher/course/${courseId}/quick-create-module`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ title: title })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) location.reload();
+            });
+    }
+
+    // ── Activity type metadata ──
+    const ACTIVITY_TYPES = {
+        lesson:     { icon: '📖', label: 'Lesson' },
+        video:      { icon: '🎥', label: 'Video' },
+        quiz:       { icon: '❓', label: 'Quiz' },
+        assignment: { icon: '📝', label: 'Assignment' },
+        resource:   { icon: '📎', label: 'Resource' },
+        url:        { icon: '🔗', label: 'Link' },
+    };
+
+    let _currentPickerModuleId = null;
+    let _selectedActivityType  = null;
+
+    function showActivityPicker(moduleId) {
+        _currentPickerModuleId = moduleId;
+        _selectedActivityType  = null;
+        resetActivityPicker();
+        document.getElementById('activityPickerModal').classList.remove('hidden');
+    }
+
+    function resetActivityPicker() {
+        _selectedActivityType = null;
+        document.getElementById('activity-type-grid').classList.remove('hidden');
+        document.getElementById('activity-title-row').classList.add('hidden');
+        document.querySelectorAll('.activity-type-card').forEach(c => c.classList.remove('border-indigo-500', 'bg-indigo-50'));
+    }
+
+    // Wire up type cards
+    document.querySelectorAll('.activity-type-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const type = card.dataset.type;
+            _selectedActivityType = type;
+            document.getElementById('activity-type-grid').classList.add('hidden');
+            document.getElementById('selected-type-icon').textContent  = ACTIVITY_TYPES[type].icon;
+            document.getElementById('selected-type-label').textContent = ACTIVITY_TYPES[type].label;
+            document.getElementById('newActivityTitle').value = '';
+            document.getElementById('activity-title-row').classList.remove('hidden');
+            document.getElementById('newActivityTitle').focus();
+        });
+    });
+
+    function createActivity() {
+        const title = document.getElementById('newActivityTitle').value.trim();
+        if (!title || !_selectedActivityType || !_currentPickerModuleId) return;
+
+        fetch(`/teacher/course/${courseId}/quick-create-section`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ module_id: _currentPickerModuleId, type: _selectedActivityType, title })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            closeModal('activityPickerModal');
+            // Route to the right editor
+            if (data.activity_type === 'quiz') {
+                window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-quiz`;
+            } else if (data.activity_type === 'assignment') {
+                window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-assignment`;
+            } else {
+                window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/edit-content`;
+            }
+        });
+    }
+
+    // Enter key submits activity title
+    document.getElementById('newActivityTitle')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') createActivity();
+    });
+
+    function deleteLesson(id) {
+        if (!confirm('Delete this lesson and all its content?')) return;
+        fetch(`/teacher/delete-module/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        }).then(() => location.reload());
+    }
+
+    function deleteSection(id) {
+        if (!confirm('Delete this item?')) return;
+        fetch(`/teacher/delete-section/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        }).then(() => location.reload());
+    }
+
+    // Initialize Sortable
+    document.addEventListener('DOMContentLoaded', function () {
+        // Sort Lesson Containers
+        new Sortable(document.getElementById('course-content-root'), {
+            handle: '.handle',
+            animation: 150,
+            onEnd: function (evt) {
+                const moduleIds = Array.from(document.getElementById('course-content-root').querySelectorAll('.lesson-container'))
+                                       .map(el => parseInt(el.getAttribute('data-module-id')));
+                
+                fetch(`/teacher/course/${courseId}/reorder-modules`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify(moduleIds)
+                })
+                .then(r => r.json())
+                .then(data => {
+                    console.log('Modules reordered:', data.message);
+                })
+                .catch(err => console.error('Error reordering modules:', err));
+            }
+        });
+
+        // Sort Sections within Lessons
+        document.querySelectorAll('.section-list').forEach(list => {
+            new Sortable(list, {
+                group: 'sections',
+                handle: '.section-handle',
+                animation: 150,
+                onEnd: function (evt) {
+                    const destList = evt.to;
+                    const moduleId = destList.getAttribute('data-module-id');
+                    const sectionIds = Array.from(destList.querySelectorAll('[data-section-id]'))
+                                            .map(el => parseInt(el.getAttribute('data-section-id')));
+                    
+                    fetch(`/teacher/course/${courseId}/reorder-sections`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                        body: JSON.stringify({
+                            section_ids: sectionIds,
+                            module_id: moduleId ? parseInt(moduleId) : null
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log('Sections reordered:', data.message);
+                    })
+                    .catch(err => console.error('Error reordering sections:', err));
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

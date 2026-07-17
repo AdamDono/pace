@@ -270,6 +270,7 @@ window.runCodeInEditor = async function(code, language, outputElementId) {
         }
         
         outputEl.innerHTML = html;
+        triggerSuccessConfetti();
     } else {
         outputEl.innerHTML = `
             <div class="text-red-400 font-semibold">❌ Error</div>
@@ -277,6 +278,43 @@ window.runCodeInEditor = async function(code, language, outputElementId) {
         `;
     }
 };
+
+function triggerSuccessConfetti() {
+    if (typeof confetti === 'function') {
+        fireConfetti();
+    } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+        script.onload = () => fireConfetti();
+        document.head.appendChild(script);
+    }
+}
+
+function fireConfetti() {
+    const duration = 1.5 * 1000;
+    const end = Date.now() + duration;
+
+    (function frame() {
+        confetti({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.8 },
+            colors: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B']
+        });
+        confetti({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1, y: 0.8 },
+            colors: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B']
+        });
+
+        if (Date.now() < end) {
+            requestAnimationFrame(frame);
+        }
+    }());
+}
 
 // HTML escape utility
 function escapeHtml(text) {

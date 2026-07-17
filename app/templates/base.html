@@ -21,13 +21,12 @@
         margin: 0 auto;
         border: 0;
         border-radius: 0.5rem; /* rounded */
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
       }
     </style>
     <!-- Fallback to CDN if local file fails -->
     <script>
         if (!document.querySelector('link[href*="tailwind.min.css"]').sheet) {
-            document.write('<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">');
+            document.write('<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"><\\/script>');
         }
     </script>
     <script>
@@ -37,6 +36,7 @@
             menu.classList.toggle('hidden');
         }
     </script>
+    {% block head %}{% endblock %}
 </head>
 <body class="bg-gray-50 font-sans flex flex-col min-h-screen">
     <!-- Navigation Bar -->
@@ -84,6 +84,9 @@
                             </a>
                             <a href="{{ url_for('teacher.create_course_wizard') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
                                 Create Course
+                            </a>
+                            <a href="{{ url_for('teacher.profile') }}" class="text-gray-600 hover:text-blue-600 text-sm font-medium">
+                                Profile
                             </a>
                         {% endif %}
                         
@@ -170,6 +173,9 @@
                         <a href="{{ url_for('teacher.create_course_wizard') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
                             Create Course
                         </a>
+                        <a href="{{ url_for('teacher.profile') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
+                            Profile
+                        </a>
                     {% endif %}
                     <!-- Student Navigation -->
                     {% if current_user.role == 'student' %}
@@ -206,6 +212,7 @@
     <!-- Main Content -->
     <div class="pt-16 pb-16 flex-grow">
         <!-- Flash messages -->
+        {% block flash_messages %}
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
@@ -217,6 +224,7 @@
                 </div>
             {% endif %}
         {% endwith %}
+        {% endblock %}
 
         <div class="container mx-auto p-4">
             {% block content %}{% endblock %}
@@ -370,28 +378,29 @@
         .then(data => {
             updateBadge(data.count);
         })
-        .catch(error => console.error('Error loading initial count:', error));
+        .catch(error => console.error('Error checking notifications:', error));
+    console.log('Navigation memory initialized');
     </script>
     {% endif %}
     
-    <!-- Loading Spinner & Navigation Memory -->
+    <!-- Upload Progress System -->
+    <script src="{{ url_for('static', filename='js/upload-progress.js') }}"></script>
     <script>
-    // ===== LOADING SPINNER =====
-    const loadingEl = document.getElementById('global-loading');
-    const loadingMessage = document.getElementById('loading-message');
-    
-    function showLoading(message = 'Loading...') {
+      // Global loading helpers
+      const loadingEl = document.getElementById('global-loading');
+      const loadingMessage = document.getElementById('loading-message');
+      function showLoading(message = 'Loading...') {
         if (loadingEl) {
             loadingMessage.textContent = message;
             loadingEl.classList.remove('hidden');
         }
-    }
+      }
     
-    function hideLoading() {
+      function hideLoading() {
         if (loadingEl) {
-            loadingEl.classList.add('hidden');
+          loadingEl.classList.add('hidden');
         }
-    }
+      }
     
     // Show loading on form submits
     document.addEventListener('DOMContentLoaded', function() {

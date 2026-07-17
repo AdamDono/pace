@@ -1,0 +1,311 @@
+{% extends "teacher/base_teacher.html" %}
+
+{% block content %}
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center mb-2">
+                    <a href="{{ url_for('teacher.course_gradebook', course_id=course.id) }}" class="text-blue-600 hover:text-blue-800 mr-2">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-3xl font-bold text-gray-900">👤 Student Details</h1>
+                </div>
+                <p class="text-gray-600">{{ course.title }} - {{ student.email.split('@')[0] }} ({{ student.email }})</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="sendMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    ✉️ Message Student
+                </button>
+                <button onclick="exportStudentGrades()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    📥 Export Grades
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <i class="fas fa-tasks text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Assignments</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.graded_assignments }}/{{ stats.total_assignments }}</p>
+                    <p class="text-xs text-gray-500">{{ stats.submitted_assignments }} submitted</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <i class="fas fa-brain text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Quizzes</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.attempted_quizzes }}/{{ stats.total_quizzes }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Assignment Avg</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.assignment_avg }}%</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <i class="fas fa-trophy text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Overall Grade</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.overall_grade }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">📝 Assignments</h2>
+        </div>
+
+        {% if assignment_data %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in assignment_data %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ item.assignment.title }}</div>
+                            <div class="text-sm text-gray-500">{{ item.assignment.section.title }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if item.status == 'graded' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    ✓ Graded
+                                </span>
+                            {% elif item.status == 'submitted' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    ⏳ Submitted
+                                </span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    ✗ Not Submitted
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {% if item.submission %}
+                                {{ item.submission.submitted_at.strftime('%b %d, %Y %H:%M') }}
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if item.submission and item.submission.grade is not none %}
+                                <span class="text-sm font-medium
+                                    {% if item.submission.grade >= 90 %}text-green-600
+                                    {% elif item.submission.grade >= 80 %}text-blue-600
+                                    {% elif item.submission.grade >= 70 %}text-yellow-600
+                                    {% elif item.submission.grade >= 60 %}text-orange-600
+                                    {% else %}text-red-600{% endif %}">
+                                    {{ item.submission.grade }}%
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if item.submission and item.submission.feedback %}
+                                <div class="max-w-xs truncate text-sm text-gray-900" title="{{ item.submission.feedback }}">
+                                    {{ item.submission.feedback[:50] }}{% if item.submission.feedback|length > 50 %}...{% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium">
+                            {% if item.submission %}
+                                <button onclick="viewSubmission({{ item.submission.id }})"
+                                        class="text-blue-600 hover:text-blue-900">👁️ View</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-500">No assignments in this course yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quizzes Section -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">🧠 Quizzes</h2>
+        </div>
+
+        {% if quiz_data %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quiz</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Best Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Attempt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in quiz_data %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ item.quiz.title }}</div>
+                            <div class="text-sm text-gray-500">{{ item.quiz.section.title }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {{ item.attempts|length }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if item.best_score is not none %}
+                                <span class="text-sm font-medium
+                                    {% if item.best_score >= 90 %}text-green-600
+                                    {% elif item.best_score >= 80 %}text-blue-600
+                                    {% elif item.best_score >= 70 %}text-yellow-600
+                                    {% elif item.best_score >= 60 %}text-orange-600
+                                    {% else %}text-red-600{% endif %}">
+                                    {{ item.best_score }}%
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {% if item.attempts %}
+                                {{ item.attempts[0].attempted_at.strftime('%b %d, %Y %H:%M') }}
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium">
+                            {% if item.attempts %}
+                                <button onclick="viewQuizAttempts({{ item.quiz.id }}, {{ student.id }})"
+                                        class="text-blue-600 hover:text-blue-900">📊 View Attempts</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-500">No quizzes in this course yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Submission Modal -->
+<div id="submissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-4xl flex flex-col" style="max-height: 95vh; height: auto;">
+        <div class="flex-shrink-0 p-6 pb-4 border-b">
+            <button class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-2xl" onclick="closeModal()">×</button>
+            <h3 class="text-xl font-bold text-gray-800">📝 Submission Details</h3>
+        </div>
+        <div class="flex-1 px-6 py-4" style="overflow-y: auto; min-height: 0;">
+            <div id="submissionContent"></div>
+        </div>
+        <div class="flex-shrink-0 p-6 pt-4 border-t bg-gray-50">
+            <button onclick="closeModal()" class="w-full bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewSubmission(submissionId) {
+    fetch(`/teacher/preview-submission/${submissionId}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('submissionContent');
+
+            let html = '<div class="space-y-4">';
+
+            if (data.submission_type === 'code') {
+                html += '<h4 class="font-semibold text-gray-700">💻 Code Submission:</h4>';
+                if (data.code_submission) {
+                    html += `
+                        <div class="bg-gray-900 text-white p-4 rounded-lg overflow-auto max-h-[400px]">
+                            <pre><code class="text-sm">${data.code_submission}</code></pre>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Language: ${data.programming_language || 'Unknown'}</p>
+                    `;
+                }
+            } else {
+                html += '<h4 class="font-semibold text-gray-700">📄 Text Submission:</h4>';
+                html += `<p class="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded">${data.submission_text || 'No text content'}</p>`;
+            }
+
+            if (data.file_path) {
+                html += `<div class="mt-4"><a href="${data.file_path.startsWith('http') ? data.file_path : '/static/uploads/' + data.file_path}" target="_blank" class="text-blue-600 hover:underline">📎 Download Attached File</a></div>`;
+            }
+
+            html += '</div>';
+
+            content.innerHTML = html;
+            document.getElementById('submissionModal').classList.remove('hidden');
+        })
+        .catch(error => {
+            alert('Error loading submission details');
+        });
+}
+
+function viewQuizAttempts(quizId, studentId) {
+    // This would open the existing quiz attempts view
+    window.location.href = `{{ url_for('teacher.view_quiz_attempts', course_id=course.id, section_id=0) }}?quiz_id=${quizId}&student_id=${studentId}`;
+}
+
+function sendMessage() {
+    alert('Messaging feature coming soon! Student: {{ student.email }}');
+}
+
+function exportStudentGrades() {
+    alert('Export functionality coming soon! This will download grades for this student.');
+}
+
+function closeModal() {
+    document.getElementById('submissionModal').classList.add('hidden');
+}
+</script>
+
+{% endblock %}

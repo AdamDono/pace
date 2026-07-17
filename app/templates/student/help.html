@@ -1,0 +1,115 @@
+{% extends "student/base_student.html" %}
+{% block page_title %}Help & Support{% endblock %}
+{% block content %}
+<div class="p-6">
+  <h1 class="text-2xl font-bold text-gray-900 mb-6">Help & Support</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Quick Help Cards -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- FAQs -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Frequently Asked Questions</h2>
+        <div class="space-y-4">
+          <details class="group">
+            <summary class="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span class="font-medium text-gray-900">How do I submit an assignment?</span>
+              <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+            </summary>
+            <div class="p-4 text-sm text-gray-600">
+              Navigate to the course, click on the assignment section, and click "Submit Assignment". You can upload files or write your response directly.
+            </div>
+          </details>
+
+          <details class="group">
+            <summary class="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span class="font-medium text-gray-900">How do I download my certificate?</span>
+              <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+            </summary>
+            <div class="p-4 text-sm text-gray-600">
+              Complete all course sections and rate the course. Then go to Certificates in the sidebar and click Download.
+            </div>
+          </details>
+
+          <details class="group">
+            <summary class="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span class="font-medium text-gray-900">Can I retake a quiz?</span>
+              <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+            </summary>
+            <div class="p-4 text-sm text-gray-600">
+              Yes! You can retake quizzes up to 3 times. Your highest score will be recorded.
+            </div>
+          </details>
+
+          <details class="group">
+            <summary class="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span class="font-medium text-gray-900">How do I track my progress?</span>
+              <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+            </summary>
+            <div class="p-4 text-sm text-gray-600">
+              Click "My Progress" in the sidebar to see detailed progress for all your courses, including completion percentages and time spent.
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Video Tutorials -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Video Tutorials</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer">
+            <div class="w-full h-32 bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
+              <i class="fas fa-play-circle text-4xl text-gray-400"></i>
+            </div>
+            <h4 class="font-medium text-gray-900">Getting Started</h4>
+            <p class="text-sm text-gray-600 mt-1">Learn the basics of the platform</p>
+          </div>
+          <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer">
+            <div class="w-full h-32 bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
+              <i class="fas fa-play-circle text-4xl text-gray-400"></i>
+            </div>
+            <h4 class="font-medium text-gray-900">Submitting Assignments</h4>
+            <p class="text-sm text-gray-600 mt-1">Step-by-step guide</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Support -->
+    <div class="space-y-6">
+      <div class="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <i class="fas fa-headset text-4xl mb-4"></i>
+        <h3 class="text-xl font-bold mb-2">Need More Help?</h3>
+        <p class="text-sm text-blue-100 mb-4">Our support team is here to help you succeed.</p>
+        <button class="w-full bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition">
+          Contact Support
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Quick Links</h3>
+        <div class="space-y-3">
+          <a href="{{ url_for('student.dashboard') }}" class="flex items-center text-sm text-gray-700 hover:text-blue-600">
+            <i class="fas fa-home w-5 mr-2"></i>
+            Dashboard
+          </a>
+          <a href="{{ url_for('student.course_progress') }}" class="flex items-center text-sm text-gray-700 hover:text-blue-600">
+            <i class="fas fa-chart-line w-5 mr-2"></i>
+            My Progress
+          </a>
+          <a href="{{ url_for('student.profile') }}" class="flex items-center text-sm text-gray-700 hover:text-blue-600">
+            <i class="fas fa-user w-5 mr-2"></i>
+            Profile Settings
+          </a>
+        </div>
+      </div>
+
+      <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+        <i class="fas fa-lightbulb text-2xl text-yellow-600 mb-3"></i>
+        <h4 class="font-semibold text-gray-900 mb-2">Pro Tip</h4>
+        <p class="text-sm text-gray-700">Enable notifications to stay updated on new course content and announcements!</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

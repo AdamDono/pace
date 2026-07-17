@@ -11,8 +11,6 @@ app = create_app()
 def ensure_admin_exists():
     """Ensure there's at least one admin user in the system"""
     with app.app_context():
-        
-        
         admin_exists = db.session.query(
             db.session.query(User).filter_by(role='admin').exists()
         ).scalar()
@@ -22,7 +20,7 @@ def ensure_admin_exists():
                 email=os.getenv('ADMIN_EMAIL', 'admin@example.com'),
                 role='admin'
             )
-            admin.password = os.getenv('ADMIN_PASSWORD', 'adminpassword') 
+            admin.password = os.getenv('ADMIN_PASSWORD', 'adminpassword')
             db.session.add(admin)
             try:
                 db.session.commit()
@@ -41,17 +39,54 @@ def check_database_connection():
         except Exception as e:
             print(f"❌ Database connection failed: {str(e)}")
             return False
-        
-   
+
+
+def start_scheduler():
+    """
+    Start the APScheduler background scheduler for recurring tasks.
+
+    Jobs:
+        - weekly_digest: Emails opted-in users a summary every Monday at 08:00.
+
+    The scheduler is only started in the main process to avoid double-firing
+    when Werkzeug's reloader spawns a child process.
+    """
+    # In debug mode Werkzeug spawns a child process — only run in that child
+    # (WERKZEUG_RUN_MAIN == 'true') or in non-debug production mode.
+    is_reloader_child = os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
+    is_production = os.getenv('FLASK_DEBUG', 'false').lower() != 'true'
+
+    if is_reloader_child or is_production:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.cron import CronTrigger
+        from app.utils.digest import send_weekly_digests
+
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(
+            func=send_weekly_digests,
+            args=[app],
+            trigger=CronTrigger(day_of_week='mon', hour=8, minute=0),
+            id='weekly_digest',
+            name='Weekly Digest Email',
+            replace_existing=True,
+        )
+        scheduler.start()
+        print("✅ Scheduler started — weekly digest fires every Monday 08:00")
+        return scheduler
+    return None
+
 
 if __name__ == '__main__':
-   
+
     if not check_database_connection():
         exit(1)
-    
+
     # Ensure admin exists
     ensure_admin_exists()
-    
+
+    # Start background scheduler (weekly digest, etc.)
+    start_scheduler()
+
     # Run the application
     app.run(
         host=os.getenv('FLASK_HOST', '127.0.0.1'),

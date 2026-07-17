@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "teacher/base_teacher.html" %}
 
 {% block title %}Create Announcement{% endblock %}
 
@@ -20,6 +20,7 @@
 
     <div class="bg-white rounded-lg shadow-lg p-8">
         <form method="POST" data-loading="Creating announcement...">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class="space-y-6">
                 <!-- Title -->
                 <div>
@@ -109,6 +110,8 @@
 
 <!-- Quill Rich Text Editor -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/quill-buttons.css') }}" rel="stylesheet">
 <style>
 .ql-editor {
     font-size: 15px;
@@ -125,33 +128,40 @@
 </style>
 
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.js"></script>
+<!-- Monaco Editor for Source Code -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 <script>
-// Initialize Quill for announcement content
-var announcementQuill = new Quill('#announcement-content-editor', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link'],
-            [{ 'color': [] }, { 'background': [] }],
-            ['blockquote'],
-            ['clean']
-        ]
-    },
-    placeholder: 'Write your announcement here. You can format text, add links, and create lists...'
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+    // Monaco loaded, now init Quill
+    initAnnouncementQuill();
 });
 
-// Sync Quill content to hidden textarea
-announcementQuill.on('text-change', function() {
-    document.getElementById('announcement-content').value = announcementQuill.root.innerHTML;
-});
-
-// Sync on form submit
-document.querySelector('form').addEventListener('submit', function() {
-    document.getElementById('announcement-content').value = announcementQuill.root.innerHTML;
-});
+function initAnnouncementQuill() {
+    console.log('✅ Monaco loaded for announcements');
+    
+    // Make monaco globally available
+    window.monaco = monaco;
+    
+    // Load enhanced Quill script
+    const script = document.createElement('script');
+    script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}";
+    script.onload = function() {
+        console.log('✅ Quill script loaded for announcements');
+        // Initialize enhanced Quill for announcement content
+        var announcementQuill = initQuillEnhanced(
+            'announcement-content-editor',
+            'announcement-content',
+            'Write your announcement here. You can format text, add tables, emojis, H5P, and edit source code!'
+        );
+        
+        // Make it globally accessible for preview function
+        window.announcementQuill = announcementQuill;
+        console.log('✅ Monaco available:', typeof monaco !== 'undefined');
+    };
+    document.head.appendChild(script);
+}
 
 // Preview function
 function previewAnnouncement() {

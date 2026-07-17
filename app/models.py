@@ -4,6 +4,20 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 
+# ---------------------------------------------------------------------------
+# Activity type system (Moodle-inspired Level 2)
+# Each Section has one of these types. The type determines what the teacher
+# fills in and how the student sees the content.
+# ---------------------------------------------------------------------------
+ACTIVITY_TYPES = {
+    'lesson':     {'label': 'Lesson',      'icon': '📖', 'color': 'blue'},
+    'video':      {'label': 'Video',       'icon': '🎥', 'color': 'purple'},
+    'quiz':       {'label': 'Quiz',        'icon': '❓', 'color': 'amber'},
+    'assignment': {'label': 'Assignment',  'icon': '📝', 'color': 'pink'},
+    'resource':   {'label': 'Resource',    'icon': '📎', 'color': 'gray'},
+    'url':        {'label': 'Link',        'icon': '🔗', 'color': 'green'},
+}
+
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
     
@@ -14,6 +28,7 @@ class User(db.Model, UserMixin):
     role = db.Column(db.String(20), nullable=False)
     bio = db.Column(db.Text, nullable=True)
     contact = db.Column(db.String(120), nullable=True)
+    profile_image = db.Column(db.String(255), nullable=True)
     
     # Teacher-specific fields
     first_name = db.Column(db.String(80), nullable=True)
@@ -109,12 +124,12 @@ class User(db.Model, UserMixin):
 class Course(db.Model):
     __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    title = db.Column(db.String(100), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)  # Added index
+    title = db.Column(db.String(100), nullable=False, index=True)  # Added index for search
     description = db.Column(db.Text, nullable=False)
     youtube_url = db.Column(db.String(255))
-    status = db.Column(db.String(20), default='draft')  # Changed from 'pending' to 'draft'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='draft', index=True)  # Added index for filtering
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Added index for sorting
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     admin_feedback = db.Column(db.Text)
     pdf_filename = db.Column(db.String(120))
@@ -188,10 +203,11 @@ class Section(db.Model):
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
-    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed = db.Column(db.Boolean, default=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)  # Added index
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), index=True)  # Added index
+    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Added index
+    completed = db.Column(db.Boolean, default=False, index=True)  # Added index for filtering
+    completed_at = db.Column(db.DateTime, nullable=True)  # When course was completed
     certificate_path = db.Column(db.String(255))  # Added for certificate storage
     
     student = db.relationship('User', back_populates='enrollments')
@@ -201,9 +217,9 @@ class Enrollment(db.Model):
 class EnrollmentSection(db.Model):
     __tablename__ = 'enrollment_sections'
     id = db.Column(db.Integer, primary_key=True)
-    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'))
-    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'))
-    completed = db.Column(db.Boolean, default=False)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'), index=True)  # Added index
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), index=True)  # Added index
+    completed = db.Column(db.Boolean, default=False, index=True)  # Added index
     completed_at = db.Column(db.DateTime)
     
     # Analytics tracking fields
@@ -275,6 +291,11 @@ class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
+    time_limit = db.Column(db.Integer, nullable=True)  # Time limit in minutes (null = unlimited)
+    passing_score = db.Column(db.Float, default=60.0)  # Minimum score to pass (percentage)
+    max_attempts = db.Column(db.Integer, nullable=True)  # Max attempts allowed (null = unlimited)
+    randomize_questions = db.Column(db.Boolean, default=False)  # Randomize question order
+    show_correct_answers = db.Column(db.Boolean, default=True)  # Show correct answers after submission
     section = db.relationship('Section', back_populates='quizzes')
     questions = db.relationship('QuizQuestion', back_populates='quiz', cascade='all, delete-orphan')
     attempts = db.relationship('QuizAttempt', back_populates='quiz', cascade='all, delete-orphan')
@@ -299,6 +320,8 @@ class QuizAttempt(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     score = db.Column(db.Float, nullable=False)
     attempted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    time_taken = db.Column(db.Integer, nullable=True)  # Time taken in seconds
+    completed_at = db.Column(db.DateTime, nullable=True)  # When quiz was completed
     quiz = db.relationship('Quiz', back_populates='attempts')
     student = db.relationship('User')
     answers = db.relationship('QuizAnswer', back_populates='attempt', cascade='all, delete-orphan')
@@ -445,7 +468,7 @@ class Notification(db.Model):
     related_quiz_id = db.Column(db.Integer, nullable=True)
     
     # Relationships
-    user = db.relationship('User', backref='notifications')
+    user = db.relationship('User', backref=db.backref('notifications', cascade='all, delete-orphan'))
     related_course = db.relationship('Course', backref='notifications')
 
 class NotificationPreference(db.Model):
@@ -476,7 +499,7 @@ class NotificationPreference(db.Model):
     digest_day = db.Column(db.String(10), default='Monday')  # Day of week for digest
     
     # Relationships
-    user = db.relationship('User', backref='notification_preferences')
+    user = db.relationship('User', backref=db.backref('notification_preferences', uselist=False, cascade='all, delete-orphan'))
 
 class Announcement(db.Model):
     """Course announcements from teachers"""
@@ -497,5 +520,5 @@ class Announcement(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    course = db.relationship('Course', backref='announcements')
+    course = db.relationship('Course', backref=db.backref('announcements', cascade='all, delete-orphan'))
     teacher = db.relationship('User', backref='announcements_created')
