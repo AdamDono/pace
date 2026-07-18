@@ -206,9 +206,16 @@ class Lead(db.Model):
     full_name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(30), nullable=False)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=True)
     status = db.Column(db.String(20), default='pending')  # 'pending', 'contacted', 'enrolled', 'rejected'
     employment_status = db.Column(db.String(50), nullable=True)
+    
+    # Enterprise fields
+    lead_type = db.Column(db.String(20), default='individual')  # 'individual' or 'enterprise'
+    organization = db.Column(db.String(150), nullable=True)
+    estimated_learners = db.Column(db.Integer, nullable=True)
+    inquiry_type = db.Column(db.String(100), nullable=True)  # 'licensing', 'whitelabel', 'custom', 'other'
+    
     message = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

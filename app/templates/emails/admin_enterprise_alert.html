@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New Enterprise / Institutional Inquiry</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            color: #333333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin: 0 auto;
+        }
+        .header {
+            border-bottom: 2px solid #6366f1;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #6366f1;
+            margin: 0;
+        }
+        .field-group {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
+        }
+        .label {
+            font-weight: bold;
+            font-size: 13px;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .value {
+            font-size: 15px;
+            color: #1f2937;
+            margin-top: 4px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #9ca3af;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>New Enterprise Inquiry</h2>
+            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Pace Academy B2B Lead System</p>
+        </div>
+        
+        <div class="field-group">
+            <div class="label">Organization Name</div>
+            <div class="value" style="font-weight: bold; color: #1e1b4b;">{{ organization }}</div>
+        </div>
+
+        <div class="field-group">
+            <div class="label">Contact Person</div>
+            <div class="value">{{ full_name }}</div>
+        </div>
+
+        <div class="field-group">
+            <div class="label">Email Address</div>
+            <div class="value"><a href="mailto:{{ email }}" style="color: #6366f1; text-decoration: none;">{{ email }}</a></div>
+        </div>
+
+        <div class="field-group">
+            <div class="label">Phone Number</div>
+            <div class="value"><a href="tel:{{ phone }}" style="color: #6366f1; text-decoration: none;">{{ phone }}</a></div>
+        </div>
+
+        <div class="field-group">
+            <div class="label">Inquiry Type</div>
+            <div class="value" style="text-transform: capitalize;">
+                {% if inquiry_type == 'licensing' %}Institutional Course Licensing
+                {% elif inquiry_type == 'whitelabel' %}White-Labeled Academy
+                {% elif inquiry_type == 'custom' %}Custom Curriculum Development
+                {% else %}General Partnership / Other{% endif %}
+            </div>
+        </div>
+
+        <div class="field-group">
+            <div class="label">Estimated Number of Learners</div>
+            <div class="value">{{ estimated_learners if estimated_learners else 'Not specified' }}</div>
+        </div>
+
+        <div class="field-group" style="border-bottom: none;">
+            <div class="label">Inquiry Notes / Requirements</div>
+            <div class="value" style="background-color: #f8fafc; padding: 12px; border-radius: 8px; font-style: italic; white-space: pre-wrap; line-height: 1.5;">{{ message if message else 'No additional details provided.' }}</div>
+        </div>
+
+        <div class="footer">
+            <p>This request was submitted live from the public Pace Academy landing page.</p>
+        </div>
+    </div>
+</body>
+</html>

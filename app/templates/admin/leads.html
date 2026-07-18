@@ -70,8 +70,18 @@
                             <tr class="hover:bg-gray-50/50 transition-colors">
                                 <!-- Name & Contact -->
                                 <td class="px-6 py-5">
-                                    <div class="font-bold text-gray-900">{{ lead.full_name }}</div>
-                                    <div class="text-xs text-gray-400 mt-1 flex flex-col space-y-1">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="font-bold text-gray-900">{{ lead.full_name }}</div>
+                                        {% if lead.lead_type == 'enterprise' %}
+                                            <span class="text-[9px] bg-indigo-100 text-indigo-700 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">B2B</span>
+                                        {% else %}
+                                            <span class="text-[9px] bg-gray-100 text-gray-600 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">B2C</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if lead.organization %}
+                                        <div class="text-xs font-bold text-indigo-600 mt-0.5">🏛️ {{ lead.organization }}</div>
+                                    {% endif %}
+                                    <div class="text-xs text-gray-400 mt-1.5 flex flex-col space-y-1">
                                         <a href="mailto:{{ lead.email }}" class="hover:text-blue-600 flex items-center">
                                             <span class="mr-1">✉</span> {{ lead.email }}
                                         </a>
@@ -81,12 +91,24 @@
                                     </div>
                                 </td>
                                 
-                                <!-- Course Title -->
+                                <!-- Course Title / Inquiry Type -->
                                 <td class="px-6 py-5">
-                                    <div class="font-semibold text-gray-900">{{ lead.course.title }}</div>
-                                    <span class="text-[10px] bg-blue-50 text-blue-600 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-1.5 inline-block">
-                                        {{ lead.course.category or 'Academy' }}
-                                    </span>
+                                    {% if lead.course %}
+                                        <div class="font-semibold text-gray-900">{{ lead.course.title }}</div>
+                                        <span class="text-[10px] bg-blue-50 text-blue-600 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                                            {{ lead.course.category or 'Academy' }}
+                                        </span>
+                                    {% else %}
+                                        <div class="font-semibold text-indigo-950">
+                                            {% if lead.inquiry_type == 'licensing' %}Institutional Licensing
+                                            {% elif lead.inquiry_type == 'whitelabel' %}White-Labeled Academy
+                                            {% elif lead.inquiry_type == 'custom' %}Custom Syllabus Setup
+                                            {% else %}General Partnership{% endif %}
+                                        </div>
+                                        <span class="text-[10px] bg-indigo-50 text-indigo-600 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                                            B2B Service
+                                        </span>
+                                    {% endif %}
                                 </td>
                                 
                                 <!-- Status Badge -->
@@ -102,9 +124,13 @@
                                     {% endif %}
                                 </td>
                                 
-                                <!-- Youth Status -->
-                                <td class="px-6 py-5 text-xs font-semibold capitalize text-gray-500">
-                                    {{ lead.employment_status or 'Not Specified' }}
+                                <!-- Details / Status -->
+                                <td class="px-6 py-5 text-xs text-gray-500 font-semibold">
+                                    {% if lead.lead_type == 'enterprise' %}
+                                        <div class="text-indigo-950 font-bold">~{{ lead.estimated_learners or '50+' }} Learners</div>
+                                    {% else %}
+                                        <span class="capitalize">{{ lead.employment_status or 'Not Specified' }}</span>
+                                    {% endif %}
                                 </td>
                                 
                                 <!-- Date -->
@@ -116,7 +142,8 @@
                                 <td class="px-6 py-5 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end space-x-2">
                                         <!-- Contact Options -->
-                                        <a href="mailto:{{ lead.email }}?subject=Pace Academy Course Application - {{ lead.course.title }}" class="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-all" title="Email Applicant">
+                                        {% set mail_subj = "Pace Academy Course Application - " ~ lead.course.title if lead.course else "Pace Academy Partnership Inquiry - " ~ lead.organization %}
+                                        <a href="mailto:{{ lead.email }}?subject={{ mail_subj }}" class="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-all" title="Email Applicant">
                                             ✉
                                         </a>
                                         
@@ -130,7 +157,7 @@
                                                 <option value="{{ url_for('admin.update_lead_status', lead_id=lead.id, status='rejected') }}">❌ Rejected</option>
                                             </select>
                                         </div>
-
+                                        
                                         <!-- Delete Lead -->
                                         <form action="{{ url_for('admin.delete_lead', lead_id=lead.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this lead?');" class="inline">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

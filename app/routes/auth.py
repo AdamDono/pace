@@ -84,6 +84,66 @@ def apply_course(course_id):
     
     return jsonify({'success': True, 'message': 'Application submitted successfully!'})
 
+@auth_bp.route('/apply-enterprise', methods=['POST'])
+def apply_enterprise():
+    from flask import jsonify
+    from app.models import Lead
+    from app.utils.email import send_email
+    
+    full_name = request.form.get('full_name')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    organization = request.form.get('organization')
+    inquiry_type = request.form.get('inquiry_type')
+    message = request.form.get('message', '')
+    
+    raw_learners = request.form.get('estimated_learners')
+    estimated_learners = int(raw_learners) if raw_learners and raw_learners.isdigit() else None
+    
+    if not (full_name and email and phone and organization and inquiry_type):
+        return jsonify({'success': False, 'message': 'Please fill in all required fields.'}), 400
+        
+    lead = Lead(
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        lead_type='enterprise',
+        organization=organization,
+        inquiry_type=inquiry_type,
+        estimated_learners=estimated_learners,
+        message=message
+    )
+    db.session.add(lead)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Database storage failed. Please try again later.'}), 500
+        
+    admin_recipient = 'adam@pacetech.co.za'
+    send_email(
+        subject=f'New Enterprise Inquiry - {organization}',
+        recipient=admin_recipient,
+        template='admin_enterprise_alert',
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        organization=organization,
+        inquiry_type=inquiry_type,
+        estimated_learners=estimated_learners,
+        message=message
+    )
+    
+    send_email(
+        subject='Institutional Proposal Request Received - Pace Academy',
+        recipient=email,
+        template='student_enterprise_confirm',
+        full_name=full_name,
+        organization=organization
+    )
+    
+    return jsonify({'success': True, 'message': 'Proposal request submitted successfully!'})
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:

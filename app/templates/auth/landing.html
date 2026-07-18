@@ -208,6 +208,61 @@
                 }
             });
         }
+        function openEnterpriseModal() {
+            document.getElementById('enterpriseModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEnterpriseModal() {
+            document.getElementById('enterpriseModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('enterpriseForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Submitting Request...';
+            
+            const formData = new FormData(form);
+            
+            fetch('/apply-enterprise', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrf_token')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('ent-form-fields').classList.add('hidden');
+                    document.getElementById('ent-form-success').classList.remove('hidden');
+                    setTimeout(() => {
+                        closeEnterpriseModal();
+                        form.reset();
+                        document.getElementById('ent-form-fields').classList.remove('hidden');
+                        document.getElementById('ent-form-success').classList.add('hidden');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }, 4000);
+                } else {
+                    alert(data.message || 'Something went wrong. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Network error. Please check your connection.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
     </script>
 
     <!-- Hero Section -->
@@ -230,27 +285,14 @@
                     In South Africa, 46% of young people are unemployed. Most are not unemployable, they are uncertified. Pace Academy makes accredited QCTO/SETA vocational qualifications affordable and structured for everyone.
                 </p>
 
-                <!-- Search Widget -->
-                <div class="max-w-xl bg-white border border-gray-200 p-2 rounded-2xl shadow-lg flex flex-col md:flex-row items-center space-y-3 md:space-y-0 md:space-x-3">
-                    <div class="relative w-full md:flex-1 pl-3 flex items-center">
-                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        <input type="text" placeholder="Search anything..." class="w-full text-sm text-gray-800 focus:outline-none bg-transparent placeholder-gray-400 py-2">
-                    </div>
-                    <div class="border-t md:border-t-0 md:border-l border-gray-100 w-full md:w-auto py-2 md:py-0 md:px-4 flex items-center justify-between">
-                        <select class="text-sm font-semibold text-gray-600 focus:outline-none bg-transparent pr-8 cursor-pointer max-w-[200px] truncate" onchange="if(this.value) window.location.href='{{ url_for('auth.login') }}'">
-                            <option value="">Select Active Course</option>
-                            {% if courses %}
-                                {% for course in courses %}
-                                    <option value="{{ course.id }}">{{ course.title }}</option>
-                                {% endfor %}
-                            {% else %}
-                                <option value="">No Active Courses</option>
-                            {% endif %}
-                        </select>
-                    </div>
-                    <a href="{{ url_for('auth.login') }}" class="cta-btn text-sm font-bold text-white px-6 py-3 rounded-xl w-full md:w-auto text-center shadow-md">
-                        Search Now
+                <!-- Call to Actions -->
+                <div class="flex flex-wrap items-center gap-4">
+                    <a href="#courses" class="cta-btn text-sm font-bold text-white px-8 py-4 rounded-xl shadow-lg shadow-blue-500/25 transition-all">
+                        Browse Curriculum
                     </a>
+                    <button onclick="openEnterpriseModal()" class="bg-white border border-gray-200 hover:border-gray-300 text-sm font-bold text-gray-700 px-8 py-4 rounded-xl shadow-sm transition-all cursor-pointer">
+                        Institutional Solutions
+                    </button>
                 </div>
             </div>
 
@@ -648,9 +690,9 @@
                     If you are an investor, a learning partner, a SETA body, or an institution looking to provide accredited online training, we want to hear from you. The platform is ready.
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <a href="mailto:adam@pacetech.co.za" class="cta-blue-btn text-base font-bold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center shadow-lg">
+                    <button onclick="openEnterpriseModal()" class="cta-blue-btn text-base font-bold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center shadow-lg cursor-pointer">
                         Partner With Us
-                    </a>
+                    </button>
                     <a href="{{ url_for('auth.login') }}" class="cta-glass-btn text-base font-semibold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center">
                         Enter Learning Hub
                     </a>
@@ -658,6 +700,86 @@
             </div>
         </div>
     </section>
+
+    <!-- Enterprise Inquiry Modal -->
+    <div id="enterpriseModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="glass-card max-w-lg w-full bg-white rounded-3xl p-8 relative shadow-2xl border border-gray-200/80">
+            <!-- Close Button -->
+            <button onclick="closeEnterpriseModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            
+            <div id="ent-form-fields">
+                <h3 class="text-2xl font-black text-gray-900 mb-2">Institutional Partnerships</h3>
+                <p class="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-6">Request custom licensing & proposals</p>
+                
+                <form id="enterpriseForm" class="space-y-5">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Contact Person</label>
+                            <input type="text" name="full_name" required placeholder="Your full name" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Institution / Company</label>
+                            <input type="text" name="organization" required placeholder="Organization name" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                            <input type="email" name="email" required placeholder="contact@organization.com" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                            <input type="tel" name="phone" required placeholder="e.g. 082 123 4567" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Inquiry Focus</label>
+                            <select name="inquiry_type" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all cursor-pointer bg-white">
+                                <option value="licensing">Institutional Course Licensing</option>
+                                <option value="whitelabel">White-Labeled Academy</option>
+                                <option value="custom">Custom Syllabus Development</option>
+                                <option value="other">General B2B Partnership</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Estimated Learners</label>
+                            <select name="estimated_learners" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all cursor-pointer bg-white">
+                                <option value="20">1 - 20 learners</option>
+                                <option value="100">21 - 100 learners</option>
+                                <option value="500">101 - 500 learners</option>
+                                <option value="1000">500+ learners</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Requirements / Message</label>
+                        <textarea name="message" rows="3" placeholder="Briefly describe your institution's specific goals or integration needs..." class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all resize-none"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="cta-btn w-full text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10 cursor-pointer">
+                        Request Proposal
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Success Panel -->
+            <div id="ent-form-success" class="hidden text-center py-10">
+                <div class="w-16 h-16 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">📈</div>
+                <h3 class="text-2xl font-black text-gray-900 mb-3">Proposal Request Received!</h3>
+                <p class="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
+                    Excellent! We've received your partnership request. A confirmation email containing initial overview details has been sent to you. We'll prepare a custom pricing sheet and follow up shortly!
+                </p>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="py-12 border-t border-gray-200/60 text-center">
