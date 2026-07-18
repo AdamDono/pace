@@ -103,6 +103,8 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
                             <select name="category" class="w-full p-2 border rounded-lg">
+                                <option value="QCTO" {% if course.category=='QCTO' %}selected{% endif %}>QCTO Accredited (NQF / SAQA)</option>
+                                <option value="SETA" {% if course.category=='SETA' %}selected{% endif %}>SETA Accredited (NQF)</option>
                                 <option value="programming" {% if course.category=='programming' %}selected{% endif %}>
                                     Programming</option>
                                 <option value="design" {% if course.category=='design' %}selected{% endif %}>Design
