@@ -104,6 +104,25 @@
             background: rgba(255, 255, 255, 0.12);
             transform: translateY(-2px);
         }
+        a, button, select, input {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .filter-btn {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: #4b5563;
+        }
+        .filter-btn:hover {
+            border-color: rgba(37, 99, 235, 0.2);
+            color: #2563eb;
+        }
+        .filter-btn.active-filter {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
     </style>
 </head>
 <body class="modern-bg min-h-screen text-gray-800 selection:bg-blue-500/10 selection:text-blue-700 overflow-x-hidden">
@@ -117,16 +136,79 @@
                     <span class="text-gray-900">Pace</span><span class="text-blue-600 font-black">Academy</span>
                 </span>
             </a>
-            <div class="flex items-center space-x-8">
+            <!-- Desktop Navigation Menu -->
+            <div class="hidden md:flex items-center space-x-8">
                 <a href="#story" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Why Us</a>
                 <a href="#features" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Technology</a>
+                <a href="#enterprise" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Enterprise</a>
                 <a href="#courses" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors font-medium">Courses</a>
                 <a href="{{ url_for('auth.login') }}" class="cta-btn text-sm font-bold text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/10">
                     Sign In
                 </a>
             </div>
+
+            <!-- Hamburger Button Toggler on Mobile -->
+            <button onclick="toggleMenu()" class="block md:hidden text-gray-600 hover:text-blue-600 focus:outline-none" aria-label="Toggle Menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation Menu Panel -->
+        <div id="mobile-menu" class="hidden absolute top-20 left-0 right-0 bg-white bg-opacity-95 border-b border-gray-100 flex flex-col p-6 space-y-4 shadow-lg md:hidden backdrop-blur-md z-50">
+            <a href="#story" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Why Us</a>
+            <a href="#features" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Technology</a>
+            <a href="#enterprise" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Enterprise</a>
+            <a href="#courses" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Courses</a>
+            <a href="{{ url_for('auth.login') }}" onclick="toggleMenu()" class="cta-btn text-base font-bold text-white py-3 rounded-xl text-center shadow-md">Sign In</a>
         </div>
     </header>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        let activeFilters = {
+            accreditation: 'all',
+            difficulty: 'all'
+        };
+
+        function filterCatalog(type, value, buttonEl) {
+            activeFilters[type] = value;
+            
+            // Toggle active classes within the button group container
+            const parent = buttonEl.parentElement;
+            parent.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active-filter');
+            });
+            buttonEl.classList.add('active-filter');
+
+            // Filter cards
+            const cards = document.querySelectorAll('.course-card');
+            cards.forEach(card => {
+                const acc = card.getAttribute('data-accreditation');
+                const diff = card.getAttribute('data-difficulty');
+
+                const matchAcc = (activeFilters.accreditation === 'all' || acc === activeFilters.accreditation);
+                
+                let matchDiff = false;
+                if (activeFilters.difficulty === 'all') {
+                    matchDiff = true;
+                } else if (activeFilters.difficulty === 'beginner') {
+                    matchDiff = (diff === 'beginner' || diff === 'general' || diff === 'none' || !diff || diff === '');
+                } else if (activeFilters.difficulty === 'advanced') {
+                    matchDiff = (diff === 'intermediate' || diff === 'advanced');
+                }
+
+                if (matchAcc && matchDiff) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
 
     <!-- Hero Section -->
     <section class="relative pt-36 pb-20 px-6 hero-glow overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50/80">
@@ -362,6 +444,55 @@
         </div>
     </section>
 
+    <!-- Enterprise / Corporate Solutions Section -->
+    <section id="enterprise" class="py-24 px-6 border-t border-gray-100 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-20">
+                <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">Enterprise Solutions</h2>
+                <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">Built for Corporates, NGOs & Institutions</h3>
+                <p class="text-gray-600 max-w-2xl mx-auto mt-4">Scale your organizational training, white-label the learning ecosystem, or license SETA/QCTO curriculum systems.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Solution 1 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-gray-50 bg-opacity-50 shadow-sm border border-gray-100">
+                    <div>
+                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl mb-6">🏢</div>
+                        <h4 class="text-xl font-bold text-gray-900 mb-3">Corporate L&D Upskilling</h4>
+                        <p class="text-gray-600 text-sm leading-relaxed">
+                            Train your workforce on modern coding and technical skills. Keep track of employee learning progress, run sandboxed coding tests, and extract deep metrics.
+                        </p>
+                    </div>
+                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Employee Training Portals</span>
+                </div>
+
+                <!-- Solution 2 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-gray-50 bg-opacity-50 shadow-sm border border-gray-100">
+                    <div>
+                        <div class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl mb-6">🏷️</div>
+                        <h4 class="text-xl font-bold text-gray-900 mb-3">White-Label Deployments</h4>
+                        <p class="text-gray-600 text-sm leading-relaxed">
+                            Deploy a fully branded instance of Pace Academy under your custom domain. Perfect for large-scale NGOs, corporate academies, and government digital programs.
+                        </p>
+                    </div>
+                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Custom Branded LMS</span>
+                </div>
+
+                <!-- Solution 3 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-gray-50 bg-opacity-50 shadow-sm border border-gray-100">
+                    <div>
+                        <div class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl mb-6">🏛️</div>
+                        <h4 class="text-xl font-bold text-gray-900 mb-3">Institutional Licensing</h4>
+                        <p class="text-gray-600 text-sm leading-relaxed">
+                            Unlock annual flat-rate licensing for private colleges, high school hubs, tutoring academies, and registered SETA/QCTO training providers.
+                        </p>
+                    </div>
+                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">SETA & QCTO Licensing</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Catalog Section -->
     <section id="courses" class="py-24 px-6 border-t border-gray-100 bg-gray-50/30">
         <div class="max-w-7xl mx-auto">
@@ -377,9 +508,26 @@
             </div>
 
             {% if courses %}
+                <!-- Interactive Catalog Filters -->
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12 pb-6 border-b border-gray-200/60">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-1">Category:</span>
+                        <button onclick="filterCatalog('accreditation', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all">All</button>
+                        <button onclick="filterCatalog('accreditation', 'accredited', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Accredited (QCTO/SETA)</button>
+                        <button onclick="filterCatalog('accreditation', 'non', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Skills (Non-Accredited)</button>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-1">Difficulty:</span>
+                        <button onclick="filterCatalog('difficulty', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all">All Levels</button>
+                        <button onclick="filterCatalog('difficulty', 'beginner', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Beginner Friendly</button>
+                        <button onclick="filterCatalog('difficulty', 'advanced', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Intermediate/Advanced</button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {% for course in courses %}
-                        <div class="glass-card rounded-3xl overflow-hidden flex flex-col h-full bg-white shadow-sm">
+                        <div class="course-card glass-card rounded-3xl overflow-hidden flex flex-col h-full bg-white shadow-sm" data-accreditation="{% if course.category in ['QCTO', 'SETA'] %}accredited{% else %}non{% endif %}" data-difficulty="{{ course.difficulty_level|lower or 'none' }}">
                             <!-- Banner Image with Fallback -->
                             <div class="h-48 relative overflow-hidden bg-gray-100 border-b border-gray-100">
                                 {% if course.banner_image %}
@@ -491,8 +639,8 @@
     <section class="py-24 px-6 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200/50">
         <div class="max-w-5xl mx-auto cta-card-dark p-12 md:p-16 rounded-3xl text-center relative overflow-hidden">
             <!-- Glowing mesh gradient blobs -->
-            <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500/10 rounded-full filter blur-3xl"></div>
-            <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/15 rounded-full filter blur-3xl"></div>
+            <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500 bg-opacity-10 rounded-full filter blur-3xl"></div>
+            <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500 bg-opacity-15 rounded-full filter blur-3xl"></div>
             
             <div class="relative z-10">
                 <h2 class="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight">Let's Build This Together</h2>
