@@ -32,7 +32,7 @@
 <div class="container">
     <div class="header">
         <h1>📚 Your Weekly Digest</h1>
-        <p>Here's what happened in the past 7 days — {{ current_date.strftime('%B %d, %Y') }}</p>
+        <p>Here's what happened in the past 7 days ({{ current_date.strftime('%B %d, %Y') }})</p>
     </div>
     <div class="body">
         <p style="color:#374151;font-size:15px;margin:0 0 24px;">Hi <strong>{{ user.username }}</strong>, here's your weekly summary.</p>
