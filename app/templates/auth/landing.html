@@ -87,13 +87,13 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.25);
         }
-        .cta-orange-btn {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        .cta-blue-btn {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .cta-orange-btn:hover {
+        .cta-blue-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(234, 88, 12, 0.35);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
         }
         .cta-glass-btn {
             background: rgba(255, 255, 255, 0.06);
@@ -135,8 +135,8 @@
             <!-- Left Column: Copy & Search Bar -->
             <div class="lg:col-span-7">
                 <div class="flex items-center space-x-2.5 mb-6">
-                    <span class="w-8 h-[2px] bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></span>
-                    <span class="text-xs font-bold uppercase tracking-wider text-orange-600">Non-Accredited & Accredited Skills Academy</span>
+                    <span class="w-8 h-[2px] bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"></span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Non-Accredited & Accredited Skills Academy</span>
                 </div>
 
                 <h1 class="text-4xl md:text-[52px] font-black tracking-tight leading-[1.15] mb-6 text-gray-900">
@@ -174,21 +174,21 @@
 
             <!-- Right Column: Student Graphics & Badges -->
             <div class="lg:col-span-5 relative flex justify-center items-center">
-                <!-- Orange Circle Frame Background -->
-                <div class="w-[360px] h-[360px] md:w-[480px] md:h-[480px] rounded-full bg-gradient-to-br from-orange-500 to-red-500 absolute scale-105 shadow-xl shadow-orange-500/10"></div>
+                <!-- Blue Circle Frame Background -->
+                <div class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] md:w-[440px] md:h-[440px] rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 absolute scale-105 shadow-xl shadow-blue-500/10"></div>
                 
                 <!-- Cutout Student Asset -->
-                <img src="{{ url_for('static', filename='images/hero_student.png') }}" alt="Pace Student" class="relative z-10 w-[380px] md:w-[540px] object-contain pointer-events-none student-img">
+                <img src="{{ url_for('static', filename='images/hero_student.png') }}" alt="Pace Student" class="relative z-10 w-[290px] sm:w-[360px] md:w-[480px] object-contain pointer-events-none student-img">
                 
                 <!-- Swirling Doodle Paths -->
                 <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 400" fill="none">
-                    <path d="M 50,300 Q 150,150 350,320" stroke="rgba(255, 107, 0, 0.15)" stroke-width="2" stroke-dasharray="6 6" />
-                    <path d="M 320,80 Q 200,200 80,100" stroke="rgba(99, 102, 241, 0.15)" stroke-width="2" stroke-dasharray="6 6" />
+                    <path d="M 50,300 Q 150,150 350,320" stroke="rgba(59, 130, 246, 0.12)" stroke-width="2" stroke-dasharray="6 6" />
+                    <path d="M 320,80 Q 200,200 80,100" stroke="rgba(99, 102, 241, 0.12)" stroke-width="2" stroke-dasharray="6 6" />
                 </svg>
 
                 <!-- Floating Badges -->
                 <!-- 1. QCTO Courses -->
-                <div class="absolute -top-6 right-0 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 shadow-lg border border-white/20 floating">
+                <div class="absolute -top-6 right-0 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-2.5 shadow-lg border border-white/20 floating">
                     <span class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-sm text-white">📚</span>
                     <div>
                         <p class="text-[9px] uppercase font-black text-gray-400">Accredited</p>
@@ -197,7 +197,7 @@
                 </div>
 
                 <!-- 2. SETA Courses -->
-                <div class="absolute top-1/3 -left-6 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 shadow-lg border border-white/20 floating" style="animation-delay: -2s;">
+                <div class="absolute top-1/3 -left-6 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-2.5 shadow-lg border border-white/20 floating" style="animation-delay: -2s;">
                     <span class="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center text-sm text-white">🛡️</span>
                     <div>
                         <p class="text-[9px] uppercase font-black text-gray-400">Accredited</p>
@@ -206,7 +206,7 @@
                 </div>
 
                 <!-- 3. Total Students -->
-                <div class="absolute bottom-16 -right-6 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-3 shadow-lg border border-white/20 floating" style="animation-delay: -4s;">
+                <div class="absolute bottom-16 -right-6 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-3 shadow-lg border border-white/20 floating" style="animation-delay: -4s;">
                     <div class="flex -space-x-2">
                         <div class="w-6 h-6 rounded-full bg-blue-500 border border-white flex items-center justify-center text-[8px] font-black text-white">AD</div>
                         <div class="w-6 h-6 rounded-full bg-purple-500 border border-white flex items-center justify-center text-[8px] font-black text-white">SM</div>
@@ -219,7 +219,7 @@
                 </div>
 
                 <!-- 4. Non-Accredited -->
-                <div class="absolute bottom-6 left-6 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 shadow-lg border border-white/20 floating" style="animation-delay: -1s;">
+                <div class="absolute bottom-6 left-6 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-2.5 shadow-lg border border-white/20 floating" style="animation-delay: -1s;">
                     <span class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-xs text-white">✓</span>
                     <span class="text-xs font-bold text-gray-900">Non-Accredited Skills</span>
                 </div>
@@ -491,7 +491,7 @@
     <section class="py-24 px-6 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200/50">
         <div class="max-w-5xl mx-auto cta-card-dark p-12 md:p-16 rounded-3xl text-center relative overflow-hidden">
             <!-- Glowing mesh gradient blobs -->
-            <div class="absolute -top-24 -left-24 w-72 h-72 bg-orange-500/10 rounded-full filter blur-3xl"></div>
+            <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500/10 rounded-full filter blur-3xl"></div>
             <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/15 rounded-full filter blur-3xl"></div>
             
             <div class="relative z-10">
@@ -500,7 +500,7 @@
                     If you are an investor, a learning partner, a SETA body, or an institution looking to provide accredited online training, we want to hear from you. The platform is ready.
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <a href="mailto:adam@pacetech.co.za" class="cta-orange-btn text-base font-bold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center shadow-lg">
+                    <a href="mailto:adam@pacetech.co.za" class="cta-blue-btn text-base font-bold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center shadow-lg">
                         Partner With Us
                     </a>
                     <a href="{{ url_for('auth.login') }}" class="cta-glass-btn text-base font-semibold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center">
@@ -513,11 +513,8 @@
 
     <!-- Footer -->
     <footer class="py-12 border-t border-gray-200/60 text-center">
-        <p class="text-xs text-gray-500 mb-2">
+        <p class="text-xs text-gray-500">
             © 2026 Pace Academy. Powered by Pace Tech. All rights reserved.
-        </p>
-        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
-            Johannesburg, South Africa
         </p>
     </footer>
 
