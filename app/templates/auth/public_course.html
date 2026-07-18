@@ -142,8 +142,8 @@
                             {% for module in course.modules %}
                             <div class="border border-gray-100 rounded-2xl overflow-hidden bg-gray-50/30 transition-all hover:border-gray-200">
                                 
-                                <!-- Module Header (Non-Interactive for Public) -->
-                                <div class="w-full flex items-center justify-between p-5 text-left bg-white">
+                                <!-- Accordion Header -->
+                                <button onclick="toggleModule({{ module.id }})" class="w-full flex items-center justify-between p-5 text-left focus:outline-none cursor-pointer bg-white">
                                     <div class="flex items-center space-x-4">
                                         <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 font-black text-xs flex items-center justify-center border border-blue-100">
                                             {{ loop.index }}
@@ -155,10 +155,13 @@
                                             {% endif %}
                                         </div>
                                     </div>
-                                </div>
+                                    <svg id="module-chevron-{{ module.id }}" class="w-5 h-5 text-gray-400 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
 
-                                <!-- Syllabus Units List (Always Visible) -->
-                                <div class="p-5 border-t border-gray-100 bg-gray-50/50 divide-y divide-gray-100/50">
+                                <!-- Accordion Content (Units List) -->
+                                <div id="module-content-{{ module.id }}" class="hidden p-5 border-t border-gray-100 bg-gray-50/50 divide-y divide-gray-100/50">
                                     {% if module.sections %}
                                         {% for section in module.sections %}
                                         <div class="flex items-center justify-between py-3 {% if not loop.first %}mt-1{% endif %}">
@@ -262,7 +265,19 @@
         </p>
     </footer>
 
-
-
+    <!-- Accordion Script -->
+    <script>
+        function toggleModule(moduleId) {
+            const content = document.getElementById('module-content-' + moduleId);
+            const chevron = document.getElementById('module-chevron-' + moduleId);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+    </script>
 </body>
 </html>
