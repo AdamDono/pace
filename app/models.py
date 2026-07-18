@@ -200,6 +200,20 @@ class Section(db.Model):
     enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
     assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan')
 
+class Lead(db.Model):
+    __tablename__ = 'leads'
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(30), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'contacted', 'enrolled', 'rejected'
+    employment_status = db.Column(db.String(50), nullable=True)
+    message = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    course = db.relationship('Course', backref='leads')
+
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     id = db.Column(db.Integer, primary_key=True)

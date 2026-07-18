@@ -767,3 +767,34 @@ def unban_user(user_id):
     
     flash(f'User {user.username} has been unbanned', 'success')
     return redirect(url_for('admin.manage_users'))
+
+@admin_bp.route('/leads')
+@admin_required
+def leads():
+    from app.models import Lead
+    leads = Lead.query.order_by(Lead.created_at.desc()).all()
+    return render_template('admin/leads.html', leads=leads)
+
+@admin_bp.route('/leads/<int:lead_id>/status/<status>')
+@admin_required
+def update_lead_status(lead_id, status):
+    if status not in ['pending', 'contacted', 'enrolled', 'rejected']:
+        flash('Invalid status.', 'danger')
+        return redirect(url_for('admin.leads'))
+        
+    from app.models import Lead
+    lead = Lead.query.get_or_404(lead_id)
+    lead.status = status
+    db.session.commit()
+    flash(f'Lead status updated to {status} successfully.', 'success')
+    return redirect(url_for('admin.leads'))
+
+@admin_bp.route('/leads/<int:lead_id>/delete', methods=['POST'])
+@admin_required
+def delete_lead(lead_id):
+    from app.models import Lead
+    lead = Lead.query.get_or_404(lead_id)
+    db.session.delete(lead)
+    db.session.commit()
+    flash('Lead deleted successfully.', 'success')
+    return redirect(url_for('admin.leads'))

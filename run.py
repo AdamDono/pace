@@ -30,11 +30,12 @@ def ensure_admin_exists():
                 print(f"❌ Failed to create admin: {str(e)}")
 
 def check_database_connection():
-    """Verify database connectivity"""
+    """Verify database connectivity and auto-create new tables"""
     with app.app_context():
         try:
             db.session.execute(db.text('SELECT 1'))
-            print("✅ Database connection successful")
+            db.create_all()
+            print("✅ Database connection successful and tables verified")
             return True
         except Exception as e:
             print(f"❌ Database connection failed: {str(e)}")

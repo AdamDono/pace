@@ -30,7 +30,7 @@ def public_course_detail(course_id):
 @auth_bp.route('/apply-course/<int:course_id>', methods=['POST'])
 def apply_course(course_id):
     from flask import jsonify
-    from app.models import Course
+    from app.models import Course, Lead
     from app.utils.email import send_email
     
     course = Course.query.get_or_404(course_id)
@@ -43,6 +43,23 @@ def apply_course(course_id):
     
     if not (full_name and email and phone):
         return jsonify({'success': False, 'message': 'Please fill in all required fields.'}), 400
+        
+    # Save lead to database
+    lead = Lead(
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        course_id=course.id,
+        employment_status=employment_status,
+        message=message
+    )
+    db.session.add(lead)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        # Log error or return failure if DB fails
+        return jsonify({'success': False, 'message': 'Database storage failed. Please try again later.'}), 500
         
     admin_recipient = 'adam@pacetech.co.za'
     send_email(
