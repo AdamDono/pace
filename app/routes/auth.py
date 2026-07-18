@@ -17,6 +17,16 @@ def home():
     courses = Course.query.filter_by(status='approved').limit(6).all()
     return render_template('auth/landing.html', courses=courses)
 
+@auth_bp.route('/course/<int:course_id>')
+def public_course_detail(course_id):
+    from app.models import Course
+    course = Course.query.get_or_404(course_id)
+    if course.status != 'approved':
+        if not (current_user.is_authenticated and (current_user.role == 'admin' or (current_user.role == 'teacher' and course.teacher_id == current_user.id))):
+            from flask import abort
+            abort(404)
+    return render_template('auth/public_course.html', course=course)
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:

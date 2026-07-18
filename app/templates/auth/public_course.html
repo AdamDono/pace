@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.title }} - Pace Academy Syllabus</title>
+    <!-- Tailwind CSS -->
+    <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
+    <!-- Premium Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .modern-bg {
+            background-color: #f8fafc;
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #1e1b4b 30%, #4f46e5 70%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .cta-btn {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+        }
+        a, button, select, input {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="modern-bg min-h-screen text-gray-800 antialiased">
+
+    <!-- Sticky Navigation Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-header">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="{{ url_for('auth.home') }}" class="flex items-center space-x-2.5 hover:opacity-90 transition-opacity">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-lg shadow-lg shadow-blue-500/20">P</div>
+                <span class="text-2xl font-extrabold tracking-tight">
+                    <span class="text-gray-900">Pace</span><span class="text-blue-600 font-black">Academy</span>
+                </span>
+            </a>
+            
+            <a href="{{ url_for('auth.login') }}" class="cta-btn text-sm font-bold text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/10">
+                Sign In
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Syllabus Body -->
+    <main class="max-w-7xl mx-auto px-6 pt-32 pb-24">
+        
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center space-x-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-8">
+            <a href="{{ url_for('auth.home') }}" class="hover:text-blue-600 transition-colors">Home</a>
+            <span>/</span>
+            <a href="{{ url_for('auth.home') }}#courses" class="hover:text-blue-600 transition-colors">Catalog</a>
+            <span>/</span>
+            <span class="text-gray-600 truncate">{{ course.title }}</span>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            
+            <!-- Left Side: Course Detail and Syllabus -->
+            <div class="lg:col-span-8 space-y-10">
+                
+                <!-- Course Hero Block -->
+                <div class="glass-card rounded-3xl p-8 md:p-10 shadow-sm bg-white relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 to-indigo-600"></div>
+                    
+                    <div class="flex flex-wrap items-center gap-3 mb-6">
+                        <span class="bg-blue-50 text-blue-600 border border-blue-100 font-extrabold text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-full shadow-sm">
+                            {{ course.category or 'Skills Path' }}
+                        </span>
+                        <span class="bg-gray-50 text-gray-600 border border-gray-100 font-extrabold text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-full shadow-sm">
+                            {{ course.difficulty_level or 'General' }}
+                        </span>
+                        {% if course.estimated_duration %}
+                        <span class="bg-indigo-50 text-indigo-600 border border-indigo-100 font-extrabold text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-full shadow-sm">
+                            ⏳ {{ course.estimated_duration }} Hours
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight mb-6">{{ course.title }}</h1>
+                    
+                    <div class="text-gray-600 text-base leading-relaxed space-y-4">
+                        {{ course.description|safe }}
+                    </div>
+                </div>
+
+                <!-- Learning Objectives Block -->
+                {% if course.learning_objectives %}
+                <div class="glass-card rounded-3xl p-8 md:p-10 shadow-sm bg-white">
+                    <h2 class="text-xl font-extrabold text-gray-900 mb-6 flex items-center">
+                        <span class="text-2xl mr-3">🎯</span> What you will learn
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for obj in course.learning_objectives.split('\n') %}
+                            {% if obj.strip() %}
+                            <div class="flex items-start space-x-3 text-sm text-gray-600">
+                                <span class="text-green-500 text-lg leading-none mt-0.5">✓</span>
+                                <span>{{ obj.replace('•', '').strip() }}</span>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Syllabus Hierarchy Accordions -->
+                <div class="glass-card rounded-3xl p-8 md:p-10 shadow-sm bg-white">
+                    <div class="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+                        <h2 class="text-xl font-extrabold text-gray-900 flex items-center">
+                            <span class="text-2xl mr-3">📚</span> Course Syllabus
+                        </h2>
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            {{ course.modules|length }} Modules
+                        </span>
+                    </div>
+
+                    {% if course.modules %}
+                        <div class="space-y-4">
+                            {% for module in course.modules %}
+                            <div class="border border-gray-100 rounded-2xl overflow-hidden bg-gray-50/30 transition-all hover:border-gray-200">
+                                
+                                <!-- Accordion Header -->
+                                <button onclick="toggleModule({{ module.id }})" class="w-full flex items-center justify-between p-5 text-left focus:outline-none cursor-pointer bg-white">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 font-black text-xs flex items-center justify-center border border-blue-100">
+                                            {{ loop.index }}
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm font-bold text-gray-900 leading-tight">{{ module.title }}</h4>
+                                            {% if module.description %}
+                                            <p class="text-xs text-gray-500 line-clamp-1 mt-1 font-medium">{{ module.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <svg id="module-chevron-{{ module.id }}" class="w-5 h-5 text-gray-400 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+
+                                <!-- Accordion Content (Units List) -->
+                                <div id="module-content-{{ module.id }}" class="hidden p-5 border-t border-gray-100 bg-gray-50/50 divide-y divide-gray-100/50">
+                                    {% if module.sections %}
+                                        {% for section in module.sections %}
+                                        <div class="flex items-center justify-between py-3 {% if not loop.first %}mt-1{% endif %}">
+                                            <div class="flex items-center space-x-3">
+                                                <!-- Icon based on type -->
+                                                <span class="text-base text-gray-400">
+                                                    {% if section.section_type == 'video' %}🎥{% elif section.section_type == 'quiz' %}📊{% else %}📄{% endif %}
+                                                </span>
+                                                <div class="leading-none">
+                                                    <span class="text-sm font-semibold text-gray-700">{{ section.title }}</span>
+                                                    {% if section.duration %}
+                                                    <span class="text-[10px] text-gray-400 ml-2 font-bold uppercase tracking-wider">({{ section.duration }} mins)</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <!-- Padlock indicating locked public view -->
+                                            <span class="text-xs text-gray-400 bg-gray-100 border border-gray-200/50 px-2 py-1 rounded-md font-bold flex items-center space-x-1">
+                                                <span>🔒</span>
+                                                <span class="text-[9px] uppercase tracking-wider">Locked</span>
+                                            </span>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-xs text-gray-400 italic">No units registered in this module yet.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12 border border-dashed border-gray-200 rounded-3xl">
+                            <span class="text-3xl">📝</span>
+                            <p class="text-sm text-gray-400 mt-3 font-semibold">No syllabus registered yet. Check back soon!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Side: Sticky Pricing & Enrollment CTA -->
+            <div class="lg:col-span-4 lg:sticky lg:top-28">
+                
+                <div class="glass-card rounded-3xl p-8 shadow-md bg-white border border-gray-100 flex flex-col justify-between">
+                    <div>
+                        <!-- Cover Image Preview -->
+                        <div class="h-44 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border border-gray-100 flex items-center justify-center p-6 text-center mb-6 relative">
+                            {% if course.banner_image %}
+                                <img src="{{ url_for('static', filename='uploads/' ~ course.banner_image) if not course.banner_image.startswith('http') else course.banner_image }}" 
+                                     alt="{{ course.title }}" 
+                                     class="w-full h-full object-cover absolute inset-0">
+                            {% else %}
+                                <span class="text-5xl">🎓</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-6">
+                            <span class="text-xs font-black uppercase tracking-widest text-gray-400">Monthly Tuition</span>
+                            <div class="flex items-baseline space-x-1.5 mt-1">
+                                <span class="text-3xl font-black text-gray-900">R250</span>
+                                <span class="text-sm font-semibold text-gray-500">pm</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2 font-medium">Cancel anytime. Access all Skills and Vocational courses.</p>
+                        </div>
+
+                        <div class="space-y-4 border-t border-gray-100 pt-6 mb-8">
+                            <div class="flex items-center space-x-3 text-xs text-gray-600 font-semibold">
+                                <span class="text-blue-500 text-sm">✓</span>
+                                <span>Complete NQF Vocational Syllabus</span>
+                            </div>
+                            <div class="flex items-center space-x-3 text-xs text-gray-600 font-semibold">
+                                <span class="text-blue-500 text-sm">✓</span>
+                                <span>In-Browser Live Coding Sandbox</span>
+                            </div>
+                            <div class="flex items-center space-x-3 text-xs text-gray-600 font-semibold">
+                                <span class="text-blue-500 text-sm">✓</span>
+                                <span>Interactive checkpoint questions</span>
+                            </div>
+                            <div class="flex items-center space-x-3 text-xs text-gray-600 font-semibold">
+                                <span class="text-blue-500 text-sm">✓</span>
+                                <span>Weekly digital progress report digests</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <a href="{{ url_for('auth.login') }}" class="cta-btn block text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10">
+                            Enroll in Course
+                        </a>
+                        <p class="text-center text-xs text-gray-500 font-medium">
+                            Already registered? <a href="{{ url_for('auth.login') }}" class="text-blue-600 font-bold hover:underline">Sign In</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-12 border-t border-gray-200/60 text-center">
+        <p class="text-xs text-gray-500">
+            © 2026 Pace Academy. Powered by Pace Tech. All rights reserved.
+        </p>
+    </footer>
+
+    <!-- Accordion Script -->
+    <script>
+        function toggleModule(moduleId) {
+            const content = document.getElementById('module-content-' + moduleId);
+            const chevron = document.getElementById('module-chevron-' + moduleId);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+    </script>
+
+</body>
+</html>
