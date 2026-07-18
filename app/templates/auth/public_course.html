@@ -246,8 +246,8 @@
                     </div>
 
                     <div class="space-y-4">
-                        <a href="{{ url_for('auth.login') }}" class="cta-btn block text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10">
-                            Enroll in Course
+                        <a href="mailto:adam@pacetech.co.za?subject=Admission Request: {{ course.title }}&body=Hi Pace Academy Admissions,%0D%0A%0D%0AI would like to apply to enroll in the course: {{ course.title }}. Please guide me on the next steps for registration and account setup.%0D%0A%0D%0AThank you!" class="cta-btn block text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10">
+                            Apply to Enroll
                         </a>
                         <p class="text-center text-xs text-gray-500 font-medium">
                             Already registered? <a href="{{ url_for('auth.login') }}" class="text-blue-600 font-bold hover:underline">Sign In</a>
