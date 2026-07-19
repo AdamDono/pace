@@ -798,3 +798,97 @@ def delete_lead(lead_id):
     db.session.commit()
     flash('Lead deleted successfully.', 'success')
     return redirect(url_for('admin.leads'))
+
+@admin_bp.route('/leads/<int:lead_id>/approve-enroll', methods=['POST'])
+@admin_required
+def approve_enroll_lead(lead_id):
+    from app.models import Lead, User, Enrollment, EnrollmentSection, Course
+    import string
+    import random
+    
+    lead = Lead.query.get_or_404(lead_id)
+    
+    # Check if a user with this email already exists
+    user = User.query.filter_by(email=lead.email).first()
+    password_generated = None
+    
+    if not user:
+        # Create username: strip email handle or slugify full name
+        base_username = lead.full_name.lower().replace(" ", "")
+        username = base_username
+        counter = 1
+        while User.query.filter_by(username=username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+            
+        # Generate secure random password
+        chars = string.ascii_letters + string.digits + "!@#$%^&*"
+        password_generated = ''.join(random.choice(chars) for i in range(12))
+        
+        # Name split
+        parts = lead.full_name.split(" ", 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else ''
+        
+        user = User(
+            email=lead.email,
+            username=username,
+            role='student',
+            first_name=first_name,
+            last_name=last_name,
+            contact=lead.phone
+        )
+        user.password = password_generated
+        db.session.add(user)
+        db.session.commit()
+    
+    # Enroll the student in the requested course (if lead has course_id)
+    if lead.course_id:
+        course = Course.query.get(lead.course_id)
+        if course:
+            # Check if already enrolled
+            existing_enrollment = Enrollment.query.filter_by(student_id=user.id, course_id=course.id).first()
+            if not existing_enrollment:
+                enrollment = Enrollment(
+                    student_id=user.id,
+                    course_id=course.id
+                )
+                db.session.add(enrollment)
+                db.session.commit()
+                
+                # Auto-populate progress tracking
+                for module in course.modules:
+                    for section in module.sections:
+                        from app.models import EnrollmentSection
+                        prog = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section.id).first()
+                        if not prog:
+                            prog = EnrollmentSection(
+                                enrollment_id=enrollment.id,
+                                section_id=section.id,
+                                completed=False
+                            )
+                            db.session.add(prog)
+                db.session.commit()
+                
+    # Update lead status
+    lead.status = 'enrolled'
+    db.session.commit()
+    
+    # Send email notification if password was generated
+    if password_generated:
+        try:
+            from app.utils.email import send_welcome_email
+            send_welcome_email(user, password_generated)
+            flash(f'Account created and welcome email sent to {user.email}.', 'success')
+        except Exception as e:
+            flash(f'Student enrolled, but welcome email sending failed: {str(e)}', 'warning')
+    else:
+        # User already existed, send standard enrollment notification
+        try:
+            from app.utils.email import send_enrollment_email
+            send_enrollment_email(user, course)
+            flash(f'Existing student {user.email} enrolled in course.', 'success')
+        except Exception as e:
+            flash(f'Student enrolled, but enrollment notification failed: {str(e)}', 'warning')
+            
+    return redirect(url_for('admin.leads'))

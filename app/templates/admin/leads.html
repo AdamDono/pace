@@ -50,6 +50,25 @@
         </div>
     </div>
 
+    <!-- Analytics Chart Panel -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Doughnut Chart: Lead Types -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 self-start">Lead Types (B2C vs B2B)</h3>
+            <div class="relative w-full h-48">
+                <canvas id="leadTypeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bar Chart: Conversion Funnel Status -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:col-span-2 flex flex-col">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Lead Status Funnel</h3>
+            <div class="relative h-48 w-full">
+                <canvas id="leadStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Leads Table Panel -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {% if leads %}
@@ -147,6 +166,16 @@
                                             ✉
                                         </a>
                                         
+                                        <!-- Approve and Enroll -->
+                                        {% if lead.status != 'enrolled' and lead.lead_type == 'individual' %}
+                                        <form action="{{ url_for('admin.approve_enroll_lead', lead_id=lead.id) }}" method="POST" class="inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="text-xs font-bold bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg shadow-sm transition-all cursor-pointer whitespace-nowrap" title="Create user account and enroll in course">
+                                                Approve & Enroll
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
                                         <!-- Dropdown container -->
                                         <div class="relative inline-block text-left">
                                             <select onchange="location = this.value;" class="text-xs font-bold border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white cursor-pointer hover:border-gray-300 focus:outline-none">
@@ -191,6 +220,73 @@
                 <p class="text-sm text-gray-400 max-w-xs mx-auto mt-2 leading-relaxed">Prospective student admission requests will appear here when submitted from the public syllabus view.</p>
             </div>
         {% endif %}
-    </div>
 </div>
+
+<!-- Chart.js and Dashboard Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const totalB2C = {{ leads|selectattr('lead_type', 'equalto', 'individual')|list|length }};
+        const totalB2B = {{ leads|selectattr('lead_type', 'equalto', 'enterprise')|list|length }};
+        const pending = {{ leads|selectattr('status', 'equalto', 'pending')|list|length }};
+        const contacted = {{ leads|selectattr('status', 'equalto', 'contacted')|list|length }};
+        const enrolled = {{ leads|selectattr('status', 'equalto', 'enrolled')|list|length }};
+        const rejected = {{ leads|selectattr('status', 'equalto', 'rejected')|list|length }};
+
+        // Lead Type Doughnut Chart
+        new Chart(document.getElementById('leadTypeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['B2C Individual', 'B2B Enterprise'],
+                datasets: [{
+                    data: [totalB2C, totalB2B],
+                    backgroundColor: ['#3b82f6', '#6366f1'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, font: { size: 10, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+
+        // Lead Status Bar Chart
+        new Chart(document.getElementById('leadStatusChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Pending', 'Contacted', 'Enrolled', 'Rejected'],
+                datasets: [{
+                    label: 'Leads',
+                    data: [pending, contacted, enrolled, rejected],
+                    backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, font: { size: 10, weight: 'semibold' } },
+                        grid: { drawBorder: false, color: 'rgba(0,0,0,0.03)' }
+                    },
+                    x: {
+                        ticks: { font: { size: 10, weight: 'bold' } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}
