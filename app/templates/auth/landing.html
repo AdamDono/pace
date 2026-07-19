@@ -123,6 +123,13 @@
             color: #ffffff;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="modern-bg min-h-screen text-gray-800 selection:bg-blue-500/10 selection:text-blue-700 overflow-x-hidden">
@@ -265,12 +272,12 @@
     </script>
 
     <!-- Hero Section -->
-    <section class="relative pt-36 pb-20 px-6 hero-glow overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50/80">
+    <section class="relative pt-64 pb-20 px-6 hero-glow overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50/80">
         <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
             
             <!-- Left Column: Copy & Search Bar -->
-            <div class="lg:col-span-7">
-                <div class="flex items-center space-x-2.5 mb-6">
+            <div class="lg:col-span-7 text-center lg:text-left">
+                <div class="flex items-center justify-center lg:justify-start space-x-2.5 mb-6">
                     <span class="w-8 h-[2px] bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"></span>
                     <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Non-Accredited & Accredited Skills Academy</span>
                 </div>
@@ -280,16 +287,16 @@
                     <span class="text-gray-950 mt-3 block text-3xl md:text-[44px]">at a price that doesn't end the conversation.</span>
                 </h1>
 
-                <p class="text-lg text-gray-600 leading-relaxed mb-10 max-w-xl">
+                <p class="text-lg text-gray-600 leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
                     In South Africa, 46% of young people are unemployed. Most are not unemployable, they are uncertified. Pace Academy makes accredited QCTO/SETA vocational qualifications affordable and structured for everyone.
                 </p>
 
                 <!-- Call to Actions -->
-                <div class="flex flex-wrap items-center gap-4">
-                    <a href="#courses" class="cta-btn text-sm font-bold text-white px-8 py-4 rounded-xl shadow-lg shadow-blue-500/25 transition-all">
+                <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                    <a href="#courses" class="cta-btn text-sm font-bold text-white px-8 py-4 rounded-xl shadow-lg shadow-blue-500/25 transition-all w-full sm:w-auto text-center">
                         Browse Curriculum
                     </a>
-                    <button onclick="openEnterpriseModal()" class="bg-white border border-gray-200 hover:border-gray-300 text-sm font-bold text-gray-700 px-8 py-4 rounded-xl shadow-sm transition-all cursor-pointer">
+                    <button onclick="openEnterpriseModal()" class="bg-white border border-gray-200 hover:border-gray-300 text-sm font-bold text-gray-700 px-8 py-4 rounded-xl shadow-sm transition-all cursor-pointer w-full sm:w-auto text-center">
                         Institutional Solutions
                     </button>
                 </div>
@@ -354,11 +361,11 @@
 
 
     <!-- Why Pace Exists Section -->
-    <section id="story" class="py-24 px-6 border-t border-gray-100 bg-white/40">
+    <section id="story" class="px-6 border-t border-gray-100 bg-white/40" style="padding-top: 106px; padding-bottom: 111px;">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
                 <!-- Text Story Column -->
-                <div class="lg:col-span-6">
+                <div class="lg:col-span-6 text-center lg:text-left">
                     <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">The Story</h2>
                     <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
                         This is an access problem.<br>Not a talent problem.
@@ -506,59 +513,77 @@
     <!-- Moat / Technology Features Section -->
     <section id="features" class="py-24 px-6 relative border-t border-b border-gray-100 bg-gray-50/50">
         <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-20">
+            <div class="text-center mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">The Technology Moat</h2>
                 <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">Why This Is Hard to Copy</h3>
                 <p class="text-gray-600 max-w-2xl mx-auto">Pace is built with specialized native engines to maximize classroom engagement and track real understanding.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Moat 1 -->
-                <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white">
-                    <div>
-                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl mb-6">💻</div>
-                        <h4 class="text-lg font-bold text-gray-900 mb-3">In-Browser Code Execution</h4>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Run student-submitted code safely inside the browser. Support for Python, JavaScript, Java, and C++ with instant compilation.
-                        </p>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <!-- Left 7 Cols: Feature Grid -->
+                <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <!-- Moat 1 -->
+                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                        <div>
+                            <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl mb-4">💻</div>
+                            <h4 class="text-lg font-bold text-gray-900 mb-2">In-Browser Code Execution</h4>
+                            <p class="text-gray-600 text-xs leading-relaxed">
+                                Run student code safely inside the browser with Python, JavaScript, Java, and C++ compilers.
+                            </p>
+                        </div>
+                        <span class="text-[10px] font-bold text-blue-600 mt-4 uppercase">Monaco VS Code Engine</span>
                     </div>
-                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Monaco VS Code Engine</span>
+
+                    <!-- Moat 2 -->
+                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                        <div>
+                            <div class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl mb-4">🎥</div>
+                            <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Video System</h4>
+                            <p class="text-gray-600 text-xs leading-relaxed">
+                                Inject timed check-point questions directly into lesson videos to verify comprehension.
+                            </p>
+                        </div>
+                        <span class="text-[10px] font-bold text-indigo-600 mt-4 uppercase">Milestone Sync</span>
+                    </div>
+
+                    <!-- Moat 3 -->
+                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                        <div>
+                            <div class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl mb-4">📊</div>
+                            <h4 class="text-lg font-bold text-gray-900 mb-2">Deep Analytics Stack</h4>
+                            <p class="text-gray-600 text-xs leading-relaxed">
+                                Real-time tracking of student section time, quiz outcomes, and module completion rates.
+                            </p>
+                        </div>
+                        <span class="text-[10px] font-bold text-purple-600 mt-4 uppercase">Educator Visibility</span>
+                    </div>
+
+                    <!-- Moat 4 -->
+                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                        <div>
+                            <div class="w-12 h-12 bg-pink-50 border border-pink-100 rounded-2xl flex items-center justify-center text-xl mb-4">⚡</div>
+                            <h4 class="text-lg font-bold text-gray-900 mb-2">Lightweight & Progressive</h4>
+                            <p class="text-gray-600 text-xs leading-relaxed">
+                                Progressive video streaming and client-side processing tailored for local mobile data usage.
+                            </p>
+                        </div>
+                        <span class="text-[10px] font-bold text-pink-600 mt-4 uppercase">Mobile-Optimized</span>
+                    </div>
                 </div>
 
-                <!-- Moat 2 -->
-                <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white">
-                    <div>
-                        <div class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl mb-6">🎥</div>
-                        <h4 class="text-lg font-bold text-gray-900 mb-3">Interactive Video System</h4>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Inject timed check-point questions directly into lesson videos. Pauses playback automatically and requires user response before resuming.
-                        </p>
+                <!-- Right 5 Cols: Human Cutout Image Graphic -->
+                <div class="lg:col-span-5 relative flex justify-center items-center">
+                    <div class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 absolute scale-105 shadow-xl shadow-indigo-500/10"></div>
+                    <img src="{{ url_for('static', filename='images/student_female.png') }}" alt="Pace Learner" class="relative z-10 w-[280px] sm:w-[340px] object-contain pointer-events-none student-img">
+                    
+                    <!-- Floating Badge -->
+                    <div class="absolute bottom-6 right-2 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2 shadow-lg border border-white/20">
+                        <span class="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center text-xs text-white">⚡</span>
+                        <div>
+                            <p class="text-[9px] uppercase font-black text-gray-400">Low-Data Optimized</p>
+                            <p class="text-xs font-bold text-gray-900">Mobile Phone Ready</p>
+                        </div>
                     </div>
-                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Milestone Progress sync</span>
-                </div>
-
-                <!-- Moat 3 -->
-                <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white">
-                    <div>
-                        <div class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl mb-6">📊</div>
-                        <h4 class="text-lg font-bold text-gray-900 mb-3">Deep Analytics Stack</h4>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Real-time tracking of student time spent on sections, quiz outcomes, module progress rates, and video completion percentages.
-                        </p>
-                    </div>
-                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Full educator visibility</span>
-                </div>
-
-                <!-- Moat 4 -->
-                <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white">
-                    <div>
-                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl mb-6">⚡</div>
-                        <h4 class="text-lg font-bold text-gray-900 mb-3">Lightweight & Progressive</h4>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Designed specifically for local connectivity constraints. Progressive video streaming and client-side processing keep data usage low.
-                        </p>
-                    </div>
-                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Built for SA connectivity</span>
                 </div>
             </div>
         </div>
@@ -567,47 +592,65 @@
     <!-- Enterprise / Corporate Solutions Section -->
     <section id="enterprise" class="py-24 px-6 border-t border-gray-100 bg-white">
         <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-20">
+            <div class="text-center mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">Enterprise Solutions</h2>
                 <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">Built for Corporates, NGOs & Institutions</h3>
                 <p class="text-gray-600 max-w-2xl mx-auto mt-4">Scale your organizational training, white-label the learning ecosystem, or license SETA/QCTO curriculum systems.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Solution 1 -->
-                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-gray-50 bg-opacity-50 shadow-sm border border-gray-100">
-                    <div>
-                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl mb-6">🏢</div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Corporate L&D Upskilling</h4>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Train your workforce on modern coding and technical skills. Keep track of employee learning progress, run sandboxed coding tests, and extract deep metrics.
-                        </p>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <!-- Left 5 Cols: Educator Male Cutout Image -->
+                <div class="lg:col-span-5 relative flex justify-center items-center order-2 lg:order-1">
+                    <div class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 absolute scale-105 shadow-xl shadow-blue-500/10"></div>
+                    <img src="{{ url_for('static', filename='images/educator_male.png') }}" alt="Pace Educator & Partner" class="relative z-10 w-[290px] sm:w-[350px] object-contain pointer-events-none student-img">
+                    
+                    <!-- Floating Badge -->
+                    <div class="absolute top-6 left-2 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 shadow-lg border border-white/20">
+                        <span class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs text-white">🏛️</span>
+                        <div>
+                            <p class="text-[9px] uppercase font-black text-gray-400">Institutional</p>
+                            <p class="text-xs font-bold text-gray-900">White-Label Partner</p>
+                        </div>
                     </div>
-                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Employee Training Portals</span>
                 </div>
 
-                <!-- Solution 2 -->
-                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-gray-50 bg-opacity-50 shadow-sm border border-gray-100">
-                    <div>
-                        <div class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl mb-6">🏷️</div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">White-Label Deployments</h4>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Deploy a fully branded instance of Pace Academy under your custom domain. Perfect for large-scale NGOs, corporate academies, and government digital programs.
-                        </p>
+                <!-- Right 7 Cols: Solutions Cards -->
+                <div class="lg:col-span-7 space-y-6 order-1 lg:order-2">
+                    <!-- Solution 1 -->
+                    <div class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl shrink-0">🏢</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900 mb-1">Corporate L&D Upskilling</h4>
+                            <p class="text-gray-600 text-xs leading-relaxed">
+                                Train your workforce on modern coding and technical skills. Keep track of employee learning progress, run sandboxed coding tests, and extract deep metrics.
+                            </p>
+                            <span class="text-[10px] font-bold text-blue-600 mt-2 inline-block uppercase tracking-wider">Employee Training Portals</span>
+                        </div>
                     </div>
-                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">Custom Branded LMS</span>
-                </div>
 
-                <!-- Solution 3 -->
-                <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-gray-50 bg-opacity-50 shadow-sm border border-gray-100">
-                    <div>
-                        <div class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl mb-6">🏛️</div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-3">Institutional Licensing</h4>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Unlock annual flat-rate licensing for private colleges, high school hubs, tutoring academies, and registered SETA/QCTO training providers.
-                        </p>
+                    <!-- Solution 2 -->
+                    <div class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl shrink-0">🏷️</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900 mb-1">White-Label Deployments</h4>
+                            <p class="text-gray-600 text-xs leading-relaxed">
+                                Deploy a fully branded instance of Pace Academy under your custom domain. Perfect for large-scale NGOs, corporate academies, and government digital programs.
+                            </p>
+                            <span class="text-[10px] font-bold text-indigo-600 mt-2 inline-block uppercase tracking-wider">Custom Branded LMS</span>
+                        </div>
                     </div>
-                    <span class="text-xs font-bold text-blue-600 mt-6 tracking-wide uppercase">SETA & QCTO Licensing</span>
+
+                    <!-- Solution 3 -->
+                    <div class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl shrink-0">🏛️</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900 mb-1">Institutional Licensing</h4>
+                            <p class="text-gray-600 text-xs leading-relaxed">
+                                Unlock annual flat-rate licensing for private colleges, high school hubs, tutoring academies, and registered SETA/QCTO training providers.
+                            </p>
+                            <span class="text-[10px] font-bold text-purple-600 mt-2 inline-block uppercase tracking-wider">SETA & QCTO Licensing</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -629,19 +672,19 @@
 
             {% if courses %}
                 <!-- Interactive Catalog Filters -->
-                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12 pb-6 border-b border-gray-200/60">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-1">Category:</span>
-                        <button onclick="filterCatalog('accreditation', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all">All</button>
-                        <button onclick="filterCatalog('accreditation', 'accredited', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Accredited (QCTO/SETA)</button>
-                        <button onclick="filterCatalog('accreditation', 'non', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Skills (Non-Accredited)</button>
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12 pb-6 border-b border-gray-200/60 w-full overflow-hidden">
+                    <div class="flex flex-nowrap sm:flex-wrap items-center gap-2.5 overflow-x-auto w-full pb-2 sm:pb-0 scrollbar-none">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0 mr-1">Category:</span>
+                        <button onclick="filterCatalog('accreditation', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">All</button>
+                        <button onclick="filterCatalog('accreditation', 'accredited', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Accredited (QCTO/SETA)</button>
+                        <button onclick="filterCatalog('accreditation', 'non', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Skills (Non-Accredited)</button>
                     </div>
                     
-                    <div class="flex flex-wrap items-center gap-3">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-1">Difficulty:</span>
-                        <button onclick="filterCatalog('difficulty', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all">All Levels</button>
-                        <button onclick="filterCatalog('difficulty', 'beginner', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Beginner Friendly</button>
-                        <button onclick="filterCatalog('difficulty', 'advanced', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all">Intermediate/Advanced</button>
+                    <div class="flex flex-nowrap sm:flex-wrap items-center gap-2.5 overflow-x-auto w-full pb-2 sm:pb-0 scrollbar-none">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0 mr-1">Difficulty:</span>
+                        <button onclick="filterCatalog('difficulty', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">All Levels</button>
+                        <button onclick="filterCatalog('difficulty', 'beginner', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Beginner Friendly</button>
+                        <button onclick="filterCatalog('difficulty', 'advanced', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Intermediate/Advanced</button>
                     </div>
                 </div>
 
@@ -825,14 +868,14 @@
 
     <!-- Partners / Call to Action / Get in Touch Section -->
     <section class="py-24 px-6 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200/50">
-        <div class="max-w-5xl mx-auto cta-card-dark p-12 md:p-16 rounded-3xl text-center relative overflow-hidden">
+        <div class="max-w-5xl mx-auto p-12 md:p-16 rounded-3xl text-center relative overflow-hidden shadow-2xl border border-blue-900/40" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 27, 75, 0.85) 100%), url('{{ url_for('static', filename='images/cta_bg.png') }}') center/cover no-repeat;">
             <!-- Glowing mesh gradient blobs -->
-            <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500 bg-opacity-10 rounded-full filter blur-3xl"></div>
-            <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500 bg-opacity-15 rounded-full filter blur-3xl"></div>
+            <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500 bg-opacity-20 rounded-full filter blur-3xl z-0 pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500 bg-opacity-25 rounded-full filter blur-3xl z-0 pointer-events-none"></div>
             
             <div class="relative z-10">
                 <h2 class="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight">Let's Build This Together</h2>
-                <p class="text-gray-300 text-base max-w-2xl mx-auto leading-relaxed mb-10">
+                <p class="text-gray-200 text-base max-w-2xl mx-auto leading-relaxed mb-10 font-medium">
                     If you are an investor, a learning partner, a SETA body, or an institution looking to provide accredited online training, we want to hear from you. The platform is ready.
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
@@ -928,7 +971,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="py-12 border-t border-gray-200/60 text-center">
+    <footer class="pt-12 pb-16 border-t border-gray-200/60 text-center">
         <p class="text-xs text-gray-500">
             © 2026 Pace Academy. Powered by Pace Tech. All rights reserved.
         </p>
