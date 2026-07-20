@@ -1630,6 +1630,22 @@ def student_detail_grades(course_id, student_id):
                              'overall_grade': round(overall_grade, 1) if overall_grade else None
                          })
 
+@teacher_bp.route('/serve-upload/<path:filename>')
+@login_required
+def serve_upload(filename):
+    """Serve uploaded student assignment files reliably."""
+    upload_dir = current_app.config['UPLOAD_FOLDER']
+    clean_filename = filename.lstrip('/')
+    
+    if not os.path.exists(os.path.join(upload_dir, clean_filename)):
+        static_dir = os.path.join(current_app.root_path, 'static')
+        if os.path.exists(os.path.join(static_dir, clean_filename)):
+            return send_from_directory(static_dir, clean_filename)
+        elif os.path.exists(os.path.join(static_dir, 'uploads', clean_filename)):
+            return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename)
+            
+    return send_from_directory(upload_dir, clean_filename)
+
 @teacher_bp.route('/preview-submission/<int:submission_id>')
 @teacher_required
 def preview_submission(submission_id):
@@ -1646,6 +1662,13 @@ def preview_submission(submission_id):
     elif not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
         
+    file_url = None
+    if submission.file_path:
+        if submission.file_path.startswith(('http://', 'https://')):
+            file_url = submission.file_path
+        else:
+            file_url = url_for('teacher.serve_upload', filename=submission.file_path.lstrip('/'))
+
     return jsonify({
         'id': submission.id,
         'submission_text': submission.submission_text or '',
@@ -1653,6 +1676,7 @@ def preview_submission(submission_id):
         'code_submission': submission.code_submission or '',
         'programming_language': submission.programming_language or '',
         'file_path': submission.file_path or '',
+        'file_url': file_url or '',
         'feedback': submission.feedback or '',
         'grade': submission.grade,
         'reviewed': submission.reviewed

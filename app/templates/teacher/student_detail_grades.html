@@ -278,9 +278,9 @@ function viewSubmission(submissionId) {
                 html += `<div class="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap bg-gray-50/80 p-4 rounded-2xl border border-gray-200 shadow-sm">${escapeHtml(data.submission_text)}</div></div>`;
             }
 
-            // 2. Inline File Previewer (Images, PDFs, or Download Card)
+            // 2. Inline File Previewer (Images, PDFs, or Document Cards)
             if (data.file_path) {
-                const fileUrl = data.file_path.startsWith('http') ? data.file_path : '/static/uploads/' + data.file_path;
+                const fileUrl = data.file_url || (data.file_path.startsWith('http') ? data.file_path : '/teacher/serve-upload/' + data.file_path.replace(/^\//, ''));
                 const fileName = data.file_path.split('/').pop().split('?')[0];
                 const ext = fileName.split('.').pop().toLowerCase();
 
@@ -299,33 +299,30 @@ function viewSubmission(submissionId) {
                             </div>
                         </div>
                     `;
-                } else if (ext === 'pdf' || fileUrl.toLowerCase().includes('.pdf')) {
-                    // PDF embed preview
-                    html += `
-                        <div class="rounded-2xl border border-gray-200 overflow-hidden bg-gray-50 shadow-md">
-                            <div class="p-3 bg-gray-100 border-b border-gray-200 flex items-center justify-between text-xs text-gray-700">
-                                <span class="font-mono font-bold truncate max-w-md">📄 ${fileName}</span>
-                                <a href="${fileUrl}" target="_blank" download class="text-blue-600 hover:text-blue-800 font-bold underline">Open PDF in New Tab ↗</a>
-                            </div>
-                            <iframe src="${fileUrl}" class="w-full h-[450px] rounded-b-2xl border-none"></iframe>
-                        </div>
-                    `;
                 } else {
-                    // Download card for zip, rar, docx, etc.
+                    // Interactive Document Card with Open Document and Download buttons
                     html += `
-                        <div class="p-5 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl flex items-center justify-between shadow-sm">
+                        <div class="p-6 bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-white border border-indigo-200/80 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl font-bold shadow-md">
-                                    ${ext === 'zip' || ext === 'rar' || ext === '7z' ? '📦' : '📎'}
+                                <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-indigo-200 flex-shrink-0">
+                                    ${ext === 'pdf' ? '📄' : (ext === 'zip' || ext === 'rar' || ext === '7z' ? '📦' : '📎')}
                                 </div>
                                 <div>
-                                    <h5 class="font-bold text-gray-900 text-sm">${fileName}</h5>
-                                    <p class="text-xs text-gray-500 font-mono">Format: .${ext.toUpperCase()}</p>
+                                    <h5 class="font-extrabold text-gray-900 text-base mb-0.5 truncate max-w-sm">${fileName}</h5>
+                                    <p class="text-xs text-indigo-700/80 font-mono flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                                        Uploaded Document (.${ext.toUpperCase()})
+                                    </p>
                                 </div>
                             </div>
-                            <a href="${fileUrl}" download target="_blank" class="px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-all flex items-center space-x-1.5">
-                                <span>Download Attached File ↗</span>
-                            </a>
+                            <div class="flex items-center space-x-3">
+                                <a href="${fileUrl}" target="_blank" class="px-5 py-3 bg-white text-indigo-600 border border-indigo-200 text-xs font-extrabold rounded-xl shadow-sm hover:bg-indigo-50 transition-all flex items-center gap-1.5">
+                                    <span>👁️ Open / View Document ↗</span>
+                                </a>
+                                <a href="${fileUrl}" download target="_blank" class="px-6 py-3 bg-indigo-600 text-white text-xs font-extrabold rounded-xl shadow-md hover:bg-indigo-700 transition-all flex items-center gap-1.5">
+                                    <span>⬇ Download File</span>
+                                </a>
+                            </div>
                         </div>
                     `;
                 }
