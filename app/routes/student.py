@@ -378,15 +378,14 @@ def submit_assignment(section_id, assignment_id):
                     file_path = filename
 
                     # 2. Upload to Cloudinary if configured
-                    if os.getenv('CLOUDINARY_URL'):
-                        try:
-                            with open(local_path, 'rb') as f:
-                                from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                                cloudinary_url = upload_file_to_cloudinary(f, folder="pace_assignments", resource_type="raw")
-                                if cloudinary_url:
-                                    file_path = cloudinary_url
-                        except Exception as cloud_err:
-                            logger.warning(f"Cloudinary upload fallback to local storage: {cloud_err}")
+                    try:
+                        with open(local_path, 'rb') as f:
+                            from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                            cloudinary_url = upload_file_to_cloudinary(f, folder="pace_assignments", resource_type="auto")
+                            if cloudinary_url:
+                                file_path = cloudinary_url
+                    except Exception as cloud_err:
+                        logger.warning(f"Cloudinary upload fallback to local storage: {cloud_err}")
                 else:
                     flash('Invalid file format. Allowed formats: .zip, .pdf, .docx, .png, .jpg, .txt, .py, .js, .html, etc.', 'danger')
                     return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
