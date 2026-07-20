@@ -365,95 +365,82 @@ def submit_assignment(section_id, assignment_id):
     
     form = SubmissionForm()
 
-    # --- Coding assignment submission path ---
-    if assignment.is_coding_assignment:
-        if request.method == 'POST':
-            code = request.form.get('code_submission', '').strip()
-            file_path = None
-
-            # Allow code file uploads if enabled
-            if assignment.allow_file_upload and 'file' in request.files and request.files['file'].filename:
-                file = request.files['file']
-                # Accept common code extensions
-                code_exts = {'py', 'js', 'java', 'cpp', 'c', 'hpp', 'h', 'ts', 'tsx', 'html', 'css', 'sql', 'txt'}
-                if file and allowed_file(file.filename, allowed_extensions=code_exts):
-                    from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
-                    if cloudinary_url:
-                        file_path = cloudinary_url
-                    else:
-                        filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                        file_path = filename
-                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-
-            if not code and not file_path:
-                flash('Please write code or upload a code file before submitting.', 'danger')
-                return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
-
-            submission = AssignmentSubmission(
-                assignment_id=assignment_id,
-                student_id=current_user.id,
-                submission_text=code if not file_path else '',
-                file_path=file_path,
-                submission_type='code',
-                code_submission=code if code else None,
-                programming_language=assignment.programming_language
-            )
-            db.session.add(submission)
-            
-            # Auto-mark section as completed upon assignment submission
-            es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
-            if not es:
-                es = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
-                db.session.add(es)
-            es.completed = True
-            es.completed_at = datetime.utcnow()
-            
-            db.session.commit()
-            flash('Coding assignment submitted & section completed!', 'success')
-            return redirect(url_for('student.course_detail', course_id=section.course_id))
-
-        # GET or invalid post
-        return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
-
-    # --- Regular (text/file) assignment path ---
     if request.method == 'POST':
-        sub_text = (request.form.get('submission_text') or form.submission_text.data or '').strip()
-        file_path = None
-        if 'file' in request.files and request.files['file'].filename:
-            file = request.files['file']
-            if file and allowed_file(file.filename):
-                from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                try:
-                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
-                    if cloudinary_url:
-                        file_path = cloudinary_url
-                    else:
-                        filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                        file_path = filename
-                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-                except Exception as e:
-                    logger.warning(f"Cloudinary upload fallback to local storage: {e}")
-                    filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
-                    file_path = filename
-                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-            else:
-                flash('Invalid file format. Allowed formats: .zip, .pdf, .docx, .png, .jpg, .txt, .py, .js, .html, etc.', 'danger')
-                return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
-
-        if not sub_text and not file_path:
-            flash('Please provide text content or attach a file before submitting.', 'warning')
-            return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
-
         try:
-            submission = AssignmentSubmission(
-                assignment_id=assignment_id,
-                student_id=current_user.id,
-                submission_text=sub_text if sub_text else (file_path.split('/')[-1] if file_path else 'File Submission'),
-                file_path=file_path,
-                submission_type='file' if file_path else 'text'
-            )
-            db.session.add(submission)
+            file_path = None
+            if 'file' in request.files and request.files['file'].filename:
+                file = request.files['file']
+                if file and allowed_file(file.filename):
+                    # 1. Save file locally first
+                    filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                    local_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                    file.save(local_path)
+                    file_path = filename
+
+                    # 2. Upload to Cloudinary if configured
+                    if os.getenv('CLOUDINARY_URL'):
+                        try:
+                            with open(local_path, 'rb') as f:
+                                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                                cloudinary_url = upload_file_to_cloudinary(f, folder="pace_assignments", resource_type="raw")
+                                if cloudinary_url:
+                                    file_path = cloudinary_url
+                        except Exception as cloud_err:
+                            logger.warning(f"Cloudinary upload fallback to local storage: {cloud_err}")
+                else:
+                    flash('Invalid file format. Allowed formats: .zip, .pdf, .docx, .png, .jpg, .txt, .py, .js, .html, etc.', 'danger')
+                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+
+            # Code assignment logic
+            if assignment.is_coding_assignment:
+                code = request.form.get('code_submission', '').strip()
+                if not code and not file_path:
+                    flash('Please write code or upload a code file before submitting.', 'danger')
+                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+
+                if existing_submission:
+                    submission = existing_submission
+                    submission.submission_text = code if not file_path else (submission.submission_text or '')
+                    submission.code_submission = code if code else None
+                    if file_path:
+                        submission.file_path = file_path
+                    submission.programming_language = assignment.programming_language
+                    submission.submitted_at = datetime.utcnow()
+                else:
+                    submission = AssignmentSubmission(
+                        assignment_id=assignment_id,
+                        student_id=current_user.id,
+                        submission_text=code if not file_path else 'Code File Upload',
+                        file_path=file_path,
+                        submission_type='code',
+                        code_submission=code if code else None,
+                        programming_language=assignment.programming_language
+                    )
+                    db.session.add(submission)
+            else:
+                # Regular assignment logic
+                sub_text = (request.form.get('submission_text') or '').strip()
+                if not sub_text and not file_path and not (existing_submission and existing_submission.file_path):
+                    flash('Please provide submission text or attach a file.', 'warning')
+                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+
+                if existing_submission:
+                    submission = existing_submission
+                    if sub_text:
+                        submission.submission_text = sub_text
+                    if file_path:
+                        submission.file_path = file_path
+                        submission.submission_type = 'file'
+                    submission.submitted_at = datetime.utcnow()
+                else:
+                    submission = AssignmentSubmission(
+                        assignment_id=assignment_id,
+                        student_id=current_user.id,
+                        submission_text=sub_text if sub_text else (file_path.split('/')[-1] if file_path else 'File Submission'),
+                        file_path=file_path,
+                        submission_type='file' if file_path else 'text'
+                    )
+                    db.session.add(submission)
 
             # Auto-mark section as completed upon assignment submission
             es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
@@ -468,9 +455,10 @@ def submit_assignment(section_id, assignment_id):
             return redirect(url_for('student.course_detail', course_id=section.course_id))
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error saving assignment submission: {e}")
-            flash('An error occurred saving your submission. Please try again.', 'danger')
+            logger.error(f"Error submitting assignment: {e}", exc_info=True)
+            flash(f'An unexpected error occurred during submission: {str(e)}', 'danger')
             return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+
     return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
 @student_bp.route('/section/<int:section_id>/quiz/<int:quiz_id>/take', methods=['GET', 'POST'])
