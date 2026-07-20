@@ -275,11 +275,11 @@ class AssignmentSubmission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    submission_text = db.Column(db.Text, nullable=False)
+    submission_text = db.Column(db.Text, nullable=True, default='')
     submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     reviewed = db.Column(db.Boolean, default=False)
     feedback = db.Column(db.Text, nullable=True)
-    file_path = db.Column(db.String(120), nullable=True)
+    file_path = db.Column(db.Text, nullable=True)
     
     # Code submission fields
     code_submission = db.Column(db.Text, nullable=True)  # Student's code

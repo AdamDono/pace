@@ -417,7 +417,8 @@ def submit_assignment(section_id, assignment_id):
         return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
     # --- Regular (text/file) assignment path ---
-    if form.validate_on_submit():
+    if request.method == 'POST':
+        sub_text = (request.form.get('submission_text') or form.submission_text.data or '').strip()
         file_path = None
         if 'file' in request.files and request.files['file'].filename:
             file = request.files['file']
@@ -440,26 +441,36 @@ def submit_assignment(section_id, assignment_id):
                 flash('Invalid file format. Allowed formats: .zip, .pdf, .docx, .png, .jpg, .txt, .py, .js, .html, etc.', 'danger')
                 return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
-        submission = AssignmentSubmission(
-            assignment_id=assignment_id,
-            student_id=current_user.id,
-            submission_text=form.submission_text.data,
-            file_path=file_path,
-            submission_type='text'
-        )
-        db.session.add(submission)
+        if not sub_text and not file_path:
+            flash('Please provide text content or attach a file before submitting.', 'warning')
+            return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
-        # Auto-mark section as completed upon assignment submission
-        es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
-        if not es:
-            es = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
-            db.session.add(es)
-        es.completed = True
-        es.completed_at = datetime.utcnow()
+        try:
+            submission = AssignmentSubmission(
+                assignment_id=assignment_id,
+                student_id=current_user.id,
+                submission_text=sub_text if sub_text else (file_path.split('/')[-1] if file_path else 'File Submission'),
+                file_path=file_path,
+                submission_type='file' if file_path else 'text'
+            )
+            db.session.add(submission)
 
-        db.session.commit()
-        flash('Assignment submitted & section completed!', 'success')
-        return redirect(url_for('student.course_detail', course_id=section.course_id))
+            # Auto-mark section as completed upon assignment submission
+            es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
+            if not es:
+                es = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+                db.session.add(es)
+            es.completed = True
+            es.completed_at = datetime.utcnow()
+
+            db.session.commit()
+            flash('Assignment submitted & section completed!', 'success')
+            return redirect(url_for('student.course_detail', course_id=section.course_id))
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error saving assignment submission: {e}")
+            flash('An error occurred saving your submission. Please try again.', 'danger')
+            return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
     return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
 @student_bp.route('/section/<int:section_id>/quiz/<int:quiz_id>/take', methods=['GET', 'POST'])
