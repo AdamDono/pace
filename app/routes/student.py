@@ -423,13 +423,22 @@ def submit_assignment(section_id, assignment_id):
             file = request.files['file']
             if file and allowed_file(file.filename):
                 from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
-                if cloudinary_url:
-                    file_path = cloudinary_url
-                else:
+                try:
+                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_assignments", resource_type="raw")
+                    if cloudinary_url:
+                        file_path = cloudinary_url
+                    else:
+                        filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
+                        file_path = filename
+                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                except Exception as e:
+                    logger.warning(f"Cloudinary upload fallback to local storage: {e}")
                     filename = secure_filename(f"{uuid4().hex}{os.path.splitext(file.filename)[1]}")
                     file_path = filename
                     file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+            else:
+                flash('Invalid file format. Allowed formats: .zip, .pdf, .docx, .png, .jpg, .txt, .py, .js, .html, etc.', 'danger')
+                return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
         submission = AssignmentSubmission(
             assignment_id=assignment_id,

@@ -185,35 +185,28 @@
             });
             
             xhr.addEventListener('load', function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
+                if (xhr.status >= 200 && xhr.status < 400) {
                     updateProgress(100, fileSize, fileSize, 0);
                     document.getElementById('upload-status').textContent = '✓ Upload complete! Redirecting...';
                     
-                    // Check if response is a redirect
                     setTimeout(() => {
-                        const contentType = xhr.getResponseHeader('content-type');
-                        if (contentType && contentType.includes('text/html')) {
-                            // It's HTML, probably the success page
-                            document.open();
-                            document.write(xhr.responseText);
-                            document.close();
+                        if (xhr.responseURL && xhr.responseURL !== window.location.href) {
+                            window.location.href = xhr.responseURL;
                         } else {
-                            // Try to parse as JSON for redirect
+                            // Reload or parse response
                             try {
                                 const response = JSON.parse(xhr.responseText);
                                 if (response.redirect) {
                                     window.location.href = response.redirect;
-                                } else {
-                                    window.location.reload();
+                                    return;
                                 }
-                            } catch(e) {
-                                window.location.reload();
-                            }
+                            } catch(e) {}
+                            window.location.reload();
                         }
-                    }, 500);
+                    }, 400);
                 } else {
                     hideProgress();
-                    alert('Upload failed. Please try again.');
+                    alert('Upload failed (HTTP ' + xhr.status + '). Please check file format or try again.');
                 }
             });
             

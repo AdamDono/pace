@@ -15,7 +15,7 @@ def allowed_file(filename, allowed_extensions=None):
         bool: True if file extension is allowed, False otherwise
     """
     if allowed_extensions is None:
-        allowed_extensions = current_app.config.get('ALLOWED_EXTENSIONS', {'pdf', 'png', 'jpg', 'jpeg', 'gif'})
+        allowed_extensions = current_app.config.get('ALLOWED_EXTENSIONS', {'pdf', 'zip', 'rar', '7z', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'doc', 'txt', 'csv', 'py', 'js', 'html', 'css', 'mp4', 'webm'})
     
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
