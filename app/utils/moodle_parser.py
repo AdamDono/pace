@@ -57,6 +57,42 @@ def _timestamp_to_dt(ts_str):
     return None
 
 
+def _embed_video_html(url, title="Video"):
+    """Convert YouTube, Vimeo, or direct MP4/video URLs into responsive embedded player HTML."""
+    if not url:
+        return ""
+    
+    url_clean = url.strip()
+    
+    # YouTube (youtu.be/ID or youtube.com/watch?v=ID or youtube.com/embed/ID)
+    if "youtube.com" in url_clean or "youtu.be" in url_clean:
+        video_id = None
+        if "youtu.be/" in url_clean:
+            video_id = url_clean.split("youtu.be/")[1].split("?")[0].split("&")[0]
+        elif "v=" in url_clean:
+            video_id = url_clean.split("v=")[1].split("&")[0]
+        elif "embed/" in url_clean:
+            video_id = url_clean.split("embed/")[1].split("?")[0]
+            
+        if video_id:
+            embed_url = f"https://www.youtube.com/embed/{video_id}"
+            return f'<div class="my-4 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><iframe src="{embed_url}" class="w-full h-full" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>'
+            
+    # Vimeo
+    if "vimeo.com" in url_clean:
+        parts = url_clean.rstrip("/").split("/")
+        if parts[-1].isdigit():
+            video_id = parts[-1]
+            embed_url = f"https://player.vimeo.com/video/{video_id}"
+            return f'<div class="my-4 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><iframe src="{embed_url}" class="w-full h-full" allowfullscreen></iframe></div>'
+
+    # Direct Video File (.mp4, .webm, .mov, .m4v, .ogg)
+    if any(url_clean.lower().endswith(ext) for ext in ['.mp4', '.webm', '.mov', '.m4v', '.ogg']) or '/static/uploads/' in url_clean:
+        return f'<div class="my-4 w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><video controls class="w-full max-h-[520px] rounded-2xl"><source src="{url_clean}">Your browser does not support HTML5 video playback.</video></div>'
+        
+    return f'<p class="my-3"><a href="{url_clean}" target="_blank" rel="noopener" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-bold underline"><span>🎥 {title}</span> <span class="ml-1">↗</span></a></p>'
+
+
 # ---------------------------------------------------------------------------
 # File resolver
 # ---------------------------------------------------------------------------
@@ -378,41 +414,6 @@ class MoodleImporter:
     # ------------------------------------------------------------------
     # Section creators
     # ------------------------------------------------------------------
-
-def _embed_video_html(url, title="Video"):
-    """Convert YouTube, Vimeo, or direct MP4/video URLs into responsive embedded player HTML."""
-    if not url:
-        return ""
-    
-    url_clean = url.strip()
-    
-    # YouTube (youtu.be/ID or youtube.com/watch?v=ID or youtube.com/embed/ID)
-    if "youtube.com" in url_clean or "youtu.be" in url_clean:
-        video_id = None
-        if "youtu.be/" in url_clean:
-            video_id = url_clean.split("youtu.be/")[1].split("?")[0].split("&")[0]
-        elif "v=" in url_clean:
-            video_id = url_clean.split("v=")[1].split("&")[0]
-        elif "embed/" in url_clean:
-            video_id = url_clean.split("embed/")[1].split("?")[0]
-            
-        if video_id:
-            embed_url = f"https://www.youtube.com/embed/{video_id}"
-            return f'<div class="my-4 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><iframe src="{embed_url}" class="w-full h-full" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>'
-            
-    # Vimeo
-    if "vimeo.com" in url_clean:
-        parts = url_clean.rstrip("/").split("/")
-        if parts[-1].isdigit():
-            video_id = parts[-1]
-            embed_url = f"https://player.vimeo.com/video/{video_id}"
-            return f'<div class="my-4 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><iframe src="{embed_url}" class="w-full h-full" allowfullscreen></iframe></div>'
-
-    # Direct Video File (.mp4, .webm, .mov, .m4v, .ogg)
-    if any(url_clean.lower().endswith(ext) for ext in ['.mp4', '.webm', '.mov', '.m4v', '.ogg']) or '/static/uploads/' in url_clean:
-        return f'<div class="my-4 w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><video controls class="w-full max-h-[520px] rounded-2xl"><source src="{url_clean}">Your browser does not support HTML5 video playback.</video></div>'
-        
-    return f'<p class="my-3"><a href="{url_clean}" target="_blank" rel="noopener" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-bold underline"><span>🎥 {title}</span> <span class="ml-1">↗</span></a></p>'
 
 
     def _create_text_section(self, db, course, module, act, file_res, order):
