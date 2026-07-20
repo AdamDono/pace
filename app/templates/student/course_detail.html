@@ -238,6 +238,68 @@
         });
     });
 
+    // Auto-convert YouTube links into embedded player iframes
+    function autoConvertYouTube(container) {
+        if (!container) return;
+
+        // 1. Convert <a> tags with YouTube URLs
+        const aTags = container.querySelectorAll('a[href*="youtube.com"], a[href*="youtu.be"], a[href*="vimeo.com"]');
+        aTags.forEach(function (a) {
+            const href = a.href || '';
+            let videoId = null;
+            if (href.includes('youtu.be/')) {
+                videoId = href.split('youtu.be/')[1].split('?')[0].split('&')[0];
+            } else if (href.includes('v=')) {
+                videoId = href.split('v=')[1].split('&')[0];
+            }
+
+            if (videoId) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'my-6 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black';
+                wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" class="w-full h-full" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+                if (a.parentNode && (a.parentNode.tagName === 'P' || a.parentNode.tagName === 'DIV')) {
+                    a.parentNode.parentNode.replaceChild(wrapper, a.parentNode);
+                } else if (a.parentNode) {
+                    a.parentNode.replaceChild(wrapper, a);
+                }
+            }
+        });
+
+        // 2. Scan text nodes for raw YouTube URLs
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        const textNodes = [];
+        while (node = walker.nextNode()) {
+            if (node.nodeValue && (node.nodeValue.includes('youtube.com/watch') || node.nodeValue.includes('youtu.be/'))) {
+                textNodes.push(node);
+            }
+        }
+
+        textNodes.forEach(function (textNode) {
+            const text = textNode.nodeValue;
+            const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                const videoId = match[1];
+                const wrapper = document.createElement('div');
+                wrapper.className = 'my-6 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black';
+                wrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" class="w-full h-full" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+                if (textNode.parentNode) {
+                    textNode.parentNode.replaceChild(wrapper, textNode);
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        autoConvertYouTube(document.querySelector('#main-reader-content'));
+    });
+
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        if (evt.detail.target && evt.detail.target.id === 'main-reader-content') {
+            autoConvertYouTube(evt.detail.target);
+        }
+    });
+
     // Instant Section Progression without page refresh
     document.addEventListener('sectionCompleted', function (evt) {
         console.log('⚡ Instant Section Completion Event:', evt.detail);

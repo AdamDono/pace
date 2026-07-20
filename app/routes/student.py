@@ -400,8 +400,17 @@ def submit_assignment(section_id, assignment_id):
                 programming_language=assignment.programming_language
             )
             db.session.add(submission)
+            
+            # Auto-mark section as completed upon assignment submission
+            es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
+            if not es:
+                es = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+                db.session.add(es)
+            es.completed = True
+            es.completed_at = datetime.utcnow()
+            
             db.session.commit()
-            flash('Coding assignment submitted successfully.', 'success')
+            flash('Coding assignment submitted & section completed!', 'success')
             return redirect(url_for('student.course_detail', course_id=section.course_id))
 
         # GET or invalid post
@@ -430,8 +439,17 @@ def submit_assignment(section_id, assignment_id):
             submission_type='text'
         )
         db.session.add(submission)
+
+        # Auto-mark section as completed upon assignment submission
+        es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
+        if not es:
+            es = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+            db.session.add(es)
+        es.completed = True
+        es.completed_at = datetime.utcnow()
+
         db.session.commit()
-        flash('Assignment submitted successfully.', 'success')
+        flash('Assignment submitted & section completed!', 'success')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
     return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
 
@@ -471,6 +489,15 @@ def take_quiz(section_id, quiz_id):
             score=(score / total) * 100
         )
         db.session.add(attempt)
+
+        # Auto-mark section as completed upon quiz submission
+        es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
+        if not es:
+            es = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+            db.session.add(es)
+        es.completed = True
+        es.completed_at = datetime.utcnow()
+
         db.session.commit()
         flash(f'Quiz completed! Score: {score}/{total} ({(score/total)*100:.1f}%)', 'success')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
