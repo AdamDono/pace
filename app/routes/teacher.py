@@ -1630,13 +1630,29 @@ def student_detail_grades(course_id, student_id):
 @teacher_required
 def preview_submission(submission_id):
     """AJAX endpoint to preview a submission"""
-    from app.models import AssignmentSubmission
+    from app.models import AssignmentSubmission, db
     
     submission = AssignmentSubmission.query.get_or_404(submission_id)
+    course = submission.assignment.section.course
     
-    # Verify teacher owns the course
-    if not current_user.is_teacher_for_course(submission.assignment.section.course_id):
+    # If course is unassigned/imported, auto-assign current teacher
+    if course.teacher_id is None:
+        course.teacher_id = current_user.id
+        db.session.commit()
+    elif not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
+        
+    return jsonify({
+        'id': submission.id,
+        'submission_text': submission.submission_text or '',
+        'submission_type': submission.submission_type or 'text',
+        'code_submission': submission.code_submission or '',
+        'programming_language': submission.programming_language or '',
+        'file_path': submission.file_path or '',
+        'feedback': submission.feedback or '',
+        'grade': submission.grade,
+        'reviewed': submission.reviewed
+    })
     
 @teacher_bp.route('/course/<int:course_id>/builder')
 @teacher_required
