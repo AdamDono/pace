@@ -59,7 +59,7 @@ def create_app():
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
     app.config['WTF_CSRF_ENABLED'] = True  # Enabled for security
     app.config['WTF_CSRF_TIME_LIMIT'] = None  # Do not expire CSRF tokens during session
-    app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx'}  # Updated to match forms
+    app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'zip', 'rar', '7z', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'doc', 'txt', 'csv', 'py', 'js', 'html', 'css', 'mp4', 'webm'}
 
     # Configure email
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -81,6 +81,16 @@ def create_app():
     csrf.init_app(app)  # Add this line
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
+
+    # Auto-migrate Postgres database columns if running on Render/Production DB
+    with app.app_context():
+        try:
+            from sqlalchemy import text
+            db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN file_path TYPE TEXT;"))
+            db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN submission_text DROP NOT NULL;"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     # Define login_manager.user_loader here to avoid circular imports
     from app.models import User

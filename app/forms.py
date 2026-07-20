@@ -61,7 +61,7 @@ class QuizForm(FlaskForm):
     submit = SubmitField('Create Quiz')
 
 class SubmissionForm(FlaskForm):
-    submission_text = TextAreaField('Your Submission', validators=[DataRequired(), Length(max=1000)])
+    submission_text = TextAreaField('Your Submission', validators=[Optional(), Length(max=50000)])
 
 class ProfileForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=80)])
