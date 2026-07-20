@@ -304,8 +304,10 @@
                             <div class="flex items-center space-x-2 flex-1 min-w-0">
                                 {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
                                 <div class="flex-shrink-0 flex items-center justify-center w-5 h-5">
-                                    {% if section_completed %}
-                                    <span class="text-green-600 font-bold text-base">✓</span>
+                                    {% if section.id in locked_sections %}
+                                        <span class="text-gray-400 text-xs">🔒</span>
+                                    {% elif section_completed %}
+                                        <span class="text-green-600 font-bold text-base">✓</span>
                                     {% else %}
                                         {% if section.section_type == 'video' %}🎥
                                         {% elif section.section_type == 'quiz' %}❓

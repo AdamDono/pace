@@ -695,12 +695,28 @@ def edit_course(course_id):
 def my_courses():
     from app.models import Course  # Moved here
     status_filter = request.args.get('status', 'all')
-    query = Course.query.filter_by(teacher_id=current_user.id)\
-                        .order_by(Course.created_at.desc())
+    # Teachers can view their owned courses, unassigned courses, and imported Moodle courses
+    query = Course.query.filter(
+        (Course.teacher_id == current_user.id) | 
+        (Course.teacher_id == None) |
+        (Course.description.like('%Moodle%'))
+    ).order_by(Course.created_at.desc())
+
     if status_filter != 'all':
         query = query.filter_by(status=status_filter)
     courses = query.all()
     return render_template('teacher/my_courses.html', courses=courses, status_filter=status_filter)
+
+@teacher_bp.route('/course/<int:course_id>/claim', methods=['POST'])
+@login_required
+@teacher_required
+def claim_course(course_id):
+    from app.models import Course, db
+    course = Course.query.get_or_404(course_id)
+    course.teacher_id = current_user.id
+    db.session.commit()
+    flash(f'You are now assigned as the instructor for "{course.title}". You can edit all modules and sections!', 'success')
+    return redirect(url_for('teacher.course_builder', course_id=course.id))
 
 @teacher_bp.route('/course/<int:course_id>/enroll-students', methods=['GET', 'POST'])
 @teacher_required
@@ -1626,10 +1642,12 @@ def preview_submission(submission_id):
 @teacher_required
 def course_builder(course_id):
     """Notion-style course content builder"""
-    from app.models import Course, Module, Section
+    from app.models import Course, Module, Section, db
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
-        abort(403)
+    # If course is unassigned or imported, auto-assign current teacher
+    if course.teacher_id is None:
+        course.teacher_id = current_user.id
+        db.session.commit()
     
     # Ensure modules are loaded with sections
     modules = Module.query.filter_by(course_id=course.id).order_by(Module.order).all()
@@ -1776,8 +1794,11 @@ def edit_section_content(course_id, section_id):
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     
-    if course.teacher_id != current_user.id or section.course_id != course_id:
-        abort(403)
+    if section.course_id != course_id:
+        abort(404)
+    if course.teacher_id is None:
+        course.teacher_id = current_user.id
+        db.session.commit()
         
     if request.method == 'POST':
         section.title = request.form.get('title')

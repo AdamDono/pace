@@ -318,12 +318,71 @@ class MoodleImporter:
     # Section creators
     # ------------------------------------------------------------------
 
+def _embed_video_html(url, title="Video"):
+    """Convert YouTube, Vimeo, or direct MP4/video URLs into responsive embedded player HTML."""
+    if not url:
+        return ""
+    
+    url_clean = url.strip()
+    
+    # YouTube (youtu.be/ID or youtube.com/watch?v=ID or youtube.com/embed/ID)
+    if "youtube.com" in url_clean or "youtu.be" in url_clean:
+        video_id = None
+        if "youtu.be/" in url_clean:
+            video_id = url_clean.split("youtu.be/")[1].split("?")[0].split("&")[0]
+        elif "v=" in url_clean:
+            video_id = url_clean.split("v=")[1].split("&")[0]
+        elif "embed/" in url_clean:
+            video_id = url_clean.split("embed/")[1].split("?")[0]
+            
+        if video_id:
+            embed_url = f"https://www.youtube.com/embed/{video_id}"
+            return f'<div class="my-4 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><iframe src="{embed_url}" class="w-full h-full" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>'
+            
+    # Vimeo
+    if "vimeo.com" in url_clean:
+        parts = url_clean.rstrip("/").split("/")
+        if parts[-1].isdigit():
+            video_id = parts[-1]
+            embed_url = f"https://player.vimeo.com/video/{video_id}"
+            return f'<div class="my-4 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><iframe src="{embed_url}" class="w-full h-full" allowfullscreen></iframe></div>'
+
+    # Direct Video File (.mp4, .webm, .mov, .m4v, .ogg)
+    if any(url_clean.lower().endswith(ext) for ext in ['.mp4', '.webm', '.mov', '.m4v', '.ogg']) or '/static/uploads/' in url_clean:
+        return f'<div class="my-4 w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-black"><video controls class="w-full max-h-[520px] rounded-2xl"><source src="{url_clean}">Your browser does not support HTML5 video playback.</video></div>'
+        
+    return f'<p class="my-3"><a href="{url_clean}" target="_blank" rel="noopener" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-bold underline"><span>🎥 {title}</span> <span class="ml-1">↗</span></a></p>'
+
+
     def _create_text_section(self, db, course, module, act, file_res, order):
         from app.models import Section
-        content = file_res.resolve_html(act.get("content") or act.get("url") or "")
+        raw_content = act.get("content") or ""
+        ext_url = act.get("url") or ""
+        content = file_res.resolve_html(raw_content or ext_url)
+        
+        video_url = None
+        media_type = "text"
+
+        # Check if external URL or resolved file is a video
+        if ext_url:
+            if any(k in ext_url.lower() for k in ['youtube.com', 'youtu.be', 'vimeo.com', '.mp4', '.webm', '.mov', '.m4v']):
+                video_url = ext_url
+                media_type = "video"
+                video_embed = _embed_video_html(ext_url, act.get("name", "Video"))
+                if ext_url not in content:
+                    content = video_embed + (f"<br>{content}" if content else "")
+        
+        # Scan content for video files/iframes/embeds
+        if not video_url and content:
+            if '<iframe' in content or '<video' in content or '.mp4' in content:
+                media_type = "video"
+                v_match = re.search(r'src=["\'](https?://[^"\']+|\/static\/uploads\/[^"\']+)["\']', content)
+                if v_match:
+                    video_url = v_match.group(1)
+
         if not content:
             content = f"<p><em>{act.get('name', 'Resource')}</em></p>"
-        
+
         atype = act.get("type", "")
         if atype == "url":
             sect_type = "url"
@@ -337,8 +396,9 @@ class MoodleImporter:
             module_id=module.id,
             title=(act.get("name") or "Untitled")[:150],
             content=content,
+            video_url=video_url,
             section_type=sect_type,
-            media_type="text",
+            media_type=media_type,
             order=order,
             is_published=False,
         )

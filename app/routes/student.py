@@ -160,16 +160,41 @@ def course_detail(course_id):
 
     from app.models import Module
     modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
-    sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    
+    # Gather all ordered sections across modules
+    ordered_sections = []
+    for m in modules:
+        m_secs = Section.query.filter_by(module_id=m.id).order_by(Section.order).all()
+        ordered_sections.extend(m_secs)
+    
+    unassigned = Section.query.filter_by(course_id=course_id, module_id=None).order_by(Section.order).all()
+    ordered_sections.extend(unassigned)
+
+    sections = ordered_sections
     locked_sections = set()
 
+    if current_user.role == 'student' and enrollment:
+        # Sequential progression: First section is unlocked.
+        # Section N is locked if Section N-1 is not completed.
+        unlocked_so_far = True
+        for i, sec in enumerate(ordered_sections):
+            if i == 0:
+                continue
+            prev_sec = ordered_sections[i - 1]
+            prev_es = enrollment_sections.get(prev_sec.id)
+            if not (prev_es and prev_es.completed):
+                unlocked_so_far = False
+            
+            if not unlocked_so_far:
+                locked_sections.add(sec.id)
+
     first_section = None
-    for module in modules:
-        if module.sections:
-            first_section = module.sections[0]
+    for sec in ordered_sections:
+        if sec.id not in locked_sections:
+            first_section = sec
             break
-    if not first_section and sections:
-        first_section = sections[0]
+    if not first_section and ordered_sections:
+        first_section = ordered_sections[0]
 
     return render_template('student/course_detail.html', 
                           course=course, 
@@ -191,19 +216,39 @@ def get_section_content(section_id):
     if current_user.role == 'student':
         # Student must be enrolled
         enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
-        
+        enrollment_sections = {es.section_id: es for es in enrollment.sections}
 
-
-        # Create EnrollmentSection if it doesn't exist
-        enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
-        if not enrollment_section:
-            enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
-            db.session.add(enrollment_section)
+        # Check sequential progression lock
+        from app.models import Module
+        modules = Module.query.filter_by(course_id=course.id).order_by(Module.order).all()
+        ordered_sections = []
+        for m in modules:
+            ordered_sections.extend(Section.query.filter_by(module_id=m.id).order_by(Section.order).all())
+        ordered_sections.extend(Section.query.filter_by(course_id=course.id, module_id=None).order_by(Section.order).all())
         
-        # Update tracking: increment view count and update last accessed
-        enrollment_section.view_count = (enrollment_section.view_count or 0) + 1
-        enrollment_section.last_accessed = datetime.utcnow()
-        db.session.commit()
+        is_locked = False
+        unlocked_so_far = True
+        for i, sec in enumerate(ordered_sections):
+            if i > 0:
+                prev_sec = ordered_sections[i - 1]
+                prev_es = enrollment_sections.get(prev_sec.id)
+                if not (prev_es and prev_es.completed):
+                    unlocked_so_far = False
+            if not unlocked_so_far and sec.id == section_id:
+                is_locked = True
+                break
+
+        if is_locked:
+            return '''
+            <div class="p-8 text-center bg-white rounded-3xl border border-gray-100 shadow-sm max-w-lg mx-auto my-12">
+                <div class="w-16 h-16 bg-amber-50 border border-amber-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🔒</div>
+                <h3 class="text-xl font-black text-gray-900 mb-2">Lesson Locked</h3>
+                <p class="text-sm text-gray-600 leading-relaxed mb-6">You must complete the previous lesson and mark it as complete before unlocking this section.</p>
+                <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100/60 text-xs font-semibold text-amber-800">
+                    💡 Tip: Go back to your last active section and click "Mark as Completed".
+                </div>
+            </div>
+            ''', 403
 
         # Handle marking as complete
         if request.method == 'POST' and ('mark_completed' in request.form or (request.json and request.json.get('mark_completed'))):
