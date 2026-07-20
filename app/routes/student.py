@@ -249,6 +249,16 @@ def get_section_content(section_id):
                 </div>
             </div>
             ''', 403
+        # Fetch or create EnrollmentSection for tracking
+        enrollment_section = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
+        if not enrollment_section:
+            enrollment_section = EnrollmentSection(enrollment_id=enrollment.id, section_id=section_id)
+            db.session.add(enrollment_section)
+
+        # Update tracking
+        enrollment_section.view_count = (enrollment_section.view_count or 0) + 1
+        enrollment_section.last_accessed = datetime.utcnow()
+        db.session.commit()
 
         # Handle marking as complete
         if request.method == 'POST' and ('mark_completed' in request.form or (request.json and request.json.get('mark_completed'))):
