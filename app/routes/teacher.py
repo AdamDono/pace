@@ -1634,17 +1634,43 @@ def student_detail_grades(course_id, student_id):
 @login_required
 def serve_upload(filename):
     """Serve uploaded student assignment files reliably."""
+    from flask import render_template_string
     upload_dir = current_app.config['UPLOAD_FOLDER']
     clean_filename = filename.lstrip('/')
     
-    if not os.path.exists(os.path.join(upload_dir, clean_filename)):
-        static_dir = os.path.join(current_app.root_path, 'static')
-        if os.path.exists(os.path.join(static_dir, clean_filename)):
-            return send_from_directory(static_dir, clean_filename)
-        elif os.path.exists(os.path.join(static_dir, 'uploads', clean_filename)):
-            return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename)
-            
-    return send_from_directory(upload_dir, clean_filename)
+    if clean_filename.startswith(('http://', 'https://')):
+        return redirect(clean_filename)
+
+    target_path = os.path.join(upload_dir, clean_filename)
+    if os.path.exists(target_path):
+        return send_from_directory(upload_dir, clean_filename)
+
+    static_dir = os.path.join(current_app.root_path, 'static')
+    if os.path.exists(os.path.join(static_dir, clean_filename)):
+        return send_from_directory(static_dir, clean_filename)
+    elif os.path.exists(os.path.join(static_dir, 'uploads', clean_filename)):
+        return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename)
+
+    # Friendly fallback explaining ephemeral storage reset
+    return render_template_string('''
+        <!DOCTYPE html>
+        <html>
+        <head><title>File Reset - Pace Academy</title><script src="https://cdn.tailwindcss.com"></script></head>
+        <body class="bg-gray-50 h-screen flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-md text-center">
+                <div class="text-5xl mb-4">⚠️</div>
+                <h3 class="text-xl font-extrabold text-gray-900 mb-2">File Storage Notice</h3>
+                <p class="text-xs text-gray-600 mb-6 leading-relaxed">
+                    This file (<span class="font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">{{ filename }}</span>) was uploaded to local storage before a server redeploy.
+                </p>
+                <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl mb-6 text-left text-xs text-indigo-900 leading-relaxed">
+                    💡 <strong>Persistent Cloud Storage:</strong> Add <code class="font-mono font-bold">CLOUDINARY_URL</code> to Render environment settings so all student assignment files are saved to Cloudinary permanently!
+                </div>
+                <button onclick="window.close(); history.back();" class="px-6 py-3 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-indigo-700 transition">Go Back</button>
+            </div>
+        </body>
+        </html>
+    ''', filename=clean_filename), 404
 
 @teacher_bp.route('/preview-submission/<int:submission_id>')
 @teacher_required

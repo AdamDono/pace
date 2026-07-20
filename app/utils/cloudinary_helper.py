@@ -15,14 +15,16 @@ else:
 
 def upload_file_to_cloudinary(file_stream, folder="pace_uploads", resource_type="auto"):
     """
-    Uploads a file stream (like a Werkzeug FileStorage object) directly to Cloudinary.
+    Uploads a file stream directly to Cloudinary.
     Returns the secure URL of the uploaded asset, or None if failed.
     """
-    if not os.getenv('CLOUDINARY_URL'):
+    url = os.getenv('CLOUDINARY_URL')
+    if not url:
         logger.warning("CLOUDINARY_URL is not set. Skipping Cloudinary upload.")
         return None
         
     try:
+        cloudinary.config(cloudinary_url=url)
         response = cloudinary.uploader.upload(
             file_stream,
             folder=folder,
@@ -30,5 +32,16 @@ def upload_file_to_cloudinary(file_stream, folder="pace_uploads", resource_type=
         )
         return response.get('secure_url')
     except Exception as e:
-        logger.error(f"Failed to upload to Cloudinary: {str(e)}")
-        return None
+        logger.warning(f"Cloudinary upload with resource_type={resource_type} failed ({e}), attempting raw fallback...")
+        try:
+            if hasattr(file_stream, 'seek'):
+                file_stream.seek(0)
+            response = cloudinary.uploader.upload(
+                file_stream,
+                folder=folder,
+                resource_type="raw"
+            )
+            return response.get('secure_url')
+        except Exception as err2:
+            logger.error(f"Failed to upload to Cloudinary: {err2}")
+            return None
