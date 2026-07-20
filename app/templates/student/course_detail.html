@@ -237,6 +237,52 @@
             textNode.parentNode.replaceChild(span, textNode);
         });
     });
+
+    // Instant Section Progression without page refresh
+    document.addEventListener('sectionCompleted', function (evt) {
+        console.log('⚡ Instant Section Completion Event:', evt.detail);
+        const data = evt.detail || {};
+        const currentSecId = data.section_id;
+        const nextSecId = data.next_section_id;
+        const isCompleted = data.is_course_completed;
+
+        if (currentSecId) {
+            const currentBtn = document.getElementById('sidebar-link-' + currentSecId);
+            if (currentBtn) {
+                const iconBox = currentBtn.querySelector('.flex-shrink-0');
+                if (iconBox) {
+                    iconBox.innerHTML = '<span class="text-green-600 font-bold text-base">✓</span>';
+                }
+            }
+        }
+
+        if (nextSecId) {
+            const nextBtn = document.getElementById('sidebar-link-' + nextSecId);
+            if (nextBtn) {
+                nextBtn.removeAttribute('disabled');
+                nextBtn.classList.remove('cursor-not-allowed', 'opacity-50');
+                nextBtn.classList.add('cursor-pointer');
+                
+                const nextIconBox = nextBtn.querySelector('.flex-shrink-0');
+                if (nextIconBox && nextIconBox.textContent.includes('🔒')) {
+                    nextIconBox.innerHTML = '📄';
+                }
+
+                // Automatically trigger HTMX load on the next section instantly
+                setTimeout(function () {
+                    if (window.htmx) {
+                        window.htmx.trigger(nextBtn, 'click');
+                    } else {
+                        nextBtn.click();
+                    }
+                }, 300);
+            }
+        }
+
+        if (isCompleted && typeof confetti === 'function') {
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+        }
+    });
 </script>
 {% endblock %}
 

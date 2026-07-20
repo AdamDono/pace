@@ -86,20 +86,22 @@
     <!-- Mark as Complete Button -->
     {% if enrollment_section %}
         {% if not enrollment_section.completed %}
-            <form method="POST" class="mt-4" 
+            <form method="POST" class="mt-6" 
                   hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}" 
-                  hx-target="#section-content-{{ section.id }}" 
-                  hx-swap="innerHTML"
-                  hx-on::after-request="if (event.detail.xhr.status === 200) { setTimeout(function() { location.reload(); }, 1200); }">
+                  hx-target="#main-reader-content" 
+                  hx-swap="innerHTML">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" name="mark_completed" 
-                        onclick="showToast('Section marked as completed!');" 
-                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    Mark as Completed
+                        class="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl shadow-md hover:bg-blue-700 transition-all flex items-center space-x-2">
+                    <span>Mark as Completed</span>
+                    <span>✓</span>
                 </button>
             </form>
         {% else %}
-            <p class="mt-4 text-green-600">Completed ✔</p>
+            <div class="mt-6 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold inline-flex items-center space-x-2">
+                <span>Completed</span>
+                <span>✔</span>
+            </div>
         {% endif %}
     {% endif %}
 

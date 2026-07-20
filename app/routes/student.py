@@ -278,21 +278,39 @@ def get_section_content(section_id):
                 db.session.commit()
                 flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
 
-            # If HTMX request, render HTML and send HX-Trigger header
+            # If HTMX request, render HTML and send HX-Trigger header with instant progression payload
             if request.headers.get('HX-Request'):
+                next_section_id = None
+                for idx, sec in enumerate(ordered_sections):
+                    if sec.id == section_id and idx + 1 < len(ordered_sections):
+                        next_section_id = ordered_sections[idx + 1].id
+                        break
+
                 interactive_questions = []
                 subtitles = []
                 if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
                     interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
                     subtitles = section.subtitles if hasattr(section, 'subtitles') else []
+                
                 resp = make_response(render_template('student/_section_content.html', 
                                      section=section, 
                                      course=course, 
                                      enrollment_section=enrollment_section,
                                      interactive_questions=interactive_questions,
                                      subtitles=subtitles))
+                
+                import json
+                trigger_payload = {
+                    'sectionCompleted': {
+                        'section_id': section_id,
+                        'next_section_id': next_section_id,
+                        'is_course_completed': is_course_completed
+                    }
+                }
                 if is_course_completed:
-                    resp.headers['HX-Trigger'] = 'course-completed'
+                    trigger_payload['course-completed'] = True
+
+                resp.headers['HX-Trigger'] = json.dumps(trigger_payload)
                 return resp
 
             if is_course_completed:

@@ -113,25 +113,86 @@ class FileResolver:
                 rel = f"imported/{unique_name}"
                 self._map[contenthash] = rel
                 # Also map by original filepath+filename (for @@PLUGINFILE@@ replacement)
+                self._map[contenthash] = rel
+                # Also map by original filepath+filename and filename alone
                 key = (filepath.rstrip("/") + "/" + filename).lstrip("/")
                 self._map[key] = rel
+                self._map[filename] = rel
             except Exception as e:
                 logger.warning(f"Could not copy file {filename}: {e}")
 
     def resolve_html(self, html):
-        """Replace @@PLUGINFILE@@/path/to/file.ext references in HTML."""
+        """Replace @@PLUGINFILE@@/path/to/file.ext references and YouTube links in HTML."""
         self._parse()
         if not html:
             return html
 
         def replacer(m):
-            path = m.group(1).lstrip("/")
-            rel = self._map.get(path)
+            raw_path = m.group(1).lstrip("/")
+            filename_only = raw_path.split("/")[-1]
+            rel = self._map.get(raw_path) or self._map.get(filename_only)
+            
+            if not rel:
+                for k, v in self._map.items():
+                    if k.endswith(filename_only):
+                        rel = v
+                        break
+            
             if rel:
-                return f"/static/uploads/{rel}"
-            return m.group(0)   # leave untouched if file not found
+                file_url = f"/static/uploads/{rel}"
+                if filename_only.lower().endswith(".h5p"):
+                    return f'''
+                    <div class="my-6 p-6 bg-amber-50/90 border border-amber-200 rounded-3xl shadow-sm">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-3xl">🧩</span>
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-base">Interactive H5P Content ({filename_only})</h4>
+                                <p class="text-xs text-amber-900/80">Imported Moodle Interactive Activity</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mb-4 leading-relaxed">This interactive exercise was migrated from Moodle. You can download the full H5P package below or view interactive modules on Lumi.</p>
+                        <a href="{file_url}" download class="inline-flex items-center text-xs font-bold bg-amber-600 text-white px-5 py-2.5 rounded-xl shadow-md hover:bg-amber-700 transition-all">
+                            <span>Download {filename_only} Package</span>
+                        </a>
+                    </div>
+                    '''
+                elif any(filename_only.lower().endswith(ext) for ext in ['.mp4', '.webm', '.mov', '.m4v']):
+                    return f'''
+                    <div class="my-6 w-full rounded-3xl overflow-hidden shadow-lg border border-gray-100 bg-black">
+                        <video controls class="w-full max-h-[500px] rounded-3xl">
+                            <source src="{file_url}">
+                            Your browser does not support HTML5 video playback.
+                        </video>
+                    </div>
+                    '''
+                return file_url
 
-        return re.sub(r'@@PLUGINFILE@@(/[^"\'> ]*)', replacer, html)
+            # Fallback if file reference was not found in files.xml
+            if filename_only.lower().endswith(".h5p"):
+                return f'''
+                <div class="my-6 p-6 bg-amber-50/90 border border-amber-200 rounded-3xl shadow-sm">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <span class="text-3xl">🧩</span>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Interactive H5P Activity</h4>
+                            <p class="text-xs text-amber-900/80">File reference: {filename_only}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-600 leading-relaxed">Interactive exercise imported from Moodle backup.</p>
+                </div>
+                '''
+            return m.group(0)
+
+        html = re.sub(r'@@PLUGINFILE@@(/[^"\'> ]*)', replacer, html)
+
+        # Convert raw YouTube links in text to embedded YouTube video players
+        def youtube_replacer(m):
+            yt_url = m.group(0)
+            return _embed_video_html(yt_url)
+
+        html = re.sub(r'https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]+', youtube_replacer, html)
+        
+        return html
 
 
 # ---------------------------------------------------------------------------
