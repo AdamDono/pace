@@ -182,6 +182,7 @@ def create_app():
     from app.routes.notifications import notifications_bp
     from app.routes.code_execution import code_execution_bp
     from app.routes.importer import importer_bp
+    from app.routes.health import health_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -190,6 +191,7 @@ def create_app():
     app.register_blueprint(notifications_bp)
     app.register_blueprint(code_execution_bp)
     app.register_blueprint(importer_bp)
+    app.register_blueprint(health_bp)
 
     # Register error handlers
     @app.errorhandler(404)

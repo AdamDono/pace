@@ -479,8 +479,9 @@ def take_quiz(section_id, quiz_id):
         return redirect(url_for('student.course_detail', course_id=section.course_id))
     
     attempt_count = QuizAttempt.query.filter_by(quiz_id=quiz_id, student_id=current_user.id).count()
-    if attempt_count >= 3:
-        flash('You have reached the maximum of 3 attempts for this quiz.', 'warning')
+    max_attempts = quiz.max_attempts if quiz.max_attempts else 3
+    if attempt_count >= max_attempts:
+        flash(f'You have reached the maximum of {max_attempts} attempts for this quiz.', 'warning')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
     
     if request.method == 'POST':

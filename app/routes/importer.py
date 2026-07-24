@@ -51,6 +51,8 @@ def preview():
         return jsonify({"error": "No file uploaded"}), 400
     if not _allowed(f.filename):
         return jsonify({"error": "Only .mbz files are accepted"}), 400
+    if f.content_length > MAX_MBZ_SIZE:
+        return jsonify({"error": f"File too large. Maximum size is {MAX_MBZ_SIZE // (1024*1024)} MB"}), 400
 
     tmp_path = _save_tmp(f)
     try:
@@ -79,6 +81,9 @@ def run_import():
         return redirect(url_for("importer.import_form"))
     if not _allowed(f.filename):
         flash("Only .mbz files are accepted.", "danger")
+        return redirect(url_for("importer.import_form"))
+    if f.content_length > MAX_MBZ_SIZE:
+        flash(f"File too large. Maximum size is {MAX_MBZ_SIZE // (1024*1024)} MB", "danger")
         return redirect(url_for("importer.import_form"))
 
     tmp_path = _save_tmp(f)
