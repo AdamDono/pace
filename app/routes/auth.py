@@ -203,3 +203,77 @@ def redirect_based_on_role():
     elif current_user.role == 'student':
         return redirect(url_for('student.dashboard'))
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect_based_on_role()
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            from itsdangerous import URLSafeTimedSerializer
+            from flask import current_app
+            from app.utils.email import send_email
+            
+            serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+            token = serializer.dumps(user.email, salt='password-reset-salt')
+            
+            # Generate absolute reset URL
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            
+            send_email(
+                subject='Reset Your Password - Pace Academy',
+                recipient=user.email,
+                template='reset_password',
+                user=user,
+                reset_url=reset_url
+            )
+            
+        flash('If this email is registered in our system, a password reset link has been sent to it.', 'success')
+        return redirect(url_for('auth.login'))
+        
+    return render_template('auth/forgot_password.html')
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect_based_on_role()
+        
+    from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+    from flask import current_app
+    
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        # Token is valid for 1 hour (3600 seconds)
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+    except SignatureExpired:
+        flash('The password reset link has expired. Please request a new one.', 'danger')
+        return redirect(url_for('auth.forgot_password'))
+    except BadSignature:
+        flash('Invalid password reset link.', 'danger')
+        return redirect(url_for('auth.forgot_password'))
+        
+    user = User.query.filter_by(email=email).first_or_404()
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not password or len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'danger')
+            return render_template('auth/reset_password.html')
+            
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return render_template('auth/reset_password.html')
+            
+        user.password = password
+        db.session.commit()
+        
+        flash('Your password has been reset successfully. You can now login.', 'success')
+        return redirect(url_for('auth.login'))
+        
+    return render_template('auth/reset_password.html')

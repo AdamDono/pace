@@ -273,7 +273,7 @@
                         <p class="text-red-500 text-sm mt-1">{{ error }}</p>
                     {% endfor %}
                     <div class="text-right mt-2">
-                        <a href="#" class="text-sm text-green-600 hover:text-green-700">Forgot password?</a>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="text-sm text-green-600 hover:text-green-700">Forgot password?</a>
                     </div>
                 </div>
 
