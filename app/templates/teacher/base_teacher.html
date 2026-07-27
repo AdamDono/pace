@@ -29,15 +29,15 @@
             <!-- Teacher Profile -->
             <a href="{{ url_for('teacher.profile') }}" class="block p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
                 <div class="flex items-center">
-                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0">
                         {% if current_user.profile_image %}
                             <img src="{{ url_for('teacher.media', filename=current_user.profile_image) }}" alt="Avatar" class="w-full h-full object-cover" />
                         {% else %}
                             {{ current_user.email[0].upper() }}
                         {% endif %}
                     </div>
-                    <div class="ml-3">
-                        <p class="text-sm font-medium text-gray-900">{{ current_user.email }}</p>
+                    <div class="ml-3 truncate">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ current_user.email }}</p>
                         <p class="text-xs text-gray-500">Teacher</p>
                     </div>
                 </div>
@@ -46,38 +46,52 @@
             <nav class="mt-4">
                 <div class="px-4 space-y-2">
                     <a href="{{ url_for('teacher.dashboard') }}"
-                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'teacher.dashboard' %}bg-blue-50 text-blue-700{% endif %}">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path></svg>
+                       class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition {% if request.endpoint == 'teacher.dashboard' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-blue-600 {% if request.endpoint == 'teacher.dashboard' %}text-blue-600{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
                         Dashboard
                     </a>
                     <a href="{{ url_for('teacher.my_courses') }}"
-                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'teacher.my_courses' %}bg-blue-50 text-blue-700{% endif %}">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13M16.5 5c1.747 0 3.332.477 4.5 1.253v13"></path></svg>
+                       class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition {% if request.endpoint == 'teacher.my_courses' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3 text-gray-400 {% if request.endpoint == 'teacher.my_courses' %}text-blue-600{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
                         My Courses
                     </a>
                     <a href="{{ url_for('teacher.gradebook') }}"
-                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'teacher.gradebook' %}bg-blue-50 text-blue-700{% endif %}">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                       class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition {% if request.endpoint == 'teacher.gradebook' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3 text-gray-400 {% if request.endpoint == 'teacher.gradebook' %}text-blue-600{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
                         Gradebook
                     </a>
                     <a href="{{ url_for('teacher.create_course_wizard') }}"
-                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                       class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition">
+                        <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         Create Course
                     </a>
                     <a href="{{ url_for('teacher.calendar') }}"
-                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7H3v10a2 2 0 002 2z"></path></svg>
+                       class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition">
+                        <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7H3v10a2 2 0 002 2z" />
+                        </svg>
                         Calendar
                     </a>
                     <a href="{{ url_for('teacher.profile') }}"
-                       class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 {% if request.endpoint == 'teacher.profile' %}bg-blue-50 text-blue-700{% endif %}">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118 8"></path></svg>
+                       class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition {% if request.endpoint == 'teacher.profile' %}bg-blue-50 text-blue-700{% endif %}">
+                        <svg class="w-5 h-5 mr-3 text-gray-400 {% if request.endpoint == 'teacher.profile' %}text-blue-600{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
                         Profile
                     </a>
                     <div class="pt-4 mt-4 border-t border-gray-200">
-                        <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50">
-                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2.5 text-sm font-semibold text-red-600 rounded-xl hover:bg-red-50 transition">
+                            <svg class="w-5 h-5 mr-3 text-red-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
                             Logout
                         </a>
                     </div>
