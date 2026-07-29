@@ -706,13 +706,8 @@
                                     <span class="text-4xl mb-3">🎓</span>
                                     <span class="text-xs uppercase tracking-widest font-black text-blue-600">{{ course.category or 'Skills Path' }}</span>
                                 </div>
-                                {% set diff = (course.difficulty_level or 'General')|lower %}
-                                <span class="absolute top-4 right-4 text-white font-black text-[11px] tracking-wider uppercase px-3.5 py-1.5 rounded-full shadow-md z-10
-                                    {% if diff == 'beginner' %}bg-emerald-700
-                                    {% elif diff == 'intermediate' %}bg-blue-700
-                                    {% elif diff == 'advanced' %}bg-purple-700
-                                    {% else %}bg-gray-900{% endif %}">
-                                    {{ course.difficulty_level or 'General' }}
+                                <span class="absolute top-3 right-3 bg-blue-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm z-10">
+                                    {{ course.difficulty_level or 'Beginner' }}
                                 </span>
                             </div>
 
