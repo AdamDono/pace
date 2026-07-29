@@ -1,106 +1,154 @@
 {% extends "teacher/base_teacher.html" %}
 {% block page_title %}My Courses{% endblock %}
 {% block content %}
-<div class="container mx-auto p-6">
-    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">My Courses</h1>
-            <p class="text-sm text-gray-500 mt-1">Welcome, {{ current_user.email }}</p>
+            <h1 class="text-2xl font-black text-gray-900 tracking-tight">Course Repository</h1>
+            <p class="text-xs text-gray-500 mt-1">Manage, build, and publish educational modules.</p>
         </div>
-        <div class="flex gap-3 flex-wrap">
+        <div class="flex gap-2.5 flex-wrap">
             <a href="{{ url_for('teacher.create_course_wizard') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                ✏️ Create Course
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-150 transform hover:scale-105">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Create Course
             </a>
             <a href="{{ url_for('importer.import_form') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-150 transform hover:scale-105"
                title="Import a .mbz course backup from Moodle">
-                📦 Import from Moodle
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                Import from Moodle
             </a>
         </div>
     </div>
 
     <!-- Filter Tabs -->
-    <div class="flex space-x-4 mb-6 border-b">
+    <div class="flex space-x-1.5 mb-8 border-b border-gray-200">
         <a href="{{ url_for('teacher.my_courses', status='all') }}"
-            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'all' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 text-xs font-bold border-b-2 tracking-wide uppercase transition-all {% if status_filter == 'all' or not status_filter %}border-blue-600 text-blue-600{% else %}border-transparent text-gray-500 hover:text-blue-600{% endif %}">
             All
         </a>
         <a href="{{ url_for('teacher.my_courses', status='approved') }}"
-            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'approved' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 text-xs font-bold border-b-2 tracking-wide uppercase transition-all {% if status_filter == 'approved' %}border-blue-600 text-blue-600{% else %}border-transparent text-gray-500 hover:text-blue-600{% endif %}">
             Approved
         </a>
         <a href="{{ url_for('teacher.my_courses', status='pending') }}"
-            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'pending' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 text-xs font-bold border-b-2 tracking-wide uppercase transition-all {% if status_filter == 'pending' %}border-blue-600 text-blue-600{% else %}border-transparent text-gray-500 hover:text-blue-600{% endif %}">
             Pending
         </a>
         <a href="{{ url_for('teacher.my_courses', status='rejected') }}"
-            class="px-4 py-2 {{ 'border-b-2 border-blue-600 text-blue-600' if status_filter == 'rejected' else 'text-gray-600' }} hover:text-blue-600">
+            class="px-4 py-2 text-xs font-bold border-b-2 tracking-wide uppercase transition-all {% if status_filter == 'rejected' %}border-blue-600 text-blue-600{% else %}border-transparent text-gray-500 hover:text-blue-600{% endif %}">
             Rejected
         </a>
     </div>
 
     {% if courses %}
-    <ul class="space-y-2 mt-4">
+    <div class="space-y-4">
         {% for course in courses %}
-        <li class="border p-3 rounded flex justify-between items-center">
-            <div>
-                <span class="font-medium">{{ course.title }}</span>
-                <span class="ml-4 text-sm text-gray-500">Status: {{ course.status|title }}</span>
+        {% set draft_flag = (course.is_draft or course.status == 'draft') %}
+        <div class="bg-white rounded-2xl border border-gray-150 p-4 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="text-sm font-bold text-gray-900 truncate" title="{{ course.title }}">{{ course.title }}</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold border flex-shrink-0
+                        {% if course.status == 'approved' %}bg-green-50 text-green-700 border-green-250
+                        {% elif course.status == 'pending' %}bg-yellow-50 text-yellow-700 border-yellow-200
+                        {% elif course.status == 'rejected' %}bg-red-50 text-red-700 border-red-200
+                        {% else %}bg-gray-50 text-gray-600 border-gray-250{% endif %}">
+                        {{ course.status.title() }}
+                    </span>
+                </div>
                 {% if course.admin_feedback and course.status == 'rejected' %}
-                <span class="ml-4 text-sm text-red-500">Feedback: {{ course.admin_feedback }}</span>
+                <div class="mt-2 text-xs text-red-700 bg-red-50/80 border border-red-100 rounded-lg p-2.5 inline-block">
+                    <span class="font-bold">Admin Feedback:</span> {{ course.admin_feedback }}
+                </div>
                 {% endif %}
             </div>
-            <div class="space-x-2 flex items-center">
+            
+            <!-- Actions buttons group -->
+            <div class="flex items-center gap-2 flex-wrap md:flex-nowrap flex-shrink-0">
                 {% if course.status == 'approved' %}
                 <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
-                    class="text-green-600 hover:underline font-medium">View Course</a>
+                    class="inline-flex items-center text-[11px] font-bold bg-green-50 hover:bg-green-100 text-green-700 border border-green-250 px-3 py-1.5 rounded-lg transition-colors">
+                    View Course
+                </a>
                 {% endif %}
                 <a href="{{ url_for('teacher.course_builder', course_id=course.id) }}"
-                    class="text-blue-600 hover:underline font-medium">Edit Course & Content</a>
+                    class="inline-flex items-center text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors">
+                    Edit Course & Content
+                </a>
                 <a href="{{ url_for('teacher.enroll_students', course_id=course.id) }}"
-                    class="text-blue-600 hover:underline">Enroll Students</a>
-                {% set draft_flag = (course.is_draft or course.status == 'draft') %}
+                    class="inline-flex items-center text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg transition-colors">
+                    Enroll Students
+                </a>
                 {% if draft_flag %}
-                <button type="button" class="text-red-600 hover:underline"
+                <button type="button" 
+                    class="inline-flex items-center text-[11px] font-bold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg transition-colors"
                     onclick="document.getElementById('delete-draft-{{ course.id }}').classList.remove('hidden')">
                     Delete Draft
                 </button>
                 {% endif %}
             </div>
-        </li>
+        </div>
 
         {% if draft_flag %}
         <!-- Delete Draft Modal -->
         <div id="delete-draft-{{ course.id }}"
-            class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-            <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-                <h3 class="text-lg font-semibold text-gray-900">Delete Draft</h3>
-                <p class="text-sm text-gray-600 mt-2">Type the course title to confirm deletion. This action cannot be
-                    undone.</p>
-                <p class="mt-2 font-medium">{{ course.title }}</p>
+            class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100">
+                <h3 class="text-lg font-black text-gray-900">Delete Draft Course</h3>
+                <p class="text-xs text-gray-500 mt-2 leading-relaxed">
+                    Type the course title exactly below to confirm deletion. This action cannot be undone.
+                </p>
+                <div class="my-3 p-3 bg-gray-50 rounded-xl text-xs font-bold text-gray-700 select-all border border-gray-200">
+                    {{ course.title }}
+                </div>
                 <form method="POST" action="{{ url_for('teacher.delete_draft_course', course_id=course.id) }}"
-                    class="mt-4"
                     onsubmit="return this.querySelector('input[name=confirm_title]').value.trim() === '{{ course.title }}'">
                     <input type="hidden" name="return_url" value="{{ request.url }}">
                     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                    <input name="confirm_title" type="text" class="w-full border rounded px-3 py-2"
+                    <input name="confirm_title" type="text" required
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-red-500 focus:outline-none focus:border-transparent bg-gray-50"
                         placeholder="Enter course title exactly">
-                    <div class="mt-4 flex justify-end gap-2">
-                        <button type="button" class="px-4 py-2 border rounded"
-                            onclick="document.getElementById('delete-draft-{{ course.id }}').classList.add('hidden')">Cancel</button>
-                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
+                    <div class="mt-5 flex justify-end gap-2">
+                        <button type="button" class="px-4 py-2 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition"
+                            onclick="document.getElementById('delete-draft-{{ course.id }}').classList.add('hidden')">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-100">
+                            Delete
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
         {% endif %}
         {% endfor %}
-    </ul>
+    </div>
     {% else %}
-    <p>No courses found. <a href="{{ url_for('teacher.create_course_wizard') }}"
-            class="text-blue-600 hover:underline">Create a course</a>.</p>
+    <div class="p-12 text-center bg-white rounded-2xl border border-gray-150">
+        <span class="text-4xl block mb-3">🎓</span>
+        <h3 class="text-sm font-bold text-gray-900 mb-1">No courses found</h3>
+        <p class="text-xs text-gray-500 mb-5">Create a course or import one from Moodle to get started.</p>
+        <a href="{{ url_for('teacher.create_course_wizard') }}"
+            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition">
+            Create Course
+        </a>
+    </div>
     {% endif %}
-    <a href="{{ url_for('teacher.dashboard') }}" class="mt-4 block text-blue-600 hover:underline">Back to Dashboard</a>
+    
+    <div class="mt-8">
+        <a href="{{ url_for('teacher.dashboard') }}" class="inline-flex items-center text-xs font-bold text-blue-600 hover:text-blue-700 transition">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
 </div>
 {% endblock %}

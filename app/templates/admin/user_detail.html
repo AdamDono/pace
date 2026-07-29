@@ -1,0 +1,236 @@
+{% extends 'admin/base_admin.html' %}
+{% block page_title %}User Profile{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-5xl mx-auto space-y-6">
+
+    <!-- Back -->
+    <a href="{{ url_for('admin.manage_users') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 font-medium transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        Back to Users
+    </a>
+
+    <!-- Profile Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        <!-- Avatar -->
+        <div class="flex-shrink-0">
+            {% if user.profile_image %}
+                <img src="{{ user.profile_image|avatar_url }}" alt="{{ user.first_name }}'s photo"
+                     class="w-24 h-24 rounded-2xl object-cover border-2 border-gray-100 shadow"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="hidden w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow">
+                    {{ (user.first_name or user.email)[0].upper() }}
+                </div>
+            {% else %}
+                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow">
+                    {{ (user.first_name or user.email)[0].upper() }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Info -->
+        <div class="flex-1 text-center sm:text-left">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                <h2 class="text-xl font-black text-gray-900">
+                    {{ user.first_name or '' }} {{ user.last_name or '' }}
+                    {% if not user.first_name and not user.last_name %}{{ user.username or user.email }}{% endif %}
+                </h2>
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold
+                    {% if user.role == 'admin' %}bg-red-100 text-red-700
+                    {% elif user.role == 'teacher' %}bg-blue-100 text-blue-700
+                    {% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ user.role|title }}
+                </span>
+                {% if user.is_banned %}
+                    <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">🚫 Banned</span>
+                {% elif user.is_suspended %}
+                    <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">⚠️ Suspended</span>
+                {% else %}
+                    <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">✓ Active</span>
+                {% endif %}
+            </div>
+            <p class="text-sm text-gray-500 mb-3">{{ user.email }}</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div class="bg-gray-50 rounded-xl p-3 text-center">
+                    <p class="text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Joined</p>
+                    <p class="font-bold text-gray-800">{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3 text-center">
+                    <p class="text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Last Login</p>
+                    <p class="font-bold text-gray-800">{{ user.last_login.strftime('%b %d') if user.last_login else 'Never' }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3 text-center">
+                    <p class="text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Logins</p>
+                    <p class="font-bold text-gray-800">{{ user.login_count or 0 }}</p>
+                </div>
+                {% if user.role == 'student' %}
+                <div class="bg-gray-50 rounded-xl p-3 text-center">
+                    <p class="text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Courses</p>
+                    <p class="font-bold text-gray-800">{{ enrollments|length }}</p>
+                </div>
+                {% elif user.role == 'teacher' %}
+                <div class="bg-gray-50 rounded-xl p-3 text-center">
+                    <p class="text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Courses Made</p>
+                    <p class="font-bold text-gray-800">{{ courses_taught|length }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if user.bio %}
+            <p class="mt-3 text-xs text-gray-500 leading-relaxed max-w-lg">{{ user.bio }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ── Student Enrollments ── -->
+    {% if user.role == 'student' %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h3 class="text-sm font-black text-gray-900 uppercase tracking-wider">Course Enrollments</h3>
+            <span class="text-xs text-gray-400 font-medium">{{ enrollments|length }} total</span>
+        </div>
+
+        {% if enrollments %}
+        <div class="divide-y divide-gray-50">
+            {% for enrollment in enrollments %}
+            <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-4
+                {% if enrollment.is_blocked %}bg-red-50/40{% endif %}">
+
+                <!-- Course info -->
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    {% if enrollment.course.thumbnail %}
+                        <img src="{{ enrollment.course.thumbnail }}" alt="thumbnail"
+                             class="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-gray-100">
+                    {% else %}
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        </div>
+                    {% endif %}
+
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-gray-900 truncate">{{ enrollment.course.title }}</p>
+                        <p class="text-xs text-gray-400">Enrolled {{ enrollment.enrolled_at.strftime('%b %d, %Y') if enrollment.enrolled_at else 'N/A' }}</p>
+                        {% if enrollment.is_blocked %}
+                            <p class="text-xs text-red-500 font-semibold mt-0.5">🚫 Blocked — {{ enrollment.block_reason or 'No reason given' }}</p>
+                        {% elif enrollment.completed %}
+                            <p class="text-xs text-green-600 font-semibold mt-0.5">✓ Completed</p>
+                        {% else %}
+                            <p class="text-xs text-blue-500 font-semibold mt-0.5">● In Progress</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    {% if enrollment.is_blocked %}
+                        <!-- Unblock -->
+                        <form method="POST"
+                              action="{{ url_for('admin.unblock_enrollment', user_id=user.id, enrollment_id=enrollment.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Restore Access
+                            </button>
+                        </form>
+                    {% else %}
+                        <!-- Block with reason -->
+                        <button onclick="openBlockModal({{ enrollment.id }}, '{{ enrollment.course.title|replace("'","\\'")|safe }}')"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg text-xs font-bold hover:bg-yellow-100 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                            Block Course
+                        </button>
+                    {% endif %}
+
+                    <!-- Remove entirely -->
+                    <form method="POST"
+                          action="{{ url_for('admin.remove_enrollment', user_id=user.id, enrollment_id=enrollment.id) }}"
+                          onsubmit="return confirm('Remove this student from the course entirely? This cannot be undone.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Remove
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-6 py-12 text-center">
+            <div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <p class="text-sm text-gray-400">Not enrolled in any courses yet</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── Teacher Courses ── -->
+    {% if user.role == 'teacher' and courses_taught %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h3 class="text-sm font-black text-gray-900 uppercase tracking-wider">Courses Created</h3>
+            <span class="text-xs text-gray-400 font-medium">{{ courses_taught|length }} total</span>
+        </div>
+        <div class="divide-y divide-gray-50">
+            {% for course in courses_taught %}
+            <div class="px-6 py-4 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-gray-900 truncate">{{ course.title }}</p>
+                    <p class="text-xs text-gray-400">{{ course.enrollments|length }} students enrolled</p>
+                </div>
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold
+                    {% if course.status == 'approved' %}bg-green-100 text-green-700
+                    {% elif course.status == 'pending' %}bg-yellow-100 text-yellow-700
+                    {% else %}bg-red-100 text-red-700{% endif %}">
+                    {{ course.status|title }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Block Course Modal -->
+<div id="blockModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-base font-black text-gray-900 mb-1">Block Course Access</h3>
+        <p id="blockModalCourseTitle" class="text-xs text-gray-500 mb-4"></p>
+        <form id="blockForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Reason (optional)</label>
+            <input type="text" name="reason" placeholder="e.g. Payment dispute, misconduct..."
+                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-yellow-300 focus:border-yellow-400 outline-none mb-4">
+            <div class="flex gap-3">
+                <button type="button" onclick="closeBlockModal()"
+                        class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition">Cancel</button>
+                <button type="submit"
+                        class="flex-1 py-2.5 bg-yellow-500 text-white rounded-xl text-sm font-bold hover:bg-yellow-600 transition">Block Access</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openBlockModal(enrollmentId, courseTitle) {
+        document.getElementById('blockModalCourseTitle').textContent = courseTitle;
+        document.getElementById('blockForm').action = `/admin/users/{{ user.id }}/enrollment/${enrollmentId}/block`;
+        document.getElementById('blockModal').classList.remove('hidden');
+    }
+    function closeBlockModal() {
+        document.getElementById('blockModal').classList.add('hidden');
+    }
+    document.getElementById('blockModal').addEventListener('click', function(e) {
+        if (e.target === this) closeBlockModal();
+    });
+</script>
+{% endblock %}

@@ -230,6 +230,8 @@ class Enrollment(db.Model):
     completed = db.Column(db.Boolean, default=False, index=True)  # Added index for filtering
     completed_at = db.Column(db.DateTime, nullable=True)  # When course was completed
     certificate_path = db.Column(db.String(255))  # Added for certificate storage
+    is_blocked = db.Column(db.Boolean, default=False, index=True)  # Per-course block by admin
+    block_reason = db.Column(db.String(500), nullable=True)  # Reason for blocking
     
     student = db.relationship('User', back_populates='enrollments')
     course = db.relationship('Course', back_populates='enrollments')

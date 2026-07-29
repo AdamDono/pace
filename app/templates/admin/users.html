@@ -94,15 +94,29 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             {% for user in users %}
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ url_for('admin.user_detail', user_id=user.id) }}'">
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                                            {{ user.email[0].upper() }}
-                                        </div>
+                                        {% if user.profile_image %}
+                                            <img src="{{ user.profile_image|avatar_url }}" alt="{{ user.first_name or user.username }}"
+                                                 class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-100"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="hidden w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                                                {{ (user.first_name or user.email)[0].upper() }}
+                                            </div>
+                                        {% else %}
+                                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                                                {{ (user.first_name or user.email)[0].upper() }}
+                                            </div>
+                                        {% endif %}
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ user.username or 'N/A' }}</div>
-                                            <div class="text-sm text-gray-500">{{ user.email }}</div>
+                                            <a href="{{ url_for('admin.user_detail', user_id=user.id) }}"
+                                               onclick="event.stopPropagation()"
+                                               class="text-sm font-semibold text-gray-900 hover:text-blue-600 transition">
+                                                {{ user.first_name or '' }} {{ user.last_name or '' }}
+                                                {% if not user.first_name and not user.last_name %}{{ user.username or 'N/A' }}{% endif %}
+                                            </a>
+                                            <div class="text-xs text-gray-400">{{ user.email }}</div>
                                         </div>
                                     </div>
                                 </td>

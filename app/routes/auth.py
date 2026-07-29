@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import check_password_hash
 from app.models import User
-from app import db
+from app import db, csrf
 from app.forms import LoginForm
 
 auth_bp = Blueprint('auth', __name__)
@@ -28,6 +28,7 @@ def public_course_detail(course_id):
     return render_template('auth/public_course.html', course=course)
 
 @auth_bp.route('/apply-course/<int:course_id>', methods=['POST'])
+@csrf.exempt
 def apply_course(course_id):
     from flask import jsonify
     from app.models import Course, Lead
@@ -85,6 +86,7 @@ def apply_course(course_id):
     return jsonify({'success': True, 'message': 'Application submitted successfully!'})
 
 @auth_bp.route('/apply-enterprise', methods=['POST'])
+@csrf.exempt
 def apply_enterprise():
     from flask import jsonify
     from app.models import Lead

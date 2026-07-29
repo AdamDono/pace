@@ -892,3 +892,109 @@ def approve_enroll_lead(lead_id):
             flash(f'Student enrolled, but enrollment notification failed: {str(e)}', 'warning')
             
     return redirect(url_for('admin.leads'))
+
+# ── User Detail & Per-Course Enrollment Management ──────────────────────────
+
+@admin_bp.route('/users/<int:user_id>')
+@admin_required
+def user_detail(user_id):
+    user = User.query.get_or_404(user_id)
+    enrollments = (
+        Enrollment.query
+        .filter_by(student_id=user_id)
+        .join(Enrollment.course)
+        .order_by(Enrollment.enrolled_at.desc())
+        .all()
+    ) if user.role == 'student' else []
+
+    courses_taught = (
+        Course.query.filter_by(teacher_id=user_id)
+        .order_by(Course.created_at.desc()).all()
+    ) if user.role == 'teacher' else []
+
+    return render_template(
+        'admin/user_detail.html',
+        user=user,
+        enrollments=enrollments,
+        courses_taught=courses_taught,
+    )
+
+
+@admin_bp.route('/users/<int:user_id>/enrollment/<int:enrollment_id>/block', methods=['POST'])
+@admin_required
+def block_enrollment(user_id, enrollment_id):
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    if enrollment.student_id != user_id:
+        flash('Invalid request.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    reason = request.form.get('reason', '').strip()
+    enrollment.is_blocked = True
+    enrollment.block_reason = reason or 'Blocked by admin'
+    db.session.commit()
+
+    # Email notification
+    try:
+        from app.utils.email import send_email
+        student = enrollment.student
+        user_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.username or student.email
+        send_email(
+            subject=f'Course Access Restricted – {enrollment.course.title}',
+            recipient=student.email,
+            template='course_blocked',
+            user_name=user_name,
+            course_title=enrollment.course.title,
+            reason=enrollment.block_reason,
+            support_email='support@pacetech.co.za',
+        )
+    except Exception:
+        pass  # Don't let an email failure break the action
+
+    flash('Student blocked from that course. They have been notified by email.', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/users/<int:user_id>/enrollment/<int:enrollment_id>/unblock', methods=['POST'])
+@admin_required
+def unblock_enrollment(user_id, enrollment_id):
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    if enrollment.student_id != user_id:
+        flash('Invalid request.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    enrollment.is_blocked = False
+    enrollment.block_reason = None
+    db.session.commit()
+
+    # Email notification
+    try:
+        from app.utils.email import send_email
+        from flask import request as req
+        student = enrollment.student
+        user_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.username or student.email
+        login_url = req.host_url.rstrip('/') + '/login'
+        send_email(
+            subject=f'Course Access Restored – {enrollment.course.title}',
+            recipient=student.email,
+            template='course_unblocked',
+            user_name=user_name,
+            course_title=enrollment.course.title,
+            login_url=login_url,
+            support_email='support@pacetech.co.za',
+        )
+    except Exception:
+        pass  # Don't let an email failure break the action
+
+    flash('Student access restored. They have been notified by email.', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/users/<int:user_id>/enrollment/<int:enrollment_id>/remove', methods=['POST'])
+@admin_required
+def remove_enrollment(user_id, enrollment_id):
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    if enrollment.student_id != user_id:
+        flash('Invalid request.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    db.session.delete(enrollment)
+    db.session.commit()
+    flash(f'Student fully removed from course.', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))

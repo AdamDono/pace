@@ -57,31 +57,34 @@
                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {% for course in courses[:6] %}
                     <div
-                        class="group bg-white rounded-2xl shadow-sm border border-gray-150 overflow-hidden hover:shadow-md transition-all">
+                        class="group bg-white rounded-2xl shadow-sm border border-gray-150 overflow-hidden hover:shadow-md transition-all flex flex-col justify-between h-full">
+                        {% if course.banner_image %}
                         <!-- Thumbnail -->
-                        <div class="relative aspect-[16/9] bg-gray-50 overflow-hidden">
-                            {% if course.banner_image %}
+                        <div class="relative h-24 bg-gray-50 overflow-hidden flex-shrink-0">
                             <img src="{{ url_for('teacher.media', filename=course.banner_image) }}"
                                 alt="{{ course.title }} thumbnail"
                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            {% else %}
-                            <div class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100/50 flex items-center justify-center text-blue-500/80">
-                                <span class="text-4xl">📚</span>
-                            </div>
-                            {% endif %}
-                            <span
-                                class="absolute top-2 left-2 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-sm {{ 'bg-amber-500 text-white' if course.status == 'pending' else 'bg-emerald-500 text-white' if course.status == 'approved' else 'bg-gray-500 text-white' }}">{{
-                                course.status }}</span>
                         </div>
+                        {% endif %}
 
                         <!-- Card body -->
-                        <div class="p-4">
-                            <h3 class="text-sm font-bold text-gray-900 line-clamp-1 mb-1">{{ course.title }}</h3>
-                            <p class="text-xs text-gray-500 line-clamp-1 mb-3">{{
-                                course.description|striptags|truncate(50) }}</p>
+                        <div class="p-4 flex flex-col flex-1">
+                            <!-- Shrunk, left-aligned status badge -->
+                            <div class="mb-2">
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold border
+                                    {% if course.status == 'approved' %}bg-green-50 text-green-700 border-green-250
+                                    {% elif course.status == 'pending' %}bg-yellow-50 text-yellow-700 border-yellow-200
+                                    {% else %}bg-gray-50 text-gray-600 border-gray-250{% endif %}">
+                                    {{ course.status.title() }}
+                                </span>
+                            </div>
+
+                            <h3 class="text-xs font-bold text-gray-900 truncate mb-1" title="{{ course.title }}">{{ course.title }}</h3>
+                            <p class="text-[11px] text-gray-500 truncate mb-3" title="{{ course.description|striptags }}">{{
+                                course.description|striptags }}</p>
 
                             <!-- Stats -->
-                            <div class="flex items-center text-[11px] text-gray-600 gap-3">
+                            <div class="flex items-center text-[10px] text-gray-400 gap-3">
                                 <div class="flex items-center">
                                     <span class="mr-1">📁</span>
                                     {{ course.sections|length }} sections
@@ -92,16 +95,16 @@
                                 </div>
                             </div>
 
-                            <!-- Actions -->
-                            <div class="mt-4 flex items-center gap-1.5">
+                            <!-- Actions (Anchored at the bottom) -->
+                            <div class="mt-auto pt-4 flex items-center gap-1.5">
                                 <a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}"
-                                    class="flex-1 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg transition-colors">Manage</a>
+                                    class="flex-1 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1.5 rounded-lg transition-colors">Manage</a>
                                 {% if course.status == 'approved' %}
                                 <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
-                                    class="inline-flex items-center text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg transition-colors">View</a>
+                                    class="inline-flex items-center text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1.5 rounded-lg transition-colors">View</a>
                                 {% endif %}
                                 <a href="{{ url_for('teacher.course_analytics', course_id=course.id) }}"
-                                    class="inline-flex items-center text-xs text-gray-700 hover:text-gray-900 px-2.5 py-2 border rounded-lg transition">Analytics</a>
+                                    class="inline-flex items-center text-[11px] text-gray-700 hover:text-gray-900 px-2 py-1.5 border rounded-lg transition">Analytics</a>
                             </div>
                         </div>
                     </div>

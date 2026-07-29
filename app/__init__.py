@@ -47,6 +47,18 @@ def create_app():
 
     app.jinja_env.filters['average'] = average_filter
 
+    def avatar_url_filter(img):
+        if not img:
+            return ''
+        if img.startswith('http://') or img.startswith('https://'):
+            return img
+        if img.startswith('/static/'):
+            return img
+        return f"/static/uploads/{img}"
+
+    app.jinja_env.filters['avatar_url'] = avatar_url_filter
+    app.jinja_env.filters['media_url'] = avatar_url_filter
+
     # Configure database
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')

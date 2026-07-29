@@ -11,7 +11,8 @@
         <div class="flex items-center mb-8 pb-6 border-b border-gray-200">
             <div class="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl">
                 {% if current_user.profile_image %}
-                    <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) }}" alt="Avatar" class="w-full h-full object-cover" />
+                    <img src="{{ current_user.profile_image|avatar_url }}" alt="Avatar" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                    <span class="hidden">{{ current_user.email[0].upper() }}</span>
                 {% else %}
                     {{ current_user.email[0].upper() }}
                 {% endif %}
