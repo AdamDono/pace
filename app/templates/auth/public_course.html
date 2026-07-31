@@ -209,7 +209,7 @@
                         <!-- Cover Image Preview -->
                         <div class="h-44 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border border-gray-100 flex items-center justify-center p-6 text-center mb-6 relative">
                             {% if course.banner_image %}
-                                <img src="{{ url_for('static', filename='uploads/' ~ course.banner_image) if not course.banner_image.startswith('http') else course.banner_image }}" 
+                                <img src="{{ course.banner_image|media_url }}" 
                                      alt="{{ course.title }}" 
                                      class="w-full h-full object-cover absolute inset-0">
                             {% else %}

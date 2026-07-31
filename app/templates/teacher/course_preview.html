@@ -69,8 +69,8 @@
                     <div class="bg-white rounded-xl shadow-2xl p-6">
                         {% if course.banner_image %}
                         <div class="mb-4 -mx-6 -mt-6">
-                            <img src="{{ url_for('static', filename='uploads/' + course.banner_image) }}"
-                                alt="Course banner" class="w-full h-40 object-cover rounded-t-xl">
+                            <img src="{{ course.banner_image|media_url }}"
+                                alt="{{ course.title }}" class="w-full h-40 object-cover rounded-t-xl">
                         </div>
                         {% endif %}
 

@@ -140,9 +140,10 @@
     <!-- Sticky Navigation Header -->
     <header class="fixed top-0 left-0 right-0 z-50 glass-header">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <a href="#" class="flex items-center">
-                <span class="text-2xl font-extrabold tracking-tight">
-                    <span class="text-gray-900">Pace</span><span class="text-blue-600 font-black">Academy</span>
+            <a href="/" class="flex items-center space-x-2">
+                <span class="text-2xl font-bold">
+                    <span class="text-blue-600">Pace</span>
+                    <span class="text-black">Academy</span>
                 </span>
             </a>
             <!-- Desktop Navigation Menu -->
@@ -157,8 +158,10 @@
             </div>
 
             <!-- Hamburger Button Toggler on Mobile -->
-            <button onclick="toggleMenu()" class="block md:hidden text-gray-600 hover:text-blue-600 focus:outline-none" aria-label="Toggle Menu">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <button onclick="toggleMenu()" class="block md:hidden p-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition focus:outline-none" aria-label="Toggle Navigation">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h12M4 18h6"></path>
+                </svg>
             </button>
         </div>
 
@@ -727,7 +730,7 @@
                                     <span class="text-xs text-gray-500">By {{ course.teacher.first_name or course.teacher.username if course.teacher else 'Staff Instructor' }}</span>
                                     <a href="{{ url_for('auth.public_course_detail', course_id=course.id) }}" class="text-blue-600 hover:text-blue-700 font-bold text-xs transition-colors flex items-center space-x-1">
                                         <span>View Course</span>
-                                        <span>→</span>
+                                        <span>→th</span>
                                     </a>
                                 </div>
                             </div>

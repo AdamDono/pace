@@ -1,53 +1,53 @@
 {% extends "student/base_student.html" %}
 {% block page_title %}Learning Content{% endblock %}
 {% block content %}
-<div class="p-6">
+<div class="p-4 sm:p-6">
   <!-- Quick Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-md transition">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+    <div class="bg-white rounded-xl p-3.5 sm:p-5 border border-gray-200 hover:shadow-md transition">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-600 mb-1">Enrolled</p>
-          <p class="text-3xl font-bold text-blue-600">{{ stats.enrolled }}</p>
+          <p class="text-xs sm:text-sm text-gray-600 mb-1">Enrolled</p>
+          <p class="text-2xl sm:text-3xl font-bold text-blue-600">{{ stats.enrolled }}</p>
         </div>
-        <div class="bg-blue-100 p-3 rounded-lg">
-          <i class="fas fa-book text-2xl text-blue-600"></i>
+        <div class="bg-blue-100 p-2.5 sm:p-3 rounded-lg">
+          <i class="fas fa-book text-xl sm:text-2xl text-blue-600"></i>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-md transition">
+    <div class="bg-white rounded-xl p-3.5 sm:p-5 border border-gray-200 hover:shadow-md transition">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-600 mb-1">In Progress</p>
-          <p class="text-3xl font-bold text-orange-600">{{ stats.in_progress }}</p>
+          <p class="text-xs sm:text-sm text-gray-600 mb-1">In Progress</p>
+          <p class="text-2xl sm:text-3xl font-bold text-orange-600">{{ stats.in_progress }}</p>
         </div>
-        <div class="bg-orange-100 p-3 rounded-lg">
-          <i class="fas fa-spinner text-2xl text-orange-600"></i>
+        <div class="bg-orange-100 p-2.5 sm:p-3 rounded-lg">
+          <i class="fas fa-spinner text-xl sm:text-2xl text-orange-600"></i>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-md transition">
+    <div class="bg-white rounded-xl p-3.5 sm:p-5 border border-gray-200 hover:shadow-md transition">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-600 mb-1">Completed</p>
-          <p class="text-3xl font-bold text-green-600">{{ stats.completed }}</p>
+          <p class="text-xs sm:text-sm text-gray-600 mb-1">Completed</p>
+          <p class="text-2xl sm:text-3xl font-bold text-green-600">{{ stats.completed }}</p>
         </div>
-        <div class="bg-green-100 p-3 rounded-lg">
-          <i class="fas fa-check-circle text-2xl text-green-600"></i>
+        <div class="bg-green-100 p-2.5 sm:p-3 rounded-lg">
+          <i class="fas fa-check-circle text-xl sm:text-2xl text-green-600"></i>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-md transition">
+    <div class="bg-white rounded-xl p-3.5 sm:p-5 border border-gray-200 hover:shadow-md transition">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-600 mb-1">Certificates</p>
-          <p class="text-3xl font-bold text-purple-600">{{ stats.certificates }}</p>
+          <p class="text-xs sm:text-sm text-gray-600 mb-1">Certificates</p>
+          <p class="text-2xl sm:text-3xl font-bold text-purple-600">{{ stats.certificates }}</p>
         </div>
-        <div class="bg-purple-100 p-3 rounded-lg">
-          <i class="fas fa-certificate text-2xl text-purple-600"></i>
+        <div class="bg-purple-100 p-2.5 sm:p-3 rounded-lg">
+          <i class="fas fa-certificate text-xl sm:text-2xl text-purple-600"></i>
         </div>
       </div>
     </div>
@@ -55,24 +55,24 @@
 
   <!-- Continue Learning Section -->
   {% if continue_learning %}
-  <div class="mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-4">Continue Learning</h2>
+  <div class="mb-6 sm:mb-8">
+    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Continue Learning</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       {% for item in continue_learning[:2] %}
       <a href="{{ url_for('student.course_detail', course_id=item.course.id) }}"
-        class="block bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white hover:shadow-lg transition group">
-        <div class="flex items-start justify-between mb-3">
-          <div class="flex-1">
-            <h3 class="font-bold text-lg mb-1">{{ item.course.title }}</h3>
-            <p class="text-sm text-blue-100">{{ item.section.title }}</p>
+        class="block bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-5 sm:p-6 text-white hover:shadow-lg transition group">
+        <div class="flex items-start justify-between mb-3 gap-2">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-base sm:text-lg mb-1 truncate">{{ item.course.title }}</h3>
+            <p class="text-xs sm:text-sm text-blue-100 truncate">{{ item.section.title }}</p>
           </div>
-          <div class="bg-white/20 px-3 py-1 rounded-lg text-xs">
-            {{ progress_by_course.get(item.course.id, 0) }}% Complete
+          <div class="bg-white/20 px-2.5 py-1 rounded-lg text-xs shrink-0 font-medium">
+            {{ progress_by_course.get(item.course.id, 0) }}%
           </div>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-sm text-blue-100">Last accessed {{ item.last_accessed.strftime('%b %d') }}</span>
-          <span class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium group-hover:bg-blue-50 transition">
+          <span class="text-xs sm:text-sm text-blue-100">Last accessed {{ item.last_accessed.strftime('%b %d') }}</span>
+          <span class="bg-white text-blue-600 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium group-hover:bg-blue-50 transition">
             Continue →
           </span>
         </div>
@@ -83,10 +83,10 @@
   {% endif %}
 
   <!-- Filter Bar -->
-  <div class="flex items-center justify-between mb-6">
-    <div class="flex items-center space-x-3">
+  <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
+    <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:space-x-3">
       <select id="categoryFilter"
-        class="px-3 py-1.5 text-sm text-gray-700 bg-white rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500">
+        class="w-full sm:w-auto px-3 py-2 text-xs sm:text-sm text-gray-700 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
         <option value="">All Categories</option>
         <option value="qcto">QCTO Accredited</option>
         <option value="seta">SETA Accredited</option>
@@ -96,21 +96,21 @@
         <option value="general">General</option>
       </select>
       <select id="difficultyFilter"
-        class="px-3 py-1.5 text-sm text-gray-700 bg-white rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500">
+        class="w-full sm:w-auto px-3 py-2 text-xs sm:text-sm text-gray-700 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
         <option value="">All Levels</option>
         <option value="beginner">Beginner</option>
         <option value="intermediate">Intermediate</option>
         <option value="advanced">Advanced</option>
       </select>
     </div>
-    <div class="flex items-center space-x-3">
+    <div class="flex items-center justify-between sm:justify-end gap-2 sm:space-x-3">
       <select id="sortFilter"
-        class="px-3 py-1.5 text-sm text-gray-700 bg-white rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500">
+        class="flex-1 sm:flex-initial px-3 py-2 text-xs sm:text-sm text-gray-700 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
         <option value="recent">Recently Updated</option>
         <option value="name">Course Name</option>
         <option value="progress">Progress</option>
       </select>
-      <div class="flex items-center border border-gray-300 rounded-md">
+      <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shrink-0">
         <button id="gridView" class="p-2 hover:bg-gray-50 border-r border-gray-300 bg-gray-50">
           <i class="fas fa-th text-gray-700"></i>
         </button>
@@ -122,25 +122,31 @@
   </div>
 
   <!-- Content Count & Search -->
-  <div class="flex items-center justify-between mb-6">
-    <p class="text-sm font-medium text-gray-700"><span id="courseCount">{{ courses|length }}</span> courses</p>
-    <div class="relative">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+    <p class="text-xs sm:text-sm font-medium text-gray-700"><span id="courseCount">{{ courses|length }}</span> courses</p>
+    <div class="relative w-full sm:w-64">
       <input type="text" id="searchInput" placeholder="Search courses..."
-        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64">
-      <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
     </div>
   </div>
 
   <!-- Course Cards Grid -->
   {% if courses %}
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div id="coursesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for course in courses %}
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition group">
+    {% set is_blocked = course.id in blocked_course_ids %}
+    <div class="course-card bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition group"
+         data-title="{{ course.title|lower }}"
+         data-category="{{ (course.category or 'general')|lower }}"
+         data-difficulty="{{ (course.difficulty_level or 'beginner')|lower }}"
+         data-progress="{{ progress_by_course.get(course.id, 0)|round(0) }}"
+         data-blocked="{{ 'true' if is_blocked else 'false' }}">
       <!-- Card Header with Thumbnail -->
       <div class="relative aspect-[16/9] bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100 overflow-hidden">
         {% if course.banner_image %}
-        <img src="{{ url_for('static', filename='uploads/' + course.banner_image) }}"
-          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        <img src="{{ course.banner_image|media_url }}"
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 {% if is_blocked %}grayscale brightness-75{% endif %}"
           alt="{{ course.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
         <div
           class="absolute inset-0 hidden items-center justify-center bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100">
@@ -153,22 +159,23 @@
         <div class="absolute inset-0 flex items-center justify-center">
           <div class="text-center">
             <div class="text-6xl mb-2">📚</div>
-            <p class="text-sm text-gray-600 font-medium px-4">{{ course.title[:30] }}{{ '...' if course.title|length >
-              30 else '' }}</p>
+            <p class="text-sm text-gray-600 font-medium px-4">{{ course.title[:30] }}{{ '...' if course.title|length > 30 else '' }}</p>
           </div>
         </div>
         {% endif %}
-        <!-- Enrollment Badge -->
-        <div
-          class="absolute top-3 left-3 flex items-center space-x-1 bg-gray-900/80 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+
+        <!-- Enrollment / Status Badges -->
+        {% if is_blocked %}
+        <div class="absolute top-3 right-3 bg-red-600 text-white font-bold text-xs px-2.5 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
+          <i class="fas fa-lock text-[10px]"></i>
+          <span>Restricted</span>
+        </div>
+        {% else %}
+        <div class="absolute top-3 left-3 flex items-center space-x-1 bg-gray-900/80 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
           <i class="fas fa-users"></i>
           <span>{{ course.enrollments|length if course.enrollments else 0 }} Enrolled</span>
         </div>
-        <!-- Favorite Icon -->
-        <button data-course-id="{{ course.id }}"
-          class="favorite-btn absolute top-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition shadow-sm">
-          <i class="far fa-bookmark text-gray-700 hover:text-yellow-500"></i>
-        </button>
+        {% endif %}
       </div>
 
       <!-- Card Body -->
@@ -176,6 +183,13 @@
         <h3 class="font-semibold text-gray-900 text-base mb-1 line-clamp-2">{{ course.title }}</h3>
         <p class="text-xs text-gray-500 mb-3">{{ course.description|striptags|truncate(80) }}</p>
 
+        {% if is_blocked %}
+        <!-- Restricted Notice -->
+        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-700 flex items-center gap-2">
+          <i class="fas fa-exclamation-triangle text-red-500 text-sm"></i>
+          <span>Course access restricted by administrator. Contact support for help.</span>
+        </div>
+        {% else %}
         <!-- Progress Bar -->
         <div class="mb-3">
           <div class="flex items-center justify-between mb-1">
@@ -188,21 +202,6 @@
           </div>
         </div>
 
-        <!-- Time Estimate -->
-        <div class="flex items-center space-x-4 mb-3">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-clock text-gray-400 text-sm"></i>
-            <span class="text-xs text-gray-600">
-              {% if estimated_time.get(course.id, 0) > 60 %}
-              {{ (estimated_time.get(course.id, 0) / 60)|round(1) }} hrs
-              {% else %}
-              {{ estimated_time.get(course.id, 0) }} mins
-              {% endif %}
-            </span>
-          </div>
-
-        </div>
-
         <!-- Tags -->
         <div class="flex items-center space-x-2 mb-3">
           <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">{{
@@ -211,36 +210,30 @@
             course.difficulty_level or 'Intermediate' }}</span>
         </div>
 
-        <!-- Footer -->
+        <!-- Footer Stats -->
         <div class="flex items-center justify-between pt-3 border-t border-gray-100">
           <div class="flex flex-col space-y-1 text-xs text-gray-500">
             <span class="flex items-center">
               <i class="fas fa-book-open mr-1"></i>
               {{ course.sections|length }} Sections
             </span>
-            {% set duration = estimated_time.get(course.id, 0) %}
-            {% if duration > 0 %}
-            <span class="flex items-center">
-              <i class="fas fa-clock mr-1"></i>
-              {% if duration >= 60 %}
-              {{ (duration / 60)|round(1) }} hours
-              {% else %}
-              {{ duration }} mins
-              {% endif %}
-            </span>
-            {% endif %}
           </div>
-          <button class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-ellipsis-h"></i>
-          </button>
         </div>
+        {% endif %}
 
         <!-- Action Button -->
+        {% if is_blocked %}
+        <button disabled
+          class="mt-4 w-full inline-flex items-center justify-center px-4 py-2.5 bg-gray-100 text-gray-400 border border-gray-200 text-sm font-bold rounded-lg cursor-not-allowed">
+          <i class="fas fa-lock mr-2"></i> Access Restricted
+        </button>
+        {% else %}
         <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
           class="mt-4 w-full inline-flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition">
           Continue Learning
           <i class="fas fa-arrow-right ml-2"></i>
         </a>
+        {% endif %}
       </div>
     </div>
     {% endfor %}
@@ -260,44 +253,26 @@
     const categoryFilter = document.getElementById('categoryFilter');
     const difficultyFilter = document.getElementById('difficultyFilter');
     const sortFilter = document.getElementById('sortFilter');
-    const courseCards = document.querySelectorAll('.group');
+    const courseCards = document.querySelectorAll('.course-card');
     const courseCount = document.getElementById('courseCount');
 
-    // Favorite toggle functionality
-    document.querySelectorAll('.favorite-btn').forEach(btn => {
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const icon = this.querySelector('i');
-        if (icon.classList.contains('far')) {
-          icon.classList.remove('far');
-          icon.classList.add('fas', 'text-yellow-500');
-        } else {
-          icon.classList.remove('fas', 'text-yellow-500');
-          icon.classList.add('far');
-        }
-      });
-    });
-
     function filterAndSortCourses() {
-      const searchTerm = searchInput.value.toLowerCase();
-      const selectedCategory = categoryFilter.value.toLowerCase();
-      const selectedDifficulty = difficultyFilter.value.toLowerCase();
-      const sortBy = sortFilter.value;
+      const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      const selectedCategory = categoryFilter ? categoryFilter.value.toLowerCase().trim() : '';
+      const selectedDifficulty = difficultyFilter ? difficultyFilter.value.toLowerCase().trim() : '';
+      const sortBy = sortFilter ? sortFilter.value : 'recent';
 
       let visibleCount = 0;
       let cardsArray = Array.from(courseCards);
 
-      // Filter cards
       cardsArray.forEach(card => {
-        const title = card.querySelector('h3').textContent.toLowerCase();
-        const description = card.querySelector('p.text-xs.text-gray-500').textContent.toLowerCase();
-        const categoryTag = card.querySelectorAll('.bg-gray-100')[0]?.textContent.toLowerCase() || '';
-        const difficultyTag = card.querySelectorAll('.bg-gray-100')[1]?.textContent.toLowerCase() || '';
+        const title = card.getAttribute('data-title') || '';
+        const category = card.getAttribute('data-category') || '';
+        const difficulty = card.getAttribute('data-difficulty') || '';
 
-        const matchesSearch = title.includes(searchTerm) || description.includes(searchTerm);
-        const matchesCategory = !selectedCategory || categoryTag.includes(selectedCategory);
-        const matchesDifficulty = !selectedDifficulty || difficultyTag.includes(selectedDifficulty);
+        const matchesSearch = !searchTerm || title.includes(searchTerm);
+        const matchesCategory = !selectedCategory || category.includes(selectedCategory);
+        const matchesDifficulty = !selectedDifficulty || difficulty.includes(selectedDifficulty);
 
         if (matchesSearch && matchesCategory && matchesDifficulty) {
           card.style.display = '';
@@ -308,56 +283,54 @@
       });
 
       // Sort visible cards
-      const grid = document.querySelector('.grid');
-      const visibleCards = cardsArray.filter(card => card.style.display !== 'none');
+      const container = document.getElementById('coursesContainer');
+      if (container) {
+        const visibleCards = cardsArray.filter(card => card.style.display !== 'none');
 
-      visibleCards.sort((a, b) => {
-        if (sortBy === 'name') {
-          const nameA = a.querySelector('h3').textContent;
-          const nameB = b.querySelector('h3').textContent;
-          return nameA.localeCompare(nameB);
-        } else if (sortBy === 'progress') {
-          const progressA = parseInt(a.querySelector('.text-xs.font-semibold').textContent);
-          const progressB = parseInt(b.querySelector('.text-xs.font-semibold').textContent);
-          return progressB - progressA;
-        }
-        return 0; // 'recent' - keep original order
-      });
+        visibleCards.sort((a, b) => {
+          if (sortBy === 'name') {
+            const nameA = a.getAttribute('data-title') || '';
+            const nameB = b.getAttribute('data-title') || '';
+            return nameA.localeCompare(nameB);
+          } else if (sortBy === 'progress') {
+            const progressA = parseFloat(a.getAttribute('data-progress') || '0');
+            const progressB = parseFloat(b.getAttribute('data-progress') || '0');
+            return progressB - progressA;
+          }
+          return 0;
+        });
 
-      // Re-append sorted cards
-      visibleCards.forEach(card => grid.appendChild(card));
+        visibleCards.forEach(card => container.appendChild(card));
+      }
 
-      // Update count
-      courseCount.textContent = visibleCount;
+      if (courseCount) {
+        courseCount.textContent = visibleCount;
+      }
     }
 
-    // Event listeners
-    searchInput.addEventListener('input', filterAndSortCourses);
-    categoryFilter.addEventListener('change', filterAndSortCourses);
-    difficultyFilter.addEventListener('change', filterAndSortCourses);
-    sortFilter.addEventListener('change', filterAndSortCourses);
+    if (searchInput) searchInput.addEventListener('input', filterAndSortCourses);
+    if (categoryFilter) categoryFilter.addEventListener('change', filterAndSortCourses);
+    if (difficultyFilter) difficultyFilter.addEventListener('change', filterAndSortCourses);
+    if (sortFilter) sortFilter.addEventListener('change', filterAndSortCourses);
 
-    // Grid/List view toggle (visual only for now)
+    // View toggle functionality
     const gridView = document.getElementById('gridView');
     const listView = document.getElementById('listView');
+    const container = document.getElementById('coursesContainer');
 
-    gridView.addEventListener('click', function () {
-      gridView.classList.add('bg-gray-50');
-      listView.classList.remove('bg-gray-50');
-      gridView.querySelector('i').classList.remove('text-gray-400');
-      gridView.querySelector('i').classList.add('text-gray-700');
-      listView.querySelector('i').classList.remove('text-gray-700');
-      listView.querySelector('i').classList.add('text-gray-400');
-    });
+    if (gridView && listView && container) {
+      gridView.addEventListener('click', function () {
+        container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+        gridView.classList.add('bg-gray-50');
+        listView.classList.remove('bg-gray-50');
+      });
 
-    listView.addEventListener('click', function () {
-      listView.classList.add('bg-gray-50');
-      gridView.classList.remove('bg-gray-50');
-      listView.querySelector('i').classList.remove('text-gray-400');
-      listView.querySelector('i').classList.add('text-gray-700');
-      gridView.querySelector('i').classList.remove('text-gray-700');
-      gridView.querySelector('i').classList.add('text-gray-400');
-    });
+      listView.addEventListener('click', function () {
+        container.className = 'flex flex-col space-y-4';
+        listView.classList.add('bg-gray-50');
+        gridView.classList.remove('bg-gray-50');
+      });
+    }
   });
 </script>
 {% endblock %}

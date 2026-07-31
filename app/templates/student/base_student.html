@@ -219,11 +219,14 @@
 </head>
 
 <body class="bg-gray-50">
-    <div class="flex h-screen overflow-hidden">
-        <!-- Left Sidebar -->
-        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div class="flex h-screen overflow-hidden relative">
+        <!-- Mobile Sidebar Overlay -->
+        <div id="studentSidebarOverlay" onclick="toggleStudentSidebar()" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden"></div>
+
+        <!-- Left Sidebar (Off-canvas drawer on mobile, fixed width on desktop) -->
+        <aside id="studentSidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0">
             <!-- Logo -->
-            <div class="p-6 border-b border-gray-200">
+            <div class="p-6 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center">
                     <div
                         class="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-500 rounded-lg flex items-center justify-center">
@@ -236,6 +239,10 @@
                         </h1>
                     </div>
                 </div>
+                <!-- Close Button on Mobile -->
+                <button onclick="toggleStudentSidebar()" class="md:hidden text-gray-500 hover:text-gray-700 p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
 
             <!-- Navigation -->
@@ -358,19 +365,47 @@
         </aside>
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 flex flex-col overflow-hidden min-w-0">
             <!-- Top Header -->
-            <header class="bg-white border-b border-gray-200 px-6 py-4">
+            <header class="bg-white border-b border-gray-200 px-4 md:px-6 py-3.5 shadow-sm z-30">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <button class="lg:hidden text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-bars text-xl"></i>
-                        </button>
-                        <h2 class="text-xl font-bold text-gray-900">{% block page_title %}Learning Content{% endblock %}
-                        </h2>
+                    <!-- Brand Logo -->
+                    <div class="flex items-center">
+                        <a href="{{ url_for('student.dashboard') }}" class="flex items-center space-x-2">
+                            <h1 class="text-2xl font-bold">
+                                <span class="text-blue-600">Pace</span>
+                                <span class="text-black">Academy</span>
+                            </h1>
+                        </a>
                     </div>
+
+                    <!-- Right Actions: Notifications + Avatar + Hamburger Badge -->
                     <div class="flex items-center space-x-3">
-                        <!-- Actions removed per user request -->
+                        <a href="{{ url_for('student.notifications_list') }}" class="p-2 text-gray-500 hover:text-blue-600 rounded-xl hover:bg-gray-100 transition relative">
+                            <i class="fas fa-bell text-lg"></i>
+                            {% set unread_notifications = sidebar_counts.unread_notifications if sidebar_counts else 0 %}
+                            {% if unread_notifications > 0 %}
+                            <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-purple-600 rounded-full ring-2 ring-white"></span>
+                            {% endif %}
+                        </a>
+
+                        <a href="{{ url_for('student.profile') }}" class="flex items-center space-x-2 p-1.5 rounded-xl hover:bg-gray-100 transition">
+                            <div class="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-blue-100">
+                                {% if current_user.profile_image %}
+                                <img src="{{ current_user.profile_image|avatar_url }}" alt="Avatar" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                                <span class="hidden">{{ current_user.email[0].upper() }}</span>
+                                {% else %}
+                                {{ current_user.email[0].upper() }}
+                                {% endif %}
+                            </div>
+                        </a>
+
+                        <!-- Hamburger Menu Button (Staggered Menu Icon matching base.html) -->
+                        <button type="button" onclick="toggleStudentSidebar()" class="md:hidden p-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition focus:outline-none" aria-label="Toggle Navigation">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h12M4 18h6"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </header>
@@ -476,6 +511,17 @@
     <!-- H5P Resizer Script for Interactive Content -->
     <script src="https://h5p.org/sites/all/modules/h5p/library/js/h5p-resizer.js" charset="UTF-8"></script>
     <script>
+        function toggleStudentSidebar() {
+            const sidebar = document.getElementById('studentSidebar');
+            const overlay = document.getElementById('studentSidebarOverlay');
+            if (sidebar) {
+                sidebar.classList.toggle('-translate-x-full');
+            }
+            if (overlay) {
+                overlay.classList.toggle('hidden');
+            }
+        }
+
         function dismissToast(el) {
             if (!el) return;
             el.style.opacity = '0';
@@ -483,7 +529,18 @@
             el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
             setTimeout(() => el.remove(), 450);
         }
+
         document.addEventListener('DOMContentLoaded', () => {
+            // Auto close sidebar when link is clicked on mobile
+            const sidebarLinks = document.querySelectorAll('#studentSidebar nav a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 768) {
+                        toggleStudentSidebar();
+                    }
+                });
+            });
+
             const toasts = document.querySelectorAll('.toast-item');
             toasts.forEach((toast, i) => {
                 toast.style.opacity = '0';

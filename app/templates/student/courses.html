@@ -13,7 +13,7 @@
            class="block border rounded-lg shadow hover:shadow-lg">
             <div class="flex">
                 <!-- Thumbnail -->
-                <img src="{{ url_for('static', filename='uploads/' + course.banner_image) if course.banner_image else '/static/default_course.jpg' }}"
+                <img src="{{ course.banner_image|media_url if course.banner_image else '/static/default_course.jpg' }}"
                      alt="{{ course.title }}" class="w-40 h-24 object-cover">
                 <!-- Details -->
                 <div class="p-4 flex-1">

@@ -29,7 +29,7 @@
         <!-- Course Header (Student View) -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
             {% if course.banner_image %}
-            <img src="{{ url_for('static', filename='uploads/' + course.banner_image) }}" alt="{{ course.title }}"
+            <img src="{{ course.banner_image|media_url }}" alt="{{ course.title }}"
                 class="w-full h-64 object-cover">
             {% else %}
             <div class="w-full h-64 bg-gradient-to-r from-blue-500 to-purple-600"></div>

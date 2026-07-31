@@ -18,7 +18,10 @@ def student_enrolled(course_id):
     course = Course.query.get(course_id)
     if not course or course.status != 'approved':
         return False
-    return Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first() is not None
+    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
+    if not enrollment or getattr(enrollment, 'is_blocked', False):
+        return False
+    return True
 
 def admin_required(f):
     @wraps(f)

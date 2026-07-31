@@ -95,9 +95,14 @@ def dashboard():
     ).filter(Enrollment.certificate_path.isnot(None)).count()
     in_progress = total_enrolled - completed_courses
 
+    blocked_course_ids = {
+        e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id, is_blocked=True).all()
+    }
+
     return render_template(
         'student/dashboard.html',
         courses=enrolled_courses,
+        blocked_course_ids=blocked_course_ids,
         progress_by_course=progress_by_course,
         continue_learning=sorted(continue_learning, key=lambda x: x['last_accessed'], reverse=True)[:6],
         upcoming=upcoming,
@@ -140,11 +145,12 @@ def course_detail(course_id):
     
     # Check authorization based on role
     if current_user.role == 'student':
-        if not student_enrolled(course_id):
-            flash('You are not enrolled in this course.', 'danger')
-            return redirect(url_for('student.dashboard'))
         enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
         if not enrollment:
+            flash('You are not enrolled in this course.', 'danger')
+            return redirect(url_for('student.dashboard'))
+        if getattr(enrollment, 'is_blocked', False):
+            flash(f'Access to "{course.title}" has been restricted by an administrator. Please contact support.', 'warning')
             return redirect(url_for('student.dashboard'))
         enrollment_sections = {es.section_id: es for es in enrollment.sections}
         total_sections = len(course.sections)
