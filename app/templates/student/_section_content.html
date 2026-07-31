@@ -1,51 +1,85 @@
 <div id="section-content-{{ section.id }}">
     {% set type_labels = {'lesson':'Lesson','video':'Video','quiz':'Quiz','assignment':'Assignment','resource':'Resource','url':'Link'} %}
-    <p class="text-gray-600 mb-2">Duration: {{ section.duration }} minutes</p>
-    <p class="text-gray-600 mb-4">Type: {{ type_labels.get(section.section_type, section.section_type.capitalize()) }}</p>
 
-    <!-- Content Rendering -->
+    <!-- Section Meta -->
+    <div class="flex items-center gap-3 mb-5 text-sm text-gray-500">
+        <span class="inline-flex items-center gap-1.5 font-semibold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+            {% if section.section_type == 'video' %} 🎬
+            {% elif section.section_type == 'lesson' %} 📄
+            {% elif section.section_type == 'quiz' %} ❓
+            {% elif section.section_type == 'assignment' %} 📝
+            {% elif section.section_type == 'resource' %} 📎
+            {% elif section.section_type == 'url' %} 🔗
+            {% else %} 📄
+            {% endif %}
+            {{ type_labels.get(section.section_type, section.section_type.capitalize()) }}
+        </span>
+        {% if section.duration %}
+        <span>{{ section.duration }} min</span>
+        {% endif %}
+    </div>
+
+    <!-- ─── Content Rendering ─────────────────────────────────── -->
     {% if not section.content and not section.video_url and not section.media_file %}
-        <p class="text-red-500">No content available for this section.</p>
+        <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+            <span class="text-xl">⚠️</span>
+            No content available for this section yet.
+        </div>
+
     {% elif section.section_type == 'resource' %}
         {% if section.media_file %}
-        <div class="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <span class="text-3xl">📎</span>
-            <div class="flex-1">
-                <p class="font-medium text-gray-800">{{ section.media_file }}</p>
-                <p class="text-sm text-gray-500">Click to download</p>
+        <div class="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+            <div class="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-2xl shrink-0">📎</div>
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-800 truncate">{{ section.media_file }}</p>
+                <p class="text-xs text-gray-500 mt-0.5">Click to download</p>
             </div>
             <a href="{{ url_for('static', filename='uploads/' + section.media_file) }}" download
-               class="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-800">Download</a>
+               class="shrink-0 px-4 py-2 bg-gray-800 text-white rounded-xl text-sm font-semibold hover:bg-gray-900 transition">
+               Download
+            </a>
         </div>
         {% else %}
         <div class="ql-editor prose max-w-none mt-2">{{ section.content|safe }}</div>
         {% endif %}
+
     {% elif section.section_type == 'url' %}
         {% set ext_url = section.content|trim %}
-        <div class="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <span class="text-3xl">🔗</span>
-            <div class="flex-1">
-                <p class="font-medium text-gray-800">{{ section.title }}</p>
-                <p class="text-sm text-gray-500 truncate">{{ ext_url }}</p>
+        <div class="flex items-center gap-4 p-4 bg-green-50 border border-green-200 rounded-2xl">
+            <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl shrink-0">🔗</div>
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-800">{{ section.title }}</p>
+                <p class="text-xs text-gray-500 truncate mt-0.5">{{ ext_url }}</p>
             </div>
             <a href="{{ ext_url }}" target="_blank" rel="noopener"
-               class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">Open Link ↗</a>
+               class="shrink-0 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
+               Open ↗
+            </a>
         </div>
+
     {% elif section.section_type in ('video', 'lesson') or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
         {% if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
             {% if section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
-                {% include 'student/_video_player.html' %}
+                <!-- Video Player wrapper — full width with rounded corners -->
+                <div class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-black mb-5">
+                    {% include 'student/_video_player.html' %}
+                </div>
             {% else %}
                 {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
                 {% if youtube_id and youtube_id|length == 11 %}
-                <div class="aspect-w-16 aspect-h-9">
-                    <iframe id="youtube-player-{{ section.id }}" class="w-full h-64 md:h-96"
+                <div class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm mb-5" style="aspect-ratio:16/9;">
+                    <iframe id="youtube-player-{{ section.id }}"
+                            class="w-full h-full"
                             src="https://www.youtube.com/embed/{{ youtube_id }}?enablejsapi=1"
-                            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen></iframe>
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                    </iframe>
                 </div>
                 {% else %}
-                <p class="text-red-500">Invalid video content. Please check the URL.</p>
+                <div class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                    <span>⚠️</span> Invalid video content. Please check the URL.
+                </div>
                 {% endif %}
             {% endif %}
         {% endif %}
@@ -54,46 +88,61 @@
         {% endif %}
     {% endif %}
 
-    <!-- Assignments -->
-    <h4 class="font-medium mt-4">Assignments</h4>
+    <!-- ─── Assignments (only if any exist) ──────────────────── -->
     {% if section.assignments %}
+    <div class="mt-8">
+        <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span>📝</span> Assignments
+        </h4>
+        <div class="space-y-2">
         {% for assignment in section.assignments %}
-            <p>
-                <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}" class="text-blue-600 hover:underline">
-                    {{ assignment.title }}
-                </a>
-            </p>
-            <p>Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
+            <a href="{{ url_for('student.submit_assignment', section_id=section.id, assignment_id=assignment.id) }}"
+               class="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition group">
+                <div>
+                    <p class="text-sm font-semibold text-gray-800 group-hover:text-blue-700">{{ assignment.title }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Due: {{ assignment.due_date.strftime('%d %b %Y, %H:%M') if assignment.due_date else 'No due date' }}</p>
+                </div>
+                <i class="fas fa-arrow-right text-xs text-gray-400 group-hover:text-blue-500"></i>
+            </a>
         {% endfor %}
-    {% else %}
-        <p>No assignments available.</p>
+        </div>
+    </div>
     {% endif %}
 
-    <!-- Quizzes -->
-    <h4 class="font-medium mt-4">Quizzes</h4>
+    <!-- ─── Quizzes (only if any exist) ──────────────────────── -->
     {% if section.quizzes %}
+    <div class="mt-6">
+        <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span>❓</span> Quizzes
+        </h4>
+        <div class="space-y-2">
         {% for quiz in section.quizzes %}
-            <p>
-                <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" class="text-blue-600 hover:underline">
-                    {{ quiz.title }}
-                </a>
-            </p>
+            <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}"
+               class="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition group">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 text-sm">❓</div>
+                    <p class="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">{{ quiz.title }}</p>
+                </div>
+                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full group-hover:bg-indigo-100">
+                    Take Quiz →
+                </span>
+            </a>
         {% endfor %}
-    {% else %}
-        <p>No quizzes available.</p>
+        </div>
+    </div>
     {% endif %}
 
-    <!-- Mark as Complete Button -->
+    <!-- ─── Mark as Complete ──────────────────────────────────── -->
     {% if enrollment_section %}
         {% if not enrollment_section.completed %}
-            <form method="POST" class="mt-8" 
-                  hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}" 
-                  hx-target="#main-reader-content" 
+            <form method="POST" class="mt-8"
+                  hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                  hx-target="#main-reader-content"
                   hx-swap="innerHTML">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" name="mark_completed" 
+                <button type="submit" name="mark_completed"
                         class="w-full sm:w-auto bg-indigo-600 text-white font-bold px-6 py-3.5 rounded-xl shadow-md hover:bg-indigo-700 transition-all flex items-center justify-center space-x-2 text-sm sm:text-base">
-                    <span>Mark as Completed & Continue</span>
+                    <span>Mark as Completed &amp; Continue</span>
                     <i class="fas fa-check text-xs"></i>
                 </button>
             </form>
@@ -105,7 +154,7 @@
         {% endif %}
     {% endif %}
 
-    <!-- Next & Previous Navigation Buttons -->
+    <!-- ─── Prev / Next Navigation ────────────────────────────── -->
     <div class="mt-10 pt-6 border-t border-gray-150 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <button id="prev-activity-nav" class="w-full sm:w-auto px-5 py-3 border border-gray-300 rounded-xl text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 transition hidden">
             <i class="fas fa-arrow-left text-xs"></i>

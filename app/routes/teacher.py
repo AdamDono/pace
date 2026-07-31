@@ -456,6 +456,7 @@ def create_course_wizard():
                 course.title = title
                 course.description = description
                 course.category = request.form.get('category')
+                course.accreditation_name = request.form.get('accreditation_name')
                 course.difficulty_level = request.form.get('difficulty_level', 'intermediate')
                 course.language = request.form.get('language', 'english')
                 course.estimated_duration = int(request.form.get('estimated_duration')) if request.form.get('estimated_duration') else None
@@ -518,6 +519,7 @@ def create_course_from_wizard(session_data):
             title=data.get('title'),
             description=data.get('description'),
             category=data.get('category'),
+            accreditation_name=data.get('accreditation_name'),
             difficulty_level=data.get('difficulty_level', 'intermediate'),
             estimated_duration=int(data.get('estimated_duration')) if data.get('estimated_duration') else None,
             language=data.get('language', 'english'),
@@ -570,6 +572,7 @@ def handle_autosave():
             course.title = request.form.get('title') or course.title
             course.description = request.form.get('description') or course.description
             course.category = request.form.get('category') or course.category
+            course.accreditation_name = request.form.get('accreditation_name') or course.accreditation_name
             course.difficulty_level = request.form.get('difficulty_level') or course.difficulty_level
             course.estimated_duration = int(request.form.get('estimated_duration')) if request.form.get('estimated_duration') else course.estimated_duration
             course.language = request.form.get('language') or course.language

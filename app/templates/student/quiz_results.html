@@ -1,0 +1,56 @@
+{% extends "student/base_student.html" %}
+{% block page_title %}Quiz Results{% endblock %}
+
+{% block content %}
+<div class="min-h-full bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
+    
+    <div class="max-w-xl w-full bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
+        <!-- Header Banner -->
+        <div class="p-8 text-center bg-gradient-to-br 
+            {% if percentage >= 80 %}from-green-500 to-emerald-600
+            {% elif percentage >= 50 %}from-blue-500 to-indigo-600
+            {% else %}from-orange-400 to-red-500{% endif %} 
+            text-white">
+            
+            <div class="text-6xl mb-4">
+                {% if percentage >= 80 %}🏆
+                {% elif percentage >= 50 %}👍
+                {% else %}💪{% endif %}
+            </div>
+            
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+                {% if percentage >= 80 %}Excellent Work!
+                {% elif percentage >= 50 %}Good Job!
+                {% else %}Keep Practicing!{% endif %}
+            </h1>
+            <p class="text-white/80 text-sm font-medium">You have completed "{{ quiz.title }}"</p>
+        </div>
+
+        <!-- Score Details -->
+        <div class="p-8 text-center">
+            <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Your Score</p>
+            
+            <div class="flex items-end justify-center gap-2 mb-4">
+                <span class="text-6xl font-black text-gray-900 leading-none">{{ score }}</span>
+                <span class="text-2xl font-bold text-gray-400 leading-tight">/ {{ total }}</span>
+            </div>
+            
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm
+                {% if percentage >= 80 %}bg-green-100 text-green-700
+                {% elif percentage >= 50 %}bg-blue-100 text-blue-700
+                {% else %}bg-orange-100 text-orange-700{% endif %}">
+                <span>{{ percentage|round(0)|int }}% Accuracy</span>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{{ url_for('student.course_detail', course_id=section.course_id, section_id=section.id) }}"
+               class="w-full sm:w-auto px-8 py-3.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center justify-center gap-2 shadow-md">
+                Continue Learning
+                <i class="fas fa-arrow-right text-xs"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -216,6 +216,7 @@
             font-weight: 500;
         }
     </style>
+    {% block head %}{% endblock %}
 </head>
 
 <body class="bg-gray-50">
@@ -227,20 +228,14 @@
         <aside id="studentSidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0">
             <!-- Logo -->
             <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div class="flex items-center">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-500 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-xl">P</span>
-                    </div>
-                    <div class="ml-3">
-                        <h1 class="text-lg font-bold">
-                            <span class="text-blue-600">Pace</span>
-                            <span class="text-black">Academy</span>
-                        </h1>
-                    </div>
-                </div>
+                <a href="{{ url_for('student.dashboard') }}" class="flex items-center">
+                    <h1 class="text-xl font-bold">
+                        <span class="text-blue-600">Pace</span>
+                        <span class="text-black">Academy</span>
+                    </h1>
+                </a>
                 <!-- Close Button on Mobile -->
-                <button onclick="toggleStudentSidebar()" class="md:hidden text-gray-500 hover:text-gray-700 p-1">
+                <button onclick="toggleStudentSidebar()" class="md:hidden text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition">
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
@@ -369,14 +364,11 @@
             <!-- Top Header -->
             <header class="bg-white border-b border-gray-200 px-4 md:px-6 py-3.5 shadow-sm z-30">
                 <div class="flex items-center justify-between">
-                    <!-- Brand Logo -->
-                    <div class="flex items-center">
-                        <a href="{{ url_for('student.dashboard') }}" class="flex items-center space-x-2">
-                            <h1 class="text-2xl font-bold">
-                                <span class="text-blue-600">Pace</span>
-                                <span class="text-black">Academy</span>
-                            </h1>
-                        </a>
+                    <!-- Page Title (context-aware, like admin) -->
+                    <div class="flex items-center min-w-0">
+                        <h1 class="text-lg md:text-2xl font-semibold text-gray-900 truncate">
+                            {% block page_title %}Dashboard{% endblock %}
+                        </h1>
                     </div>
 
                     <!-- Right Actions: Notifications + Avatar + Hamburger Badge -->

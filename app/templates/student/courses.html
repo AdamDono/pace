@@ -1,44 +1,101 @@
-{% extends "base.html" %}
+{% extends "student/base_student.html" %}
+{% block page_title %}My Courses{% endblock %}
+
 {% block content %}
-<div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-6">Your Courses</h1>
-    <div class="mb-4">
-        <a href="{{ url_for('student.course_progress') }}" class="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
-            View Course Progress
-        </a>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 sm:p-6 lg:p-8">
+
+    {% if courses %}
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {% for course in courses %}
+
+        {# Safe rating calculation without the |average filter that doesn't exist in Flask #}
+        {% set rating_values = [] %}
+        {% for r in course.ratings %}{% set _ = rating_values.append(r.rating) %}{% endfor %}
+        {% set review_count = rating_values|length %}
+        {% set avg_rating = (rating_values|sum / review_count)|round(1) if review_count > 0 else 0 %}
+        {% set total_duration = course.sections|map(attribute='duration')|select('number')|sum %}
+
         <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
-           class="block border rounded-lg shadow hover:shadow-lg">
-            <div class="flex">
-                <!-- Thumbnail -->
-                <img src="{{ course.banner_image|media_url if course.banner_image else '/static/default_course.jpg' }}"
-                     alt="{{ course.title }}" class="w-40 h-24 object-cover">
-                <!-- Details -->
-                <div class="p-4 flex-1">
-                    <h3 class="text-lg font-semibold">{{ course.title }}</h3>
-                    <p class="text-sm text-gray-600">Instructor: {{ course.teacher.email.split('@')[0] }}</p>
-                    <!-- Rating -->
-                    {% set avg_rating = course.ratings|map(attribute='rating')|average|default(0) %}
-                    {% set review_count = course.ratings|length %}
-                    <div class="flex items-center text-sm text-yellow-500">
-                        {% for i in range(5) %}
-                            <span>{{ '★' if i < avg_rating else '☆' }}</span>
-                        {% endfor %}
-                        <span class="ml-1 text-gray-600">{{ avg_rating|round(1) }} ({{ review_count }})</span>
+           class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
+
+            <!-- Thumbnail -->
+            <div class="relative aspect-[16/9] bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100 overflow-hidden">
+                {% if course.banner_image %}
+                <img src="{{ course.banner_image|media_url }}"
+                     alt="{{ course.title }}"
+                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div class="absolute inset-0 hidden items-center justify-center bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">📚</div>
+                        <p class="text-xs text-gray-600 font-medium px-4">{{ course.title[:30] }}...</p>
                     </div>
-                    <!-- Description -->
-                    <p class="text-sm text-gray-700 mt-1">
-                        {{ course.intro_text|default('No intro text available')|truncate(100) if course.intro_text is not none else 'No intro text available'|truncate(100) }}
-                    </p>
-                    <!-- Duration/Sections -->
-                    {% set total_duration = course.sections|map(attribute='duration')|sum %}
-                    <p class="text-sm text-gray-600 mt-1">{{ total_duration }} minutes • {{ course.sections|length }} sections</p>
+                </div>
+                {% else %}
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">📚</div>
+                        <p class="text-xs text-gray-600 font-medium px-4">{{ course.title[:40] }}{{ '...' if course.title|length > 40 else '' }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Enrolled badge -->
+                <div class="absolute top-3 left-3 flex items-center gap-1 bg-gray-900/75 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+                    <i class="fas fa-users text-[10px]"></i>
+                    <span>{{ course.enrollments|length if course.enrollments else 0 }} enrolled</span>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-4 flex flex-col flex-1">
+                <h3 class="font-bold text-gray-900 text-base leading-snug mb-1 line-clamp-2">{{ course.title }}</h3>
+                <p class="text-xs text-gray-500 mb-3">{{ course.intro_text|default('')|truncate(80) if course.intro_text else '' }}</p>
+
+                <!-- Stars -->
+                {% if review_count > 0 %}
+                <div class="flex items-center gap-1 mb-3">
+                    {% for i in range(5) %}
+                    <span class="text-sm {% if i < avg_rating|int %}text-yellow-400{% else %}text-gray-200{% endif %}">★</span>
+                    {% endfor %}
+                    <span class="text-xs text-gray-500 ml-1">{{ avg_rating }} ({{ review_count }})</span>
+                </div>
+                {% endif %}
+
+                <!-- Meta -->
+                <div class="flex items-center gap-3 text-xs text-gray-500 mt-auto pt-3 border-t border-gray-100">
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-book-open"></i>
+                        {{ course.sections|length }} sections
+                    </span>
+                    {% if total_duration > 0 %}
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-clock"></i>
+                        {{ total_duration }} min
+                    </span>
+                    {% endif %}
+                    {% if course.difficulty_level %}
+                    <span class="px-2 py-0.5 bg-gray-100 rounded-full">{{ course.difficulty_level }}</span>
+                    {% endif %}
                 </div>
             </div>
         </a>
+
         {% endfor %}
     </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center max-w-md mx-auto">
+        <div class="text-5xl mb-4">📚</div>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">No Courses Enrolled</h3>
+        <p class="text-sm text-gray-500 mb-6">You haven't been enrolled in any courses yet. Contact your instructor to get started.</p>
+        <a href="{{ url_for('student.dashboard') }}"
+           class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition">
+            Back to Dashboard →
+        </a>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}

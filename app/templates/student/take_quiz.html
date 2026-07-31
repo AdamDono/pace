@@ -1,26 +1,183 @@
-{% extends "base.html" %}
+{% extends "student/base_student.html" %}
+{% block page_title %}{{ quiz.title }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .option-label {
+        cursor: pointer;
+        transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .option-label:hover {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+        transform: translateX(2px);
+    }
+    .option-input:checked + .option-label {
+        border-color: #2563eb;
+        background-color: #eff6ff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .option-input:checked + .option-label .option-circle {
+        background-color: #2563eb;
+        border-color: #2563eb;
+    }
+    .option-input:checked + .option-label .option-circle::after {
+        content: '';
+        display: block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: white;
+        margin: auto;
+        margin-top: 3px;
+    }
+    .option-input:checked + .option-label .option-letter {
+        color: #2563eb;
+        font-weight: 700;
+    }
+    .option-input:checked + .option-label .option-text {
+        color: #1e40af;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">{{ quiz.title }}</h1>
-    <form method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        {% for question in questions %}
-        <div class="mb-4">
-            <p class="font-semibold">{{ loop.index }}. {{ question.question_text }}</p>
-            <div>
-                <input type="radio" name="q{{ question.id }}" value="a" required> {{ question.option_a }}<br>
-                <input type="radio" name="q{{ question.id }}" value="b"> {{ question.option_b }}<br>
-                {% if question.option_c %}
-                <input type="radio" name="q{{ question.id }}" value="c"> {{ question.option_c }}<br>
-                {% endif %}
-                {% if question.option_d %}
-                <input type="radio" name="q{{ question.id }}" value="d"> {{ question.option_d }}<br>
-                {% endif %}
+<div class="min-h-full bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto">
+
+        <!-- Back Link -->
+        <a href="{{ url_for('student.course_detail', course_id=section.course_id) }}"
+           class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-semibold mb-6 group transition-colors">
+            <svg class="w-4 h-4 mr-1.5 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Course
+        </a>
+
+        <!-- Quiz Header Card -->
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+            <div class="flex items-start justify-between flex-wrap gap-4">
+                <div>
+                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full mb-2">
+                        ❓ Quiz
+                    </span>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">{{ quiz.title }}</h1>
+                    <p class="text-sm text-gray-500 mt-1">Answer all questions, then submit below.</p>
+                </div>
+                <div class="text-right shrink-0">
+                    <p class="text-3xl font-black text-blue-600">{{ questions|length }}</p>
+                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Questions</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-4">
+                <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</span>
+                    <span id="progress-label" class="text-xs font-bold text-blue-600">0 / {{ questions|length }} answered</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div id="quiz-progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
             </div>
         </div>
-        {% endfor %}
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit Quiz</button>
-    </form>
-    <a href="{{ url_for('student.course_detail', course_id=section.course_id) }}" class="mt-4 block text-blue-600 hover:underline">Back to Course</a>
+
+        <!-- Questions Form -->
+        <form method="POST" id="quiz-form" onsubmit="return confirmSubmit()">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="space-y-5">
+                {% for question in questions %}
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 question-card" id="question-{{ loop.index }}">
+                    <!-- Question Number + Text -->
+                    <div class="flex items-start gap-3 mb-5">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-xl bg-blue-600 text-white text-sm font-black flex items-center justify-center shadow-sm">
+                            {{ loop.index }}
+                        </span>
+                        <p class="text-base font-semibold text-gray-900 leading-relaxed pt-0.5">{{ question.question_text }}</p>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="space-y-2.5 ml-11">
+                        {% set letters = ['A', 'B', 'C', 'D'] %}
+                        {% set options = [
+                            (question.option_a, 'a'),
+                            (question.option_b, 'b'),
+                            (question.option_c, 'c') if question.option_c else None,
+                            (question.option_d, 'd') if question.option_d else None
+                        ] %}
+
+                        {% for opt in options %}
+                        {% if opt %}
+                        <div class="relative">
+                            <input
+                                type="radio"
+                                name="q{{ question.id }}"
+                                value="{{ opt[1] }}"
+                                id="q{{ question.id }}_{{ opt[1] }}"
+                                class="option-input sr-only"
+                                {% if loop.first %}required{% endif %}
+                                onchange="updateProgress()">
+                            <label for="q{{ question.id }}_{{ opt[1] }}"
+                                   class="option-label flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 bg-white select-none">
+                                <!-- Letter Badge -->
+                                <span class="option-letter flex-shrink-0 w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 text-xs font-bold flex items-center justify-center">
+                                    {{ letters[loop.index0] }}
+                                </span>
+                                <!-- Option Text -->
+                                <span class="option-text text-sm text-gray-700">{{ opt[0] }}</span>
+                            </label>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Submit Section -->
+            <div class="mt-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <p class="text-sm font-semibold text-gray-800">Ready to submit?</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Make sure you've answered all <strong>{{ questions|length }}</strong> questions before submitting.</p>
+                </div>
+                <button type="submit"
+                        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 px-8 rounded-xl shadow-md shadow-blue-200 transition-all flex items-center justify-center gap-2 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Submit Quiz
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+    const totalQuestions = {{ questions|length }};
+
+    function updateProgress() {
+        const form = document.getElementById('quiz-form');
+        const answered = new Set();
+        const radios = form.querySelectorAll('input[type="radio"]:checked');
+        radios.forEach(r => answered.add(r.name));
+        const count = answered.size;
+        const pct = Math.round((count / totalQuestions) * 100);
+        document.getElementById('quiz-progress-bar').style.width = pct + '%';
+        document.getElementById('progress-label').textContent = `${count} / ${totalQuestions} answered`;
+    }
+
+    function confirmSubmit() {
+        const form = document.getElementById('quiz-form');
+        const answered = new Set();
+        form.querySelectorAll('input[type="radio"]:checked').forEach(r => answered.add(r.name));
+        const unanswered = totalQuestions - answered.size;
+        if (unanswered > 0) {
+            return confirm(`You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}. Submit anyway?`);
+        }
+        return true;
+    }
+</script>
 {% endblock %}

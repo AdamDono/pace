@@ -142,6 +142,7 @@ class Course(db.Model):
     
     # New fields for enhanced course creation
     category = db.Column(db.String(50), nullable=True)  # e.g., 'programming', 'design', 'business'
+    accreditation_name = db.Column(db.String(255), nullable=True)  # e.g. 'National Certificate: IT Systems Support'
     difficulty_level = db.Column(db.String(20), default='intermediate')  # 'beginner', 'intermediate', 'advanced'
     estimated_duration = db.Column(db.Integer, nullable=True)  # in hours
     language = db.Column(db.String(20), default='english')

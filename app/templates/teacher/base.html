@@ -1,4 +1,5 @@
-{% extends "base.html" %}
+{% extends "teacher/base_teacher.html" %}
+{% block page_title %}Base{% endblock %}
 
 {% block nav_teacher %}
 <a href="{{ url_for('teacher.dashboard') }}" class="bg-blue-800 px-2 py-1 rounded">Teacher</a>

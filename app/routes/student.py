@@ -195,10 +195,19 @@ def course_detail(course_id):
                 locked_sections.add(sec.id)
 
     first_section = None
-    for sec in ordered_sections:
-        if sec.id not in locked_sections:
-            first_section = sec
-            break
+    target_section_id = request.args.get('section_id', type=int)
+
+    if target_section_id:
+        for sec in ordered_sections:
+            if sec.id == target_section_id and sec.id not in locked_sections:
+                first_section = sec
+                break
+
+    if not first_section:
+        for sec in ordered_sections:
+            if sec.id not in locked_sections:
+                first_section = sec
+                break
     if not first_section and ordered_sections:
         first_section = ordered_sections[0]
 
@@ -513,8 +522,14 @@ def take_quiz(section_id, quiz_id):
         es.completed_at = datetime.utcnow()
 
         db.session.commit()
-        flash(f'Quiz completed! Score: {score}/{total} ({(score/total)*100:.1f}%)', 'success')
-        return redirect(url_for('student.course_detail', course_id=section.course_id))
+        
+        # Render a dedicated results page instead of a fleeting flash message
+        return render_template('student/quiz_results.html', 
+                               quiz=quiz, 
+                               section=section, 
+                               score=score, 
+                               total=total, 
+                               percentage=(score/total)*100)
     return render_template('student/take_quiz.html', quiz=quiz, questions=questions, section=section)
 
 @student_bp.route('/section/<int:section_id>/mark-completed', methods=['POST'])

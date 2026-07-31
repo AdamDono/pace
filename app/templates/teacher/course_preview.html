@@ -1,10 +1,11 @@
 <!-- templates/teacher/course_preview.html -->
-{% extends "base.html" %}
+{% extends "teacher/base_teacher.html" %}
+{% block page_title %}Course Preview{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
     <!-- Sticky Header with Preview Badge -->
-    <div class="sticky top-16 z-40 bg-white/95 backdrop-blur-sm shadow-md border-b border-gray-200">
+    <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm shadow-md border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <a href="{{ url_for('teacher.my_courses') }}"
@@ -32,13 +33,8 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <!-- Left: Course Info -->
                 <div class="lg:col-span-2">
-                    <div
-                        class="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium mb-4">
-                        {% if course.price and course.price > 0 %}
-                        ${{ course.price }}
-                        {% else %}
-                        <span class="text-green-200">✓ Free Course</span>
-                        {% endif %}
+                    <div class="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium mb-4 shadow-sm border border-white/10">
+                        <span class="text-white">{{ course.category or 'General' }}</span>
                     </div>
                     <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">{{ course.title }}</h1>
                     <p class="text-lg text-white/90 mb-6 leading-relaxed">{{ course.description|striptags }}</p>
@@ -93,12 +89,24 @@
                             </li>
                             <li class="flex items-start space-x-3">
                                 <span class="text-blue-600 text-lg flex-shrink-0">🎓</span>
-                                <span class="text-gray-700">Certificate of completion</span>
+                                <span class="text-gray-700">
+                                    {% if course.category in ['QCTO', 'SETA'] %}
+                                        NQF Accredited Certificate{% if course.accreditation_name %}: {{ course.accreditation_name }}{% endif %}
+                                    {% else %}
+                                        Certificate of completion
+                                    {% endif %}
+                                </span>
                             </li>
                             <li class="flex items-start space-x-3">
                                 <span class="text-yellow-600 text-lg flex-shrink-0">♾️</span>
                                 <span class="text-gray-700">Lifetime access</span>
                             </li>
+                            {% if course.pdf_filename %}
+                            <li class="flex items-start space-x-3 pt-3 border-t border-gray-100">
+                                <span class="text-red-500 text-lg flex-shrink-0">📄</span>
+                                <a href="{{ course.pdf_filename|media_url }}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">Download Course Brochure (PDF)</a>
+                            </li>
+                            {% endif %}
                         </ul>
 
                         {% if course.tags %}

@@ -416,6 +416,15 @@
                 {% endif %}
             </div>
 
+            {% if course.pdf_filename %}
+            <div class="px-6 pb-2">
+                <a href="{{ course.pdf_filename|media_url }}" target="_blank" class="w-full flex items-center justify-center space-x-2 py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-xl text-xs font-bold text-indigo-700 transition shadow-sm">
+                    <span class="text-sm">📄</span>
+                    <span>Course Material (PDF)</span>
+                </a>
+            </div>
+            {% endif %}
+
             <!-- Modules List Accordion (Desktop) -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 {% if modules %}
