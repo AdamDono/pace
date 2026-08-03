@@ -68,14 +68,22 @@ def dashboard():
     
     # Growth data (users created per month - last 6 months)
     six_months_ago = datetime.utcnow() - timedelta(days=180)
+    monthly_signups = []
     try:
-        # PostgreSQL version
+        # Check database engine type
+        engine_name = db.engine.name
+        if engine_name == 'postgresql':
+            month_expr = func.to_char(User.created_at, 'YYYY-MM')
+        else:
+            month_expr = func.strftime('%Y-%m', User.created_at)
+            
         monthly_signups = db.session.query(
-            func.to_char(User.created_at, 'YYYY-MM').label('month'),
+            month_expr.label('month'),
             func.count(User.id).label('count')
-        ).filter(User.created_at >= six_months_ago).group_by('month').all()
-    except:
-        # Fallback to empty list if query fails
+        ).filter(User.created_at >= six_months_ago).group_by(month_expr).all()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.warning(f"Error querying monthly signups: {e}")
         monthly_signups = []
     
     return render_template('admin/dashboard.html',
