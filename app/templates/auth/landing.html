@@ -230,49 +230,51 @@
             document.body.style.overflow = '';
         }
 
-        document.getElementById('enterpriseForm')?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const form = this;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Submitting Request...';
-            
-            const formData = new FormData(form);
-            
-            fetch('/apply-enterprise', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': formData.get('csrf_token')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('ent-form-fields').classList.add('hidden');
-                    document.getElementById('ent-form-success').classList.remove('hidden');
-                    setTimeout(() => {
-                        closeEnterpriseModal();
-                        form.reset();
-                        document.getElementById('ent-form-fields').classList.remove('hidden');
-                        document.getElementById('ent-form-success').classList.add('hidden');
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('enterpriseForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const form = this;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Submitting Request...';
+                
+                const formData = new FormData(form);
+                
+                fetch('/apply-enterprise', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrf_token')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('ent-form-fields').classList.add('hidden');
+                        document.getElementById('ent-form-success').classList.remove('hidden');
+                        setTimeout(() => {
+                            closeEnterpriseModal();
+                            form.reset();
+                            document.getElementById('ent-form-fields').classList.remove('hidden');
+                            document.getElementById('ent-form-success').classList.add('hidden');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        }, 4000);
+                    } else {
+                        alert(data.message || 'Something went wrong. Please try again.');
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;
-                    }, 4000);
-                } else {
-                    alert(data.message || 'Something went wrong. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Network error. Please check your connection.');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Network error. Please check your connection.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
+                });
             });
         });
     </script>
