@@ -1072,3 +1072,61 @@ def wipe_all_courses():
         flash(f'Failed to wipe courses: {str(e)}', 'danger')
         
     return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.route('/wipe-all-non-admins', methods=['POST'])
+@admin_required
+def wipe_all_non_admins():
+    from app.models import (
+        User, Enrollment, EnrollmentSection, AssignmentSubmission, QuizAttempt, QuizAnswer, 
+        Rating, VideoWatchProgress, VideoQuestionResponse, Notification, NotificationPreference, 
+        Announcement, Course
+    )
+    
+    try:
+        # Find all non-admin users
+        non_admins = User.query.filter(User.role != 'admin').all()
+        non_admin_ids = [u.id for u in non_admins]
+        
+        if non_admin_ids:
+            # 1. Delete progress/activity records
+            VideoQuestionResponse.query.filter(VideoQuestionResponse.student_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            VideoWatchProgress.query.filter(VideoWatchProgress.student_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            
+            # Delete Quiz Answers first, then Attempts
+            attempts = QuizAttempt.query.filter(QuizAttempt.student_id.in_(non_admin_ids)).all()
+            for attempt in attempts:
+                db.session.delete(attempt) # Triggers ORM cascade to QuizAnswer
+                
+            AssignmentSubmission.query.filter(AssignmentSubmission.student_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            
+            # 2. Delete ratings
+            Rating.query.filter(Rating.user_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            
+            # 3. Delete announcements and courses created by non-admin teachers
+            Announcement.query.filter(Announcement.teacher_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            courses = Course.query.filter(Course.teacher_id.in_(non_admin_ids)).all()
+            for course in courses:
+                db.session.delete(course) # Triggers full course clean cascades
+            
+            # 4. Clean up notifications/preferences for non-admins
+            NotificationPreference.query.filter(NotificationPreference.user_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            Notification.query.filter(Notification.user_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            
+            # 5. Nullify suspended_by for any remaining users
+            User.query.filter(User.suspended_by.in_(non_admin_ids)).update({User.suspended_by: None}, synchronize_session=False)
+            
+            # 6. Delete enrollments
+            EnrollmentSection.query.join(Enrollment).filter(Enrollment.student_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            Enrollment.query.filter(Enrollment.student_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            
+            # 7. Delete the users themselves
+            User.query.filter(User.role != 'admin').delete(synchronize_session=False)
+            
+        db.session.commit()
+        flash('All non-admin users (teachers and students) and their associated data have been successfully deleted!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to wipe users: {str(e)}', 'danger')
+        
+    return redirect(url_for('admin.dashboard'))
