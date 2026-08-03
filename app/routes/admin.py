@@ -1032,7 +1032,8 @@ def wipe_all_courses():
         Course, Module, Section, Enrollment, EnrollmentSection,
         Assignment, AssignmentSubmission, Quiz, QuizQuestion, 
         QuizAttempt, QuizAnswer, Rating, VideoWatchProgress, 
-        VideoInteractiveQuestion, VideoQuestionResponse, VideoSubtitle
+        VideoInteractiveQuestion, VideoQuestionResponse, VideoSubtitle,
+        Notification, Announcement
     )
     
     try:
@@ -1054,6 +1055,9 @@ def wipe_all_courses():
         db.session.query(Enrollment).delete()
         
         db.session.query(Rating).delete()
+        
+        db.session.query(Notification).delete()
+        db.session.query(Announcement).delete()
         
         db.session.query(Section).delete()
         db.session.query(Module).delete()
