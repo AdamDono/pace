@@ -164,7 +164,7 @@ def create_app():
         from app.models import Assignment, AssignmentSubmission, Enrollment, Section, Announcement, Notification
         from datetime import datetime
         
-        if current_user.is_authenticated and current_user.role == 'student':
+        if current_user and current_user.is_authenticated and current_user.role == 'student':
             try:
                 # Get enrolled course IDs
                 enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
