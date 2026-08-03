@@ -123,6 +123,8 @@ def send_async_email(app, msg):
                         raise Exception(f"Brevo API returned status {response.status}")
             except Exception as api_err:
                 logger.error(f"Brevo HTTP API failed: {str(api_err)}. Falling back to SMTP...")
+        else:
+            logger.warning("No HTTP email API keys (SendGrid, Resend, or Brevo) configured. Falling back to SMTP (which may be blocked by cloud host providers).")
 
         # Standard SMTP fallback
         try:
