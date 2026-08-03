@@ -1117,7 +1117,9 @@ def wipe_all_non_admins():
             User.query.filter(User.suspended_by.in_(non_admin_ids)).update({User.suspended_by: None}, synchronize_session=False)
             
             # 6. Delete enrollments
-            EnrollmentSection.query.join(Enrollment).filter(Enrollment.student_id.in_(non_admin_ids)).delete(synchronize_session=False)
+            enrollment_ids = [e.id for e in Enrollment.query.filter(Enrollment.student_id.in_(non_admin_ids)).all()]
+            if enrollment_ids:
+                EnrollmentSection.query.filter(EnrollmentSection.enrollment_id.in_(enrollment_ids)).delete(synchronize_session=False)
             Enrollment.query.filter(Enrollment.student_id.in_(non_admin_ids)).delete(synchronize_session=False)
             
             # 7. Delete the users themselves
