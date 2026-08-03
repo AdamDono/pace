@@ -1023,3 +1023,48 @@ def remove_enrollment(user_id, enrollment_id):
     db.session.commit()
     flash(f'Student fully removed from course.', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/wipe-all-courses', methods=['POST'])
+@admin_required
+def wipe_all_courses():
+    from app.models import (
+        Course, Module, Section, Enrollment, EnrollmentSection,
+        Assignment, AssignmentSubmission, Quiz, QuizQuestion, 
+        QuizAttempt, QuizAnswer, Rating, VideoWatchProgress, 
+        VideoInteractiveQuestion, VideoQuestionResponse, VideoSubtitle
+    )
+    
+    try:
+        # Delete child dependencies first
+        db.session.query(VideoQuestionResponse).delete()
+        db.session.query(VideoInteractiveQuestion).delete()
+        db.session.query(VideoWatchProgress).delete()
+        db.session.query(VideoSubtitle).delete()
+        
+        db.session.query(QuizAnswer).delete()
+        db.session.query(QuizAttempt).delete()
+        db.session.query(QuizQuestion).delete()
+        db.session.query(Quiz).delete()
+        
+        db.session.query(AssignmentSubmission).delete()
+        db.session.query(Assignment).delete()
+        
+        db.session.query(EnrollmentSection).delete()
+        db.session.query(Enrollment).delete()
+        
+        db.session.query(Rating).delete()
+        
+        db.session.query(Section).delete()
+        db.session.query(Module).delete()
+        
+        # Finally delete all courses
+        db.session.query(Course).delete()
+        
+        db.session.commit()
+        flash('All courses and related content have been successfully wiped from the database!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to wipe courses: {str(e)}', 'danger')
+        
+    return redirect(url_for('admin.dashboard'))
