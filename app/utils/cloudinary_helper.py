@@ -1,17 +1,25 @@
 import os
 import logging
-import cloudinary
-import cloudinary.uploader
 
 logger = logging.getLogger(__name__)
 
-# Configures Cloudinary using the CLOUDINARY_URL environment variable
+# Ensure CLOUDINARY_URL starts with 'cloudinary://' before importing the library, 
+# otherwise the library's internal initialization will throw a ValueError.
 cloudinary_url = os.getenv('CLOUDINARY_URL')
+if cloudinary_url and not cloudinary_url.startswith('cloudinary://'):
+    logger.warning("CLOUDINARY_URL is missing the 'cloudinary://' prefix. Disabling Cloudinary.")
+    os.environ.pop('CLOUDINARY_URL', None)
+    cloudinary_url = None
+
+import cloudinary
+import cloudinary.uploader
+
+# Configures Cloudinary using the CLOUDINARY_URL environment variable
 if cloudinary_url:
     cloudinary.config(cloudinary_url=cloudinary_url)
     logger.info("Cloudinary client configured successfully")
 else:
-    logger.warning("CLOUDINARY_URL env variable not found. Cloudinary operations will fall back to local disk.")
+    logger.warning("CLOUDINARY_URL env variable not found or invalid. Cloudinary operations will fall back to local disk.")
 
 def upload_file_to_cloudinary(file_stream, folder="pace_uploads", resource_type="auto"):
     """
