@@ -16,9 +16,12 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @admin_bp.context_processor
 def inject_pending_count():
     """Inject pending course count into all admin templates"""
-    if current_user.is_authenticated and current_user.role == 'admin':
-        pending_count = Course.query.filter_by(status='pending').count()
-        return dict(pending_count=pending_count)
+    try:
+        if current_user.is_authenticated and current_user.role == 'admin':
+            pending_count = Course.query.filter_by(status='pending').count()
+            return dict(pending_count=pending_count)
+    except Exception:
+        pass
     return dict(pending_count=0)
 
 @admin_bp.route('/dashboard')
@@ -323,8 +326,6 @@ def manage_teachers():
 @admin_bp.route('/delete-user/<int:user_id>', methods=['POST'])
 @admin_required
 def delete_user(user_id):
-    from app.models import AssignmentSubmission, QuizAttempt, Rating
-    
     user = User.query.get_or_404(user_id)
     
     # Prevent deleting yourself
@@ -341,6 +342,11 @@ def delete_user(user_id):
         email = user.email
         
         # Delete all related records that don't have cascade delete
+        from app.models import (
+            AssignmentSubmission, QuizAttempt, Rating, 
+            VideoWatchProgress, VideoQuestionResponse, Announcement
+        )
+        
         # Delete assignment submissions
         AssignmentSubmission.query.filter_by(student_id=user.id).delete()
         
@@ -350,14 +356,23 @@ def delete_user(user_id):
         # Delete ratings
         Rating.query.filter_by(user_id=user.id).delete()
         
-        # Enrollments will be deleted automatically due to cascade='all, delete-orphan'
+        # Delete video progress and interactive question responses
+        VideoWatchProgress.query.filter_by(student_id=user.id).delete()
+        VideoQuestionResponse.query.filter_by(student_id=user.id).delete()
         
-        # If user is a teacher, handle their courses
+        # If user is a teacher, delete their announcements
         if user.role == 'teacher':
+            Announcement.query.filter_by(teacher_id=user.id).delete()
+            
             # Delete all courses created by this teacher
             # This will cascade delete sections, quizzes, enrollments, etc.
             for course in user.taught_courses:
                 db.session.delete(course)
+                
+        # Nullify suspended_by for any users suspended by this user
+        User.query.filter_by(suspended_by=user.id).update({User.suspended_by: None})
+        
+        # Enrollments and notifications will be deleted automatically due to cascade='all, delete-orphan'
         
         # Now delete the user
         db.session.delete(user)
