@@ -80,6 +80,35 @@
             {% if user.bio %}
             <p class="mt-3 text-xs text-gray-500 leading-relaxed max-w-lg">{{ user.bio }}</p>
             {% endif %}
+
+            {% if user.role != 'admin' and user.id != current_user.id %}
+            <div class="mt-5 pt-4 border-t border-gray-100 flex flex-wrap gap-2 justify-center sm:justify-start">
+                {% if user.is_banned %}
+                    <button onclick="openUnbanModal()" 
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Restore Access (Unban)
+                    </button>
+                {% elif user.is_suspended %}
+                    <button onclick="openUnsuspendModal()" 
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Remove Suspension
+                    </button>
+                {% else %}
+                    <button onclick="openSuspendModal()" 
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-yellow-500 text-white rounded-xl text-xs font-bold hover:bg-yellow-600 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        Suspend User
+                    </button>
+                    <button onclick="openBanModal()" 
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                        Ban User Permanently
+                    </button>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -220,6 +249,92 @@
     </div>
 </div>
 
+<!-- Suspend User Modal -->
+<div id="suspendModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-base font-black text-gray-900 mb-4">Suspend User</h3>
+        <form id="suspendForm" method="POST" action="{{ url_for('admin.suspend_user', user_id=user.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Reason for Suspension</label>
+                <textarea name="reason" rows="3" required
+                          class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-yellow-300 focus:border-yellow-400 outline-none"
+                          placeholder="Explain why this user is being suspended..."></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Duration (days)</label>
+                <input type="number" name="duration_days" min="1" 
+                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-yellow-300 focus:border-yellow-400 outline-none"
+                       placeholder="Leave empty for indefinite">
+                <p class="text-[10px] text-gray-400 mt-1">Leave empty for indefinite suspension</p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeSuspendModal()"
+                        class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition">Cancel</button>
+                <button type="submit"
+                        class="flex-1 py-2.5 bg-yellow-500 text-white rounded-xl text-sm font-bold hover:bg-yellow-600 transition">Suspend User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Ban User Modal -->
+<div id="banModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-base font-black text-red-600 mb-1">⚠️ Ban User Permanently</h3>
+        <p class="text-xs text-gray-500 mb-4">This is a permanent action. The user will be banned and unable to access their account.</p>
+        <form id="banForm" method="POST" action="{{ url_for('admin.ban_user', user_id=user.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Reason for Ban</label>
+                <textarea name="reason" rows="3" required
+                          class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-300 focus:border-red-400 outline-none"
+                          placeholder="Explain why this user is being banned..."></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeBanModal()"
+                        class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition">Cancel</button>
+                <button type="submit"
+                        class="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition">Ban User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Unsuspend User Modal -->
+<div id="unsuspendModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-base font-black text-green-600 mb-1">Restore User Access</h3>
+        <p class="text-xs text-gray-500 mb-4">Remove the suspension and restore full access to {{ user.username or user.email }}?</p>
+        <form id="unsuspendForm" method="POST" action="{{ url_for('admin.unsuspend_user', user_id=user.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeUnsuspendModal()"
+                        class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition">Cancel</button>
+                <button type="submit"
+                        class="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition">Unsuspend User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Unban User Modal -->
+<div id="unbanModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-base font-black text-green-600 mb-1">Restore Banned User</h3>
+        <p class="text-xs text-gray-500 mb-4">Remove the ban and restore full access to {{ user.username or user.email }}?</p>
+        <form id="unbanForm" method="POST" action="{{ url_for('admin.unban_user', user_id=user.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeUnbanModal()"
+                        class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition">Cancel</button>
+                <button type="submit"
+                        class="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition">Unban User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function openBlockModal(enrollmentId, courseTitle) {
         document.getElementById('blockModalCourseTitle').textContent = courseTitle;
@@ -229,8 +344,42 @@
     function closeBlockModal() {
         document.getElementById('blockModal').classList.add('hidden');
     }
-    document.getElementById('blockModal').addEventListener('click', function(e) {
-        if (e.target === this) closeBlockModal();
-    });
+    
+    function openSuspendModal() {
+        document.getElementById('suspendModal').classList.remove('hidden');
+    }
+    function closeSuspendModal() {
+        document.getElementById('suspendModal').classList.add('hidden');
+    }
+    
+    function openBanModal() {
+        document.getElementById('banModal').classList.remove('hidden');
+    }
+    function closeBanModal() {
+        document.getElementById('banModal').classList.add('hidden');
+    }
+    
+    function openUnsuspendModal() {
+        document.getElementById('unsuspendModal').classList.remove('hidden');
+    }
+    function closeUnsuspendModal() {
+        document.getElementById('unsuspendModal').classList.add('hidden');
+    }
+    
+    function openUnbanModal() {
+        document.getElementById('unbanModal').classList.remove('hidden');
+    }
+    function closeUnbanModal() {
+        document.getElementById('unbanModal').classList.add('hidden');
+    }
+
+    // Close modals on outside click
+    window.onclick = function(event) {
+        if (event.target.id === 'suspendModal') closeSuspendModal();
+        if (event.target.id === 'banModal') closeBanModal();
+        if (event.target.id === 'unsuspendModal') closeUnsuspendModal();
+        if (event.target.id === 'unbanModal') closeUnbanModal();
+        if (event.target.id === 'blockModal') closeBlockModal();
+    }
 </script>
 {% endblock %}
