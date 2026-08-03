@@ -97,12 +97,59 @@ def create_app():
     # Auto-migrate Postgres database columns if running on Render/Production DB
     with app.app_context():
         try:
-            from sqlalchemy import text
-            db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN file_path TYPE TEXT;"))
-            db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN submission_text DROP NOT NULL;"))
+            # Create any missing tables (like modules, leads, etc.) without affecting existing ones
+            db.create_all()
+            
+            from sqlalchemy import inspect, text
+            inspector = inspect(db.engine)
+            
+            def add_column_if_missing(table_name, column_name, column_type):
+                columns = [c['name'] for c in inspector.get_columns(table_name)]
+                if column_name not in columns:
+                    db_type = column_type
+                    if db.engine.name == 'sqlite':
+                        db_type = column_type.replace('VARCHAR', 'TEXT').replace('BOOLEAN', 'INTEGER')
+                    db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {db_type};"))
+            
+            # Check and add columns to enrollments
+            add_column_if_missing('enrollments', 'completed_at', 'TIMESTAMP')
+            add_column_if_missing('enrollments', 'certificate_path', 'VARCHAR(255)')
+            add_column_if_missing('enrollments', 'is_blocked', 'BOOLEAN DEFAULT FALSE')
+            add_column_if_missing('enrollments', 'block_reason', 'VARCHAR(500)')
+            
+            # Check and add columns to courses
+            add_column_if_missing('courses', 'accreditation_name', 'VARCHAR(255)')
+            add_column_if_missing('courses', 'updated_at', 'TIMESTAMP')
+            add_column_if_missing('courses', 'category', 'VARCHAR(50)')
+            add_column_if_missing('courses', 'difficulty_level', 'VARCHAR(20)')
+            add_column_if_missing('courses', 'estimated_duration', 'INTEGER')
+            add_column_if_missing('courses', 'language', 'VARCHAR(20)')
+            add_column_if_missing('courses', 'learning_objectives', 'TEXT')
+            add_column_if_missing('courses', 'prerequisites', 'TEXT')
+            add_column_if_missing('courses', 'tags', 'VARCHAR(255)')
+            add_column_if_missing('courses', 'is_draft', 'BOOLEAN DEFAULT FALSE')
+            add_column_if_missing('courses', 'last_autosave', 'TIMESTAMP')
+            
+            # Check and add columns to sections
+            add_column_if_missing('sections', 'module_id', 'INTEGER')
+            
+            # Check and add columns to users
+            add_column_if_missing('users', 'profile_image', 'VARCHAR(255)')
+            add_column_if_missing('users', 'bio', 'TEXT')
+            add_column_if_missing('users', 'contact', 'VARCHAR(120)')
+            add_column_if_missing('users', 'first_name', 'VARCHAR(80)')
+            add_column_if_missing('users', 'last_name', 'VARCHAR(80)')
+            add_column_if_missing('users', 'specialization', 'VARCHAR(200)')
+            
+            # Adjust specific postgres columns
+            if db.engine.name == 'postgresql':
+                db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN file_path TYPE TEXT;"))
+                db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN submission_text DROP NOT NULL;"))
+                
             db.session.commit()
-        except Exception:
+        except Exception as e:
             db.session.rollback()
+            app.logger.error(f"Startup DB self-healing error: {e}")
 
     # Define login_manager.user_loader here to avoid circular imports
     from app.models import User
