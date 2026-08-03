@@ -350,8 +350,10 @@ def delete_user(user_id):
         # Delete assignment submissions
         AssignmentSubmission.query.filter_by(student_id=user.id).delete()
         
-        # Delete quiz attempts
-        QuizAttempt.query.filter_by(student_id=user.id).delete()
+        # Delete quiz attempts and their answers via ORM delete (triggers cascade to QuizAnswer)
+        attempts = QuizAttempt.query.filter_by(student_id=user.id).all()
+        for attempt in attempts:
+            db.session.delete(attempt)
         
         # Delete ratings
         Rating.query.filter_by(user_id=user.id).delete()
