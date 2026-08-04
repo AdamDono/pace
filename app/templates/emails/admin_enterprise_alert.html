@@ -2,106 +2,118 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Enterprise / Institutional Inquiry</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f8;
-            color: #333333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #334155;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background-color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
         .container {
-            max-width: 600px;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            max-width: 560px;
             margin: 0 auto;
+            background-color: #ffffff;
         }
         .header {
             border-bottom: 2px solid #6366f1;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
         }
         h2 {
             color: #6366f1;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
             margin: 0;
         }
         .field-group {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
         }
         .label {
-            font-weight: bold;
-            font-size: 13px;
-            color: #4b5563;
+            font-weight: 700;
+            font-size: 11px;
+            color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
         .value {
             font-size: 15px;
-            color: #1f2937;
+            color: #0f172a;
             margin-top: 4px;
+            font-weight: 500;
         }
         .footer {
-            margin-top: 30px;
+            margin-top: 40px;
             font-size: 12px;
-            color: #9ca3af;
+            color: #94a3b8;
             text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>New Enterprise Inquiry</h2>
-            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Pace Academy B2B Lead System</p>
-        </div>
-        
-        <div class="field-group">
-            <div class="label">Organization Name</div>
-            <div class="value" style="font-weight: bold; color: #1e1b4b;">{{ organization }}</div>
-        </div>
-
-        <div class="field-group">
-            <div class="label">Contact Person</div>
-            <div class="value">{{ full_name }}</div>
-        </div>
-
-        <div class="field-group">
-            <div class="label">Email Address</div>
-            <div class="value"><a href="mailto:{{ email }}" style="color: #6366f1; text-decoration: none;">{{ email }}</a></div>
-        </div>
-
-        <div class="field-group">
-            <div class="label">Phone Number</div>
-            <div class="value"><a href="tel:{{ phone }}" style="color: #6366f1; text-decoration: none;">{{ phone }}</a></div>
-        </div>
-
-        <div class="field-group">
-            <div class="label">Inquiry Type</div>
-            <div class="value" style="text-transform: capitalize;">
-                {% if inquiry_type == 'licensing' %}Institutional Course Licensing
-                {% elif inquiry_type == 'whitelabel' %}White-Labeled Academy
-                {% elif inquiry_type == 'custom' %}Custom Curriculum Development
-                {% else %}General Partnership / Other{% endif %}
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <h2>New Enterprise Inquiry</h2>
+                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px; font-weight: 500;">Pace Academy B2B Lead System</p>
             </div>
-        </div>
+            
+            <div class="field-group">
+                <div class="label">Organization Name</div>
+                <div class="value" style="font-weight: 700; color: #1e1b4b;">{{ organization }}</div>
+            </div>
 
-        <div class="field-group">
-            <div class="label">Estimated Number of Learners</div>
-            <div class="value">{{ estimated_learners if estimated_learners else 'Not specified' }}</div>
-        </div>
+            <div class="field-group">
+                <div class="label">Contact Person</div>
+                <div class="value">{{ full_name }}</div>
+            </div>
 
-        <div class="field-group" style="border-bottom: none;">
-            <div class="label">Inquiry Notes / Requirements</div>
-            <div class="value" style="background-color: #f8fafc; padding: 12px; border-radius: 8px; font-style: italic; white-space: pre-wrap; line-height: 1.5;">{{ message if message else 'No additional details provided.' }}</div>
-        </div>
+            <div class="field-group">
+                <div class="label">Email Address</div>
+                <div class="value"><a href="mailto:{{ email }}" style="color: #6366f1; text-decoration: none; font-weight: 600;">{{ email }}</a></div>
+            </div>
 
-        <div class="footer">
-            <p>This request was submitted live from the public Pace Academy landing page.</p>
+            <div class="field-group">
+                <div class="label">Phone Number</div>
+                <div class="value"><a href="tel:{{ phone }}" style="color: #6366f1; text-decoration: none; font-weight: 600;">{{ phone }}</a></div>
+            </div>
+
+            <div class="field-group">
+                <div class="label">Inquiry Type</div>
+                <div class="value" style="text-transform: capitalize;">
+                    {% if inquiry_type == 'licensing' %}Institutional Course Licensing
+                    {% elif inquiry_type == 'whitelabel' %}White-Labeled Academy
+                    {% elif inquiry_type == 'custom' %}Custom Curriculum Development
+                    {% else %}General Partnership / Other{% endif %}
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="label">Estimated Number of Learners</div>
+                <div class="value">{{ estimated_learners if estimated_learners else 'Not specified' }}</div>
+            </div>
+
+            <div class="field-group" style="border-bottom: none;">
+                <div class="label">Inquiry Notes / Requirements</div>
+                <div class="value" style="background-color: #f8fafc; border: 1px solid #f1f5f9; padding: 16px; border-radius: 12px; font-style: italic; white-space: pre-wrap; line-height: 1.5; color: #475569;">{{ message if message else 'No additional details provided.' }}</div>
+            </div>
+
+            <div class="footer">
+                <p>This request was submitted live from the public Pace Academy landing page.</p>
+            </div>
         </div>
     </div>
 </body>

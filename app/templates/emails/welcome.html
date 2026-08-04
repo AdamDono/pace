@@ -5,142 +5,221 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
         .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
         }
         .header {
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #3B82F6;
+            padding-bottom: 24px;
+            text-align: left;
         }
-        .logo {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .logo-text {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
         }
-        .logo .pace {
-            color: #3B82F6;
+        .logo-text .pace {
+            color: #2563eb;
         }
-        .logo .academy {
-            color: #1F2937;
+        .logo-text .academy {
+            color: #0f172a;
+        }
+        .tagline {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+            font-weight: 500;
         }
         h1 {
-            color: #3B82F6;
-            margin-top: 20px;
+            color: #0f172a;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 32px 0 16px 0;
+            line-height: 1.25;
         }
-        .credentials-box {
-            background-color: #F3F4F6;
-            border-left: 4px solid #3B82F6;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 5px;
+        p {
+            margin: 0 0 20px 0;
+            font-size: 15px;
+            color: #475569;
         }
-        .credential-item {
-            margin: 10px 0;
+        .card {
+            background-color: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 30px 0;
         }
-        .credential-label {
-            font-weight: bold;
-            color: #4B5563;
+        .card-title {
+            margin: 0 0 16px 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
         }
-        .credential-value {
-            color: #1F2937;
-            font-family: 'Courier New', monospace;
-            background-color: white;
-            padding: 5px 10px;
-            border-radius: 3px;
+        .credential-row {
+            margin-bottom: 12px;
+        }
+        .credential-row:last-child {
+            margin-bottom: 0;
+        }
+        .label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
             display: inline-block;
-            margin-left: 10px;
+            width: 80px;
+        }
+        .value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .warning-text {
+            font-size: 12px;
+            color: #ef4444;
+            font-weight: 600;
+            margin: 16px 0 0 0;
+            display: flex;
+            align-items: center;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 30px 0;
         }
         .button {
             display: inline-block;
-            padding: 12px 30px;
-            background-color: #3B82F6;
-            color: white !important;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff !important;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-weight: bold;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            transition: all 0.2s ease;
         }
-        .button:hover {
-            background-color: #2563EB;
+        .steps-card {
+            background-color: #f5f3ff;
+            border: 1px solid #ede9fe;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 30px 0;
+        }
+        .steps-title {
+            margin: 0 0 16px 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: #5b21b6;
+        }
+        .steps-list {
+            margin: 0;
+            padding: 0 0 0 20px;
+            font-size: 14px;
+            color: #6d28d9;
+            font-weight: 500;
+        }
+        .steps-list li {
+            margin-bottom: 8px;
+        }
+        .steps-list li:last-child {
+            margin-bottom: 0;
         }
         .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #E5E7EB;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #f1f5f9;
             text-align: center;
-            color: #6B7280;
-            font-size: 14px;
+            color: #94a3b8;
+            font-size: 13px;
         }
-        .highlight {
-            color: #3B82F6;
-            font-weight: bold;
+        .footer-logo {
+            font-size: 15px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 4px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <span class="pace">Pace</span><span class="academy">Academy</span>
+    <div class="wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">
+                    <span class="pace">Pace</span><span class="academy">Academy</span>
+                </div>
+                <p class="tagline">Your Learning Journey Starts Here</p>
             </div>
-            <p style="color: #6B7280; margin: 0;">Your Learning Journey Starts Here</p>
-        </div>
 
-        <h1>Welcome to Pace Academy, {{ user.username }}! 🎉</h1>
+            <!-- Welcome Message -->
+            <h1>Welcome to Pace Academy, {{ user.first_name or user.username }}! 🎉</h1>
+            <p>We're excited to have you join our learning community! Your account has been created by our administrator, and you can now access all the amazing courses we offer.</p>
 
-        <p>We're excited to have you join our learning community! Your account has been created by our administrator, and you can now access all the amazing courses we offer.</p>
-
-        <div class="credentials-box">
-            <h3 style="margin-top: 0; color: #1F2937;">Your Login Credentials</h3>
-            <div class="credential-item">
-                <span class="credential-label">Email:</span>
-                <span class="credential-value">{{ user.email }}</span>
+            <!-- Credentials Card -->
+            <div class="card">
+                <h3 class="card-title">Your Login Credentials</h3>
+                <div class="credential-row">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ user.email }}</span>
+                </div>
+                <div class="credential-row">
+                    <span class="label">Password:</span>
+                    <span class="value">{{ password }}</span>
+                </div>
+                <p class="warning-text">
+                    ⚠️ Please change your password after your first login for security purposes.
+                </p>
             </div>
-            <div class="credential-item">
-                <span class="credential-label">Password:</span>
-                <span class="credential-value">{{ password }}</span>
+
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{ login_url }}" class="button" target="_blank">Login to Your Account</a>
             </div>
-            <p style="margin-top: 15px; color: #DC2626; font-size: 14px;">
-                ⚠️ <strong>Important:</strong> Please change your password after your first login for security purposes.
-            </p>
-        </div>
 
-        <div style="text-align: center;">
-            <a href="{{ login_url }}" class="button">Login to Your Account</a>
-        </div>
+            <!-- Next Steps -->
+            <div class="steps-card">
+                <h3 class="steps-title">What's Next?</h3>
+                <ol class="steps-list">
+                    <li>Log in using the temporary credentials above</li>
+                    <li>Update your profile with your details</li>
+                    <li>Browse our premium course catalog</li>
+                    <li>Start learning and track your progress live!</li>
+                </ol>
+            </div>
 
-        <div style="background-color: #EFF6FF; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #1E40AF;">What's Next?</h3>
-            <ul style="margin: 0; padding-left: 20px;">
-                <li>Login to your account using the credentials above</li>
-                <li>Update your profile with your information</li>
-                <li>Browse available courses</li>
-                <li>Start learning and track your progress!</li>
-            </ul>
-        </div>
+            <p>If you have any questions or need assistance, please don't hesitate to reach out to our team.</p>
+            <p>Happy Learning!<br><strong>The Pace Academy Team</strong> 📚</p>
 
-        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-
-        <p>Happy Learning! 📚</p>
-
-        <div class="footer">
-            <p><strong>Pace Academy</strong></p>
-            <p>Empowering learners, one course at a time.</p>
-            <p style="font-size: 12px; margin-top: 10px;">
-                This is an automated message. Please do not reply to this email.
-            </p>
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-logo">Pace Academy</div>
+                <div>Empowering learners, one course at a time.</div>
+                <div style="font-size: 11px; margin-top: 12px; color: #cbd5e1;">
+                    This is an automated message. Please do not reply directly to this email.
+                </div>
+            </div>
         </div>
     </div>
 </body>

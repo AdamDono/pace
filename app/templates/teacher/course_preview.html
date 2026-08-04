@@ -8,14 +8,20 @@
     <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm shadow-md border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <a href="{{ url_for('teacher.my_courses') }}"
-                    class="flex items-center text-gray-700 hover:text-indigo-600 font-medium transition-colors">
-                    <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
-                        </path>
-                    </svg>
-                    Back to My Courses
-                </a>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('teacher.my_courses') }}"
+                        class="flex items-center text-gray-700 hover:text-indigo-600 font-medium transition-colors mr-2">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                            </path>
+                        </svg>
+                        Back to My Courses
+                    </a>
+                    <a href="{{ url_for('teacher.course_builder', course_id=course.id) }}"
+                        class="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl text-xs font-bold transition-all shadow-sm">
+                        ✏️ Go to Course Builder
+                    </a>
+                </div>
                 <div class="flex items-center space-x-3">
                     <span
                         class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg">

@@ -1,152 +1,181 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            -webkit-font-smoothing: antialiased;
         }
-
+        .wrapper {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
         .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
         }
-
         .header {
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #10B981;
+            padding-bottom: 24px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
         }
-
-        .logo {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .logo .pace {
-            color: #3B82F6;
-        }
-
-        .logo .academy {
-            color: #1F2937;
-        }
-
-        h1 {
-            color: #10B981;
-            margin-top: 20px;
-        }
-
-        .course-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            margin: 20px 0;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .course-title {
+        .logo-text {
             font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
         }
-
+        .logo-text .pace {
+            color: #2563eb;
+        }
+        .logo-text .academy {
+            color: #0f172a;
+        }
+        .tagline {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+            font-weight: 500;
+        }
+        h1 {
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 32px 0 16px 0;
+            line-height: 1.25;
+        }
+        p {
+            margin: 0 0 20px 0;
+            font-size: 15px;
+            color: #475569;
+        }
+        .course-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 30px 0;
+        }
+        .course-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 8px 0;
+        }
         .course-description {
-            font-size: 16px;
-            opacity: 0.95;
+            font-size: 14px;
+            color: #64748b;
+            margin: 0;
         }
-
+        .cta-container {
+            text-align: center;
+            margin: 30px 0;
+        }
         .button {
             display: inline-block;
-            padding: 12px 30px;
-            background-color: #10B981;
-            color: white !important;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff !important;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-weight: bold;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            transition: all 0.2s ease;
         }
-
-        .button:hover {
-            background-color: #059669;
-        }
-
         .info-box {
-            background-color: #F0FDF4;
-            border-left: 4px solid #10B981;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
+            background-color: #f0fdf4;
+            border: 1px solid #dcfce7;
+            padding: 24px;
+            border-radius: 16px;
+            margin: 30px 0;
         }
-
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #E5E7EB;
-            text-align: center;
-            color: #6B7280;
+        .info-box h3 {
+            margin-top: 0;
+            color: #15803d;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .info-box ul {
+            margin: 12px 0 0 0;
+            padding-left: 20px;
             font-size: 14px;
+            color: #166534;
+            font-weight: 500;
+        }
+        .info-box li {
+            margin-bottom: 10px;
+        }
+        .info-box li:last-child {
+            margin-bottom: 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #f1f5f9;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
         }
     </style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <span class="pace">Pace</span><span class="academy">Academy</span>
+    <div class="wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">
+                    <span class="pace">Pace</span><span class="academy">Academy</span>
+                </div>
+                <p class="tagline">Your Learning Journey Continues</p>
             </div>
-            <p style="color: #6B7280; margin: 0;">Your Learning Journey Continues</p>
-        </div>
 
-        <h1>🎓 New Course Enrollment!</h1>
+            <h1>🎓 New Course Enrollment!</h1>
+            <p>Hello {{ student.first_name or student.username }},</p>
+            <p>Great news! You have been successfully enrolled in a new course. Start learning today to expand your skills!</p>
 
-        <p>Hello {{ student.username }},</p>
+            <div class="course-card">
+                <div class="course-title">{{ course.title }}</div>
+                <div class="course-description">{{ course.description|striptags|truncate(200) }}</div>
+            </div>
 
-        <p>Great news! You've been enrolled in a new course. Start learning today and expand your knowledge!</p>
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{ course_url }}" class="button" target="_blank">Start Learning Now</a>
+            </div>
 
-        <div class="course-box">
-            <div class="course-title">{{ course.title }}</div>
-            <div class="course-description">{{ course.description|striptags|truncate(200) }}</div>
-        </div>
+            <div class="info-box">
+                <h3>📖 In Your Portal:</h3>
+                <ul>
+                    <li>Access interactive code sandbox labs and lesson reading assets</li>
+                    <li>Complete quizzes, checkpoint questions, and submit assignments</li>
+                    <li>Monitor your syllabus progression in real-time</li>
+                    <li>Earn your official course completion certificate</li>
+                </ul>
+            </div>
 
-        <div style="text-align: center;">
-            <a href="{{ course_url }}" class="button">Start Learning Now</a>
-        </div>
+            <p>Log in to your student dashboard to get started immediately. Happy learning!</p>
+            <p>Best regards,<br><strong>The Pace Academy team</strong></p>
 
-        <div class="info-box">
-            <h3 style="margin-top: 0; color: #065F46;">What You Can Do:</h3>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-                <li>Access all course materials and videos</li>
-                <li>Complete assignments and quizzes</li>
-                <li>Track your progress through each section</li>
-                <li>Earn a certificate upon completion</li>
-            </ul>
-        </div>
-
-        <p>Login to your account to get started. Your learning dashboard is waiting for you!</p>
-
-        <p>Happy Learning! 📚</p>
-
-        <div class="footer">
-            <p><strong>Pace Academy</strong></p>
-            <p>Empowering learners, one course at a time.</p>
-            <p style="font-size: 12px; margin-top: 10px;">
-                This is an automated message. Please do not reply to this email.
-            </p>
+            <!-- Footer -->
+            <div class="footer">
+                <p><strong>Pace Academy</strong></p>
+                <div style="font-size: 11px; margin-top: 10px; color: #cbd5e1;">
+                    This is an automated message. Please do not reply directly to this email.
+                </div>
+            </div>
         </div>
     </div>
 </body>
-
 </html>

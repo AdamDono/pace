@@ -5,141 +5,209 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
         .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
         }
         .header {
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #F59E0B;
+            padding-bottom: 24px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
         }
-        .logo {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .logo-text {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
         }
-        .logo .pace {
-            color: #3B82F6;
+        .logo-text .pace {
+            color: #2563eb;
         }
-        .logo .academy {
-            color: #1F2937;
+        .logo-text .academy {
+            color: #0f172a;
+        }
+        .warning-icon {
+            font-size: 48px;
+            text-align: left;
+            margin: 24px 0 12px 0;
         }
         h1 {
-            color: #F59E0B;
-            margin-top: 20px;
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0 0 16px 0;
+            line-height: 1.25;
         }
-        .course-box {
-            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-            color: white;
-            padding: 25px;
-            margin: 20px 0;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        p {
+            margin: 0 0 20px 0;
+            font-size: 15px;
+            color: #475569;
+        }
+        .course-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 30px 0;
         }
         .course-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 8px 0;
+        }
+        .course-badge {
+            display: inline-block;
+            background-color: #fef3c7;
+            color: #d97706;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            border-radius: 6px;
         }
         .feedback-box {
-            background-color: #FEF3C7;
-            border-left: 4px solid #F59E0B;
+            background-color: #fffbeb;
+            border: 1px solid #fef3c7;
+            border-left: 4px solid #f59e0b;
             padding: 20px;
-            margin: 20px 0;
-            border-radius: 5px;
+            margin: 30px 0;
+            border-radius: 12px;
+        }
+        .feedback-box h3 {
+            margin-top: 0;
+            color: #b45309;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .feedback-box p {
+            margin: 0;
+            color: #d97706;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 30px 0;
         }
         .button {
             display: inline-block;
-            padding: 12px 30px;
-            background-color: #3B82F6;
-            color: white !important;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff !important;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-        .button:hover {
-            background-color: #2563EB;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            transition: all 0.2s ease;
         }
         .tips {
-            background-color: #EFF6FF;
-            padding: 20px;
-            border-radius: 5px;
-            margin: 20px 0;
+            background-color: #f8fafc;
+            border: 1px solid #f1f5f9;
+            padding: 24px;
+            border-radius: 16px;
+            margin: 30px 0;
+        }
+        .tips h3 {
+            margin-top: 0;
+            color: #475569;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .tips ul {
+            margin: 12px 0 0 0;
+            padding-left: 20px;
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .tips li {
+            margin-bottom: 10px;
+        }
+        .tips li:last-child {
+            margin-bottom: 0;
         }
         .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #E5E7EB;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #f1f5f9;
             text-align: center;
-            color: #6B7280;
-            font-size: 14px;
+            color: #94a3b8;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <span class="pace">Pace</span><span class="academy">Academy</span>
+    <div class="wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">
+                    <span class="pace">Pace</span><span class="academy">Academy</span>
+                </div>
             </div>
-        </div>
 
-        <h1>Course Needs Revision</h1>
+            <div class="warning-icon">⚠️</div>
+            <h1>Course Needs Revision</h1>
 
-        <p>Hello {{ teacher.username }},</p>
+            <p>Hello {{ teacher.username }},</p>
+            <p>Thank you for submitting your course. After a review by our QA team, we've identified some areas that need adjustment before it can be approved for student enrollment.</p>
 
-        <p>Thank you for submitting your course. After review, we've identified some areas that need improvement before approval.</p>
+            <div class="course-card">
+                <div class="course-title">{{ course.title }}</div>
+                <span class="course-badge">Needs Revision</span>
+            </div>
 
-        <div class="course-box">
-            <div class="course-title">{{ course.title }}</div>
-        </div>
+            {% if feedback %}
+            <div class="feedback-box">
+                <h3>Admin Review Feedback:</h3>
+                <p>{{ feedback }}</p>
+            </div>
+            {% endif %}
 
-        {% if feedback %}
-        <div class="feedback-box">
-            <h3 style="margin-top: 0; color: #92400E;">Admin Feedback:</h3>
-            <p style="margin: 0; color: #78350F;">{{ feedback }}</p>
-        </div>
-        {% endif %}
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{ edit_url }}" class="button" target="_blank">Edit Your Course</a>
+            </div>
 
-        <div class="tips">
-            <h3 style="margin-top: 0; color: #1E40AF;">Common Issues to Check:</h3>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-                <li>Course title and description are clear and detailed</li>
-                <li>Content is appropriate and educational</li>
-                <li>Materials are properly formatted</li>
-                <li>Course structure is well-organized</li>
-                <li>All required fields are completed</li>
-            </ul>
-        </div>
+            <div class="tips">
+                <h3>💡 Quick Checklist for Resubmission:</h3>
+                <ul>
+                    <li>Confirm the syllabus title and description are detailed and complete</li>
+                    <li>Ensure all coding sandbox tasks have proper test cases</li>
+                    <li>Verify formatting for reading files and video URLs</li>
+                    <li>Double check that all module structural paths are correctly connected</li>
+                </ul>
+            </div>
 
-        <div style="text-align: center;">
-            <a href="{{ edit_url }}" class="button">Edit Your Course</a>
-        </div>
+            <p>Once you make the adjustments, please resubmit the course from your dashboard. We'll prioritize reviewing your updates!</p>
+            <p>Best regards,<br><strong>Pace Academy QA Team</strong></p>
 
-        <p>Please review the feedback, make the necessary changes, and resubmit your course for approval. We're here to help you create amazing learning experiences!</p>
-
-        <p>If you have any questions, feel free to reach out to our support team.</p>
-
-        <p>Best regards,<br>Pace Academy Team</p>
-
-        <div class="footer">
-            <p><strong>Pace Academy</strong></p>
-            <p>Empowering learners, one course at a time.</p>
-            <p style="font-size: 12px; margin-top: 10px;">
-                This is an automated message. Please do not reply to this email.
-            </p>
+            <!-- Footer -->
+            <div class="footer">
+                <p><strong>Pace Academy</strong></p>
+                <div style="font-size: 11px; margin-top: 10px; color: #cbd5e1;">
+                    This is an automated message. Please do not reply directly to this email.
+                </div>
+            </div>
         </div>
     </div>
 </body>

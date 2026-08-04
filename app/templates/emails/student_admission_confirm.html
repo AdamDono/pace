@@ -2,114 +2,133 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Application Received - Pace Academy</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f8;
-            color: #333333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #334155;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background-color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
         .container {
-            max-width: 600px;
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            max-width: 560px;
             margin: 0 auto;
+            background-color: #ffffff;
         }
         .header {
-            text-align: center;
-            padding-bottom: 25px;
+            padding-bottom: 24px;
+            text-align: left;
             border-bottom: 1px solid #f1f5f9;
-            margin-bottom: 30px;
         }
-        .logo {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: #ffffff;
+        .logo-text {
             font-size: 24px;
-            font-weight: bold;
-            line-height: 50px;
-            border-radius: 12px;
-            text-align: center;
-            margin-bottom: 15px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+        .logo-text .pace {
+            color: #2563eb;
+        }
+        .logo-text .academy {
+            color: #0f172a;
+        }
+        .tagline {
+            font-size: 12px;
+            font-weight: 700;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 4px 0 0 0;
         }
         h2 {
-            color: #1e293b;
-            margin: 0;
+            color: #0f172a;
             font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 32px 0 16px 0;
         }
         p {
-            line-height: 1.6;
-            color: #4b5563;
+            margin: 0 0 20px 0;
             font-size: 15px;
+            color: #475569;
         }
         .next-steps {
             background-color: #f8fafc;
+            border: 1px solid #f1f5f9;
             border-left: 4px solid #2563eb;
-            padding: 20px;
-            border-radius: 0 12px 12px 0;
-            margin: 25px 0;
+            padding: 24px;
+            border-radius: 12px;
+            margin: 30px 0;
         }
         .next-steps h3 {
             margin-top: 0;
             color: #1e3a8a;
-            font-size: 16px;
+            font-size: 15px;
+            font-weight: 700;
         }
         .next-steps ul {
-            margin: 10px 0 0 0;
+            margin: 12px 0 0 0;
             padding-left: 20px;
             font-size: 14px;
-            color: #4b5563;
+            color: #475569;
         }
         .next-steps li {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .next-steps li:last-child {
+            margin-bottom: 0;
         }
         .footer {
             margin-top: 40px;
+            padding-top: 24px;
             border-top: 1px solid #f1f5f9;
-            padding-top: 20px;
             text-align: center;
-            font-size: 12px;
-            color: #9ca3af;
+            color: #94a3b8;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">P</div>
-            <h2>Application Received</h2>
-            <p style="margin: 5px 0 0 0; color: #2563eb; font-weight: bold;">Pace Academy Admissions</p>
-        </div>
-        
-        <p>Dear {{ full_name }},</p>
-        
-        <p>Thank you for submitting your application to enroll in <strong>{{ course_title }}</strong> at Pace Academy.</p>
-        
-        <p>Our admissions team is reviewing your details and checking the class cohorts. Because registration is manual and spaces are verified to maintain quality, we will get in touch with you to proceed with setting up your account credentials.</p>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="logo-text">
+                    <span class="pace">Pace</span><span class="academy">Academy</span>
+                </div>
+                <div class="tagline">Admissions</div>
+            </div>
+            
+            <h2>Application Received! 🎉</h2>
+            <p>Dear {{ full_name }},</p>
+            <p>Thank you for submitting your application to enroll in <strong>{{ course_title }}</strong> at Pace Academy.</p>
+            <p>Our admissions team is currently reviewing your details and checking the class cohorts. Because registration is manual and spaces are verified to maintain quality, we will get in touch with you shortly to proceed with setting up your account credentials.</p>
 
-        <div class="next-steps">
-            <h3>📝 What happens next?</h3>
-            <ul>
-                <li><strong>Admissions Review</strong>: We will verify your course entry requirements and cohort availability.</li>
-                <li><strong>Account Setup Invitation</strong>: You will receive an automated invitation email containing your initial login credentials and learning portal instructions once approved.</li>
-                <li><strong>WhatsApp / Call Contact</strong>: One of our admissions facilitators will reach out to you via phone to help onboard you.</li>
-            </ul>
-        </div>
+            <div class="next-steps">
+                <h3>📝 What happens next?</h3>
+                <ul>
+                    <li><strong>Admissions Review</strong>: We will verify your course entry requirements and cohort availability.</li>
+                    <li><strong>Account Setup Invitation</strong>: You will receive an automated invitation email containing your initial login credentials and learning portal instructions once approved.</li>
+                    <li><strong>Admissions Facilitator Contact</strong>: One of our admissions facilitators will reach out to you via WhatsApp or phone call to help onboard you.</li>
+                </ul>
+            </div>
 
-        <p>If you have any urgent questions, feel free to reply to this email or reach us directly at <a href="mailto:info@paceacademy.co.za" style="color: #2563eb; text-decoration: none; font-weight: bold;">info@paceacademy.co.za</a>.</p>
+            <p>If you have any urgent questions, feel free to reply directly to this email or reach us at <a href="mailto:info@paceacademy.co.za" style="color: #2563eb; text-decoration: none; font-weight: bold;">info@paceacademy.co.za</a>.</p>
+            <p>We are excited to help you take the next step in your educational journey!</p>
+            <p>Warm regards,<br><strong>The Pace Academy Team</strong></p>
 
-        <p>We are excited to help you take the next step in your educational journey!</p>
-        
-        <p>Warm regards,<br><strong>Pace Academy Team</strong></p>
-
-        <div class="footer">
-            <p>© 2026 Pace Academy. Empowering learners, one course at a time.</p>
+            <div class="footer">
+                <p>© 2026 Pace Academy. Empowering learners, one course at a time.</p>
+            </div>
         </div>
     </div>
 </body>
