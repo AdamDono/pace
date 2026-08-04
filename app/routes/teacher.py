@@ -19,12 +19,26 @@ teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 @teacher_bp.route('/dashboard')
 @login_required
 def dashboard():
-    from app.models import Course  # Moved here
+    from app.models import Course, AssignmentSubmission, Assignment, Section  # Moved here
     if current_user.role != 'teacher':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('auth.login'))
     courses = Course.query.filter_by(teacher_id=current_user.id).all()
-    return render_template('teacher/dashboard.html', courses=courses)
+    course_ids = [c.id for c in courses]
+
+    # Count pending (unreviewed) submissions across all teacher's courses
+    pending_grading = 0
+    if course_ids:
+        pending_grading = (
+            AssignmentSubmission.query
+            .join(Assignment, AssignmentSubmission.assignment_id == Assignment.id)
+            .join(Section, Assignment.section_id == Section.id)
+            .join(Course, Section.course_id == Course.id)
+            .filter(Course.id.in_(course_ids), AssignmentSubmission.reviewed == False)
+            .count()
+        )
+
+    return render_template('teacher/dashboard.html', courses=courses, pending_grading=pending_grading)
 
 @teacher_bp.route('/media/<path:filename>')
 @login_required

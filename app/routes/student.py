@@ -366,8 +366,16 @@ def get_section_content(section_id):
 
 @student_bp.route('/section/<int:section_id>/assignment/<int:assignment_id>/submit', methods=['GET', 'POST'])
 @login_required
-@student_required
 def submit_assignment(section_id, assignment_id):
+    # Teachers and admins can preview — redirect them back to the course reader
+    if current_user.role in ('teacher', 'admin'):
+        section = Section.query.get_or_404(section_id)
+        flash('You are previewing as a teacher. Log in as a student to submit assignments.', 'info')
+        return redirect(url_for('student.course_detail', course_id=section.course_id))
+
+    if current_user.role != 'student':
+        abort(403)
+
     section = Section.query.get_or_404(section_id)
     assignment = Assignment.query.get_or_404(assignment_id)
     if assignment.section_id != section_id or not student_enrolled(section.course_id):
@@ -834,9 +842,11 @@ def serve_certificate(enrollment_id):
 
 @student_bp.route('/track-time/<int:section_id>', methods=['POST'])
 @login_required
-@student_required
 def track_time(section_id):
     """Track time spent on a section (AJAX endpoint)"""
+    # Teachers/admins previewing — silently succeed without writing a record
+    if current_user.role != 'student':
+        return jsonify({'success': True, 'total_time': 0})
     try:
         data = request.get_json()
         time_spent = data.get('time_spent', 0)  # in seconds

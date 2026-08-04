@@ -354,7 +354,7 @@ function viewSubmission(submissionId) {
                         <div class="flex items-center justify-end space-x-3">
                             <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-300 transition-all">Cancel</button>
                             <button type="submit" id="saveGradeBtn" class="px-6 py-3 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-all flex items-center space-x-2">
-                                <span>Save Grade & Feedback ✓</span>
+                                <span>Save Grade + Feedback ✓</span>
                             </button>
                         </div>
                     </form>
@@ -368,7 +368,7 @@ function viewSubmission(submissionId) {
         })
         .catch(error => {
             console.error('Submission view error:', error);
-            alert('Error loading submission details');
+            showToast('Error loading submission details', 'danger');
         });
 }
 
@@ -380,7 +380,7 @@ function submitInlineGrade(event, submissionId) {
     
     if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.innerHTML = '<span>Saving...</span>';
+        saveBtn.innerHTML = '<span>Saving... ⏳</span>';
     }
 
     fetch(`/teacher/submit_feedback/${submissionId}`, {
@@ -397,23 +397,23 @@ function submitInlineGrade(event, submissionId) {
     .then(res => res.json())
     .then(resData => {
         if (resData.success) {
-            alert('✅ Grade and feedback saved successfully!');
+            showToast('Grade and feedback saved successfully!', 'success');
             closeModal();
-            window.location.reload();
+            setTimeout(() => window.location.reload(), 800);
         } else {
-            alert(resData.message || 'Error saving grade.');
+            showToast(resData.message || 'Error saving grade.', 'danger');
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = '<span>Save Grade & Feedback ✓</span>';
+                saveBtn.innerHTML = '<span>Save Grade + Feedback ✓</span>';
             }
         }
     })
     .catch(err => {
         console.error('Grade submit error:', err);
-        alert('Failed to save grade. Please try again.');
+        showToast('Failed to save grade. Please try again.', 'danger');
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.innerHTML = '<span>Save Grade & Feedback ✓</span>';
+            saveBtn.innerHTML = '<span>Save Grade + Feedback ✓</span>';
         }
     });
 }
@@ -433,11 +433,32 @@ function viewQuizAttempts(quizId, studentId) {
 }
 
 function sendMessage() {
-    alert('Messaging feature coming soon! Student: {{ student.email }}');
+    showToast('Messaging feature coming soon!', 'info');
 }
 
 function exportStudentGrades() {
-    alert('Export functionality coming soon! This will download grades for this student.');
+    showToast('Export grades feature coming soon!', 'info');
+}
+
+function showToast(message, category = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'fixed top-20 right-6 z-[9999] flex flex-col gap-3 pointer-events-none';
+        document.body.appendChild(container);
+    }
+    const colors = {
+        success: 'bg-emerald-600',
+        danger: 'bg-red-600',
+        warning: 'bg-amber-500',
+        info: 'bg-blue-600'
+    };
+    const toast = document.createElement('div');
+    toast.className = `${colors[category] || colors.success} text-white px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold pointer-events-auto flex items-center gap-3 max-w-sm transition-all`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3500);
 }
 
 function closeModal() {
