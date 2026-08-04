@@ -165,7 +165,7 @@
                     </div>
                     <p class="text-xs text-gray-400 mt-0.5">{{ module.sections|length }} activit{{ 'y' if module.sections|length == 1 else 'ies' }}</p>
                 </div>
-                <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center space-x-2">
                     <button onclick="editLesson({{ module.id }}, '{{ module.title }}'); event.stopPropagation();"
                         class="p-1.5 text-gray-500 hover:text-blue-600 rounded hover:bg-blue-50">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,8 +223,7 @@
                                 <h4 class="font-medium text-gray-800 text-sm truncate">{{ section.title }}</h4>
                             </div>
                         </div>
-                        <div
-                            class="flex items-center space-x-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                        <div class="flex items-center space-x-2">
                             <a href="{{ url_for('teacher.edit_section_content', course_id=course.id, section_id=section.id) }}"
                                 class="px-2 py-1 text-xs border border-gray-200 bg-white hover:bg-gray-50 rounded text-gray-600">
                                 ✏️ Edit
