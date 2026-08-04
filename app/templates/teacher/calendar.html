@@ -18,7 +18,7 @@
                     <p class="text-sm text-gray-500 mt-1">{{ c.status|title }}</p>
                 </div>
                 {% if c.banner_image %}
-                <img src="{{ url_for('teacher.media', filename=c.banner_image) }}" alt="{{ c.title }}" class="w-20 h-12 object-cover rounded-md">
+                <img src="{{ c.banner_image|media_url }}" alt="{{ c.title }}" class="w-20 h-12 object-cover rounded-md">
                 {% endif %}
             </div>
             <div class="mt-4 text-sm text-gray-600">

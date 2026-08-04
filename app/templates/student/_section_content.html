@@ -20,7 +20,7 @@
     </div>
 
     <!-- ─── Content Rendering ─────────────────────────────────── -->
-    {% if not section.content and not section.video_url and not section.media_file %}
+    {% if not section.content and not section.video_url and not section.media_file and not section.assignments and not section.quizzes %}
         <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
             <span class="text-xl">⚠️</span>
             No content available for this section yet.
