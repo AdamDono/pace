@@ -1833,7 +1833,7 @@ def quick_create_section(course_id):
     db.session.commit()
     return jsonify({'success': True, 'section_id': section.id, 'activity_type': activity_type})
 
-@teacher_bp.route('/teacher/delete-module/<int:module_id>', methods=['POST'])
+@teacher_bp.route('/delete-module/<int:module_id>', methods=['POST'])
 @teacher_required
 def delete_module(module_id):
     from app.models import Module, Section, EnrollmentSection, VideoWatchProgress, VideoInteractiveQuestion, VideoSubtitle, db
@@ -1867,7 +1867,7 @@ def delete_module(module_id):
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@teacher_bp.route('/teacher/delete-section/<int:section_id>', methods=['POST'])
+@teacher_bp.route('/delete-section/<int:section_id>', methods=['POST'])
 @teacher_required
 def delete_section(section_id):
     from app.models import Section, EnrollmentSection, VideoWatchProgress, VideoInteractiveQuestion, VideoSubtitle, db
