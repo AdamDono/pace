@@ -334,11 +334,17 @@
 
                 // Automatically trigger HTMX load on the next section instantly
                 setTimeout(function () {
-                    if (window.htmx) {
-                        window.htmx.trigger(nextBtn, 'click');
-                    } else {
-                        nextBtn.click();
+                    // Expand parent module if hidden
+                    const parentModuleId = nextBtn.getAttribute('data-parent-module-id');
+                    if (parentModuleId) {
+                        const moduleContainer = document.getElementById(parentModuleId);
+                        if (moduleContainer && moduleContainer.classList.contains('hidden')) {
+                            moduleContainer.classList.remove('hidden');
+                            const arrow = document.getElementById('module-arrow-' + parentModuleId.split('-')[1]);
+                            if (arrow) arrow.style.transform = 'rotate(180deg)';
+                        }
                     }
+                    nextBtn.click();
                 }, 300);
             }
         }
@@ -813,9 +819,7 @@
                 messages.forEach(([category, message]) => {
                     showToast(message, category);
                     // Celebrate completions
-                    if (message.includes('Quiz completed!') || message.includes('Section marked as completed.')) {
-                        triggerSuccessConfetti();
-                    }
+                    // Confetti is now reserved for full course completions and certificate downloads.
                 });
             } catch (e) {
                 console.error('Error parsing flashed messages:', e);
@@ -1178,7 +1182,7 @@
         <p id="celebrationCourseTitle" class="text-xl font-extrabold text-blue-600 mb-6"></p>
         <div class="space-y-3">
             <form method="POST" action="{{ url_for('student.generate_certificate', enrollment_id=0) }}"
-                id="celebrationCertForm">
+                id="celebrationCertForm" onsubmit="triggerSuccessConfetti()">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <input type="hidden" id="celebrationEnrollmentId" name="enrollment_id" value="" />
                 <button type="submit"

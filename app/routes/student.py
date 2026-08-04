@@ -640,6 +640,8 @@ def view_ratings(course_id):
 @student_required
 def generate_certificate(enrollment_id):
     logger.debug(f"Generating certificate for enrollment_id: {enrollment_id}")
+    if enrollment_id == 0:
+        enrollment_id = request.form.get('enrollment_id', type=int) or 0
     enrollment = Enrollment.query.get_or_404(enrollment_id)
     if enrollment.student_id != current_user.id:
         logger.warning(f"Unauthorized certificate request for enrollment_id: {enrollment_id}")
