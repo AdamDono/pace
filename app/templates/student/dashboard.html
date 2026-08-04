@@ -208,6 +208,9 @@
             course.category or 'General' }}</span>
           <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">{{
             course.difficulty_level or 'Intermediate' }}</span>
+          {% if course.estimated_duration %}
+          <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">⏳ {{ course.estimated_duration }} hrs</span>
+          {% endif %}
         </div>
 
         <!-- Footer Stats -->

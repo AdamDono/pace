@@ -68,7 +68,12 @@
                         <i class="fas fa-book-open"></i>
                         {{ course.sections|length }} sections
                     </span>
-                    {% if total_duration > 0 %}
+                    {% if course.estimated_duration %}
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-clock"></i>
+                        {{ course.estimated_duration }} hrs
+                    </span>
+                    {% elif total_duration > 0 %}
                     <span class="flex items-center gap-1">
                         <i class="fas fa-clock"></i>
                         {{ total_duration }} min

@@ -173,7 +173,7 @@
                                                 </span>
                                                 <div class="leading-none">
                                                     <span class="text-sm font-semibold text-gray-700">{{ section.title }}</span>
-                                                    {% if section.duration %}
+                                                    {% if (section.section_type == 'lesson' or section.section_type == 'quiz') and section.duration %}
                                                     <span class="text-[10px] text-gray-400 ml-2 font-bold uppercase tracking-wider">({{ section.duration }} mins)</span>
                                                     {% endif %}
                                                 </div>

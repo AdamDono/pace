@@ -401,7 +401,13 @@
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     Back to Dashboard
                 </a>
-                <h2 class="text-base font-bold text-gray-900 leading-tight mb-2">{{ course.title }}</h2>
+                <h2 class="text-base font-bold text-gray-900 leading-tight mb-1">{{ course.title }}</h2>
+                {% if course.estimated_duration %}
+                <p class="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                    <span class="text-gray-400">⏳</span>
+                    <span>Duration: {{ course.estimated_duration }} Hours</span>
+                </p>
+                {% endif %}
                 
                 {% if completion_percentage is defined %}
                 <div class="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
@@ -472,6 +478,9 @@
                                         {% endif %}
                                     </div>
                                     <span class="truncate text-gray-700 font-medium group-hover:text-indigo-600">{{ section.title }}</span>
+                                    {% if (section.section_type == 'lesson' or section.section_type == 'quiz') and section.duration %}
+                                    <span class="text-[10px] text-gray-400 font-bold whitespace-nowrap ml-2">({{ section.duration }}m)</span>
+                                    {% endif %}
                                 </div>
                             </button>
                             {% endfor %}

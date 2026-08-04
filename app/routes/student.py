@@ -145,6 +145,9 @@ def course_detail(course_id):
     
     # Check authorization based on role
     if current_user.role == 'student':
+        if course.status != 'approved':
+            flash('This course has not been published or approved yet.', 'danger')
+            return redirect(url_for('student.dashboard'))
         enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
         if not enrollment:
             flash('You are not enrolled in this course.', 'danger')
@@ -229,6 +232,8 @@ def get_section_content(section_id):
     
     # Check authorization based on role
     if current_user.role == 'student':
+        if course.status != 'approved':
+            return '<div class="p-4 text-red-700 bg-red-50 rounded-xl border border-red-150">⚠️ This course has not been approved or published yet.</div>', 403
         # Student must be enrolled
         enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first_or_404()
         enrollment_sections = {es.section_id: es for es in enrollment.sections}
@@ -1113,7 +1118,7 @@ def assignments():
     from sqlalchemy import or_
     
     # Get all assignments for enrolled courses
-    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).all()]
+    enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(student_id=current_user.id).join(Course).filter(Course.status == 'approved').all()]
     
     assignments = Assignment.query.join(Section).filter(
         Section.course_id.in_(enrolled_course_ids)
