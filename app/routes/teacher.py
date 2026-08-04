@@ -1836,28 +1836,70 @@ def quick_create_section(course_id):
 @teacher_bp.route('/teacher/delete-module/<int:module_id>', methods=['POST'])
 @teacher_required
 def delete_module(module_id):
-    from app.models import Module, db
+    from app.models import Module, Section, EnrollmentSection, VideoWatchProgress, VideoInteractiveQuestion, VideoSubtitle, db
     module = Module.query.get_or_404(module_id)
     # Check ownership via course
     if module.course.teacher_id != current_user.id:
         return jsonify({'success': False}), 403
         
-    db.session.delete(module)
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        # Get all sections inside this module
+        sections = Section.query.filter_by(module_id=module.id).all()
+        for section in sections:
+            # Delete referencing progress and tracking rows first
+            VideoWatchProgress.query.filter_by(section_id=section.id).delete(synchronize_session=False)
+            iqs = VideoInteractiveQuestion.query.filter_by(section_id=section.id).all()
+            for iq in iqs:
+                db.session.delete(iq)
+            VideoSubtitle.query.filter_by(section_id=section.id).delete(synchronize_session=False)
+            EnrollmentSection.query.filter_by(section_id=section.id).delete(synchronize_session=False)
+            
+            # Delete section
+            db.session.delete(section)
+            
+        # Finally delete the module
+        db.session.delete(module)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @teacher_bp.route('/teacher/delete-section/<int:section_id>', methods=['POST'])
 @teacher_required
 def delete_section(section_id):
-    from app.models import Section, db
+    from app.models import Section, EnrollmentSection, VideoWatchProgress, VideoInteractiveQuestion, VideoSubtitle, db
     section = Section.query.get_or_404(section_id)
     # Check ownership via course
     if section.course.teacher_id != current_user.id:
         return jsonify({'success': False}), 403
         
-    db.session.delete(section)
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        # Delete referencing VideoWatchProgress
+        VideoWatchProgress.query.filter_by(section_id=section.id).delete(synchronize_session=False)
+        
+        # Delete referencing VideoInteractiveQuestion
+        iqs = VideoInteractiveQuestion.query.filter_by(section_id=section.id).all()
+        for iq in iqs:
+            db.session.delete(iq)
+            
+        # Delete referencing VideoSubtitle
+        VideoSubtitle.query.filter_by(section_id=section.id).delete(synchronize_session=False)
+        
+        # Delete referencing EnrollmentSection
+        EnrollmentSection.query.filter_by(section_id=section.id).delete(synchronize_session=False)
+        
+        # Finally delete the section
+        db.session.delete(section)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/edit-content', methods=['GET', 'POST'])
 @teacher_required
