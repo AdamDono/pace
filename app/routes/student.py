@@ -1165,24 +1165,38 @@ def assignments():
 @student_required
 def certificates():
     """View all earned certificates"""
-    # Get all completed enrollments
-    completed_enrollments = Enrollment.query.filter_by(
-        student_id=current_user.id,
-        completed=True
-    ).all()
-    
-    # Build certificates list with course info
+    # Get all enrollments (completed flag OR 100% section progress)
+    all_enrollments = Enrollment.query.filter_by(student_id=current_user.id).all()
+
     certificates = []
-    for enrollment in completed_enrollments:
+    for enrollment in all_enrollments:
         course = Course.query.get(enrollment.course_id)
-        if course:
+        if not course:
+            continue
+
+        # Check completion: either flag is True, or all sections are done
+        is_completed = enrollment.completed
+        if not is_completed:
+            all_sections = Section.query.filter_by(course_id=course.id).all()
+            if all_sections:
+                completed_sections = EnrollmentSection.query.filter_by(
+                    enrollment_id=enrollment.id, completed=True
+                ).count()
+                if completed_sections >= len(all_sections):
+                    # Auto-heal the flag so future checks are fast
+                    enrollment.completed = True
+                    enrollment.completed_at = enrollment.completed_at or datetime.utcnow()
+                    db.session.commit()
+                    is_completed = True
+
+        if is_completed:
             certificates.append({
                 'enrollment': enrollment,
                 'course': course,
                 'has_certificate': bool(enrollment.certificate_path),
                 'completed_at': enrollment.completed_at
             })
-    
+
     return render_template('student/certificates.html', certificates=certificates)
 
 @student_bp.route('/calendar')

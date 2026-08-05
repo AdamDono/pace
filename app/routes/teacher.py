@@ -889,16 +889,7 @@ def add_quiz(course_id, section_id):
         abort(403)
 
     form = QuizForm()
-    if form.validate_on_submit():
-        # Get quiz settings from form
-        time_limit = request.form.get('time_limit', type=int)
-        passing_score = request.form.get('passing_score', type=float) or 60.0
-        max_attempts = request.form.get('max_attempts', type=int)
-        randomize_questions = 'randomize_questions' in request.form
-        show_correct_answers = 'show_correct_answers' in request.form
-        
     if request.method == 'POST':
-        # Custom handling for dynamic form
         title = request.form.get('title')
         if not title:
             flash('Quiz title is required', 'danger')
@@ -913,30 +904,27 @@ def add_quiz(course_id, section_id):
                 max_attempts=int(request.form.get('max_attempts')) if request.form.get('max_attempts') else None
             )
             db.session.add(quiz)
-            db.session.flush() # Get ID
+            db.session.flush()  # Get ID
 
-            # Parse questions from form keys
+            # Parse questions from form keys like: q_{timestamp}_{field}
             questions_data = {}
             for key in request.form:
                 if key.startswith('q_') and '_' in key[2:]:
                     parts = key.split('_')
-                    # Expect keys like: q_{timestamp}_{field}
                     if len(parts) >= 3:
                         q_id = parts[1]
-                        field = parts[-1] # text, a, b, c, d, correct
-                        
+                        field = parts[-1]  # text, a, b, c, d, correct
                         if q_id not in questions_data:
                             questions_data[q_id] = {'question': '', 'a': '', 'b': '', 'c': '', 'd': '', 'correct': 'a'}
-                        
                         if field == 'text':
                             questions_data[q_id]['question'] = request.form[key]
                         elif field in ['a', 'b', 'c', 'd']:
                             questions_data[q_id][field] = request.form[key]
                         elif field == 'correct':
-                             questions_data[q_id]['correct'] = request.form[key]
-            
+                            questions_data[q_id]['correct'] = request.form[key]
+
             for q_id, q in questions_data.items():
-                if q['question'] and q['a'] and q['b']: # Minimal validation
+                if q['question'] and q['a'] and q['b']:  # Minimal validation
                     question = QuizQuestion(
                         quiz_id=quiz.id,
                         question_text=q['question'],
@@ -947,7 +935,7 @@ def add_quiz(course_id, section_id):
                         correct_answer=q['correct']
                     )
                     db.session.add(question)
-            
+
             db.session.commit()
             flash('Quiz created successfully!', 'success')
             return redirect(url_for('teacher.course_builder', course_id=course.id))
