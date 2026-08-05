@@ -47,7 +47,7 @@ A modern, feature-rich LMS built with Flask, featuring interactive content, code
 
 1. **Clone the repository**
    ```bash
-   cd /Users/dam1mac89/Desktop/pace
+   cd pace
    ```
 
 2. **Create virtual environment**
@@ -68,7 +68,7 @@ A modern, feature-rich LMS built with Flask, featuring interactive content, code
 
 5. **Access the app**
    - Open browser: http://localhost:5000
-   - Default admin: admin@hedgitalacademy.co.za / admin123
+   - Default admin credentials are set via environment variables (see `.env.example`)
 
 ---
 
