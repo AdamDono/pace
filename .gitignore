@@ -12,6 +12,8 @@ venv/
 .venv/
 env/
 .env/
+#/
+scratch/
 
 # Environment variables — never commit secrets
 .env
