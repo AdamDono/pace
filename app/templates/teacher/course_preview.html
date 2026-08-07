@@ -72,7 +72,8 @@
                         {% if course.banner_image %}
                         <div class="mb-4 -mx-6 -mt-6">
                             <img src="{{ course.banner_image|media_url }}"
-                                alt="{{ course.title }}" class="w-full h-40 object-cover rounded-t-xl">
+                                alt="{{ course.title }}" class="w-full h-40 object-cover rounded-t-xl"
+                                onerror="this.onerror=null; this.src='/static/images/default_banner.svg';">
                         </div>
                         {% endif %}
 

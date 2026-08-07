@@ -63,7 +63,8 @@
                         <div class="relative h-24 bg-gray-50 overflow-hidden flex-shrink-0">
                             <img src="{{ course.banner_image|media_url }}"
                                 alt="{{ course.title }} thumbnail"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onerror="this.onerror=null; this.src='/static/images/default_banner.svg';" />
                         </div>
                         {% endif %}
 

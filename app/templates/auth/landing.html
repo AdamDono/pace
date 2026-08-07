@@ -702,7 +702,7 @@
                             <!-- Banner Image with Fallback -->
                             <div class="h-48 relative overflow-hidden bg-gray-100 border-b border-gray-100">
                                 {% if course.banner_image %}
-                                    <img src="{{ url_for('static', filename='uploads/' ~ course.banner_image) if not course.banner_image.startswith('http') else course.banner_image }}" 
+                                    <img src="{{ course.banner_image|media_url }}" 
                                          alt="{{ course.title }}" 
                                          class="w-full h-full object-cover"
                                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
