@@ -651,12 +651,18 @@ def edit_course(course_id):
                     return redirect(url_for('teacher.edit_course', course_id=course_id))
                 
                 pdf_filename = f"course_{uuid.uuid4().hex}.pdf"
-                save_path = os.path.join(
-                    current_app.config['UPLOAD_FOLDER'],
-                    pdf_filename
-                )
-                pdf.save(save_path)
-                course.pdf_filename = pdf_filename
+                # Try Cloudinary first for persistent storage
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(pdf, folder="pace_pdfs", resource_type="raw")
+                if cloudinary_url:
+                    course.pdf_filename = cloudinary_url
+                else:
+                    save_path = os.path.join(
+                        current_app.config['UPLOAD_FOLDER'],
+                        pdf_filename
+                    )
+                    pdf.save(save_path)
+                    course.pdf_filename = pdf_filename
 
             # Handle banner image upload
             banner_file = request.files.get('banner_image')
@@ -1252,17 +1258,20 @@ def edit_section(course_id, section_id):
                         import uuid
                         unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
                         
-                        # Ensure upload directory exists
-                        import os
-                        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
-                        os.makedirs(upload_dir, exist_ok=True)
-                        
-                        # Save file
-                        file_path = os.path.join(upload_dir, unique_filename)
-                        file.save(file_path)
-                        
-                        # Update section with new file
-                        section.media_file = unique_filename
+                        # Try Cloudinary first for persistent storage
+                        from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                        resource = "raw" if extension in ('pdf', 'mp3') else ("video" if extension == 'mp4' else "image")
+                        cloudinary_url = upload_file_to_cloudinary(file, folder="pace_media", resource_type=resource)
+                        if cloudinary_url:
+                            section.media_file = cloudinary_url
+                        else:
+                            # Fallback to local disk
+                            import os
+                            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+                            os.makedirs(upload_dir, exist_ok=True)
+                            file_path = os.path.join(upload_dir, unique_filename)
+                            file.save(file_path)
+                            section.media_file = unique_filename
                     else:
                         flash('Invalid file type. Allowed: PDF, JPG, PNG, GIF, MP4, MP3', 'danger')
                         return redirect(request.url)
@@ -1933,10 +1942,17 @@ def edit_section_content(course_id, section_id):
                 ext = os.path.splitext(file.filename)[1].lower()
                 if ext in ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx', '.ppt', '.pptx']:
                     filename = secure_filename(f"{uuid.uuid4().hex[:8]}_{file.filename}")
-                    upload_path = os.path.join(current_app.root_path, 'static/uploads')
-                    os.makedirs(upload_path, exist_ok=True)
-                    file.save(os.path.join(upload_path, filename))
-                    section.media_file = filename
+                    # Try Cloudinary first for persistent storage
+                    from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                    resource = "raw" if ext in ('.pdf', '.doc', '.docx', '.ppt', '.pptx') else "image"
+                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_media", resource_type=resource)
+                    if cloudinary_url:
+                        section.media_file = cloudinary_url
+                    else:
+                        upload_path = os.path.join(current_app.root_path, 'static/uploads')
+                        os.makedirs(upload_path, exist_ok=True)
+                        file.save(os.path.join(upload_path, filename))
+                        section.media_file = filename
         
         db.session.commit()
         flash('Content updated!', 'success')

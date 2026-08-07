@@ -434,11 +434,16 @@ def profile():
                             os.remove(old_path)
                     except Exception:
                         pass
-                # Save new image
-                new_name = f"avatar_admin_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
-                save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
-                file.save(save_path)
-                current_user.profile_image = new_name
+                # Save new image — try Cloudinary first
+                from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_avatars")
+                if cloudinary_url:
+                    current_user.profile_image = cloudinary_url
+                else:
+                    new_name = f"avatar_admin_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+                    save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
+                    file.save(save_path)
+                    current_user.profile_image = new_name
 
         # Update password if provided
         if form.new_password.data:
