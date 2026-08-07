@@ -136,18 +136,20 @@
         margin: 0 !important;
     }
 
-    /* 4. H5P & IFRAME CONTAINERS */
+    /* 4. H5P & IFRAME CONTAINERS (CENTERED) */
     .h5p-embed-container {
         position: relative;
         width: 100%;
+        max-width: 900px;
         height: 0;
         padding-bottom: 56.25%;
         /* 16:9 Aspect Ratio by default */
         background: #f1f1f1;
         border: 1px solid #eee;
-        border-radius: 8px;
+        border-radius: 12px;
         overflow: hidden;
-        margin: 20px 0;
+        margin: 24px auto;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
     .h5p-embed-container iframe {
@@ -159,17 +161,17 @@
         border: none;
     }
 
-    /* Ensure Lumi iframes are styled even if missing the container class initially */
+    /* Ensure Lumi & H5P iframes are centered and styled */
     iframe[src*="lumi.education"],
     iframe[src*="h5p.org"] {
         display: block;
         width: 100%;
-        max-width: 100%;
+        max-width: 900px;
         border: 0;
-        border-radius: 8px;
-        margin: 20px 0;
-        min-height: 400px;
-        /* Force minimum height for visibility */
+        border-radius: 12px;
+        margin: 24px auto;
+        min-height: 450px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 </style>
 
