@@ -100,6 +100,18 @@
                             {% include 'components/quill_editor.html' %}
                         {% endwith %}
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Course Banner Image (Thumbnail)</label>
+                        {% if course.banner_image %}
+                        <div class="mb-2 flex items-center space-x-3 bg-gray-50 p-2 rounded-lg border">
+                            <img src="{{ course.banner_image|media_url }}" alt="Current Banner" class="h-16 w-28 object-cover rounded-md border">
+                            <span class="text-xs text-gray-500">Current Banner</span>
+                        </div>
+                        {% endif %}
+                        <input type="file" name="banner_image" accept="image/*" class="w-full p-2 border rounded-lg text-sm bg-white">
+                        <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG, GIF, or WEBP up to 10MB.</p>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
@@ -126,6 +138,10 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Learning Duration (hrs)</label>
                             <input type="number" name="estimated_duration" value="{{ course.estimated_duration or '' }}"
                                 class="w-full p-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Course PDF / Syllabus (Optional)</label>
+                            <input type="file" name="pdf_upload" accept=".pdf" class="w-full p-2 border rounded-lg text-sm bg-white">
                         </div>
                     </div>
                 </div>

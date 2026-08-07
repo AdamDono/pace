@@ -705,7 +705,8 @@ def edit_course(course_id):
             # course.status = 'pending'
             db.session.commit()
             flash('Course updated successfully!', 'success')
-            return redirect(url_for('teacher.my_courses'))
+            next_url = request.referrer or url_for('teacher.course_builder', course_id=course_id)
+            return redirect(next_url)
             
         except Exception as e:
             db.session.rollback()
