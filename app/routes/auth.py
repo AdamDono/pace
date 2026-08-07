@@ -13,8 +13,8 @@ def home():
         return redirect_based_on_role()
     
     from app.models import Course
-    # Get up to 6 approved courses for public display on the landing page
-    courses = Course.query.filter_by(status='approved').limit(6).all()
+    # Get approved public courses for display on the landing page
+    courses = Course.query.filter(Course.status == 'approved', Course.visibility != 'private').limit(6).all()
     return render_template('auth/landing.html', courses=courses)
 
 @auth_bp.route('/course/<int:course_id>')

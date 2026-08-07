@@ -545,7 +545,10 @@ def create_course_from_wizard(session_data):
             banner_image=banner_image,
             pdf_filename=pdf_filename,
             intro_video=data.get('intro_video'),
-            is_draft=data.get('status') == 'draft'
+            is_draft=data.get('status') == 'draft',
+            visibility=data.get('visibility', 'public'),
+            is_coming_soon=data.get('is_coming_soon') in ('true', 'on', '1', True),
+            max_seats=int(data.get('max_seats')) if data.get('max_seats') and str(data.get('max_seats')).isdigit() else None
         )
 
         db.session.add(course)
@@ -699,10 +702,16 @@ def edit_course(course_id):
             else:
                 course.intro_video = None
 
+            # Update visibility, coming soon, and max seats
+            if 'visibility' in request.form:
+                course.visibility = request.form.get('visibility', 'public')
+            course.is_coming_soon = request.form.get('is_coming_soon') in ('true', 'on', '1', True)
+            if 'max_seats' in request.form:
+                seats_val = request.form.get('max_seats', '').strip()
+                course.max_seats = int(seats_val) if seats_val.isdigit() else None
+
             # Update other fields
             form.populate_obj(course)
-            # Removed automatic status change to pending
-            # course.status = 'pending'
             db.session.commit()
             flash('Course updated successfully!', 'success')
             next_url = request.referrer or url_for('teacher.course_builder', course_id=course_id)

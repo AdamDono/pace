@@ -215,12 +215,29 @@
                         </div>
 
                         <div class="mb-6">
+                            {% if course.is_coming_soon %}
+                            <span class="inline-block bg-purple-100 text-purple-700 font-extrabold text-xs px-3 py-1 rounded-full mb-2 uppercase tracking-wide">
+                                🚀 Pre-Launch / Coming Soon
+                            </span>
+                            {% endif %}
                             <span class="text-xs font-black uppercase tracking-widest text-gray-400">Monthly Tuition</span>
                             <div class="flex items-baseline space-x-1.5 mt-1">
                                 <span class="text-3xl font-black text-gray-900">R250</span>
                                 <span class="text-sm font-semibold text-gray-500">pm</span>
                             </div>
                             <p class="text-xs text-gray-400 mt-2 font-medium">Cancel anytime. Access all Skills and Vocational courses.</p>
+
+                            {% if course.max_seats %}
+                            <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                <div class="flex justify-between items-center text-xs font-bold text-amber-900 mb-1">
+                                    <span>🔥 Seat Availability</span>
+                                    <span>{{ course.seats_remaining }} / {{ course.max_seats }} left</span>
+                                </div>
+                                <div class="w-full bg-amber-200 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-amber-500 h-full rounded-full" style="width: {{ ((course.max_seats - course.seats_remaining) / course.max_seats * 100)|round }}%;"></div>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
 
                         {% if course.pdf_filename %}
@@ -259,8 +276,14 @@
                     </div>
 
                     <div class="space-y-4">
-                        <button onclick="openAdmissionsModal()" class="cta-btn w-full block text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10 cursor-pointer">
-                            Apply to Enroll
+                        <button onclick="openAdmissionsModal()" class="cta-btn w-full block text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10 cursor-pointer {% if course.is_coming_soon %}!bg-purple-600 hover:!bg-purple-700{% endif %}">
+                            {% if course.is_coming_soon %}
+                                🚀 Reserve Your Seat (Join Waitlist)
+                            {% elif course.max_seats and course.seats_remaining == 0 %}
+                                ⏳ Seat Capacity Reached (Join Waitlist)
+                            {% else %}
+                                Apply to Enroll
+                            {% endif %}
                         </button>
                         <p class="text-center text-xs text-gray-500 font-medium">
                             Already registered? <a href="{{ url_for('auth.login') }}" class="text-blue-600 font-bold hover:underline">Sign In</a>

@@ -711,9 +711,21 @@
                                     <span class="text-4xl mb-3">🎓</span>
                                     <span class="text-xs uppercase tracking-widest font-black text-blue-600">{{ course.category or 'Skills Path' }}</span>
                                 </div>
-                                <span class="absolute top-3 right-3 bg-blue-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm z-10">
-                                    {{ course.difficulty_level or 'Beginner' }}
-                                </span>
+                                <div class="absolute top-3 right-3 flex items-center space-x-1.5 z-10">
+                                    {% if course.is_coming_soon %}
+                                    <span class="bg-purple-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
+                                        🚀 Coming Soon
+                                    </span>
+                                    {% endif %}
+                                    {% if course.max_seats %}
+                                    <span class="bg-amber-500 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
+                                        🔥 {{ course.seats_remaining }} Seats Left
+                                    </span>
+                                    {% endif %}
+                                    <span class="bg-blue-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
+                                        {{ course.difficulty_level or 'Beginner' }}
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Content -->

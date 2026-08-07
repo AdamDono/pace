@@ -152,6 +152,11 @@ class Course(db.Model):
     is_draft = db.Column(db.Boolean, default=True)  # for autosave functionality
     last_autosave = db.Column(db.DateTime, nullable=True)
     
+    # Visibility & Seats controls
+    visibility = db.Column(db.String(20), default='public', index=True)  # 'public', 'private'
+    is_coming_soon = db.Column(db.Boolean, default=False, index=True)  # Waitlist / Pre-launch mode
+    max_seats = db.Column(db.Integer, nullable=True)  # Optional student capacity cap
+    
     teacher = db.relationship('User', backref='taught_courses')
     modules = db.relationship('Module', 
                              back_populates='course',
@@ -163,6 +168,13 @@ class Course(db.Model):
                              cascade='all, delete-orphan')
     enrollments = db.relationship('Enrollment', back_populates='course', cascade='all, delete-orphan')
     ratings = db.relationship('Rating', back_populates='course', cascade='all, delete-orphan')
+
+    @property
+    def seats_remaining(self):
+        if self.max_seats is None:
+            return None
+        enrolled_count = len(self.enrollments) if self.enrollments else 0
+        return max(0, self.max_seats - enrolled_count)
 
 class Module(db.Model):
     __tablename__ = 'modules'

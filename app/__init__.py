@@ -129,6 +129,9 @@ def create_app():
             add_column_if_missing('courses', 'tags', 'VARCHAR(255)')
             add_column_if_missing('courses', 'is_draft', 'BOOLEAN DEFAULT FALSE')
             add_column_if_missing('courses', 'last_autosave', 'TIMESTAMP')
+            add_column_if_missing('courses', 'visibility', 'VARCHAR(20) DEFAULT \'public\'')
+            add_column_if_missing('courses', 'is_coming_soon', 'BOOLEAN DEFAULT FALSE')
+            add_column_if_missing('courses', 'max_seats', 'INTEGER')
             
             # Check and add columns to sections
             add_column_if_missing('sections', 'module_id', 'INTEGER')
