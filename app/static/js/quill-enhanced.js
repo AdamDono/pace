@@ -91,7 +91,7 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
     const modules = {
         toolbar: {
             container: [
-                [{ 'header': [1, 2, 3, false] }],
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
                 ['bold', 'italic', 'underline'],
                 [{ 'color': [] }, { 'background': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
