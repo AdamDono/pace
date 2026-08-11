@@ -148,6 +148,11 @@ def create_app():
             if db.engine.name == 'postgresql':
                 db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN file_path TYPE TEXT;"))
                 db.session.execute(text("ALTER TABLE assignment_submissions ALTER COLUMN submission_text DROP NOT NULL;"))
+                db.session.execute(text("ALTER TABLE quiz_questions ALTER COLUMN question_text TYPE TEXT;"))
+                db.session.execute(text("ALTER TABLE quiz_questions ALTER COLUMN option_a TYPE TEXT;"))
+                db.session.execute(text("ALTER TABLE quiz_questions ALTER COLUMN option_b TYPE TEXT;"))
+                db.session.execute(text("ALTER TABLE quiz_questions ALTER COLUMN option_c TYPE TEXT;"))
+                db.session.execute(text("ALTER TABLE quiz_questions ALTER COLUMN option_d TYPE TEXT;"))
                 
             db.session.commit()
         except Exception as e:

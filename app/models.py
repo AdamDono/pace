@@ -340,12 +340,12 @@ class QuizQuestion(db.Model):
     __tablename__ = 'quiz_questions'
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
-    question_text = db.Column(db.String(200), nullable=False)
-    option_a = db.Column(db.String(100), nullable=False)
-    option_b = db.Column(db.String(100), nullable=False)
-    option_c = db.Column(db.String(100), nullable=True)
-    option_d = db.Column(db.String(100), nullable=True)
-    correct_answer = db.Column(db.String(1), nullable=False)
+    question_text = db.Column(db.Text, nullable=False)
+    option_a = db.Column(db.Text, nullable=False)
+    option_b = db.Column(db.Text, nullable=False)
+    option_c = db.Column(db.Text, nullable=True)
+    option_d = db.Column(db.Text, nullable=True)
+    correct_answer = db.Column(db.String(10), nullable=False)
     quiz = db.relationship('Quiz', back_populates='questions')
     answers = db.relationship('QuizAnswer', back_populates='question', cascade='all, delete-orphan')
 

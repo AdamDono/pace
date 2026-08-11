@@ -48,11 +48,11 @@ class AssignmentForm(FlaskForm):
     due_date = DateTimeField('Due Date', format='%Y-%m-%dT%H:%M', validators=[Optional()])
 
 class QuestionForm(FlaskForm):
-    question = StringField('Question', validators=[DataRequired(), Length(max=200)])
-    a = StringField('Option A', validators=[DataRequired(), Length(max=100)])
-    b = StringField('Option B', validators=[DataRequired(), Length(max=100)])
-    c = StringField('Option C', validators=[Length(max=100), Optional()])
-    d = StringField('Option D', validators=[Length(max=100), Optional()])
+    question = StringField('Question', validators=[DataRequired(), Length(max=10000)])
+    a = StringField('Option A', validators=[DataRequired(), Length(max=10000)])
+    b = StringField('Option B', validators=[DataRequired(), Length(max=10000)])
+    c = StringField('Option C', validators=[Length(max=10000), Optional()])
+    d = StringField('Option D', validators=[Length(max=10000), Optional()])
     correct = SelectField('Correct Answer', choices=[('a', 'A'), ('b', 'B'), ('c', 'C'), ('d', 'D')], validators=[DataRequired()])
 
 class QuizForm(FlaskForm):
