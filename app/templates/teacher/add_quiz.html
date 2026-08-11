@@ -1,12 +1,12 @@
 {% extends "teacher/base_teacher.html" %}
-{% block page_title %}Add Quiz{% endblock %}
+{% block page_title %}{{ 'Edit Quiz' if quiz else 'Add Quiz' }}{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold">Create Quiz</h1>
-            <p class="text-gray-600">Add a quiz to: {{ section.title }}</p>
+            <h1 class="text-2xl font-bold">{{ 'Edit Quiz' if quiz else 'Create Quiz' }}</h1>
+            <p class="text-gray-600">Quiz for section: {{ section.title }}</p>
         </div>
         <a href="{{ url_for('teacher.course_builder', course_id=course.id) }}"
             class="text-gray-600 hover:text-gray-900">
@@ -16,25 +16,25 @@
 
     <div class="bg-white rounded-lg shadow-lg p-6">
         <form method="POST" id="quiz-form">
-            {{ form.hidden_tag() }}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- Basic Settings -->
             <div class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
-                    <input type="text" name="title" value="{{ form.title.data or 'New Quiz' }}" required
+                    <input type="text" name="title" value="{{ quiz.title if quiz else 'New Quiz' }}" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
                 <div class="flex items-center space-x-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Pass Score (%)</label>
-                        <input type="number" name="passing_score" value="60" min="0" max="100"
+                        <input type="number" name="passing_score" value="{{ quiz.passing_score if quiz else 60 }}" min="0" max="100"
                             class="w-24 px-3 py-2 border rounded-lg">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Time Limit (min)</label>
-                        <input type="number" name="time_limit" placeholder="Unlimited"
+                        <input type="number" name="time_limit" value="{{ quiz.time_limit or '' if quiz else '' }}" placeholder="Unlimited"
                             class="w-32 px-3 py-2 border rounded-lg">
                     </div>
                 </div>
@@ -47,11 +47,11 @@
 
             <div class="mt-6 flex justify-center">
                 <button type="button" onclick="addQuestion()"
-                    class="px-6 py-2 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center">
+                    class="px-6 py-2 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center font-medium">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
-                    Add Question
+                    + Add Question
                 </button>
             </div>
 
@@ -70,18 +70,16 @@
 </div>
 
 <template id="question-template">
-    <div
-        class="question-block bg-white border border-gray-200 rounded-lg p-6 relative hover:shadow-md transition-shadow">
+    <div class="question-block bg-white border border-gray-200 rounded-lg p-6 relative hover:shadow-md transition-shadow">
         <button type="button" onclick="removeQuestion(this)"
-            class="absolute top-4 right-4 text-gray-400 hover:text-red-500">
+            class="absolute top-4 right-4 text-gray-400 hover:text-red-500 p-1 rounded">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
         </button>
 
         <div class="flex items-center mb-4">
-            <span
-                class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 question-number">Q1</span>
+            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 question-number">Q1</span>
             <input type="text" name="questions[][text]" placeholder="Enter your question here..." required
                 class="flex-1 px-4 py-2 border-b-2 border-gray-200 focus:border-blue-500 outline-none transition-colors text-lg font-medium">
         </div>
@@ -112,35 +110,49 @@
 </template>
 
 <script>
-    let questionCount = 0;
+    let questionIndex = 0;
 
-    function addQuestion() {
-        questionCount++;
+    function addQuestion(initialData = null) {
+        questionIndex++;
+        const q_id = 'q_' + questionIndex + '_' + Math.random().toString(36).substring(2, 6);
         const container = document.getElementById('questions-container');
         const template = document.getElementById('question-template');
         const clone = template.content.cloneNode(true);
 
-        // Update index for names to group them correctly in backend if needed
-        // For simplicity, we use array notation and will process in order on backend
-        // Ideally we need unique indices for radio buttons so groups don't conflict
-        const timestamp = Date.now();
-
         const radioButtons = clone.querySelectorAll('input[type="radio"]');
         radioButtons.forEach(radio => {
-            radio.name = `q_${timestamp}_correct`; // Unique name per question group
+            radio.name = `${q_id}_correct`;
+            if (initialData && radio.value === (initialData.correct_answer || 'a')) {
+                radio.checked = true;
+            }
         });
 
-        // Set text inputs to belong to this group as well
         const textInputs = clone.querySelectorAll('input[type="text"]');
         textInputs.forEach(input => {
-            if (input.name.includes('[text]')) input.name = `q_${timestamp}_text`;
-            if (input.name.includes('[a]')) input.name = `q_${timestamp}_a`;
-            if (input.name.includes('[b]')) input.name = `q_${timestamp}_b`;
-            if (input.name.includes('[c]')) input.name = `q_${timestamp}_c`;
-            if (input.name.includes('[d]')) input.name = `q_${timestamp}_d`;
+            if (input.name.includes('[text]')) {
+                input.name = `${q_id}_text`;
+                if (initialData) input.value = initialData.question_text || '';
+            }
+            if (input.name.includes('[a]')) {
+                input.name = `${q_id}_a`;
+                if (initialData) input.value = initialData.option_a || '';
+            }
+            if (input.name.includes('[b]')) {
+                input.name = `${q_id}_b`;
+                if (initialData) input.value = initialData.option_b || '';
+            }
+            if (input.name.includes('[c]')) {
+                input.name = `${q_id}_c`;
+                if (initialData) input.value = initialData.option_c || '';
+            }
+            if (input.name.includes('[d]')) {
+                input.name = `${q_id}_d`;
+                if (initialData) input.value = initialData.option_d || '';
+            }
         });
 
-        clone.querySelector('.question-number').textContent = `Q${questionCount}`;
+        const totalBlocks = document.querySelectorAll('.question-block').length + 1;
+        clone.querySelector('.question-number').textContent = `Q${totalBlocks}`;
 
         container.appendChild(clone);
     }
@@ -148,18 +160,28 @@
     function removeQuestion(btn) {
         if (document.querySelectorAll('.question-block').length > 1) {
             btn.closest('.question-block').remove();
-            // Renumber
             let idx = 1;
             document.querySelectorAll('.question-number').forEach(span => {
                 span.textContent = `Q${idx++}`;
             });
-            questionCount--;
         }
     }
 
-    // Add first question by default
     document.addEventListener('DOMContentLoaded', () => {
-        addQuestion();
+        {% if quiz and quiz.questions %}
+            {% for q in quiz.questions %}
+                addQuestion({
+                    question_text: {{ q.question_text|tojson }},
+                    option_a: {{ q.option_a|tojson }},
+                    option_b: {{ q.option_b|tojson }},
+                    option_c: {{ q.option_c|tojson or ''|tojson }},
+                    option_d: {{ q.option_d|tojson or ''|tojson }},
+                    correct_answer: {{ q.correct_answer|tojson }}
+                });
+            {% endfor %}
+        {% else %}
+            addQuestion();
+        {% endif %}
     });
 </script>
 {% endblock %}

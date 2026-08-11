@@ -945,114 +945,118 @@ def edit_assignment(course_id, section_id, assignment_id):
 
     return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
 
+def _save_quiz_questions(quiz_id, form_data):
+    from app.models import QuizQuestion, db
+    questions_data = {}
+    for key in form_data:
+        if key.startswith('q_') and '_' in key[2:]:
+            parts = key.split('_')
+            if len(parts) >= 3:
+                q_id = parts[1]
+                field = parts[-1]  # text, a, b, c, d, correct
+                if q_id not in questions_data:
+                    questions_data[q_id] = {'question': '', 'a': '', 'b': '', 'c': '', 'd': '', 'correct': 'a'}
+                if field == 'text':
+                    questions_data[q_id]['question'] = form_data[key].strip()
+                elif field in ['a', 'b', 'c', 'd']:
+                    questions_data[q_id][field] = form_data[key].strip()
+                elif field == 'correct':
+                    questions_data[q_id]['correct'] = form_data[key].strip()
+
+    for q_id, q in questions_data.items():
+        if q['question'] and q['a'] and q['b']:
+            question = QuizQuestion(
+                quiz_id=quiz_id,
+                question_text=q['question'],
+                option_a=q['a'],
+                option_b=q['b'],
+                option_c=q.get('c') or None,
+                option_d=q.get('d') or None,
+                correct_answer=q.get('correct', 'a')
+            )
+            db.session.add(question)
+
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-quiz', methods=['GET', 'POST'])
 @teacher_required
 def add_quiz(course_id, section_id):
-    from app.models import Course, Section, Quiz, QuizQuestion, db  # Moved here
-    from app.forms import QuizForm  # Moved here
+    from app.models import Course, Section, Quiz, db
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     if section.course_id != course_id or course.teacher_id != current_user.id:
         abort(403)
 
-    form = QuizForm()
+    existing_quiz = Quiz.query.filter_by(section_id=section_id).first()
+    if existing_quiz and request.method == 'GET':
+        return redirect(url_for('teacher.edit_quiz', course_id=course_id, section_id=section_id, quiz_id=existing_quiz.id))
+
     if request.method == 'POST':
-        title = request.form.get('title')
+        title = request.form.get('title', 'New Quiz').strip()
         if not title:
             flash('Quiz title is required', 'danger')
-            return render_template('teacher/add_quiz.html', form=form, course=course, section=section)
+            return render_template('teacher/add_quiz.html', course=course, section=section)
 
         try:
-            quiz = Quiz(
-                title=title,
-                section_id=section_id,
-                time_limit=int(request.form.get('time_limit')) if request.form.get('time_limit') else None,
-                passing_score=int(request.form.get('passing_score', 60)),
-                max_attempts=int(request.form.get('max_attempts')) if request.form.get('max_attempts') else None
-            )
-            db.session.add(quiz)
-            db.session.flush()  # Get ID
+            if existing_quiz:
+                quiz = existing_quiz
+                quiz.title = title
+                quiz.time_limit = int(request.form.get('time_limit')) if request.form.get('time_limit') else None
+                quiz.passing_score = int(request.form.get('passing_score', 60))
+                from app.models import QuizQuestion
+                QuizQuestion.query.filter_by(quiz_id=quiz.id).delete()
+            else:
+                quiz = Quiz(
+                    title=title,
+                    section_id=section_id,
+                    time_limit=int(request.form.get('time_limit')) if request.form.get('time_limit') else None,
+                    passing_score=int(request.form.get('passing_score', 60)),
+                    max_attempts=int(request.form.get('max_attempts')) if request.form.get('max_attempts') else None
+                )
+                db.session.add(quiz)
+                db.session.flush()
 
-            # Parse questions from form keys like: q_{timestamp}_{field}
-            questions_data = {}
-            for key in request.form:
-                if key.startswith('q_') and '_' in key[2:]:
-                    parts = key.split('_')
-                    if len(parts) >= 3:
-                        q_id = parts[1]
-                        field = parts[-1]  # text, a, b, c, d, correct
-                        if q_id not in questions_data:
-                            questions_data[q_id] = {'question': '', 'a': '', 'b': '', 'c': '', 'd': '', 'correct': 'a'}
-                        if field == 'text':
-                            questions_data[q_id]['question'] = request.form[key]
-                        elif field in ['a', 'b', 'c', 'd']:
-                            questions_data[q_id][field] = request.form[key]
-                        elif field == 'correct':
-                            questions_data[q_id]['correct'] = request.form[key]
-
-            for q_id, q in questions_data.items():
-                if q['question'] and q['a'] and q['b']:  # Minimal validation
-                    question = QuizQuestion(
-                        quiz_id=quiz.id,
-                        question_text=q['question'],
-                        option_a=q['a'],
-                        option_b=q['b'],
-                        option_c=q.get('c'),
-                        option_d=q.get('d'),
-                        correct_answer=q['correct']
-                    )
-                    db.session.add(question)
-
+            _save_quiz_questions(quiz.id, request.form)
             db.session.commit()
-            flash('Quiz created successfully!', 'success')
+            flash('Quiz saved successfully!', 'success')
             return redirect(url_for('teacher.course_builder', course_id=course.id))
 
         except Exception as e:
             db.session.rollback()
-            flash(f'Error creating quiz: {str(e)}', 'danger')
+            flash(f'Error saving quiz: {str(e)}', 'danger')
 
-    return render_template('teacher/add_quiz.html', form=form, course=course, section=section)
+    return render_template('teacher/add_quiz.html', course=course, section=section)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz/<int:quiz_id>/edit', methods=['GET', 'POST'])
 @teacher_required
 def edit_quiz(course_id, section_id, quiz_id):
-    from app.models import Course, Section, Quiz, QuizQuestion, db  # Moved here
-    from app.forms import QuizForm  # Moved here
+    from app.models import Course, Section, Quiz, QuizQuestion, db
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     quiz = Quiz.query.get_or_404(quiz_id)
     if section.course_id != course_id or course.teacher_id != current_user.id or quiz.section_id != section_id:
         abort(403)
 
-    form = QuizForm(obj=quiz)
-    # Pre-populate questions
-    if request.method == 'GET':
-        for i, question in enumerate(quiz.questions):
-            if i < len(form.questions):
-                form.questions[i].question.data = question.question_text
-                form.questions[i].a.data = question.option_a
-                form.questions[i].b.data = question.option_b
-                form.questions[i].c.data = question.option_c
-                form.questions[i].d.data = question.option_d
-                form.questions[i].correct.data = question.correct_answer
+    if request.method == 'POST':
+        title = request.form.get('title', quiz.title).strip()
+        if not title:
+            flash('Quiz title is required', 'danger')
+            return render_template('teacher/add_quiz.html', course=course, section=section, quiz=quiz)
 
-    if form.validate_on_submit():
-        quiz.title = form.title.data
-        # Delete existing questions
-        QuizQuestion.query.filter_by(quiz_id=quiz.id).delete()
-        # Add new questions
-        for q in form.questions.data:
-            question = QuizQuestion(
-                quiz_id=quiz.id,
-                question_text=q['question'],
-                option_a=q['a'], option_b=q['b'], option_c=q['c'], option_d=q['d'],
-                correct_answer=q['correct']
-            )
-            db.session.add(question)
-        db.session.commit()
-        flash('Quiz updated successfully.', 'success')
-        return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
-    return render_template('teacher/edit_quiz.html', form=form, course=course, section=section, quiz=quiz)
+        try:
+            quiz.title = title
+            quiz.passing_score = int(request.form.get('passing_score', 60))
+            quiz.time_limit = int(request.form.get('time_limit')) if request.form.get('time_limit') else None
+
+            QuizQuestion.query.filter_by(quiz_id=quiz.id).delete()
+            _save_quiz_questions(quiz.id, request.form)
+
+            db.session.commit()
+            flash('Quiz updated successfully.', 'success')
+            return redirect(url_for('teacher.course_builder', course_id=course.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating quiz: {str(e)}', 'danger')
+
+    return render_template('teacher/add_quiz.html', course=course, section=section, quiz=quiz)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submissions')
 @teacher_required
