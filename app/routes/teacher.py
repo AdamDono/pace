@@ -846,7 +846,8 @@ def add_assignment(course_id, section_id):
             title=form.title.data,
             description=form.description.data,
             section_id=section_id,
-            due_date=form.due_date.data
+            due_date=form.due_date.data,
+            submission_type=request.form.get('submission_type', 'text')
         )
 
         # Persist coding assignment fields from the plain HTML controls
@@ -861,6 +862,10 @@ def add_assignment(course_id, section_id):
         db.session.commit()
         flash(('Coding ' if is_coding else '') + 'Assignment created successfully.', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
+    elif request.method == 'POST':
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return render_template('teacher/add_assignment.html', form=form, course=course, section=section)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/assignment/<int:assignment_id>/edit', methods=['GET', 'POST'])
@@ -879,6 +884,7 @@ def edit_assignment(course_id, section_id, assignment_id):
         assignment.title = form.title.data
         assignment.description = form.description.data
         assignment.due_date = form.due_date.data
+        assignment.submission_type = request.form.get('submission_type', assignment.submission_type or 'text')
 
         # Update coding fields if present
         if 'is_coding_assignment' in request.form:
@@ -892,6 +898,10 @@ def edit_assignment(course_id, section_id, assignment_id):
         db.session.commit()
         flash('Assignment updated successfully.', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
+    elif request.method == 'POST':
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-quiz', methods=['GET', 'POST'])
