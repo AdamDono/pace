@@ -833,20 +833,39 @@ def manage_sections(course_id):
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-assignment', methods=['GET', 'POST'])
 @teacher_required
 def add_assignment(course_id, section_id):
-    from app.models import Course, Section, Assignment, db  # Moved here
-    from app.forms import AssignmentForm  # Moved here
+    from app.models import Course, Section, Assignment, db
+    from app.forms import AssignmentForm
+    from datetime import datetime
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     if section.course_id != course_id or course.teacher_id != current_user.id:
         abort(403)
 
     form = AssignmentForm()
-    if form.validate_on_submit():
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+
+        if not title:
+            flash('Assignment title is required.', 'danger')
+            return render_template('teacher/add_assignment.html', form=form, course=course, section=section)
+
+        due_date = None
+        due_date_str = request.form.get('due_date', '').strip()
+        if due_date_str:
+            try:
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                try:
+                    due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                except ValueError:
+                    due_date = None
+
         assignment = Assignment(
-            title=form.title.data,
-            description=form.description.data,
+            title=title,
+            description=description,
             section_id=section_id,
-            due_date=form.due_date.data
+            due_date=due_date
         )
 
         # Persist coding assignment fields from the plain HTML controls
@@ -861,17 +880,15 @@ def add_assignment(course_id, section_id):
         db.session.commit()
         flash(('Coding ' if is_coding else '') + 'Assignment created successfully.', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
-    elif request.method == 'POST':
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'{field}: {error}', 'danger')
+
     return render_template('teacher/add_assignment.html', form=form, course=course, section=section)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/assignment/<int:assignment_id>/edit', methods=['GET', 'POST'])
 @teacher_required
 def edit_assignment(course_id, section_id, assignment_id):
-    from app.models import Course, Section, Assignment, db  # Moved here
-    from app.forms import AssignmentForm  # Moved here
+    from app.models import Course, Section, Assignment, db
+    from app.forms import AssignmentForm
+    from datetime import datetime
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     assignment = Assignment.query.get_or_404(assignment_id)
@@ -879,10 +896,28 @@ def edit_assignment(course_id, section_id, assignment_id):
         abort(403)
 
     form = AssignmentForm(obj=assignment)
-    if form.validate_on_submit():
-        assignment.title = form.title.data
-        assignment.description = form.description.data
-        assignment.due_date = form.due_date.data
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+
+        if not title:
+            flash('Assignment title is required.', 'danger')
+            return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
+
+        assignment.title = title
+        assignment.description = description
+
+        due_date_str = request.form.get('due_date', '').strip()
+        if due_date_str:
+            try:
+                assignment.due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                try:
+                    assignment.due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                except ValueError:
+                    assignment.due_date = None
+        else:
+            assignment.due_date = None
 
         # Update coding fields if present
         if 'is_coding_assignment' in request.form:
@@ -896,10 +931,7 @@ def edit_assignment(course_id, section_id, assignment_id):
         db.session.commit()
         flash('Assignment updated successfully.', 'success')
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
-    elif request.method == 'POST':
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'{field}: {error}', 'danger')
+
     return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/add-quiz', methods=['GET', 'POST'])
