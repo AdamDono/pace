@@ -846,8 +846,7 @@ def add_assignment(course_id, section_id):
             title=form.title.data,
             description=form.description.data,
             section_id=section_id,
-            due_date=form.due_date.data,
-            submission_type=request.form.get('submission_type', 'text')
+            due_date=form.due_date.data
         )
 
         # Persist coding assignment fields from the plain HTML controls
@@ -884,7 +883,6 @@ def edit_assignment(course_id, section_id, assignment_id):
         assignment.title = form.title.data
         assignment.description = form.description.data
         assignment.due_date = form.due_date.data
-        assignment.submission_type = request.form.get('submission_type', assignment.submission_type or 'text')
 
         # Update coding fields if present
         if 'is_coding_assignment' in request.form:
