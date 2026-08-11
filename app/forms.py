@@ -44,7 +44,7 @@ class CourseForm(FlaskForm):
 
 class AssignmentForm(FlaskForm):
     title = StringField('Assignment Title', validators=[DataRequired(), Length(max=100)])
-    description = TextAreaField('Description', validators=[Length(max=500), Optional()])
+    description = TextAreaField('Description', validators=[Length(max=50000), Optional()])
     due_date = DateTimeField('Due Date', format='%Y-%m-%dT%H:%M', validators=[Optional()])
 
 class QuestionForm(FlaskForm):
