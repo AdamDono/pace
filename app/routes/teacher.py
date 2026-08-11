@@ -843,7 +843,7 @@ def add_assignment(course_id, section_id):
         abort(403)
 
     # Check if an assignment already exists for this section!
-    existing_assignment = Assignment.query.filter_by(section_id=section_id).first()
+    existing_assignment = Assignment.query.filter_by(section_id=section_id).order_by(Assignment.id.desc()).first()
     if existing_assignment and request.method == 'GET':
         return redirect(url_for('teacher.edit_assignment', course_id=course_id, section_id=section_id, assignment_id=existing_assignment.id))
 
@@ -985,7 +985,7 @@ def add_quiz(course_id, section_id):
     if section.course_id != course_id or course.teacher_id != current_user.id:
         abort(403)
 
-    existing_quiz = Quiz.query.filter_by(section_id=section_id).first()
+    existing_quiz = Quiz.query.filter_by(section_id=section_id).order_by(Quiz.id.desc()).first()
     if existing_quiz and request.method == 'GET':
         return redirect(url_for('teacher.edit_quiz', course_id=course_id, section_id=section_id, quiz_id=existing_quiz.id))
 

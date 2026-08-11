@@ -207,11 +207,11 @@ class Section(db.Model):
     media_file = db.Column(db.String(120))
     video_url = db.Column(db.String(255), nullable=True)
     
-    quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan')
+    quizzes = db.relationship('Quiz', back_populates='section', cascade='all, delete-orphan', order_by='desc(Quiz.id)')
     course = db.relationship('Course', back_populates='sections')
     module = db.relationship('Module', back_populates='sections')  # New relationship
     enrollment_sections = db.relationship('EnrollmentSection', back_populates='section')
-    assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan')
+    assignments = db.relationship('Assignment', back_populates='section', cascade='all, delete-orphan', order_by='desc(Assignment.id)')
 
 class Lead(db.Model):
     __tablename__ = 'leads'
