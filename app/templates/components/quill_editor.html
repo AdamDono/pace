@@ -32,7 +32,7 @@
 <!-- Editor Container -->
 <div class="quill-editor-container">
     <div id="quill-{{ field_id }}" style="height: {{ height|default('300px') }};"></div>
-    <textarea id="{{ field_id }}" name="{{ field_name }}" class="hidden">{{ initial_value|default('') }}</textarea>
+    <textarea id="{{ field_id }}" name="{{ field_name }}" class="hidden">{% if initial_value and initial_value is not none and initial_value != 'None' %}{{ initial_value }}{% endif %}</textarea>
 </div>
 
 {% if not quill_script_loaded %}
@@ -75,7 +75,7 @@ window.quillEditors = window.quillEditors || {};
     
     // Load existing content
     var existingContent = document.getElementById(textareaId).value;
-    if (existingContent) {
+    if (existingContent && existingContent.trim() !== 'None') {
         quill.root.innerHTML = existingContent;
     }
     
