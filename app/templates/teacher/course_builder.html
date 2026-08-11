@@ -280,9 +280,14 @@
                                 + Questions
                             </a>
                             {% elif section.section_type == 'assignment' and section.assignments %}
-                            <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
+                            <a href="{{ url_for('teacher.edit_assignment', course_id=course.id, section_id=section.id, assignment_id=section.assignments[0].id) }}"
                                 class="px-2 py-1 text-xs border border-pink-200 bg-pink-50 hover:bg-pink-100 rounded text-pink-700">
                                 Edit Details
+                            </a>
+                            {% elif section.section_type == 'assignment' %}
+                            <a href="{{ url_for('teacher.add_assignment', course_id=course.id, section_id=section.id) }}"
+                                class="px-2 py-1 text-xs border border-pink-200 bg-pink-50 hover:bg-pink-100 rounded text-pink-700">
+                                + Assignment
                             </a>
                             {% endif %}
                             <button onclick="deleteSection({{ section.id }});"

@@ -836,10 +836,16 @@ def add_assignment(course_id, section_id):
     from app.models import Course, Section, Assignment, db
     from app.forms import AssignmentForm
     from datetime import datetime
+
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     if section.course_id != course_id or course.teacher_id != current_user.id:
         abort(403)
+
+    # Check if an assignment already exists for this section!
+    existing_assignment = Assignment.query.filter_by(section_id=section_id).first()
+    if existing_assignment and request.method == 'GET':
+        return redirect(url_for('teacher.edit_assignment', course_id=course_id, section_id=section_id, assignment_id=existing_assignment.id))
 
     form = AssignmentForm()
     if request.method == 'POST':
@@ -861,25 +867,31 @@ def add_assignment(course_id, section_id):
                 except ValueError:
                     due_date = None
 
-        assignment = Assignment(
-            title=title,
-            description=description,
-            section_id=section_id,
-            due_date=due_date
-        )
+        if existing_assignment:
+            assignment = existing_assignment
+            assignment.title = title
+            assignment.description = description
+            assignment.due_date = due_date
+        else:
+            assignment = Assignment(
+                title=title,
+                description=description,
+                section_id=section_id,
+                due_date=due_date
+            )
+            db.session.add(assignment)
 
         # Persist coding assignment fields from the plain HTML controls
-        is_coding = request.form.get('is_coding_assignment') == 'on'
+        is_coding = request.form.get('is_coding_assignment') == 'on' or request.form.get('submission_type') == 'code'
         assignment.is_coding_assignment = is_coding
         assignment.programming_language = request.form.get('programming_language') or None
         assignment.starter_code = request.form.get('starter_code') or None
         assignment.enable_code_execution = (request.form.get('enable_code_execution') == 'on') if is_coding else False
         assignment.allow_file_upload = (request.form.get('allow_file_upload') == 'on') if is_coding else True
 
-        db.session.add(assignment)
         db.session.commit()
-        flash(('Coding ' if is_coding else '') + 'Assignment created successfully.', 'success')
-        return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
+        flash('Assignment saved successfully.', 'success')
+        return redirect(url_for('teacher.course_builder', course_id=course_id))
 
     return render_template('teacher/add_assignment.html', form=form, course=course, section=section)
 
@@ -889,6 +901,7 @@ def edit_assignment(course_id, section_id, assignment_id):
     from app.models import Course, Section, Assignment, db
     from app.forms import AssignmentForm
     from datetime import datetime
+
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     assignment = Assignment.query.get_or_404(assignment_id)
@@ -919,18 +932,16 @@ def edit_assignment(course_id, section_id, assignment_id):
         else:
             assignment.due_date = None
 
-        # Update coding fields if present
-        if 'is_coding_assignment' in request.form:
-            is_coding = request.form.get('is_coding_assignment') == 'on'
+        if 'is_coding_assignment' in request.form or 'submission_type' in request.form:
+            is_coding = request.form.get('is_coding_assignment') == 'on' or request.form.get('submission_type') == 'code'
             assignment.is_coding_assignment = is_coding
             assignment.programming_language = request.form.get('programming_language') or assignment.programming_language
             assignment.starter_code = request.form.get('starter_code') or assignment.starter_code
             assignment.enable_code_execution = (request.form.get('enable_code_execution') == 'on') if is_coding else False
-            assignment.allow_file_upload = (request.form.get('allow_file_upload') == 'on') if is_coding else assignment.allow_file_upload
 
         db.session.commit()
         flash('Assignment updated successfully.', 'success')
-        return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
+        return redirect(url_for('teacher.course_builder', course_id=course_id))
 
     return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
 
