@@ -1,5 +1,5 @@
 <!-- Reusable Quill Rich Text Editor Component -->
-<!-- Usage: pass field_id, field_name, initial_value, height, placeholder as template variables -->
+<!-- Usage: {% with field_id='content', field_name='content', initial_value=(section.content or ''), height='350px' %}{% include 'components/quill_editor.html' %}{% endwith %} -->
 
 {% if not quill_loaded %}
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -14,62 +14,57 @@
 .ql-container.ql-snow {
     border-left: 1px solid #d1d5db;
     border-right: 1px solid #d1d5db;
-    border-bottom: none;
-    border-radius: 0;
+    border-bottom: 1px solid #d1d5db;
+    border-radius: 0 0 8px 8px;
 }
 .ql-editor.ql-blank::before { color: #9ca3af; font-style: italic; }
 
-/* Table Zone — sits below Quill, same visual container */
+/* Table Zone — sits below Quill */
 .pace-table-zone {
-    border: 1px solid #d1d5db;
-    border-top: 1px dashed #e5e7eb;
-    border-radius: 0 0 8px 8px;
-    background: #fff;
-    padding: 0 15px 12px;
-    min-height: 0;
-    font-size: 15px;
-    font-family: inherit;
-}
-.pace-table-zone:empty {
-    border-top: none;
-    border-bottom: none;
-    border-left: 1px solid #d1d5db;
-    border-right: 1px solid #d1d5db;
-    border-radius: 0 0 8px 8px;
-    padding: 0;
+    margin-top: 12px;
 }
 .pace-table-zone .pace-table-wrap {
     position: relative;
-    margin: 14px 0;
+    margin: 16px 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
-.pace-table-zone .pace-table-delete {
-    position: absolute;
-    top: -10px;
-    right: -6px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 1px solid #fca5a5;
-    background: #fff;
-    color: #ef4444;
-    font-size: 13px;
+.pace-table-zone .pace-table-header-title {
+    font-size: 12px;
     font-weight: 700;
-    cursor: pointer;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    line-height: 1;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-    z-index: 10;
+    justify-content: space-between;
 }
-.pace-table-zone .pace-table-delete:hover { background: #fef2f2; }
+.pace-table-zone .pace-table-delete {
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.pace-table-zone .pace-table-delete:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
 .pace-table-zone table {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #cbd5e1;
     font-size: 14px;
     font-family: inherit;
-    table-layout: auto;
+    background: #ffffff;
 }
 .pace-table-zone th {
     background: #f1f5f9 !important;
@@ -84,11 +79,11 @@
     padding: 10px 14px;
     min-width: 90px;
     vertical-align: top;
-    background: #fff;
+    background: #ffffff;
 }
 .pace-table-zone tr:nth-child(even) td { background: #f8fafc; }
 .pace-table-zone td:focus, .pace-table-zone th:focus {
-    outline: 2px solid #93c5fd;
+    outline: 2px solid #3b82f6;
     outline-offset: -2px;
     background: #eff6ff !important;
 }
@@ -128,17 +123,17 @@
 {% set quill_loaded = true %}
 {% endif %}
 
-<!-- Editor + Table Zone Container -->
+<!-- Editor Container -->
 <div class="quill-editor-container">
     <div id="quill-{{ field_id }}" style="height: {{ height|default('300px') }};"></div>
     <div id="table-zone-{{ field_id }}" class="pace-table-zone" data-textarea="{{ field_id }}"></div>
-    <textarea id="{{ field_id }}" name="{{ field_name }}" class="hidden"></textarea>
+    <textarea id="{{ field_id }}" name="{{ field_name }}" class="hidden">{% if initial_value and initial_value is not none and initial_value != 'None' %}{{ initial_value }}{% endif %}</textarea>
 </div>
 
 {% if not quill_script_loaded %}
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
-<!-- ══════════ Table Insert Modal ══════════ -->
+<!-- Table Insert Modal -->
 <div id="quill-table-modal"
      style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.52);
             z-index:9999; align-items:center; justify-content:center; padding:16px;">
@@ -196,7 +191,6 @@ function closeQuillTableModal() {
     document.getElementById('quill-table-modal').style.display = 'none';
 }
 
-// ── Build table HTML with full inline styles ──────────────────────────────────
 function buildTableHTML(rows, cols, hasHeader) {
     var html = '<table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;font-size:14px;font-family:inherit;">';
     if (hasHeader) {
@@ -219,7 +213,6 @@ function buildTableHTML(rows, cols, hasHeader) {
     return html;
 }
 
-// ── Insert table into the table zone (NOT into Quill) ─────────────────────────
 function confirmInsertQuillTable() {
     var rows = parseInt(document.getElementById('quill-table-rows').value)  || 3;
     var cols  = parseInt(document.getElementById('quill-table-cols').value)   || 3;
@@ -231,33 +224,43 @@ function confirmInsertQuillTable() {
     var zone = document.getElementById('table-zone-' + tid);
     if (!zone) { closeQuillTableModal(); return; }
 
-    // Build wrapper with delete button + table
-    var wrap = document.createElement('div');
-    wrap.className = 'pace-table-wrap';
-
-    var delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'pace-table-delete';
-    delBtn.title = 'Delete table';
-    delBtn.innerHTML = '✕';
-    delBtn.addEventListener('click', function() {
-        wrap.parentNode.removeChild(wrap);
-        syncEditorToTextarea(tid);
-    });
-
-    var overflow = document.createElement('div');
-    overflow.style.cssText = 'overflow-x:auto;';
-    overflow.innerHTML = buildTableHTML(rows, cols, hasHeader);
-
-    wrap.appendChild(delBtn);
-    wrap.appendChild(overflow);
+    var tableHtml = buildTableHTML(rows, cols, hasHeader);
+    var wrap = createPaceTableWrap(tableHtml, tid);
     zone.appendChild(wrap);
 
     syncEditorToTextarea(tid);
     closeQuillTableModal();
 }
 
-// ── Sync quill + table zone → hidden textarea ─────────────────────────────────
+function createPaceTableWrap(tableHtml, textareaId) {
+    var wrap = document.createElement('div');
+    wrap.className = 'pace-table-wrap';
+
+    var headerDiv = document.createElement('div');
+    headerDiv.className = 'pace-table-header-title';
+    headerDiv.innerHTML = `<span>📊 Content Table</span>`;
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'pace-table-delete';
+    delBtn.innerHTML = '🗑 Remove Table';
+    delBtn.addEventListener('click', function() {
+        if (confirm('Delete this table?')) {
+            wrap.parentNode.removeChild(wrap);
+            syncEditorToTextarea(textareaId);
+        }
+    });
+    headerDiv.appendChild(delBtn);
+
+    var overflow = document.createElement('div');
+    overflow.style.cssText = 'overflow-x:auto;';
+    overflow.innerHTML = tableHtml;
+
+    wrap.appendChild(headerDiv);
+    wrap.appendChild(overflow);
+    return wrap;
+}
+
 function syncEditorToTextarea(textareaId) {
     var q    = window.quillEditors[textareaId];
     var zone = document.getElementById('table-zone-' + textareaId);
@@ -271,7 +274,7 @@ function syncEditorToTextarea(textareaId) {
 {% set quill_script_loaded = true %}
 {% endif %}
 
-<!-- ══════════ Init this editor instance ══════════ -->
+<!-- Init Editor Instance -->
 <script>
 (function() {
     var editorId   = 'quill-{{ field_id }}';
@@ -299,7 +302,7 @@ function syncEditorToTextarea(textareaId) {
     quill.textareaId = textareaId;
     window.quillEditors[textareaId] = quill;
 
-    // ── Add "+ Table" button to toolbar ──────────────────────────────────────
+    // Add "+ Table" button to toolbar
     var toolbar = quill.getModule('toolbar').container;
     if (toolbar && !toolbar.querySelector('.ql-table-btn')) {
         var span = document.createElement('span');
@@ -319,75 +322,48 @@ function syncEditorToTextarea(textareaId) {
         });
     }
 
-    // ── Load existing content ────────────────────────────────────────────────
+    // Load existing content
     var existing = document.getElementById(textareaId).value;
     if (existing && existing.trim() && existing.trim() !== 'None') {
         var temp = document.createElement('div');
         temp.innerHTML = existing;
         var zone = document.getElementById(zoneId);
 
-        // Helper: wrap a table node in a pace-table-wrap with delete button
-        function wrapTable(tableHtml) {
-            var wrap = document.createElement('div');
-            wrap.className = 'pace-table-wrap';
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'pace-table-delete';
-            btn.title = 'Delete table';
-            btn.innerHTML = '✕';
-            btn.addEventListener('click', function() {
-                wrap.parentNode && wrap.parentNode.removeChild(wrap);
-                syncEditorToTextarea(textareaId);
-            });
-            var overflow = document.createElement('div');
-            overflow.style.cssText = 'overflow-x:auto;';
-            overflow.innerHTML = tableHtml;
-            wrap.appendChild(btn);
-            wrap.appendChild(overflow);
-            return wrap;
-        }
-
-        // 1. Restore previously saved pace-table-wraps
-        Array.from(temp.querySelectorAll('.pace-table-wrap')).forEach(function(tw) {
-            tw.parentNode.removeChild(tw);
-            var btn = tw.querySelector('.pace-table-delete');
-            if (btn) btn.addEventListener('click', function() {
-                tw.parentNode && tw.parentNode.removeChild(tw);
-                syncEditorToTextarea(textareaId);
-            });
-            zone.appendChild(tw);
-        });
-
-        // 2. Extract any remaining <table> elements (and their top-level wrapper)
-        //    so Quill never sees table HTML and doesn't strip it
+        // 1. Restore any table elements/wrappers into table zone
         Array.from(temp.querySelectorAll('table')).forEach(function(tbl) {
-            // Walk up to find the direct child of temp
             var topNode = tbl;
             while (topNode.parentNode && topNode.parentNode !== temp) {
                 topNode = topNode.parentNode;
             }
-            if (topNode.parentNode === temp) {
-                var tableHtml = topNode.tagName === 'TABLE'
-                    ? topNode.outerHTML
-                    : topNode.innerHTML; // unwrap div, keep table HTML inside
+            var tableHtml = topNode.tagName === 'TABLE' ? topNode.outerHTML : topNode.innerHTML;
+            if (topNode.parentNode) {
                 topNode.parentNode.removeChild(topNode);
-                zone.appendChild(wrapTable(tableHtml));
             }
+            var wrap = createPaceTableWrap(tableHtml, textareaId);
+            zone.appendChild(wrap);
         });
 
-        // 3. Load text-only content into Quill (safe — no tables left)
+        // 2. Load clean text content into Quill
         var cleanHtml = temp.innerHTML.trim();
         if (cleanHtml && cleanHtml !== '<p><br></p>') {
             quill.root.innerHTML = cleanHtml;
         }
     }
 
-    // ── Sync on Quill text change ─────────────────────────────────────────────
+    // Sync on Quill text change
     quill.on('text-change', function() {
         syncEditorToTextarea(textareaId);
     });
 
-    // ── Sync on form submit ───────────────────────────────────────────────────
+    // Sync on Table Zone typing
+    var zoneEl = document.getElementById(zoneId);
+    if (zoneEl) {
+        zoneEl.addEventListener('input', function() {
+            syncEditorToTextarea(textareaId);
+        });
+    }
+
+    // Sync on form submit
     var form = document.getElementById(textareaId).closest('form');
     if (form) {
         form.addEventListener('submit', function() {
@@ -398,4 +374,3 @@ function syncEditorToTextarea(textareaId) {
     console.log('✅ Quill + Table Zone ready:', textareaId);
 })();
 </script>
-
