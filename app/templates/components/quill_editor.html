@@ -319,55 +319,70 @@ function syncEditorToTextarea(textareaId) {
         });
     }
 
-    // ── Load existing content, splitting out tables into zone ─────────────────
+    // ── Load existing content ────────────────────────────────────────────────
     var existing = document.getElementById(textareaId).value;
     if (existing && existing.trim() && existing.trim() !== 'None') {
         var temp = document.createElement('div');
         temp.innerHTML = existing;
-
-        // Pull any pace-table-wrap or raw tables saved previously
         var zone = document.getElementById(zoneId);
-        var tableWraps = temp.querySelectorAll('.pace-table-wrap');
-        tableWraps.forEach(function(tw) {
-            tw.parentNode.removeChild(tw);
-            // Re-attach delete button listener
-            var delBtn = tw.querySelector('.pace-table-delete');
-            if (delBtn) {
-                delBtn.addEventListener('click', function() {
-                    tw.parentNode && tw.parentNode.removeChild(tw);
-                    syncEditorToTextarea(textareaId);
-                });
-            }
-            zone.appendChild(tw);
-        });
 
-        // Also handle raw ql-table-embed divs from earlier commits
-        var oldEmbeds = temp.querySelectorAll('.ql-table-embed');
-        oldEmbeds.forEach(function(embed) {
-            embed.parentNode.removeChild(embed);
+        // Helper: wrap a table node in a pace-table-wrap with delete button
+        function wrapTable(tableHtml) {
             var wrap = document.createElement('div');
             wrap.className = 'pace-table-wrap';
-            var delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.className = 'pace-table-delete';
-            delBtn.title = 'Delete table';
-            delBtn.innerHTML = '✕';
-            delBtn.addEventListener('click', function() {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pace-table-delete';
+            btn.title = 'Delete table';
+            btn.innerHTML = '✕';
+            btn.addEventListener('click', function() {
                 wrap.parentNode && wrap.parentNode.removeChild(wrap);
                 syncEditorToTextarea(textareaId);
             });
             var overflow = document.createElement('div');
             overflow.style.cssText = 'overflow-x:auto;';
-            overflow.innerHTML = embed.innerHTML;
-            wrap.appendChild(delBtn);
+            overflow.innerHTML = tableHtml;
+            wrap.appendChild(btn);
             wrap.appendChild(overflow);
-            zone.appendChild(wrap);
+            return wrap;
+        }
+
+        // 1. Restore previously saved pace-table-wraps
+        Array.from(temp.querySelectorAll('.pace-table-wrap')).forEach(function(tw) {
+            tw.parentNode.removeChild(tw);
+            var btn = tw.querySelector('.pace-table-delete');
+            if (btn) btn.addEventListener('click', function() {
+                tw.parentNode && tw.parentNode.removeChild(tw);
+                syncEditorToTextarea(textareaId);
+            });
+            zone.appendChild(tw);
         });
 
-        quill.root.innerHTML = temp.innerHTML;
+        // 2. Extract any remaining <table> elements (and their top-level wrapper)
+        //    so Quill never sees table HTML and doesn't strip it
+        Array.from(temp.querySelectorAll('table')).forEach(function(tbl) {
+            // Walk up to find the direct child of temp
+            var topNode = tbl;
+            while (topNode.parentNode && topNode.parentNode !== temp) {
+                topNode = topNode.parentNode;
+            }
+            if (topNode.parentNode === temp) {
+                var tableHtml = topNode.tagName === 'TABLE'
+                    ? topNode.outerHTML
+                    : topNode.innerHTML; // unwrap div, keep table HTML inside
+                topNode.parentNode.removeChild(topNode);
+                zone.appendChild(wrapTable(tableHtml));
+            }
+        });
+
+        // 3. Load text-only content into Quill (safe — no tables left)
+        var cleanHtml = temp.innerHTML.trim();
+        if (cleanHtml && cleanHtml !== '<p><br></p>') {
+            quill.root.innerHTML = cleanHtml;
+        }
     }
 
-    // ── Sync on Quill change ──────────────────────────────────────────────────
+    // ── Sync on Quill text change ─────────────────────────────────────────────
     quill.on('text-change', function() {
         syncEditorToTextarea(textareaId);
     });
@@ -383,3 +398,4 @@ function syncEditorToTextarea(textareaId) {
     console.log('✅ Quill + Table Zone ready:', textareaId);
 })();
 </script>
+
