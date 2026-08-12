@@ -143,30 +143,56 @@ function confirmInsertQuillTable() {
     var cols = parseInt(document.getElementById('quill-table-cols').value) || 3;
     var hasHeader = document.getElementById('quill-table-header').checked;
 
-    var tableHtml = '<div class="overflow-x-auto my-4"><table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden text-sm my-2">';
+    var tableHtml = '<div class="overflow-x-auto my-4" style="margin: 16px 0; overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin: 8px 0; font-size: 14px; font-family: inherit;">';
     
     if (hasHeader) {
-        tableHtml += '<thead><tr class="bg-gray-100 border-b border-gray-300 font-semibold text-gray-700">';
+        tableHtml += '<thead><tr style="background-color: #f1f5f9;">';
         for (var c = 1; c <= cols; c++) {
-            tableHtml += '<th class="border border-gray-300 p-2.5 text-left bg-gray-100">Header ' + c + '</th>';
+            tableHtml += '<th style="border: 1px solid #cbd5e1; padding: 10px 14px; text-align: left; font-weight: 600; color: #1e293b; background-color: #f1f5f9;">Header ' + c + '</th>';
         }
         tableHtml += '</tr></thead>';
     }
 
-    tableHtml += '<tbody>';
+    tableHtml += 'tbody>';
     for (var r = 1; r <= rows; r++) {
-        tableHtml += '<tr class="border-b border-gray-200 hover:bg-gray-50">';
+        var bgStyle = (r % 2 === 0) ? 'background-color: #f8fafc;' : 'background-color: #ffffff;';
+        tableHtml += '<tr style="' + bgStyle + '">';
         for (var c = 1; c <= cols; c++) {
-            tableHtml += '<td class="border border-gray-300 p-2.5">Row ' + r + ' Col ' + c + '</td>';
+            tableHtml += '<td style="border: 1px solid #cbd5e1; padding: 10px 14px; min-width: 90px; vertical-align: top;">Row ' + r + ' Col ' + c + '</td>';
         }
         tableHtml += '</tr>';
     }
     tableHtml += '</tbody></table></div><p><br></p>';
 
     if (window.activeQuillForTable) {
-        var range = window.activeQuillForTable.getSelection(true);
-        var index = range ? range.index : window.activeQuillForTable.getLength();
-        window.activeQuillForTable.clipboard.dangerouslyPasteHTML(index, tableHtml);
+        var q = window.activeQuillForTable;
+        q.focus();
+        
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = tableHtml;
+        var tableNode = tempDiv.firstElementChild;
+        
+        var sel = window.getSelection();
+        var inserted = false;
+        
+        if (sel && sel.rangeCount > 0) {
+            var range = sel.getRangeAt(0);
+            if (q.root.contains(range.commonAncestorContainer)) {
+                range.deleteContents();
+                range.insertNode(tableNode);
+                inserted = true;
+            }
+        }
+        
+        if (!inserted) {
+            q.root.appendChild(tableNode);
+        }
+        
+        // Trigger sync
+        if (q.textareaId) {
+            var ta = document.getElementById(q.textareaId);
+            if (ta) ta.value = q.root.innerHTML;
+        }
     }
     closeQuillTableModal();
 }
@@ -199,7 +225,8 @@ function confirmInsertQuillTable() {
         placeholder: '{{ placeholder|default("Start writing here...") }}'
     });
     
-    // Store instance
+    // Store instance and textarea ID
+    quill.textareaId = textareaId;
     window.quillEditors[textareaId] = quill;
     
     // Append custom Table button to Quill Toolbar
