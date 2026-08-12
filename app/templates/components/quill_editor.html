@@ -1,93 +1,185 @@
 <!-- Reusable Quill Rich Text Editor Component -->
-<!-- Usage: with field_id, field_name, initial_value, height variables in context -->
+<!-- Usage: pass field_id, field_name, initial_value, height, placeholder as template variables -->
 
 {% if not quill_loaded %}
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <style>
 .quill-editor-container { margin-bottom: 1rem; }
 .ql-editor { font-size: 15px; line-height: 1.6; }
-.ql-toolbar.ql-snow { border-radius: 8px 8px 0 0; background: #f9fafb; border-color: #d1d5db; }
-.ql-container.ql-snow { border-radius: 0 0 8px 8px; border-color: #d1d5db; }
+.ql-toolbar.ql-snow {
+    border-radius: 8px 8px 0 0;
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+.ql-container.ql-snow {
+    border-left: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    border-bottom: none;
+    border-radius: 0;
+}
 .ql-editor.ql-blank::before { color: #9ca3af; font-style: italic; }
 
-/* Table embed blot wrapper */
-.ql-table-embed { display: block; margin: 16px 0; overflow-x: auto; }
-.ql-table-embed table {
-    width: 100%; border-collapse: collapse;
-    border: 1px solid #cbd5e1; font-size: 14px; font-family: inherit;
+/* Table Zone — sits below Quill, same visual container */
+.pace-table-zone {
+    border: 1px solid #d1d5db;
+    border-top: 1px dashed #e5e7eb;
+    border-radius: 0 0 8px 8px;
+    background: #fff;
+    padding: 0 15px 12px;
+    min-height: 0;
+    font-size: 15px;
+    font-family: inherit;
 }
-.ql-table-embed th {
-    background: #f1f5f9; border: 1px solid #cbd5e1;
-    padding: 10px 14px; text-align: left; font-weight: 600; color: #1e293b;
+.pace-table-zone:empty {
+    border-top: none;
+    border-bottom: none;
+    border-left: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    border-radius: 0 0 8px 8px;
+    padding: 0;
 }
-.ql-table-embed td {
-    border: 1px solid #cbd5e1; padding: 10px 14px;
-    min-width: 90px; vertical-align: top; background: #fff;
+.pace-table-zone .pace-table-wrap {
+    position: relative;
+    margin: 14px 0;
 }
-.ql-table-embed tr:nth-child(even) td { background: #f8fafc; }
-.ql-table-embed tr:hover td { background: #f1f5f9; }
+.pace-table-zone .pace-table-delete {
+    position: absolute;
+    top: -10px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid #fca5a5;
+    background: #fff;
+    color: #ef4444;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    z-index: 10;
+}
+.pace-table-zone .pace-table-delete:hover { background: #fef2f2; }
+.pace-table-zone table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    font-family: inherit;
+    table-layout: auto;
+}
+.pace-table-zone th {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #1e293b;
+}
+.pace-table-zone td {
+    border: 1px solid #cbd5e1;
+    padding: 10px 14px;
+    min-width: 90px;
+    vertical-align: top;
+    background: #fff;
+}
+.pace-table-zone tr:nth-child(even) td { background: #f8fafc; }
+.pace-table-zone td:focus, .pace-table-zone th:focus {
+    outline: 2px solid #93c5fd;
+    outline-offset: -2px;
+    background: #eff6ff !important;
+}
 
-/* Also style saved tables in student/preview views */
-.ql-editor .ql-table-embed table,
-.prose .ql-table-embed table,
-.prose table {
+/* Table styles in student/preview views */
+.ql-editor table, .prose table {
     width: 100%; border-collapse: collapse;
-    border: 1px solid #cbd5e1; font-size: 14px;
+    border: 1px solid #cbd5e1; font-size: 14px; margin: 1rem 0;
 }
-.ql-editor .ql-table-embed th, .prose th {
+.ql-editor th, .prose th {
     background: #f1f5f9 !important; border: 1px solid #cbd5e1;
     padding: 10px 14px; font-weight: 600; color: #1e293b; text-align: left;
 }
-.ql-editor .ql-table-embed td, .prose td {
+.ql-editor td, .prose td {
     border: 1px solid #cbd5e1; padding: 10px 14px; min-width: 80px; vertical-align: top;
 }
-.ql-editor .ql-table-embed tr:nth-child(even) td, .prose tr:nth-child(even) td { background: #f8fafc; }
+.ql-editor tr:nth-child(even) td, .prose tr:nth-child(even) td { background: #f8fafc; }
 
+/* Table button */
 .ql-table-btn {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 2px 8px !important; font-size: 12px !important; font-weight: 600 !important;
-    color: #374151 !important; border: 1px solid #d1d5db !important;
-    border-radius: 6px !important; background: #fff !important;
-    cursor: pointer; transition: all 0.15s ease;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    background: #fff !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    vertical-align: middle;
 }
-.ql-table-btn:hover { background: #f3f4f6 !important; border-color: #9ca3af !important; color: #111827 !important; }
+.ql-table-btn:hover { background: #f3f4f6 !important; border-color: #9ca3af !important; }
 </style>
 {% set quill_loaded = true %}
 {% endif %}
 
-<!-- Editor Container -->
+<!-- Editor + Table Zone Container -->
 <div class="quill-editor-container">
     <div id="quill-{{ field_id }}" style="height: {{ height|default('300px') }};"></div>
-    <textarea id="{{ field_id }}" name="{{ field_name }}" class="hidden">{% if initial_value and initial_value is not none and initial_value != 'None' %}{{ initial_value }}{% endif %}</textarea>
+    <div id="table-zone-{{ field_id }}" class="pace-table-zone" data-textarea="{{ field_id }}"></div>
+    <textarea id="{{ field_id }}" name="{{ field_name }}" class="hidden"></textarea>
 </div>
 
 {% if not quill_script_loaded %}
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
-<!-- Global Table Modal -->
-<div id="quill-table-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-    <div style="background:#fff; border-radius:16px; max-width:380px; width:100%; padding:24px; box-shadow:0 20px 60px rgba(0,0,0,0.2); font-family:inherit;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:12px; margin-bottom:16px;">
-            <h3 style="margin:0; font-size:16px; font-weight:700; color:#111827; display:flex; align-items:center; gap:8px;">📊 Insert Table</h3>
-            <button type="button" onclick="closeQuillTableModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#9ca3af; line-height:1;">✕</button>
+<!-- ══════════ Table Insert Modal ══════════ -->
+<div id="quill-table-modal"
+     style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.52);
+            z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:16px; max-width:380px; width:100%;
+                padding:24px; box-shadow:0 24px 64px rgba(0,0,0,0.18); font-family:inherit;">
+        <div style="display:flex; justify-content:space-between; align-items:center;
+                    border-bottom:1px solid #e5e7eb; padding-bottom:14px; margin-bottom:18px;">
+            <h3 style="margin:0; font-size:17px; font-weight:700; color:#111827;">📊 Insert Table</h3>
+            <button type="button" onclick="closeQuillTableModal()"
+                    style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:2px 6px;">✕</button>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
             <div>
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Rows</label>
-                <input type="number" id="quill-table-rows" value="3" min="1" max="20" style="width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; font-weight:600; outline:none; box-sizing:border-box;">
+                <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;
+                              margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Rows</label>
+                <input type="number" id="quill-table-rows" value="3" min="1" max="20"
+                       style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;
+                              border-radius:8px;font-size:15px;font-weight:600;outline:none;box-sizing:border-box;">
             </div>
             <div>
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Columns</label>
-                <input type="number" id="quill-table-cols" value="3" min="1" max="10" style="width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; font-weight:600; outline:none; box-sizing:border-box;">
+                <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;
+                              margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Columns</label>
+                <input type="number" id="quill-table-cols" value="3" min="1" max="10"
+                       style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;
+                              border-radius:8px;font-size:15px;font-weight:600;outline:none;box-sizing:border-box;">
             </div>
         </div>
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:20px; cursor:pointer; font-size:13px; color:#374151; font-weight:500;">
-            <input type="checkbox" id="quill-table-header" checked style="width:16px; height:16px; cursor:pointer;">
+        <label style="display:flex;align-items:center;gap:10px;margin-bottom:22px;
+                      cursor:pointer;font-size:13px;font-weight:500;color:#374151;">
+            <input type="checkbox" id="quill-table-header" checked
+                   style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb;">
             Include Header Row
         </label>
-        <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #e5e7eb; padding-top:16px;">
-            <button type="button" onclick="closeQuillTableModal()" style="padding:9px 18px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
-            <button type="button" onclick="confirmInsertQuillTable()" style="padding:9px 20px; border:none; border-radius:8px; background:#2563eb; color:#fff; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(37,99,235,0.3);">Insert Table</button>
+        <div style="display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #e5e7eb;padding-top:16px;">
+            <button type="button" onclick="closeQuillTableModal()"
+                    style="padding:9px 18px;border:1.5px solid #d1d5db;border-radius:8px;
+                           background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+            <button type="button" onclick="confirmInsertQuillTable()"
+                    style="padding:9px 22px;border:none;border-radius:8px;background:#2563eb;
+                           color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+                           box-shadow:0 2px 10px rgba(37,99,235,.35);">Insert Table</button>
         </div>
     </div>
 </div>
@@ -96,104 +188,95 @@
 window.quillEditors = window.quillEditors || {};
 window.activeQuillForTable = null;
 
-// ─── Register custom TableBlot BEFORE any Quill instance is created ───────────
-(function() {
-    var BlockEmbed = Quill.import('blots/block/embed');
-    var Parchment = Quill.import('parchment');
-
-    var TableEmbedBlot = (function(_BlockEmbed) {
-        function TableEmbedBlot() {
-            _BlockEmbed.apply(this, arguments);
-        }
-        // Simple inheritance
-        TableEmbedBlot.prototype = Object.create(_BlockEmbed.prototype);
-        TableEmbedBlot.prototype.constructor = TableEmbedBlot;
-
-        TableEmbedBlot.create = function(html) {
-            var node = _BlockEmbed.create.call(this, html);
-            node.setAttribute('contenteditable', 'true');
-            node.innerHTML = html;
-            return node;
-        };
-
-        TableEmbedBlot.value = function(node) {
-            return node.innerHTML;
-        };
-
-        return TableEmbedBlot;
-    })(BlockEmbed);
-
-    TableEmbedBlot.blotName  = 'table-embed';
-    TableEmbedBlot.tagName   = 'div';
-    TableEmbedBlot.className = 'ql-table-embed';
-
-    Quill.register(TableEmbedBlot, true);
-})();
-
 function openQuillTableModal(quillInstance) {
     window.activeQuillForTable = quillInstance;
-    var modal = document.getElementById('quill-table-modal');
-    modal.style.display = 'flex';
+    document.getElementById('quill-table-modal').style.display = 'flex';
 }
-
 function closeQuillTableModal() {
     document.getElementById('quill-table-modal').style.display = 'none';
 }
 
-function confirmInsertQuillTable() {
-    var rows = parseInt(document.getElementById('quill-table-rows').value) || 3;
-    var cols  = parseInt(document.getElementById('quill-table-cols').value)  || 3;
-    var hasHeader = document.getElementById('quill-table-header').checked;
-
-    // Build table HTML with full inline styles (works without Tailwind)
-    var html = '<table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;font-size:14px;">';
-
+// ── Build table HTML with full inline styles ──────────────────────────────────
+function buildTableHTML(rows, cols, hasHeader) {
+    var html = '<table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;font-size:14px;font-family:inherit;">';
     if (hasHeader) {
-        html += '<thead><tr>';
+        html += '<thead><tr style="background:#f1f5f9;">';
         for (var c = 1; c <= cols; c++) {
-            html += '<th style="border:1px solid #cbd5e1;padding:10px 14px;text-align:left;font-weight:600;color:#1e293b;background:#f1f5f9;">Header ' + c + '</th>';
+            html += '<th contenteditable="true" style="border:1px solid #cbd5e1;padding:10px 14px;text-align:left;font-weight:600;color:#1e293b;background:#f1f5f9;min-width:90px;">Header ' + c + '</th>';
         }
         html += '</tr></thead>';
     }
-
     html += '<tbody>';
     for (var r = 1; r <= rows; r++) {
         var bg = (r % 2 === 0) ? '#f8fafc' : '#ffffff';
         html += '<tr style="background:' + bg + ';">';
         for (var c = 1; c <= cols; c++) {
-            html += '<td style="border:1px solid #cbd5e1;padding:10px 14px;min-width:90px;vertical-align:top;" contenteditable="true">Row ' + r + ' · Col ' + c + '</td>';
+            html += '<td contenteditable="true" style="border:1px solid #cbd5e1;padding:10px 14px;min-width:90px;vertical-align:top;background:' + bg + ';">Cell ' + r + '-' + c + '</td>';
         }
         html += '</tr>';
     }
     html += '</tbody></table>';
+    return html;
+}
 
-    if (window.activeQuillForTable) {
-        var q = window.activeQuillForTable;
-        var range = q.getSelection(true);
-        var index = (range ? range.index : q.getLength() - 1);
-        // Ensure we're on a block boundary
-        q.insertText(index, '\n', Quill.sources.SILENT);
-        q.insertEmbed(index + 1, 'table-embed', html, Quill.sources.USER);
-        q.insertText(index + 2, '\n', Quill.sources.SILENT);
-        q.setSelection(index + 3, Quill.sources.SILENT);
+// ── Insert table into the table zone (NOT into Quill) ─────────────────────────
+function confirmInsertQuillTable() {
+    var rows = parseInt(document.getElementById('quill-table-rows').value)  || 3;
+    var cols  = parseInt(document.getElementById('quill-table-cols').value)   || 3;
+    var hasHeader = document.getElementById('quill-table-header').checked;
 
-        // Sync to hidden textarea
-        setTimeout(function() {
-            var ta = document.getElementById(q.textareaId);
-            if (ta) ta.value = q.root.innerHTML;
-        }, 50);
-    }
+    if (!window.activeQuillForTable) { closeQuillTableModal(); return; }
+
+    var tid = window.activeQuillForTable.textareaId;
+    var zone = document.getElementById('table-zone-' + tid);
+    if (!zone) { closeQuillTableModal(); return; }
+
+    // Build wrapper with delete button + table
+    var wrap = document.createElement('div');
+    wrap.className = 'pace-table-wrap';
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'pace-table-delete';
+    delBtn.title = 'Delete table';
+    delBtn.innerHTML = '✕';
+    delBtn.addEventListener('click', function() {
+        wrap.parentNode.removeChild(wrap);
+        syncEditorToTextarea(tid);
+    });
+
+    var overflow = document.createElement('div');
+    overflow.style.cssText = 'overflow-x:auto;';
+    overflow.innerHTML = buildTableHTML(rows, cols, hasHeader);
+
+    wrap.appendChild(delBtn);
+    wrap.appendChild(overflow);
+    zone.appendChild(wrap);
+
+    syncEditorToTextarea(tid);
     closeQuillTableModal();
+}
+
+// ── Sync quill + table zone → hidden textarea ─────────────────────────────────
+function syncEditorToTextarea(textareaId) {
+    var q    = window.quillEditors[textareaId];
+    var zone = document.getElementById('table-zone-' + textareaId);
+    var ta   = document.getElementById(textareaId);
+    if (!ta) return;
+    var quillHtml = q ? q.root.innerHTML : '';
+    var tableHtml = zone ? zone.innerHTML : '';
+    ta.value = quillHtml + tableHtml;
 }
 </script>
 {% set quill_script_loaded = true %}
 {% endif %}
 
-<!-- Initialize this specific editor instance -->
+<!-- ══════════ Init this editor instance ══════════ -->
 <script>
 (function() {
-    var editorId  = 'quill-{{ field_id }}';
+    var editorId   = 'quill-{{ field_id }}';
     var textareaId = '{{ field_id }}';
+    var zoneId     = 'table-zone-{{ field_id }}';
 
     var quill = new Quill('#' + editorId, {
         theme: 'snow',
@@ -216,37 +299,87 @@ function confirmInsertQuillTable() {
     quill.textareaId = textareaId;
     window.quillEditors[textareaId] = quill;
 
-    // ── Append custom Table button to toolbar ──────────────────────────────
+    // ── Add "+ Table" button to toolbar ──────────────────────────────────────
     var toolbar = quill.getModule('toolbar').container;
     if (toolbar && !toolbar.querySelector('.ql-table-btn')) {
         var span = document.createElement('span');
         span.className = 'ql-formats';
-        span.innerHTML = '<button type="button" class="ql-table-btn" title="Insert Table"><svg viewBox="0 0 18 18" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;"><rect x="2" y="2" width="14" height="14" rx="1.5"></rect><line x1="2" y1="7" x2="16" y2="7"></line><line x1="2" y1="12" x2="16" y2="12"></line><line x1="7" y1="2" x2="7" y2="16"></line><line x1="12" y1="2" x2="12" y2="16"></line></svg> + Table</button>';
+        span.innerHTML =
+            '<button type="button" class="ql-table-btn" title="Insert Table">' +
+            '<svg viewBox="0 0 18 18" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;vertical-align:middle;">' +
+            '<rect x="2" y="2" width="14" height="14" rx="1.5"></rect>' +
+            '<line x1="2" y1="7" x2="16" y2="7"></line>' +
+            '<line x1="2" y1="12" x2="16" y2="12"></line>' +
+            '<line x1="7" y1="2" x2="7" y2="16"></line>' +
+            '<line x1="12" y1="2" x2="12" y2="16"></line>' +
+            '</svg> + Table</button>';
         toolbar.appendChild(span);
         span.querySelector('.ql-table-btn').addEventListener('click', function() {
             openQuillTableModal(quill);
         });
     }
 
-    // ── Load existing content ──────────────────────────────────────────────
+    // ── Load existing content, splitting out tables into zone ─────────────────
     var existing = document.getElementById(textareaId).value;
     if (existing && existing.trim() && existing.trim() !== 'None') {
-        quill.root.innerHTML = existing;
+        var temp = document.createElement('div');
+        temp.innerHTML = existing;
+
+        // Pull any pace-table-wrap or raw tables saved previously
+        var zone = document.getElementById(zoneId);
+        var tableWraps = temp.querySelectorAll('.pace-table-wrap');
+        tableWraps.forEach(function(tw) {
+            tw.parentNode.removeChild(tw);
+            // Re-attach delete button listener
+            var delBtn = tw.querySelector('.pace-table-delete');
+            if (delBtn) {
+                delBtn.addEventListener('click', function() {
+                    tw.parentNode && tw.parentNode.removeChild(tw);
+                    syncEditorToTextarea(textareaId);
+                });
+            }
+            zone.appendChild(tw);
+        });
+
+        // Also handle raw ql-table-embed divs from earlier commits
+        var oldEmbeds = temp.querySelectorAll('.ql-table-embed');
+        oldEmbeds.forEach(function(embed) {
+            embed.parentNode.removeChild(embed);
+            var wrap = document.createElement('div');
+            wrap.className = 'pace-table-wrap';
+            var delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'pace-table-delete';
+            delBtn.title = 'Delete table';
+            delBtn.innerHTML = '✕';
+            delBtn.addEventListener('click', function() {
+                wrap.parentNode && wrap.parentNode.removeChild(wrap);
+                syncEditorToTextarea(textareaId);
+            });
+            var overflow = document.createElement('div');
+            overflow.style.cssText = 'overflow-x:auto;';
+            overflow.innerHTML = embed.innerHTML;
+            wrap.appendChild(delBtn);
+            wrap.appendChild(overflow);
+            zone.appendChild(wrap);
+        });
+
+        quill.root.innerHTML = temp.innerHTML;
     }
 
-    // ── Sync to textarea on every change ──────────────────────────────────
+    // ── Sync on Quill change ──────────────────────────────────────────────────
     quill.on('text-change', function() {
-        document.getElementById(textareaId).value = quill.root.innerHTML;
+        syncEditorToTextarea(textareaId);
     });
 
-    // ── Also sync on form submit ───────────────────────────────────────────
+    // ── Sync on form submit ───────────────────────────────────────────────────
     var form = document.getElementById(textareaId).closest('form');
     if (form) {
         form.addEventListener('submit', function() {
-            document.getElementById(textareaId).value = quill.root.innerHTML;
+            syncEditorToTextarea(textareaId);
         });
     }
 
-    console.log('✅ Quill + TableBlot ready:', textareaId);
+    console.log('✅ Quill + Table Zone ready:', textareaId);
 })();
 </script>
