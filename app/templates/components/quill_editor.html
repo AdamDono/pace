@@ -25,6 +25,56 @@
     color: #9ca3af;
     font-style: italic;
 }
+
+/* Custom Table Styles in Editor & Display Views */
+.ql-editor table, .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.ql-editor th, .prose th {
+    background-color: #f3f4f6 !important;
+    font-weight: 600;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+    padding: 10px 14px;
+    text-align: left;
+}
+.ql-editor td, .prose td {
+    border: 1px solid #d1d5db;
+    padding: 8px 12px;
+    min-width: 80px;
+    vertical-align: top;
+}
+.ql-editor tr:nth-child(even) td, .prose tr:nth-child(even) td {
+    background-color: #f9fafb;
+}
+.ql-editor tr:hover td, .prose tr:hover td {
+    background-color: #f3f4f6;
+}
+.ql-table-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.ql-table-btn:hover {
+    background: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+    color: #111827 !important;
+}
 </style>
 {% set quill_loaded = true %}
 {% endif %}
@@ -38,9 +88,88 @@
 {% if not quill_script_loaded %}
 <!-- Load Quill JS (only once per page) -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<!-- Global Table Modal Container -->
+<div id="quill-table-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-gray-100">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span>📊</span> Insert Table
+            </h3>
+            <button type="button" onclick="closeQuillTableModal()" class="text-gray-400 hover:text-gray-600 font-bold p-1 text-lg">✕</button>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Rows</label>
+                <input type="number" id="quill-table-rows" value="3" min="1" max="20" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Columns</label>
+                <input type="number" id="quill-table-cols" value="3" min="1" max="10" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+            <input type="checkbox" id="quill-table-header" checked class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500">
+            <label for="quill-table-header" class="text-xs font-medium text-gray-700 cursor-pointer">Include Header Row</label>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t">
+            <button type="button" onclick="closeQuillTableModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium">Cancel</button>
+            <button type="button" onclick="confirmInsertQuillTable()" class="px-5 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow transition-colors">Insert Table</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Store all Quill instances
 window.quillEditors = window.quillEditors || {};
+window.activeQuillForTable = null;
+
+function openQuillTableModal(quillInstance) {
+    window.activeQuillForTable = quillInstance;
+    var modal = document.getElementById('quill-table-modal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeQuillTableModal() {
+    var modal = document.getElementById('quill-table-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function confirmInsertQuillTable() {
+    var rows = parseInt(document.getElementById('quill-table-rows').value) || 3;
+    var cols = parseInt(document.getElementById('quill-table-cols').value) || 3;
+    var hasHeader = document.getElementById('quill-table-header').checked;
+
+    var tableHtml = '<div class="overflow-x-auto my-4"><table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden text-sm my-2">';
+    
+    if (hasHeader) {
+        tableHtml += '<thead><tr class="bg-gray-100 border-b border-gray-300 font-semibold text-gray-700">';
+        for (var c = 1; c <= cols; c++) {
+            tableHtml += '<th class="border border-gray-300 p-2.5 text-left bg-gray-100">Header ' + c + '</th>';
+        }
+        tableHtml += '</tr></thead>';
+    }
+
+    tableHtml += '<tbody>';
+    for (var r = 1; r <= rows; r++) {
+        tableHtml += '<tr class="border-b border-gray-200 hover:bg-gray-50">';
+        for (var c = 1; c <= cols; c++) {
+            tableHtml += '<td class="border border-gray-300 p-2.5">Row ' + r + ' Col ' + c + '</td>';
+        }
+        tableHtml += '</tr>';
+    }
+    tableHtml += '</tbody></table></div><p><br></p>';
+
+    if (window.activeQuillForTable) {
+        var range = window.activeQuillForTable.getSelection(true);
+        var index = range ? range.index : window.activeQuillForTable.getLength();
+        window.activeQuillForTable.clipboard.dangerouslyPasteHTML(index, tableHtml);
+    }
+    closeQuillTableModal();
+}
 </script>
 {% set quill_script_loaded = true %}
 {% endif %}
@@ -73,6 +202,29 @@ window.quillEditors = window.quillEditors || {};
     // Store instance
     window.quillEditors[textareaId] = quill;
     
+    // Append custom Table button to Quill Toolbar
+    var toolbarContainer = quill.getModule('toolbar').container;
+    if (toolbarContainer && !toolbarContainer.querySelector('.ql-table-btn')) {
+        var tableSpan = document.createElement('span');
+        tableSpan.className = 'ql-formats';
+        tableSpan.innerHTML = `
+            <button type="button" class="ql-table-btn" title="Insert Table">
+                <svg viewBox="0 0 18 18" style="width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5;">
+                    <rect x="2" y="2" width="14" height="14" rx="1.5"></rect>
+                    <line x1="2" y1="7" x2="16" y2="7"></line>
+                    <line x1="2" y1="12" x2="16" y2="12"></line>
+                    <line x1="7" y1="2" x2="7" y2="16"></line>
+                    <line x1="12" y1="2" x2="12" y2="16"></line>
+                </svg>
+                <span>+ Table</span>
+            </button>
+        `;
+        toolbarContainer.appendChild(tableSpan);
+        tableSpan.querySelector('.ql-table-btn').addEventListener('click', function() {
+            openQuillTableModal(quill);
+        });
+    }
+
     // Load existing content
     var existingContent = document.getElementById(textareaId).value;
     if (existingContent && existingContent.trim() !== 'None') {
@@ -92,6 +244,6 @@ window.quillEditors = window.quillEditors || {};
         });
     }
     
-    console.log('✅ Quill editor initialized:', textareaId);
+    console.log('✅ Quill editor initialized with Table support:', textareaId);
 })();
 </script>
