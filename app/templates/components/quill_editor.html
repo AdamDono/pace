@@ -207,41 +207,64 @@ window.insertCallout = function(editorId, color) {
         placeholder: '{{ placeholder|default("Start writing here...") }}'
     });
     
-    // Custom Video Handler with Description Prompt & YouTube Embed Auto-conversion
-    var toolbarModule = quill.getModule('toolbar');
-    if (toolbarModule) {
-        toolbarModule.addHandler('video', function() {
-            var videoUrl = prompt('Enter Video Embed URL (YouTube, Vimeo, MP4, etc.):');
-            if (!videoUrl || videoUrl.trim() === '') return;
-            
-            videoUrl = videoUrl.trim();
-            // Convert standard YouTube watch URLs to embed format automatically
-            if (videoUrl.includes('youtube.com/watch?v=')) {
-                videoUrl = videoUrl.replace('watch?v=', 'embed/');
-                if (videoUrl.includes('&')) {
-                    videoUrl = videoUrl.split('&')[0];
+    // Enhance Quill's native inline tooltip modal for Video embeds (NO browser prompt alert!)
+    var tooltip = quill.theme.tooltip;
+    if (tooltip) {
+        var originalEdit = tooltip.edit ? tooltip.edit.bind(tooltip) : null;
+        var originalSave = tooltip.save ? tooltip.save.bind(tooltip) : null;
+        
+        if (originalEdit) {
+            tooltip.edit = function(mode, preview) {
+                originalEdit(mode, preview);
+                if (mode === 'video') {
+                    var descInput = tooltip.root.querySelector('.ql-video-desc-input');
+                    if (!descInput) {
+                        descInput = document.createElement('input');
+                        descInput.type = 'text';
+                        descInput.className = 'ql-video-desc-input';
+                        descInput.placeholder = 'Video Description / Title (e.g. This short video explains...)';
+                        descInput.style.cssText = 'margin-top: 8px; display: block; width: 100%; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; box-sizing: border-box;';
+                        tooltip.root.appendChild(descInput);
+                    }
+                    descInput.value = '';
+                    descInput.style.display = 'block';
+                } else {
+                    var descInput = tooltip.root.querySelector('.ql-video-desc-input');
+                    if (descInput) descInput.style.display = 'none';
                 }
-            } else if (videoUrl.includes('youtu.be/')) {
-                var videoId = videoUrl.split('youtu.be/')[1];
-                if (videoId && videoId.includes('?')) {
-                    videoId = videoId.split('?')[0];
+            };
+        }
+        
+        if (originalSave) {
+            tooltip.save = function() {
+                var mode = tooltip.root.getAttribute('data-mode');
+                if (mode === 'video') {
+                    var value = tooltip.textbox ? tooltip.textbox.value : '';
+                    if (value) {
+                        value = value.trim();
+                        if (value.includes('youtube.com/watch?v=')) {
+                            value = value.replace('watch?v=', 'embed/').split('&')[0];
+                        } else if (value.includes('youtu.be/')) {
+                            var vId = value.split('youtu.be/')[1];
+                            if (vId && vId.includes('?')) vId = vId.split('?')[0];
+                            value = 'https://www.youtube.com/embed/' + (vId || '');
+                        }
+                        if (tooltip.textbox) tooltip.textbox.value = value;
+                    }
+                    
+                    var descInput = tooltip.root.querySelector('.ql-video-desc-input');
+                    var descText = descInput ? descInput.value.trim() : '';
+                    
+                    if (descText) {
+                        var range = quill.getSelection(true);
+                        var idx = range ? range.index : quill.getLength();
+                        var captionHtml = '<p class="ql-align-center" style="text-align: center; margin-bottom: 8px; font-size: 15px; color: #374151;">🎥 <strong>Watch:</strong> <em>' + descText + '</em></p>';
+                        quill.clipboard.dangerouslyPasteHTML(idx, captionHtml);
+                    }
                 }
-                videoUrl = 'https://www.youtube.com/embed/' + (videoId || '');
-            }
-            
-            var videoDesc = prompt('Enter Video Description / Title (Optional):\nExample: "This short video explains HTML table structure."', '');
-            
-            var range = quill.getSelection(true);
-            var index = range ? range.index : quill.getLength();
-            
-            if (videoDesc && videoDesc.trim() !== '') {
-                var captionHtml = '<p class="ql-align-center" style="text-align: center; margin-bottom: 8px; font-size: 15px; color: #374151;">🎥 <strong>Watch:</strong> <em>' + videoDesc.trim() + '</em></p>';
-                quill.clipboard.dangerouslyPasteHTML(index, captionHtml);
-                index += 1;
-            }
-            
-            quill.insertEmbed(index, 'video', videoUrl);
-        });
+                originalSave();
+            };
+        }
     }
     
     // Store instance
