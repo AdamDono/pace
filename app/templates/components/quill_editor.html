@@ -55,17 +55,58 @@ pre code {
     font-size: inherit !important;
 }
 
-/* 4 Signature Callout Box Side Colors */
-.prose blockquote:not([style*="border-left"]),
-.ql-editor blockquote:not([style*="border-left"]),
-blockquote:not([style*="border-left"]) {
-    border-left: 5px solid #2563eb !important; /* Default Blue */
-    background: #eff6ff !important;
+/* 4 Signature Callout Box Side Colors (Green, Red, Yellow, Blue) */
+blockquote[data-color="green"],
+blockquote.callout-green,
+blockquote[style*="#16a34a"],
+blockquote[style*="rgb(22, 163, 74)"] {
+    border-left: 5px solid #16a34a !important;
+    background-color: #f0fdf4 !important;
+    color: #14532d !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+
+blockquote[data-color="red"],
+blockquote.callout-red,
+blockquote[style*="#dc2626"],
+blockquote[style*="rgb(220, 38, 38)"] {
+    border-left: 5px solid #dc2626 !important;
+    background-color: #fef2f2 !important;
+    color: #7f1d1d !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+
+blockquote[data-color="yellow"],
+blockquote.callout-yellow,
+blockquote[style*="#d97706"],
+blockquote[style*="rgb(217, 119, 6)"] {
+    border-left: 5px solid #d97706 !important;
+    background-color: #fffbeb !important;
+    color: #78350f !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+
+blockquote[data-color="blue"],
+blockquote.callout-blue,
+blockquote[style*="#2563eb"],
+blockquote[style*="rgb(37, 99, 235)"],
+blockquote:not([data-color]):not([class*="callout"]):not([style*="border-left"]) {
+    border-left: 5px solid #2563eb !important;
+    background-color: #eff6ff !important;
     color: #1e3a8a !important;
     padding: 14px 18px !important;
     margin: 16px 0 !important;
     border-radius: 0 10px 10px 0 !important;
-    font-style: normal !important;
+    display: block !important;
 }
 </style>
 {% set quill_loaded = true %}
@@ -106,6 +147,19 @@ blockquote:not([style*="border-left"]) {
 window.quillEditors = window.quillEditors || {};
 window.quillInstances = window.quillInstances || {};
 
+// Register data-color attribute on Quill Parchment so Quill never strips it!
+if (window.Quill) {
+    try {
+        var Parchment = Quill.import('parchment');
+        var DataColor = new Parchment.Attributor.Attribute('data-color', 'data-color', {
+            scope: Parchment.Scope.BLOCK
+        });
+        Quill.register(DataColor, true);
+    } catch(e) {
+        console.log('Quill Parchment registration:', e);
+    }
+}
+
 window.insertCallout = function(editorId, color) {
     var quill = window.quillInstances[editorId];
     if (!quill) return;
@@ -120,7 +174,7 @@ window.insertCallout = function(editorId, color) {
     };
     
     var selectedStyle = styleMap[color] || styleMap['blue'];
-    var calloutHtml = '<blockquote style="' + selectedStyle + '"><p>Type your ' + color + ' callout message here...</p></blockquote><p><br></p>';
+    var calloutHtml = '<blockquote data-color="' + color + '" class="callout-' + color + '" style="' + selectedStyle + '"><p>Type your ' + color + ' callout message here...</p></blockquote><p><br></p>';
     
     quill.clipboard.dangerouslyPasteHTML(index, calloutHtml);
 };
