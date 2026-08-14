@@ -85,31 +85,36 @@
     }
 
 
-    /* 2. PRE BLOCKS (Code blocks) */
+    /* 2. PRE BLOCKS (Code blocks) - Sleek Light Gray Background */
     .ql-editor pre,
+    .ql-editor pre.ql-syntax,
     .prose pre,
-    pre {
-        background-color: #f5f5f5 !important;
-        border: 1px solid #e3e3e3 !important;
-        color: #333 !important;
-        border-radius: 5px !important;
-        padding: 15px !important;
-        margin: 15px 0 !important;
+    .prose pre.ql-syntax,
+    pre,
+    .ql-syntax {
+        background-color: #f8fafc !important; /* Soft Light Gray */
+        border: 1px solid #e2e8f0 !important;   /* Subtle Border */
+        color: #1e293b !important;            /* Dark Slate Charcoal Text */
+        border-radius: 10px !important;
+        padding: 16px 20px !important;
+        margin: 18px 0 !important;
         overflow-x: auto !important;
-        font-family: 'Courier New', Courier, monospace !important;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+        font-size: 14.5px !important;
+        line-height: 1.65 !important;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
     }
 
-    
-
-    /* FIX: Ensure code INSIDE pre removes its own background/border to blend in, BUT keeps color */
     .ql-editor pre code,
+    .ql-editor pre.ql-syntax code,
     .prose pre code,
     pre code {
         background-color: transparent !important;
         border: none !important;
         padding: 0 !important;
-        color: #d63384 !important;
-        /* KEEP PINK TEXT properly */
+        color: #1e293b !important;
+        font-family: inherit !important;
+        font-size: inherit !important;
     }
 
     /* 3. COLLAPSIBLE SECTIONS (<details>) */

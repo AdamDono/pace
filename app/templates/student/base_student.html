@@ -209,24 +209,35 @@
             font-weight: 500 !important;
         }
 
-        pre {
-            background: #f8f9fa !important;
-            border: 1px solid #e1e4e8 !important;
-            border-radius: 6px !important;
-            padding: 16px !important;
+        .ql-editor pre,
+        .ql-editor pre.ql-syntax,
+        .prose pre,
+        .prose pre.ql-syntax,
+        pre,
+        .ql-syntax {
+            background-color: #f8fafc !important; /* Soft Light Gray */
+            border: 1px solid #e2e8f0 !important;   /* Subtle Border */
+            color: #1e293b !important;            /* Dark Slate Charcoal Text */
+            border-radius: 10px !important;
+            padding: 16px 20px !important;
+            margin: 18px 0 !important;
             overflow-x: auto !important;
-            margin: 20px 0 !important;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+            font-size: 14.5px !important;
+            line-height: 1.65 !important;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
         }
 
-        pre code,
-        pre code.lang-html {
-            background: transparent !important;
+        .ql-editor pre code,
+        .ql-editor pre.ql-syntax code,
+        .prose pre code,
+        pre code {
+            background-color: transparent !important;
             border: none !important;
             padding: 0 !important;
-            color: #24292e !important;
-            font-size: 14px !important;
-            line-height: 1.6 !important;
-            font-weight: normal !important;
+            color: #1e293b !important;
+            font-family: inherit !important;
+            font-size: inherit !important;
         }
 
         /* Details/Summary collapsible sections */
