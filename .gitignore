@@ -22,9 +22,11 @@ scratch/
 flask_session/
 instance/
 
-# Database files (SQLite)
+# Database files (SQLite & PostgreSQL dumps)
 *.db
 *.sqlite3
+*.tar.gz
+*.dir
 
 # Logs and temp files
 *.log
