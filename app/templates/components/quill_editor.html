@@ -11,6 +11,17 @@
 .ql-editor {
     font-size: 15px;
     line-height: 1.6;
+    overflow-x: hidden !important;
+}
+.ql-editor img {
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 85vh !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 20px auto !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.08) !important;
 }
 .ql-toolbar.ql-snow {
     border-radius: 8px 8px 0 0;
@@ -206,6 +217,61 @@ window.insertCallout = function(editorId, color) {
         },
         placeholder: '{{ placeholder|default("Start writing here...") }}'
     });
+    
+    // Custom Image Handler with Canvas Compression (Auto-scales high-res images to max 1200px at 0.82 quality)
+    var imageCompressor = function(file, callback) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var maxW = 1200;
+                var maxH = 1200;
+                var width = img.width;
+                var height = img.height;
+                
+                if (width > maxW || height > maxH) {
+                    if (width > height) {
+                        height = Math.round((height * maxW) / width);
+                        width = maxW;
+                    } else {
+                        width = Math.round((width * maxH) / height);
+                        height = maxH;
+                    }
+                }
+                
+                var canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                var compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                callback(compressedDataUrl);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    var toolbarModule = quill.getModule('toolbar');
+    if (toolbarModule) {
+        toolbarModule.addHandler('image', function() {
+            var fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = function() {
+                var file = fileInput.files[0];
+                if (file) {
+                    imageCompressor(file, function(dataUrl) {
+                        var range = quill.getSelection(true);
+                        var idx = range ? range.index : quill.getLength();
+                        quill.insertEmbed(idx, 'image', dataUrl);
+                        quill.setSelection(idx + 1);
+                    });
+                }
+            };
+            fileInput.click();
+        });
+    }
     
     // Enhance Quill's native inline tooltip modal for Video embeds (NO browser prompt alert!)
     var tooltip = quill.theme.tooltip;

@@ -66,9 +66,10 @@ def create_app():
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Configure uploads
+    # Configure uploads & form payload limits (Prevent 413 Content Too Large on rich text & images)
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max payload limit
+    app.config['MAX_FORM_MEMORY_SIZE'] = 50 * 1024 * 1024  # 50MB form field memory limit for Base64 rich content
     app.config['WTF_CSRF_ENABLED'] = True  # Enabled for security
     app.config['WTF_CSRF_TIME_LIMIT'] = None  # Do not expire CSRF tokens during session
     app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'zip', 'rar', '7z', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'doc', 'txt', 'csv', 'py', 'js', 'html', 'css', 'mp4', 'webm'}

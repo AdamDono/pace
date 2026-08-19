@@ -137,12 +137,22 @@
         }
 
         .prose img,
-        .ql-editor img {
+        .ql-editor img,
+        .content-body img,
+        blockquote img {
             max-width: 100% !important;
             height: auto !important;
+            max-height: 85vh !important;
+            object-fit: contain !important;
             display: block !important;
-            margin: 24px auto !important;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+            margin: 20px auto !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .prose p:has(img),
+        .ql-editor p:has(img) {
+            overflow-x: visible !important;
         }
 
         /* 4 Signature Callout Box Side Colors (Green, Red, Yellow, Blue) */
