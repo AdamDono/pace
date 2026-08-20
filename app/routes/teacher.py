@@ -2134,7 +2134,10 @@ def create_live_session():
     db.session.add(new_session)
     db.session.commit()
     
-    # Notify enrolled students
+    # Notify enrolled students via In-App Notification and Email
+    from app.utils.email import send_email
+    meeting_link = url_for('student.live_classrooms', _external=True)
+    
     enrollments = Enrollment.query.filter_by(course_id=course_id).all()
     for e in enrollments:
         notif = Notification(
@@ -2146,9 +2149,26 @@ def create_live_session():
             related_course_id=course_id
         )
         db.session.add(notif)
+        
+        # Send Email Notification
+        if e.student and e.student.email:
+            try:
+                send_email(
+                    subject=f"🎥 Live Classroom Scheduled: {title} ({course.title})",
+                    recipient=e.student.email,
+                    template='live_session_notification',
+                    student=e.student,
+                    course=course,
+                    session=new_session,
+                    instructor_name=current_user.full_name,
+                    meeting_url=meeting_link
+                )
+            except Exception as err:
+                current_app.logger.warning(f"Failed sending live session email to {e.student.email}: {err}")
+                
     db.session.commit()
     
-    flash('🎥 Live Classroom scheduled successfully! Enrolled students have been notified.', 'success')
+    flash('🎥 Live Classroom scheduled successfully! Enrolled students have been notified via app & email.', 'success')
     return redirect(url_for('teacher.live_classrooms'))
 
 
