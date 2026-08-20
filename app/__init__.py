@@ -82,7 +82,10 @@ def create_app():
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@paceacademy.com')
 
-    # Configure session (using Flask's default secure cookie sessions for cloud compatibility)
+    # Configure 10-minute session inactivity limit
+    from datetime import timedelta
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
+    app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 
     # Create upload directory if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -170,6 +173,32 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
+    # 10-Minute Server-Side Inactivity Lockout Check
+    @app.before_request
+    def check_session_inactivity():
+        from flask import session, request, redirect, url_for, flash
+        from flask_login import current_user, logout_user
+        from datetime import datetime, timezone
+
+        # Skip static assets and public auth endpoints
+        if request.endpoint and (request.endpoint.startswith('static') or request.endpoint in ('auth.login', 'auth.logout', 'auth.register', 'auth.forgot_password', 'auth.ping_session', 'health.health_check')):
+            return
+
+        if current_user and current_user.is_authenticated:
+            session.permanent = True
+            now_ts = datetime.now(timezone.utc).timestamp()
+            last_activity = session.get('last_activity')
+
+            # 10 minutes = 600 seconds
+            if last_activity and (now_ts - float(last_activity) > 600):
+                logout_user()
+                session.clear()
+                flash('Your session has expired due to 10 minutes of inactivity. Please log in again.', 'warning')
+                return redirect(url_for('auth.login', next=request.url))
+
+            # Refresh last activity timestamp
+            session['last_activity'] = now_ts
     
     # Context processor for sidebar counts
     @app.context_processor

@@ -194,8 +194,19 @@ def login():
 @login_required
 def logout():
     logout_user()
+    session.clear()
     flash('You have been logged out', 'info')
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/ping-session', methods=['POST', 'GET'])
+def ping_session():
+    """Lightweight endpoint to refresh the 10-minute inactivity session timer"""
+    from flask import session, jsonify
+    from datetime import datetime, timezone
+    if current_user and current_user.is_authenticated:
+        session['last_activity'] = datetime.now(timezone.utc).timestamp()
+        return jsonify({'status': 'active', 'timestamp': session['last_activity']})
+    return jsonify({'status': 'unauthenticated'}), 401
 
 def redirect_based_on_role():
     if current_user.role == 'admin':
