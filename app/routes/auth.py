@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import check_password_hash
 from app.models import User
@@ -190,12 +190,17 @@ def login():
 
 # Public registration disabled - users are created by admin/teachers only
 
-@auth_bp.route('/logout')
-@login_required
+@auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
-    logout_user()
-    session.clear()
-    flash('You have been logged out', 'info')
+    """Cleanly log out current user without 500 errors"""
+    try:
+        if current_user and current_user.is_authenticated:
+            logout_user()
+    except Exception:
+        pass
+    session.pop('last_activity', None)
+    session.pop('_user_id', None)
+    flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/ping-session', methods=['POST', 'GET'])

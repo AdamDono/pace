@@ -177,28 +177,35 @@ def create_app():
     # 10-Minute Server-Side Inactivity Lockout Check
     @app.before_request
     def check_session_inactivity():
-        from flask import session, request, redirect, url_for, flash
-        from flask_login import current_user, logout_user
-        from datetime import datetime, timezone
+        try:
+            from flask import session, request, redirect, url_for, flash
+            from flask_login import current_user, logout_user
+            from datetime import datetime, timezone
 
-        # Skip static assets and public auth endpoints
-        if request.endpoint and (request.endpoint.startswith('static') or request.endpoint in ('auth.login', 'auth.logout', 'auth.register', 'auth.forgot_password', 'auth.ping_session', 'health.health_check')):
-            return
+            # Skip static assets and public auth endpoints
+            if request.endpoint and (request.endpoint.startswith('static') or request.endpoint in ('auth.login', 'auth.logout', 'auth.register', 'auth.forgot_password', 'auth.ping_session', 'health.health_check')):
+                return
 
-        if current_user and current_user.is_authenticated:
-            session.permanent = True
-            now_ts = datetime.now(timezone.utc).timestamp()
-            last_activity = session.get('last_activity')
+            if current_user and current_user.is_authenticated:
+                session.permanent = True
+                now_ts = datetime.now(timezone.utc).timestamp()
+                last_activity = session.get('last_activity')
 
-            # 10 minutes = 600 seconds
-            if last_activity and (now_ts - float(last_activity) > 600):
-                logout_user()
-                session.clear()
-                flash('Your session has expired due to 10 minutes of inactivity. Please log in again.', 'warning')
-                return redirect(url_for('auth.login', next=request.url))
+                # 10 minutes = 600 seconds
+                if last_activity:
+                    try:
+                        if (now_ts - float(last_activity)) > 600:
+                            logout_user()
+                            session.pop('last_activity', None)
+                            flash('Your session has expired due to 10 minutes of inactivity. Please log in again.', 'warning')
+                            return redirect(url_for('auth.login'))
+                    except (ValueError, TypeError):
+                        pass
 
-            # Refresh last activity timestamp
-            session['last_activity'] = now_ts
+                # Refresh last activity timestamp
+                session['last_activity'] = now_ts
+        except Exception as err:
+            app.logger.warning(f"Inactivity check hook notice: {err}")
     
     # Context processor for sidebar counts
     @app.context_processor
