@@ -2067,3 +2067,133 @@ def edit_section_content(course_id, section_id):
         return redirect(url_for('teacher.course_builder', course_id=course_id))
         
     return render_template('teacher/simple_content_editor.html', course=course, section=section)
+
+
+@teacher_bp.route('/live-classrooms', methods=['GET'])
+@teacher_required
+def live_classrooms():
+    """List all scheduled, live, and past virtual classrooms for the teacher's courses"""
+    from app.models import LiveSession, Course, LiveAttendance
+    my_courses = Course.query.filter_by(teacher_id=current_user.id).all()
+    course_ids = [c.id for c in my_courses]
+    
+    sessions = LiveSession.query.filter(LiveSession.course_id.in_(course_ids)).order_by(LiveSession.scheduled_at.desc()).all() if course_ids else []
+    
+    upcoming_sessions = [s for s in sessions if s.status == 'scheduled']
+    live_sessions_list = [s for s in sessions if s.status == 'live']
+    past_sessions = [s for s in sessions if s.status in ('ended', 'cancelled')]
+    
+    return render_template('teacher/live_sessions.html', 
+                           courses=my_courses,
+                           upcoming_sessions=upcoming_sessions,
+                           live_sessions=live_sessions_list,
+                           past_sessions=past_sessions)
+
+
+@teacher_bp.route('/live-classroom/create', methods=['POST'])
+@teacher_required
+def create_live_session():
+    """Schedule a new live video classroom session"""
+    from app.models import LiveSession, Course, Enrollment, Notification
+    from uuid import uuid4
+    
+    course_id = request.form.get('course_id', type=int)
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    scheduled_at_str = request.form.get('scheduled_at')
+    duration_minutes = request.form.get('duration_minutes', type=int, default=60)
+    custom_url = request.form.get('custom_meeting_url', '').strip()
+    
+    if not course_id or not title or not scheduled_at_str:
+        flash('Please fill in Course, Title, and Scheduled Date/Time.', 'warning')
+        return redirect(url_for('teacher.live_classrooms'))
+        
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id and current_user.role != 'admin':
+        flash('Unauthorized course access.', 'danger')
+        return redirect(url_for('teacher.live_classrooms'))
+        
+    try:
+        scheduled_at = datetime.strptime(scheduled_at_str, '%Y-%m-%dT%H:%M')
+    except Exception:
+        scheduled_at = datetime.utcnow()
+        
+    unique_room_name = f"pace_live_c{course_id}_{uuid4().hex[:10]}"
+    
+    new_session = LiveSession(
+        course_id=course_id,
+        created_by_id=current_user.id,
+        title=title,
+        description=description,
+        scheduled_at=scheduled_at,
+        duration_minutes=duration_minutes,
+        room_name=unique_room_name,
+        custom_meeting_url=custom_url if custom_url else None,
+        status='scheduled'
+    )
+    db.session.add(new_session)
+    db.session.commit()
+    
+    # Notify enrolled students
+    enrollments = Enrollment.query.filter_by(course_id=course_id).all()
+    for e in enrollments:
+        notif = Notification(
+            user_id=e.student_id,
+            title=f"📅 New Live Classroom Scheduled: {title}",
+            message=f"Live Session scheduled for {course.title} on {scheduled_at.strftime('%d %b %Y, %H:%M')}.",
+            link=url_for('student.live_classrooms')
+        )
+        db.session.add(notif)
+    db.session.commit()
+    
+    flash('🎥 Live Classroom scheduled successfully! Enrolled students have been notified.', 'success')
+    return redirect(url_for('teacher.live_classrooms'))
+
+
+@teacher_bp.route('/live-classroom/<int:session_id>/start', methods=['POST'])
+@teacher_required
+def start_live_session(session_id):
+    """Launch a scheduled live classroom and switch status to 'live'"""
+    from app.models import LiveSession
+    session_obj = LiveSession.query.get_or_404(session_id)
+    if session_obj.course.teacher_id != current_user.id and current_user.role != 'admin':
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('teacher.live_classrooms'))
+        
+    session_obj.status = 'live'
+    session_obj.started_at = datetime.utcnow()
+    db.session.commit()
+    
+    flash(f"🔴 Live Classroom '{session_obj.title}' is now LIVE!", 'success')
+    return redirect(url_for('teacher.live_room', session_id=session_id))
+
+
+@teacher_bp.route('/live-classroom/<int:session_id>/end', methods=['POST'])
+@teacher_required
+def end_live_session(session_id):
+    """End a live classroom session"""
+    from app.models import LiveSession
+    session_obj = LiveSession.query.get_or_404(session_id)
+    if session_obj.course.teacher_id != current_user.id and current_user.role != 'admin':
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('teacher.live_classrooms'))
+        
+    session_obj.status = 'ended'
+    session_obj.ended_at = datetime.utcnow()
+    db.session.commit()
+    
+    flash(f"Live Session '{session_obj.title}' has ended.", 'info')
+    return redirect(url_for('teacher.live_classrooms'))
+
+
+@teacher_bp.route('/live-classroom/<int:session_id>/room')
+@teacher_required
+def live_room(session_id):
+    """Fullscreen host video room for the teacher"""
+    from app.models import LiveSession
+    session_obj = LiveSession.query.get_or_404(session_id)
+    if session_obj.course.teacher_id != current_user.id and current_user.role != 'admin':
+        flash('Unauthorized access to meeting room.', 'danger')
+        return redirect(url_for('teacher.live_classrooms'))
+        
+    return render_template('live_room.html', session_obj=session_obj, is_host=True)

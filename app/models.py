@@ -560,3 +560,46 @@ class Announcement(db.Model):
     # Relationships
     course = db.relationship('Course', backref=db.backref('announcements', cascade='all, delete-orphan'))
     teacher = db.relationship('User', backref='announcements_created')
+
+
+class LiveSession(db.Model):
+    """Live Video Classroom Sessions created by teachers"""
+    __tablename__ = 'live_sessions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    scheduled_at = db.Column(db.DateTime, nullable=False)
+    duration_minutes = db.Column(db.Integer, default=60)
+    
+    room_name = db.Column(db.String(120), unique=True, nullable=False)  # Jitsi meeting room identifier
+    custom_meeting_url = db.Column(db.String(500), nullable=True)  # Optional Zoom/Meet fallback link
+    
+    status = db.Column(db.String(20), default='scheduled')  # 'scheduled', 'live', 'ended', 'cancelled'
+    started_at = db.Column(db.DateTime, nullable=True)
+    ended_at = db.Column(db.DateTime, nullable=True)
+    recording_url = db.Column(db.String(500), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    course = db.relationship('Course', backref=db.backref('live_sessions', lazy=True, cascade='all, delete-orphan'))
+    creator = db.relationship('User', backref='created_live_sessions')
+
+
+class LiveAttendance(db.Model):
+    """Student attendance tracking for live sessions"""
+    __tablename__ = 'live_attendances'
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('live_sessions.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_ping = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    session = db.relationship('LiveSession', backref=db.backref('attendances', lazy=True, cascade='all, delete-orphan'))
+    student = db.relationship('User', backref='live_attendances')

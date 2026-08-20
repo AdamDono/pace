@@ -252,13 +252,22 @@ def create_app():
                     student_id=current_user.id,
                     completed=True
                 ).count()
+
+                # Active or upcoming live sessions for enrolled courses
+                from app.models import LiveSession
+                active_live_session = LiveSession.query.filter(
+                    LiveSession.course_id.in_(enrolled_course_ids) if enrolled_course_ids else False,
+                    LiveSession.status == 'live'
+                ).first()
                 
                 return {
                     'sidebar_counts': {
                         'pending_assignments': pending_assignments,
                         'unread_announcements': unread_announcements,
                         'unread_notifications': unread_notifications,
-                        'completed_courses': completed_courses
+                        'completed_courses': completed_courses,
+                        'has_active_live': active_live_session is not None,
+                        'active_live_session': active_live_session
                     }
                 }
             except Exception as e:

@@ -1371,3 +1371,74 @@ def grades():
     return render_template('student/grades.html',
                          grade_data=grade_data,
                          overall_gpa=round(overall_gpa, 1) if overall_gpa else None)
+
+
+@student_bp.route('/live-classrooms')
+@login_required
+@student_required
+def live_classrooms():
+    """Student view of upcoming, active live video classrooms for enrolled courses"""
+    from app.models import LiveSession, Enrollment, Course
+    
+    enrollments = Enrollment.query.filter_by(student_id=current_user.id).all()
+    enrolled_course_ids = [e.course_id for e in enrollments]
+    
+    if not enrolled_course_ids:
+        return render_template('student/live_sessions.html', 
+                               upcoming_sessions=[], 
+                               live_sessions=[], 
+                               past_sessions=[])
+        
+    sessions = LiveSession.query.filter(LiveSession.course_id.in_(enrolled_course_ids)).order_by(LiveSession.scheduled_at.asc()).all()
+    
+    upcoming_sessions = [s for s in sessions if s.status == 'scheduled']
+    live_sessions_list = [s for s in sessions if s.status == 'live']
+    past_sessions = [s for s in sessions if s.status in ('ended', 'cancelled')]
+    
+    return render_template('student/live_sessions.html',
+                           upcoming_sessions=upcoming_sessions,
+                           live_sessions=live_sessions_list,
+                           past_sessions=past_sessions)
+
+
+@student_bp.route('/live-classroom/<int:session_id>/join')
+@login_required
+@student_required
+def join_live_room(session_id):
+    """Enrolled student 1-click video classroom launcher"""
+    from app.models import LiveSession, Enrollment, LiveAttendance
+    
+    session_obj = LiveSession.query.get_or_404(session_id)
+    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=session_obj.course_id).first()
+    
+    if not enrollment:
+        flash('You are not enrolled in this course.', 'danger')
+        return redirect(url_for('student.live_classrooms'))
+        
+    if session_obj.status == 'cancelled':
+        flash('This live session was cancelled.', 'warning')
+        return redirect(url_for('student.live_classrooms'))
+        
+    # Log attendance entry
+    attendance = LiveAttendance.query.filter_by(session_id=session_id, student_id=current_user.id).first()
+    if not attendance:
+        attendance = LiveAttendance(session_id=session_id, student_id=current_user.id)
+        db.session.add(attendance)
+    else:
+        attendance.last_ping = datetime.utcnow()
+    db.session.commit()
+    
+    return render_template('live_room.html', session_obj=session_obj, is_host=False)
+
+
+@student_bp.route('/live-classroom/<int:session_id>/ping-attendance', methods=['POST'])
+@login_required
+def ping_live_attendance(session_id):
+    """Heartbeat endpoint to track student active duration during live meeting"""
+    from app.models import LiveAttendance
+    attendance = LiveAttendance.query.filter_by(session_id=session_id, student_id=current_user.id).first()
+    if attendance:
+        attendance.last_ping = datetime.utcnow()
+        db.session.commit()
+        return jsonify({'status': 'active'}), 200
+    return jsonify({'status': 'not_found'}), 404

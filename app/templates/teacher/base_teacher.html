@@ -134,9 +134,14 @@
                     <a href="{{ url_for('teacher.calendar') }}"
                        class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition">
                         <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7H3v10a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         Calendar
+                    </a>
+                    <a href="{{ url_for('teacher.live_classrooms') }}"
+                       class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-indigo-50/50 hover:text-indigo-700 transition {% if request.endpoint == 'teacher.live_classrooms' %}bg-indigo-50 text-indigo-700{% endif %}">
+                        <span class="mr-3 text-base">🎥</span>
+                        Virtual Classrooms
                     </a>
                     <a href="{{ url_for('teacher.profile') }}"
                        class="flex items-center px-4 py-2.5 text-sm font-semibold text-gray-700 rounded-xl hover:bg-blue-50/50 hover:text-blue-700 transition {% if request.endpoint == 'teacher.profile' %}bg-blue-50 text-blue-700{% endif %}">

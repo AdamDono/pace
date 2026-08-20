@@ -1,0 +1,204 @@
+{% extends 'teacher/base_teacher.html' %}
+
+{% block title %}Virtual Classrooms & Live Sessions - Teacher Dashboard | Pace Academy{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 pb-12">
+
+    <!-- Header & Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+        <div>
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xs">
+                    🎥
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Virtual Classrooms</h1>
+                    <p class="text-xs text-gray-500 font-medium">Schedule live video sessions, office hours, and interactive lectures for your courses</p>
+                </div>
+            </div>
+        </div>
+        <button onclick="document.getElementById('scheduleModal').classList.remove('hidden')"
+                class="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 shrink-0">
+            <i class="fas fa-plus"></i>
+            <span>Schedule New Live Session</span>
+        </button>
+    </div>
+
+    <!-- Active Live Sessions Section -->
+    {% if live_sessions %}
+    <div class="space-y-4">
+        <h2 class="text-sm font-black text-red-600 uppercase tracking-wider flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping"></span>
+            <span>Active Live Classrooms ({{ live_sessions|length }})</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for s in live_sessions %}
+            <div class="bg-gradient-to-br from-gray-900 to-indigo-950 text-white p-6 rounded-3xl shadow-xl border border-indigo-500/30 flex flex-col justify-between space-y-6">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="px-3 py-1 bg-red-600 text-white text-[10px] font-black uppercase tracking-wider rounded-full animate-pulse">
+                            🔴 LIVE NOW
+                        </span>
+                        <span class="text-xs text-indigo-200 font-medium">{{ s.course.title }}</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-white leading-tight">{{ s.title }}</h3>
+                    <p class="text-xs text-gray-300 line-clamp-2">{{ s.description or 'No additional agenda specified.' }}</p>
+                </div>
+                <div class="pt-4 border-t border-indigo-900/50 flex items-center justify-between">
+                    <span class="text-xs text-gray-400 font-medium"><i class="far fa-clock mr-1"></i> {{ s.duration_minutes }} mins</span>
+                    <a href="{{ url_for('teacher.live_room', session_id=s.id) }}"
+                       class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs rounded-xl shadow-lg transition flex items-center space-x-1.5">
+                        <i class="fas fa-video"></i>
+                        <span>Enter Meeting Room ↗</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Upcoming Sessions Section -->
+    <div class="space-y-4">
+        <h2 class="text-base font-extrabold text-gray-900 flex items-center space-x-2">
+            <i class="far fa-calendar-alt text-indigo-600"></i>
+            <span>Scheduled Upcoming Sessions ({{ upcoming_sessions|length }})</span>
+        </h2>
+
+        {% if upcoming_sessions %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for s in upcoming_sessions %}
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-xl">
+                        <span class="truncate max-w-[180px]">{{ s.course.title }}</span>
+                        <span>{{ s.duration_minutes }}m</span>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900 leading-snug">{{ s.title }}</h3>
+                    <p class="text-xs text-gray-500 line-clamp-2">{{ s.description or 'No description provided.' }}</p>
+                </div>
+                <div class="space-y-4 pt-4 border-t border-gray-100">
+                    <div class="flex items-center text-xs text-gray-600 font-medium space-x-2">
+                        <i class="fas fa-calendar-day text-gray-400"></i>
+                        <span>{{ s.scheduled_at.strftime('%d %b %Y at %H:%M') }}</span>
+                    </div>
+                    <form action="{{ url_for('teacher.start_live_session', session_id=s.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center justify-center space-x-2">
+                            <i class="fas fa-play text-[10px]"></i>
+                            <span>Start Meeting Now</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-gray-50 p-8 rounded-3xl border border-dashed border-gray-200 text-center space-y-3">
+            <div class="w-12 h-12 bg-gray-200 text-gray-500 rounded-2xl flex items-center justify-center text-xl mx-auto">
+                📅
+            </div>
+            <h4 class="text-sm font-bold text-gray-700">No Upcoming Live Sessions</h4>
+            <p class="text-xs text-gray-500 max-w-sm mx-auto">Schedule a live video room for office hours, student Q&A, or interactive lectures.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Past Live Sessions History -->
+    {% if past_sessions %}
+    <div class="space-y-4 pt-4">
+        <h2 class="text-base font-extrabold text-gray-900 flex items-center space-x-2">
+            <i class="fas fa-history text-gray-400"></i>
+            <span>Past Live Classrooms ({{ past_sessions|length }})</span>
+        </h2>
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 font-bold border-b border-gray-100">
+                            <th class="p-4">Session Title</th>
+                            <th class="p-4">Course</th>
+                            <th class="p-4">Date & Time</th>
+                            <th class="p-4">Duration</th>
+                            <th class="p-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for s in past_sessions %}
+                        <tr class="hover:bg-gray-50/50">
+                            <td class="p-4 font-bold text-gray-900">{{ s.title }}</td>
+                            <td class="p-4 text-gray-600">{{ s.course.title }}</td>
+                            <td class="p-4 text-gray-500">{{ s.scheduled_at.strftime('%d %b %Y, %H:%M') }}</td>
+                            <td class="p-4 text-gray-500">{{ s.duration_minutes }} mins</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider bg-gray-100 text-gray-600">
+                                    {{ s.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Schedule Session Modal -->
+<div id="scheduleModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xl font-extrabold text-gray-900">🎥 Schedule Live Classroom</h3>
+            <button onclick="document.getElementById('scheduleModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">✕</button>
+        </div>
+
+        <form action="{{ url_for('teacher.create_live_session') }}" method="POST" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Select Course</label>
+                <select name="course_id" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    {% for c in courses %}
+                    <option value="{{ c.id }}">{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Session Title</label>
+                <input type="text" name="title" required placeholder="e.g. Python Web Dev Live Q&A" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Agenda / Description (Optional)</label>
+                <textarea name="description" rows="2" placeholder="Explain what topics or code will be reviewed..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Date & Time</label>
+                    <input type="datetime-local" name="scheduled_at" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Duration (Minutes)</label>
+                    <input type="number" name="duration_minutes" value="60" min="15" max="300" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Custom Zoom/Meet URL (Optional)</label>
+                <input type="url" name="custom_meeting_url" placeholder="Leave blank to use Pace Built-in 1-Click Video" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                <p class="text-[10px] text-gray-400 mt-1">If left blank, Pace automatically embeds high-definition 1-click WebRTC Video.</p>
+            </div>
+
+            <div class="pt-4 flex items-center justify-end space-x-3">
+                <button type="button" onclick="document.getElementById('scheduleModal').classList.add('hidden')" class="px-5 py-3 text-xs font-bold text-gray-600 hover:text-gray-800">Cancel</button>
+                <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md">Schedule & Notify Students</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
