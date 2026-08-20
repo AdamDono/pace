@@ -1727,17 +1727,25 @@ def serve_upload(filename):
     is_download = request.args.get('download') == '1'
     
     if clean_filename.startswith(('http://', 'https://')):
-        return redirect(clean_filename)
+        target_url = clean_filename
+        # Auto-fix Cloudinary URLs where PDFs were uploaded as image/upload instead of raw/upload
+        if clean_filename.lower().endswith('.pdf') and '/image/upload/' in clean_filename:
+            target_url = clean_filename.replace('/image/upload/', '/raw/upload/')
+        return redirect(target_url)
+
+    mimetype = None
+    if clean_filename.lower().endswith('.pdf'):
+        mimetype = 'application/pdf'
 
     target_path = os.path.join(upload_dir, clean_filename)
     if os.path.exists(target_path):
-        return send_from_directory(upload_dir, clean_filename, as_attachment=is_download)
+        return send_from_directory(upload_dir, clean_filename, as_attachment=is_download, mimetype=mimetype)
 
     static_dir = os.path.join(current_app.root_path, 'static')
     if os.path.exists(os.path.join(static_dir, clean_filename)):
-        return send_from_directory(static_dir, clean_filename, as_attachment=is_download)
+        return send_from_directory(static_dir, clean_filename, as_attachment=is_download, mimetype=mimetype)
     elif os.path.exists(os.path.join(static_dir, 'uploads', clean_filename)):
-        return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename, as_attachment=is_download)
+        return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename, as_attachment=is_download, mimetype=mimetype)
 
     # Friendly fallback explaining ephemeral storage reset
     return render_template_string('''
@@ -1748,14 +1756,14 @@ def serve_upload(filename):
             <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-md text-center">
                 <div class="text-5xl mb-4">⚠️</div>
                 <h3 class="text-xl font-extrabold text-gray-900 mb-2">File Notice</h3>
-                <p class="text-xs text-gray-600 mb-6 leading-relaxed">
-                    This file (<span class="font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">{{ filename }}</span>) is unavailable.
+                <p class="text-sm text-gray-600 mb-6 leading-relaxed">
+                    This file was saved during a previous deployment session and has expired from local temporary storage. Please ask the student to re-submit if needed.
                 </p>
-                <button onclick="window.close(); history.back();" class="px-6 py-3 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-indigo-700 transition">Go Back</button>
+                <button onclick="window.close()" class="px-6 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow hover:bg-indigo-700 transition">Close Window</button>
             </div>
         </body>
         </html>
-    ''', filename=clean_filename), 404
+    '''), 404
 
 @teacher_bp.route('/preview-submission/<int:submission_id>')
 @teacher_required
@@ -1783,10 +1791,13 @@ def preview_submission(submission_id):
     for sub in sibling_submissions:
         f_url = None
         if sub.file_path:
-            if sub.file_path.startswith(('http://', 'https://')):
-                f_url = sub.file_path
+            clean_fp = sub.file_path
+            if clean_fp.startswith(('http://', 'https://')):
+                if clean_fp.lower().endswith('.pdf') and '/image/upload/' in clean_fp:
+                    clean_fp = clean_fp.replace('/image/upload/', '/raw/upload/')
+                f_url = url_for('teacher.serve_upload', filename=clean_fp)
             else:
-                f_url = url_for('teacher.serve_upload', filename=sub.file_path.lstrip('/'))
+                f_url = url_for('teacher.serve_upload', filename=clean_fp.lstrip('/'))
         
         attempts_list.append({
             'id': sub.id,

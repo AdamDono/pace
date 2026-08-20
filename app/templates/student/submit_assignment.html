@@ -104,23 +104,36 @@
 
                     <!-- Submitted File Links & Buttons -->
                     {% if sub.file_path %}
-                    {% set file_url = sub.file_path if sub.file_path.startswith('http') else url_for('teacher.serve_upload', filename=sub.file_path) %}
-                    {% set download_url = (file_url + ('&download=1' if '?' in file_url else '?download=1')) if not sub.file_path.startswith('http') else file_url %}
+                    {% set raw_path = sub.file_path.replace('/image/upload/', '/raw/upload/') if (sub.file_path.lower().endswith('.pdf') and '/image/upload/' in sub.file_path) else sub.file_path %}
+                    {% set file_url = url_for('teacher.serve_upload', filename=raw_path) %}
+                    {% set download_url = file_url + '?download=1' %}
                     {% set file_name = sub.file_path.split('/')[-1].split('?')[0] %}
-                    <div class="p-3 bg-white rounded-xl border border-indigo-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <div class="flex items-center space-x-2 truncate">
-                            <span class="text-base">📎</span>
-                            <span class="font-bold text-gray-800 truncate max-w-xs">{{ file_name }}</span>
+                    <div class="p-4 bg-white rounded-2xl border border-indigo-100 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+                        <div class="flex items-center space-x-3 truncate">
+                            <span class="text-xl">{% if sub.file_path.lower().endswith('.pdf') %}📄{% else %}📎{% endif %}</span>
+                            <div>
+                                <span class="font-extrabold text-gray-900 truncate max-w-xs block text-sm">{{ file_name }}</span>
+                                <span class="text-[10px] text-gray-400 font-mono">Submitted Document</span>
+                            </div>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <a href="{{ file_url }}" target="_blank" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold rounded-lg transition border border-indigo-200">
-                                👁️ View Document ↗
+                            <a href="{{ file_url }}" target="_blank" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold rounded-xl transition border border-indigo-200 shadow-2xs">
+                                👁️ View PDF / File ↗
                             </a>
-                            <a href="{{ download_url }}" download target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-lg transition shadow-sm">
-                                ⬇ Download
+                            <a href="{{ download_url }}" download target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl transition shadow-sm">
+                                ⬇ Download File
                             </a>
                         </div>
                     </div>
+                    {% if sub.file_path.lower().endswith('.pdf') %}
+                    <div class="mt-2 rounded-xl border border-gray-200 overflow-hidden bg-gray-900 shadow-sm">
+                        <div class="p-2.5 bg-gray-800 flex items-center justify-between text-[11px] text-gray-300 px-4">
+                            <span class="font-mono font-bold truncate">📄 Embedded PDF Preview: {{ file_name }}</span>
+                            <a href="{{ file_url }}" target="_blank" class="text-indigo-300 hover:text-white font-bold">Open Full Screen ↗</a>
+                        </div>
+                        <iframe src="{{ file_url }}" class="w-full h-96 bg-white border-0"></iframe>
+                    </div>
+                    {% endif %}
                     {% endif %}
 
                     {% if sub.feedback %}

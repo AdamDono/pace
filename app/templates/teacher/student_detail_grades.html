@@ -347,7 +347,7 @@ function renderAttemptTab(selectedId) {
                 </div>
             `;
         } else {
-            // Interactive Document Card with Open Document and Download buttons
+            // Interactive Document Card with Open Document, Download, and PDF Inline Viewer
             html += `
                 <div class="p-6 bg-gradient-to-r from-indigo-50/90 via-blue-50/60 to-white border border-indigo-200 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex items-center space-x-4">
@@ -372,6 +372,21 @@ function renderAttemptTab(selectedId) {
                     </div>
                 </div>
             `;
+
+            if (ext === 'pdf') {
+                html += `
+                    <div class="mt-4 rounded-2xl border border-gray-200 overflow-hidden bg-gray-900 shadow-md">
+                        <div class="p-3 bg-gray-800 flex items-center justify-between text-xs text-gray-300">
+                            <span class="font-mono font-bold truncate max-w-md">📄 Embedded PDF Preview: ${fileName}</span>
+                            <div class="flex items-center gap-3">
+                                <a href="${fileUrl}" target="_blank" class="text-indigo-300 hover:text-white font-bold">Open Full Screen ↗</a>
+                                <a href="${downloadUrl}" download target="_blank" class="text-emerald-400 hover:text-emerald-300 font-bold">Download PDF ⬇</a>
+                            </div>
+                        </div>
+                        <iframe src="${fileUrl}" class="w-full h-[480px] bg-white border-0"></iframe>
+                    </div>
+                `;
+            }
         }
         html += '</div>';
     }

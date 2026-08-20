@@ -420,7 +420,7 @@ def submit_assignment(section_id, assignment_id):
                     try:
                         with open(local_path, 'rb') as f:
                             from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                            cloudinary_url = upload_file_to_cloudinary(f, folder="pace_assignments", resource_type="auto")
+                            cloudinary_url = upload_file_to_cloudinary(f, filename=file.filename, folder="pace_assignments")
                             if cloudinary_url:
                                 file_path = cloudinary_url
                     except Exception as cloud_err:
