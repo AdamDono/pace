@@ -280,69 +280,68 @@ def get_section_content(section_id):
         enrollment_section.last_accessed = datetime.utcnow()
         db.session.commit()
 
-        # Handle marking as complete
+        # Handle marking as complete with instant auto-progression to next section
         if request.method == 'POST' and ('mark_completed' in request.form or (request.json and request.json.get('mark_completed'))):
             enrollment_section.completed = True
             enrollment_section.completed_at = datetime.utcnow()
             db.session.commit()
-            flash('Section marked as completed.', 'success')
+
+            # Find next section ID for auto-progression
+            next_section_id = None
+            for idx, sec in enumerate(ordered_sections):
+                if sec.id == section_id and idx + 1 < len(ordered_sections):
+                    next_section_id = ordered_sections[idx + 1].id
+                    break
 
             # Check if the entire course is completed
             all_sections = Section.query.filter_by(course_id=course.id).all()
             all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
             is_course_completed = all(es.completed for es in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections)
             if is_course_completed:
-                # Mark enrollment as completed
                 enrollment.completed = True
                 enrollment.completed_at = datetime.utcnow()
                 db.session.commit()
                 flash('🎉 Congratulations! You completed the course! Check your certificates.', 'success')
 
-            # If HTMX request, render HTML and send HX-Trigger header with instant progression payload
-            if request.headers.get('HX-Request'):
-                next_section_id = None
-                for idx, sec in enumerate(ordered_sections):
-                    if sec.id == section_id and idx + 1 < len(ordered_sections):
-                        next_section_id = ordered_sections[idx + 1].id
-                        break
+            # Render target section: Next Section if available, else current section
+            target_section = Section.query.get(next_section_id) if next_section_id else section
+            target_es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=target_section.id).first()
+            if not target_es:
+                target_es = EnrollmentSection(enrollment_id=enrollment.id, section_id=target_section.id)
+                db.session.add(target_es)
+                db.session.commit()
 
-                interactive_questions = []
-                subtitles = []
-                if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
-                    interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=section_id).order_by(VideoInteractiveQuestion.timestamp).all()
-                    subtitles = section.subtitles if hasattr(section, 'subtitles') else []
-                
-                resp = make_response(render_template('student/_section_content.html', 
-                                     section=section, 
-                                     course=course, 
-                                     enrollment_section=enrollment_section,
-                                     interactive_questions=interactive_questions,
-                                     subtitles=subtitles))
-                
-                import json
-                trigger_payload = {
-                    'sectionCompleted': {
-                        'section_id': section_id,
-                        'next_section_id': next_section_id,
-                        'is_course_completed': is_course_completed
-                    }
+            interactive_questions = []
+            subtitles = []
+            if target_section.section_type == 'video' or target_section.video_url or (target_section.media_file and target_section.media_file.endswith(('.mp4', '.webm', '.ogg'))):
+                interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=target_section.id).order_by(VideoInteractiveQuestion.timestamp).all()
+                subtitles = target_section.subtitles if hasattr(target_section, 'subtitles') else []
+            
+            resp = make_response(render_template('student/_section_content.html', 
+                                 section=target_section, 
+                                 course=course, 
+                                 enrollment_section=target_es,
+                                 interactive_questions=interactive_questions,
+                                 subtitles=subtitles))
+            
+            import json
+            trigger_payload = {
+                'sectionCompleted': {
+                    'section_id': section_id,
+                    'sectionId': section_id,
+                    'next_section_id': next_section_id,
+                    'nextSectionId': next_section_id,
+                    'is_course_completed': is_course_completed,
+                    'isCourseCompleted': is_course_completed
                 }
-                if is_course_completed:
-                    trigger_payload['course-completed'] = True
-
-                resp.headers['HX-Trigger'] = json.dumps(trigger_payload)
-                return resp
-
+            }
             if is_course_completed:
-                return jsonify({
-                    'status': 'completed', 
-                    'course_id': course.id, 
-                    'course_title': course.title,
-                    'enrollment_id': enrollment.id,
-                    'show_celebration': True,
-                    'redirect': None
-                })
-            return jsonify({'status': 'updated', 'message': 'Section updated.'})
+                trigger_payload['course-completed'] = True
+
+            resp.headers['HX-Trigger'] = json.dumps(trigger_payload)
+            if next_section_id:
+                resp.headers['HX-Push-Url'] = url_for('student.course_detail', course_id=course.id, section_id=next_section_id)
+            return resp
     elif current_user.role == 'admin' or (current_user.role == 'teacher' and course.teacher_id == current_user.id):
         # Admin or Course Teacher is allowed
         enrollment_section = None

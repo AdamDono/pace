@@ -385,9 +385,9 @@
     document.addEventListener('sectionCompleted', function (evt) {
         console.log('⚡ Instant Section Completion Event:', evt.detail);
         const data = evt.detail || {};
-        const currentSecId = data.section_id;
-        const nextSecId = data.next_section_id;
-        const isCompleted = data.is_course_completed;
+        const currentSecId = data.section_id || data.sectionId;
+        const nextSecId = data.next_section_id || data.nextSectionId;
+        const isCompleted = data.is_course_completed || data.isCourseCompleted;
 
         if (currentSecId) {
             const currentBtn = document.getElementById('sidebar-link-' + currentSecId);
@@ -411,22 +411,26 @@
                     nextIconBox.innerHTML = '📄';
                 }
 
-                // Automatically trigger HTMX load on the next section instantly
-                setTimeout(function () {
-                    // Expand parent module if hidden
-                    const parentModuleId = nextBtn.getAttribute('data-parent-module-id');
-                    if (parentModuleId) {
-                        const moduleContainer = document.getElementById(parentModuleId);
-                        if (moduleContainer && moduleContainer.classList.contains('hidden')) {
-                            moduleContainer.classList.remove('hidden');
-                            const arrow = document.getElementById('module-arrow-' + parentModuleId.split('-')[1]);
-                            if (arrow) arrow.style.transform = 'rotate(180deg)';
-                        }
+                // Highlight active link in syllabus sidebar
+                document.querySelectorAll('[id^="sidebar-link-"]').forEach(el => el.classList.remove('bg-indigo-50', 'border-indigo-500', 'font-bold'));
+                nextBtn.classList.add('bg-indigo-50', 'border-indigo-500', 'font-bold');
+
+                // Expand parent module if collapsed
+                const parentModuleId = nextBtn.getAttribute('data-parent-module-id');
+                if (parentModuleId) {
+                    const moduleContainer = document.getElementById(parentModuleId);
+                    if (moduleContainer && moduleContainer.classList.contains('hidden')) {
+                        moduleContainer.classList.remove('hidden');
+                        const arrow = document.getElementById('module-arrow-' + parentModuleId.split('-')[1]);
+                        if (arrow) arrow.style.transform = 'rotate(180deg)';
                     }
-                    nextBtn.click();
-                }, 300);
+                }
             }
         }
+
+        // Smooth scroll to top of reader container
+        const mainReader = document.getElementById('main-reader-content');
+        if (mainReader) mainReader.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         if (isCompleted && typeof confetti === 'function') {
             confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
