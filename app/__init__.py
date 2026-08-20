@@ -134,6 +134,11 @@ def create_app():
             add_column_if_missing('courses', 'is_coming_soon', 'BOOLEAN DEFAULT FALSE')
             add_column_if_missing('courses', 'max_seats', 'INTEGER')
             
+            # Check and add columns for multi-attempt limits (3 tries default)
+            add_column_if_missing('assignments', 'max_attempts', 'INTEGER DEFAULT 3')
+            add_column_if_missing('quizzes', 'max_attempts', 'INTEGER DEFAULT 3')
+            add_column_if_missing('assignment_submissions', 'attempt_number', 'INTEGER DEFAULT 1')
+            
             # Check and add columns to sections
             add_column_if_missing('sections', 'module_id', 'INTEGER')
             

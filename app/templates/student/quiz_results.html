@@ -28,23 +28,37 @@
 
         <!-- Score Details -->
         <div class="p-8 text-center">
-            <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Your Score</p>
+            <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Attempt {{ attempt_number|default(1) }} of {{ max_attempts|default(3) }} Score</p>
             
             <div class="flex items-end justify-center gap-2 mb-4">
                 <span class="text-6xl font-black text-gray-900 leading-none">{{ score }}</span>
                 <span class="text-2xl font-bold text-gray-400 leading-tight">/ {{ total }}</span>
             </div>
             
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm mb-4
                 {% if percentage >= 80 %}bg-green-100 text-green-700
                 {% elif percentage >= 50 %}bg-blue-100 text-blue-700
                 {% else %}bg-orange-100 text-orange-700{% endif %}">
-                <span>{{ percentage|round(0)|int }}% Accuracy</span>
+                <span>{{ percentage|round(0)|int }}% This Attempt</span>
             </div>
+
+            {% if best_score is not none %}
+            <div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl inline-block w-full text-center">
+                <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">⭐ Official Highest Score Recorded</p>
+                <p class="text-3xl font-black text-emerald-600 mt-1">{{ best_score|round(0)|int }}%</p>
+                <p class="text-xs text-gray-500 mt-1">This highest score will be used for your official gradebook and certificate.</p>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Actions -->
         <div class="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-3 justify-center">
+            {% if attempt_number is defined and max_attempts is defined and attempt_number < max_attempts %}
+            <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}"
+               class="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-md">
+                🔄 Re-take Quiz (Tries Left: {{ max_attempts - attempt_number }})
+            </a>
+            {% endif %}
             <a href="{{ url_for('student.course_detail', course_id=section.course_id, section_id=section.id) }}"
                class="w-full sm:w-auto px-8 py-3.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black transition-all flex items-center justify-center gap-2 shadow-md">
                 Continue Learning

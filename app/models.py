@@ -281,6 +281,7 @@ class Assignment(db.Model):
     starter_code = db.Column(db.Text, nullable=True)  # Template code for students
     allow_file_upload = db.Column(db.Boolean, default=True)
     enable_code_execution = db.Column(db.Boolean, default=False)  # Allow students to run code
+    max_attempts = db.Column(db.Integer, default=3)  # Max submission attempts allowed (default 3)
     
     section = db.relationship('Section', back_populates='assignments')
     submissions = db.relationship('AssignmentSubmission', back_populates='assignment', cascade='all, delete-orphan')
@@ -290,6 +291,7 @@ class AssignmentSubmission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    attempt_number = db.Column(db.Integer, default=1)  # Track attempt number (1, 2, 3)
     submission_text = db.Column(db.Text, nullable=True, default='')
     submitted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     reviewed = db.Column(db.Boolean, default=False)

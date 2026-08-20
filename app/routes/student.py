@@ -385,15 +385,27 @@ def submit_assignment(section_id, assignment_id):
     if not enrollment:
         abort(403)
     
-    # Check for existing submission
-    existing_submission = AssignmentSubmission.query.filter_by(
+    # Fetch all submissions for assignment (supports up to 3 tries with full audit history)
+    all_submissions = AssignmentSubmission.query.filter_by(
         assignment_id=assignment_id,
         student_id=current_user.id
-    ).first()
+    ).order_by(AssignmentSubmission.submitted_at.desc()).all()
+    
+    max_attempts = getattr(assignment, 'max_attempts', None) or 3
+    attempt_count = len(all_submissions)
+    existing_submission = all_submissions[0] if all_submissions else None
+    
+    # Calculate best grade across all submissions
+    graded_scores = [s.grade for s in all_submissions if s.grade is not None]
+    best_grade = max(graded_scores) if graded_scores else None
     
     form = SubmissionForm()
 
     if request.method == 'POST':
+        if attempt_count >= max_attempts:
+            flash(f'You have reached the maximum limit of {max_attempts} attempts for this assignment.', 'warning')
+            return redirect(url_for('student.course_detail', course_id=section.course_id))
+
         try:
             file_path = None
             if 'file' in request.files and request.files['file'].filename:
@@ -416,58 +428,44 @@ def submit_assignment(section_id, assignment_id):
                         logger.warning(f"Cloudinary upload fallback to local storage: {cloud_err}")
                 else:
                     flash('Invalid file format. Allowed formats: .zip, .pdf, .docx, .png, .jpg, .txt, .py, .js, .html, etc.', 'danger')
-                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission, submissions=all_submissions, attempt_count=attempt_count, max_attempts=max_attempts, best_grade=best_grade)
+
+            new_attempt_number = attempt_count + 1
 
             # Code assignment logic
             if assignment.is_coding_assignment:
                 code = request.form.get('code_submission', '').strip()
                 if not code and not file_path:
                     flash('Please write code or upload a code file before submitting.', 'danger')
-                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission, submissions=all_submissions, attempt_count=attempt_count, max_attempts=max_attempts, best_grade=best_grade)
 
-                if existing_submission:
-                    submission = existing_submission
-                    submission.submission_text = code if not file_path else (submission.submission_text or '')
-                    submission.code_submission = code if code else None
-                    if file_path:
-                        submission.file_path = file_path
-                    submission.programming_language = assignment.programming_language
-                    submission.submitted_at = datetime.utcnow()
-                else:
-                    submission = AssignmentSubmission(
-                        assignment_id=assignment_id,
-                        student_id=current_user.id,
-                        submission_text=code if not file_path else 'Code File Upload',
-                        file_path=file_path,
-                        submission_type='code',
-                        code_submission=code if code else None,
-                        programming_language=assignment.programming_language
-                    )
-                    db.session.add(submission)
+                submission = AssignmentSubmission(
+                    assignment_id=assignment_id,
+                    student_id=current_user.id,
+                    attempt_number=new_attempt_number,
+                    submission_text=code if not file_path else 'Code File Upload',
+                    file_path=file_path,
+                    submission_type='code',
+                    code_submission=code if code else None,
+                    programming_language=assignment.programming_language
+                )
+                db.session.add(submission)
             else:
                 # Regular assignment logic
                 sub_text = (request.form.get('submission_text') or '').strip()
-                if not sub_text and not file_path and not (existing_submission and existing_submission.file_path):
+                if not sub_text and not file_path:
                     flash('Please provide submission text or attach a file.', 'warning')
-                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+                    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission, submissions=all_submissions, attempt_count=attempt_count, max_attempts=max_attempts, best_grade=best_grade)
 
-                if existing_submission:
-                    submission = existing_submission
-                    if sub_text:
-                        submission.submission_text = sub_text
-                    if file_path:
-                        submission.file_path = file_path
-                        submission.submission_type = 'file'
-                    submission.submitted_at = datetime.utcnow()
-                else:
-                    submission = AssignmentSubmission(
-                        assignment_id=assignment_id,
-                        student_id=current_user.id,
-                        submission_text=sub_text if sub_text else (file_path.split('/')[-1] if file_path else 'File Submission'),
-                        file_path=file_path,
-                        submission_type='file' if file_path else 'text'
-                    )
-                    db.session.add(submission)
+                submission = AssignmentSubmission(
+                    assignment_id=assignment_id,
+                    student_id=current_user.id,
+                    attempt_number=new_attempt_number,
+                    submission_text=sub_text if sub_text else (file_path.split('/')[-1] if file_path else 'File Submission'),
+                    file_path=file_path,
+                    submission_type='file' if file_path else 'text'
+                )
+                db.session.add(submission)
 
             # Auto-mark section as completed upon assignment submission
             es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
@@ -478,15 +476,15 @@ def submit_assignment(section_id, assignment_id):
             es.completed_at = datetime.utcnow()
 
             db.session.commit()
-            flash('Assignment submitted & section completed!', 'success')
+            flash(f'Assignment Attempt {new_attempt_number} of {max_attempts} submitted successfully!', 'success')
             return redirect(url_for('student.course_detail', course_id=section.course_id))
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error submitting assignment: {e}", exc_info=True)
             flash(f'An unexpected error occurred during submission: {str(e)}', 'danger')
-            return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+            return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission, submissions=all_submissions, attempt_count=attempt_count, max_attempts=max_attempts, best_grade=best_grade)
 
-    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission)
+    return render_template('student/submit_assignment.html', form=form, assignment=assignment, section=section, existing_submission=existing_submission, submissions=all_submissions, attempt_count=attempt_count, max_attempts=max_attempts, best_grade=best_grade)
 
 @student_bp.route('/section/<int:section_id>/quiz/<int:quiz_id>/take', methods=['GET', 'POST'])
 @login_required
@@ -506,8 +504,11 @@ def take_quiz(section_id, quiz_id):
         flash('No questions available in this quiz.', 'danger')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
     
-    attempt_count = QuizAttempt.query.filter_by(quiz_id=quiz_id, student_id=current_user.id).count()
+    all_attempts = QuizAttempt.query.filter_by(quiz_id=quiz_id, student_id=current_user.id).order_by(QuizAttempt.attempted_at.desc()).all()
+    attempt_count = len(all_attempts)
     max_attempts = quiz.max_attempts if quiz.max_attempts else 3
+    best_score = max([a.score for a in all_attempts]) if all_attempts else None
+    
     if attempt_count >= max_attempts:
         flash(f'You have reached the maximum of {max_attempts} attempts for this quiz.', 'warning')
         return redirect(url_for('student.course_detail', course_id=section.course_id))
@@ -519,10 +520,12 @@ def take_quiz(section_id, quiz_id):
             user_answer = request.form.get(f'q{q.id}')
             if user_answer and user_answer == q.correct_answer:
                 score += 1
+        
+        attempt_percentage = (score / total) * 100
         attempt = QuizAttempt(
             quiz_id=quiz_id,
             student_id=current_user.id,
-            score=(score / total) * 100
+            score=attempt_percentage
         )
         db.session.add(attempt)
 
@@ -536,14 +539,21 @@ def take_quiz(section_id, quiz_id):
 
         db.session.commit()
         
-        # Render a dedicated results page instead of a fleeting flash message
+        # Calculate updated best score including this attempt
+        updated_attempts = QuizAttempt.query.filter_by(quiz_id=quiz_id, student_id=current_user.id).all()
+        updated_best_score = max([a.score for a in updated_attempts]) if updated_attempts else attempt_percentage
+        
         return render_template('student/quiz_results.html', 
                                quiz=quiz, 
                                section=section, 
                                score=score, 
                                total=total, 
-                               percentage=(score/total)*100)
-    return render_template('student/take_quiz.html', quiz=quiz, questions=questions, section=section)
+                               percentage=attempt_percentage,
+                               attempt_number=len(updated_attempts),
+                               max_attempts=max_attempts,
+                               attempts=updated_attempts,
+                               best_score=updated_best_score)
+    return render_template('student/take_quiz.html', quiz=quiz, questions=questions, section=section, attempts=all_attempts, attempt_count=attempt_count, max_attempts=max_attempts, best_score=best_score)
 
 @student_bp.route('/section/<int:section_id>/mark-completed', methods=['POST'])
 @login_required
@@ -1285,19 +1295,25 @@ def grades():
         assignments = Assignment.query.join(Section).filter(Section.course_id == course.id).all()
         quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
         
-        # Get student's submissions
+        # Get student's submissions across all attempts (highest grade considered)
         assignment_grades = []
         for assignment in assignments:
-            submission = AssignmentSubmission.query.filter_by(
+            submissions = AssignmentSubmission.query.filter_by(
                 assignment_id=assignment.id,
                 student_id=current_user.id
-            ).first()
+            ).order_by(AssignmentSubmission.submitted_at.desc()).all()
+            
+            graded_scores = [s.grade for s in submissions if s.grade is not None]
+            best_grade = max(graded_scores) if graded_scores else None
+            latest_sub = submissions[0] if submissions else None
             
             assignment_grades.append({
                 'assignment': assignment,
-                'submission': submission,
-                'grade': submission.grade if submission else None,
-                'status': 'graded' if submission and submission.reviewed else 'submitted' if submission else 'not_submitted'
+                'submission': latest_sub,
+                'submissions': submissions,
+                'grade': best_grade,
+                'best_grade': best_grade,
+                'status': 'graded' if graded_scores else 'submitted' if submissions else 'not_submitted'
             })
         
         # Get quiz attempts
