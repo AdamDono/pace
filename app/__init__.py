@@ -65,6 +65,11 @@ def create_app():
     app.config['BASE_URL'] = os.getenv('BASE_URL', 'http://localhost:5000')
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_timeout': 30,
+    }
 
     # Configure uploads & form payload limits (Prevent 413 Content Too Large on rich text & images)
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
