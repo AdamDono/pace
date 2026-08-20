@@ -2139,9 +2139,11 @@ def create_live_session():
     for e in enrollments:
         notif = Notification(
             user_id=e.student_id,
+            notification_type='live_session',
             title=f"📅 New Live Classroom Scheduled: {title}",
             message=f"Live Session scheduled for {course.title} on {scheduled_at.strftime('%d %b %Y, %H:%M')}.",
-            link=url_for('student.live_classrooms')
+            link_url=url_for('student.live_classrooms'),
+            related_course_id=course_id
         )
         db.session.add(notif)
     db.session.commit()
