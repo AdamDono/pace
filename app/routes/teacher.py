@@ -76,70 +76,80 @@ def delete_draft_course(course_id):
     return redirect(url_for('teacher.my_courses'))
 
 @teacher_bp.route('/profile', methods=['GET', 'POST'])
-@login_required
 @teacher_required
 def profile():
     """Teacher profile edit page"""
     form = ProfileForm()
 
-    if form.validate_on_submit():
-        # Only require current password when changing password
-        if form.new_password.data:
-            if not current_user.verify_password(form.current_password.data or ''):
-                flash('Current password is incorrect', 'danger')
+    if request.method == 'POST':
+        curr_pwd = (request.form.get('current_password') or form.current_password.data or '').strip()
+        new_pwd = (request.form.get('new_password') or form.new_password.data or '').strip()
+        confirm_pwd = (request.form.get('confirm_password') or form.confirm_password.data or '').strip()
+        
+        # Explicit password change handling
+        password_changed = False
+        if new_pwd:
+            if not curr_pwd:
+                flash('Please enter your Current Password to update your password.', 'danger')
                 return render_template('teacher/profile.html', form=form)
-        # Check for email/username conflicts
+            if not current_user.verify_password(curr_pwd):
+                flash('Current password is incorrect.', 'danger')
+                return render_template('teacher/profile.html', form=form)
+            if len(new_pwd) < 6:
+                flash('New password must be at least 6 characters long.', 'danger')
+                return render_template('teacher/profile.html', form=form)
+            if new_pwd != confirm_pwd:
+                flash('New password and confirm password do not match.', 'danger')
+                return render_template('teacher/profile.html', form=form)
+            
+            current_user.password = new_pwd
+            password_changed = True
+        
+        # Update other profile fields
+        username_val = (request.form.get('username') or form.username.data or current_user.username).strip()
+        email_val = (request.form.get('email') or form.email.data or current_user.email).strip()
+        
         from app.models import User
-        if form.email.data != current_user.email:
-            existing_user = User.query.filter_by(email=form.email.data).first()
+        if email_val != current_user.email:
+            existing_user = User.query.filter_by(email=email_val).first()
             if existing_user:
-                flash('Email already in use by another account', 'danger')
+                flash('Email is already in use by another account.', 'danger')
                 return render_template('teacher/profile.html', form=form)
-
-        if form.username.data != current_user.username:
-            existing_user = User.query.filter_by(username=form.username.data).first()
+        
+        if username_val != current_user.username:
+            existing_user = User.query.filter_by(username=username_val).first()
             if existing_user:
-                flash('Username already in use', 'danger')
+                flash('Username is already in use.', 'danger')
                 return render_template('teacher/profile.html', form=form)
-
-        # Update fields
-        current_user.username = form.username.data
-        current_user.email = form.email.data
-        current_user.bio = form.bio.data
-        current_user.contact = form.contact.data
-        current_user.first_name = form.first_name.data
-        current_user.last_name = form.last_name.data
-        current_user.specialization = form.specialization.data
-
-        # Handle profile image upload (optional)
+        
+        current_user.username = username_val
+        current_user.email = email_val
+        current_user.bio = request.form.get('bio', current_user.bio or '')
+        current_user.contact = request.form.get('contact', current_user.contact or '')
+        current_user.first_name = request.form.get('first_name', current_user.first_name or '')
+        current_user.last_name = request.form.get('last_name', current_user.last_name or '')
+        current_user.specialization = request.form.get('specialization', current_user.specialization or '')
+        
         file = request.files.get('profile_image')
         if file and file.filename:
             allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
             ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
             if ext in allowed:
                 from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_avatars")
+                cloudinary_url = upload_file_to_cloudinary(file, filename=file.filename, folder="pace_avatars")
                 if cloudinary_url:
                     current_user.profile_image = cloudinary_url
                 else:
-                    # Remove old image if any
-                    if getattr(current_user, 'profile_image', None) and not current_user.profile_image.startswith('http'):
-                        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
-                        try:
-                            if os.path.exists(old_path):
-                                os.remove(old_path)
-                        except Exception:
-                            pass
                     new_name = f"avatar_teacher_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
                     save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
                     file.save(save_path)
                     current_user.profile_image = new_name
-
-        if form.new_password.data:
-            current_user.password = form.new_password.data
-
+        
         db.session.commit()
-        flash('Profile updated successfully!', 'success')
+        if password_changed:
+            flash('Profile and password updated successfully! 🔐', 'success')
+        else:
+            flash('Profile updated successfully!', 'success')
         return redirect(url_for('teacher.profile'))
 
     # Pre-populate on GET

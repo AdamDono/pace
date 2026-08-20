@@ -899,68 +899,75 @@ def track_time(section_id):
 def profile():
     form = ProfileForm()
     
-    if form.validate_on_submit():
-        # Only require current password when changing password
-        if form.new_password.data:
-            if not current_user.verify_password(form.current_password.data or ''):
-                flash('Current password is incorrect', 'danger')
-                return render_template('student/profile.html', form=form)
+    if request.method == 'POST':
+        curr_pwd = (request.form.get('current_password') or form.current_password.data or '').strip()
+        new_pwd = (request.form.get('new_password') or form.new_password.data or '').strip()
+        confirm_pwd = (request.form.get('confirm_password') or form.confirm_password.data or '').strip()
         
-        # Check if email is already taken by another user
-        if form.email.data != current_user.email:
-            existing_user = User.query.filter_by(email=form.email.data).first()
+        # Explicit password change handling
+        password_changed = False
+        if new_pwd:
+            if not curr_pwd:
+                flash('Please enter your Current Password to update your password.', 'danger')
+                return render_template('student/profile.html', form=form)
+            if not current_user.verify_password(curr_pwd):
+                flash('Current password is incorrect.', 'danger')
+                return render_template('student/profile.html', form=form)
+            if len(new_pwd) < 6:
+                flash('New password must be at least 6 characters long.', 'danger')
+                return render_template('student/profile.html', form=form)
+            if new_pwd != confirm_pwd:
+                flash('New password and confirm password do not match.', 'danger')
+                return render_template('student/profile.html', form=form)
+            
+            current_user.password = new_pwd
+            password_changed = True
+        
+        # Update other profile fields
+        username_val = (request.form.get('username') or form.username.data or current_user.username).strip()
+        email_val = (request.form.get('email') or form.email.data or current_user.email).strip()
+        
+        if email_val != current_user.email:
+            existing_user = User.query.filter_by(email=email_val).first()
             if existing_user:
-                flash('Email already in use by another account', 'danger')
+                flash('Email is already in use by another account.', 'danger')
                 return render_template('student/profile.html', form=form)
         
-        # Check if username is already taken by another user
-        if form.username.data != current_user.username:
-            existing_user = User.query.filter_by(username=form.username.data).first()
+        if username_val != current_user.username:
+            existing_user = User.query.filter_by(username=username_val).first()
             if existing_user:
-                flash('Username already in use', 'danger')
+                flash('Username is already in use.', 'danger')
                 return render_template('student/profile.html', form=form)
         
-        # Update profile information
-        current_user.username = form.username.data
-        current_user.email = form.email.data
-        current_user.bio = form.bio.data
-        current_user.contact = form.contact.data
-        current_user.first_name = form.first_name.data
-        current_user.last_name = form.last_name.data
-        current_user.specialization = form.specialization.data
+        current_user.username = username_val
+        current_user.email = email_val
+        current_user.bio = request.form.get('bio', current_user.bio or '')
+        current_user.contact = request.form.get('contact', current_user.contact or '')
+        current_user.first_name = request.form.get('first_name', current_user.first_name or '')
+        current_user.last_name = request.form.get('last_name', current_user.last_name or '')
+        current_user.specialization = request.form.get('specialization', current_user.specialization or '')
         
-        # Handle profile image upload (optional field)
+        # Handle profile image upload
         file = request.files.get('profile_image')
         if file and file.filename:
-            # Basic validation
             allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
             ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
             if ext in allowed:
                 from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                cloudinary_url = upload_file_to_cloudinary(file, folder="pace_avatars")
+                cloudinary_url = upload_file_to_cloudinary(file, filename=file.filename, folder="pace_avatars")
                 if cloudinary_url:
                     current_user.profile_image = cloudinary_url
                 else:
-                    # Remove old image if exists
-                    if getattr(current_user, 'profile_image', None) and not current_user.profile_image.startswith('http'):
-                        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], current_user.profile_image)
-                        try:
-                            if os.path.exists(old_path):
-                                os.remove(old_path)
-                        except Exception:
-                            pass
-                    # Save new image
                     new_name = f"avatar_student_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
                     save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_name)
                     file.save(save_path)
                     current_user.profile_image = new_name
         
-        # Update password if provided
-        if form.new_password.data:
-            current_user.password = form.new_password.data
-        
         db.session.commit()
-        flash('Profile updated successfully!', 'success')
+        if password_changed:
+            flash('Profile and password updated successfully! 🔐', 'success')
+        else:
+            flash('Profile updated successfully!', 'success')
         return redirect(url_for('student.profile'))
     
     # Pre-populate form with current user data
