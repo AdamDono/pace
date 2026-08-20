@@ -1646,15 +1646,23 @@ def student_detail_grades(course_id, student_id):
     # Get student's submissions and attempts
     assignment_data = []
     for assignment in assignments:
-        submission = AssignmentSubmission.query.filter_by(
+        submissions = AssignmentSubmission.query.filter_by(
             assignment_id=assignment.id,
             student_id=student_id
-        ).first()
+        ).order_by(AssignmentSubmission.submitted_at.desc()).all()
+        
+        graded_scores = [s.grade for s in submissions if s.grade is not None]
+        best_grade = max(graded_scores) if graded_scores else None
+        latest_submission = submissions[0] if submissions else None
+        has_pending = any(not s.reviewed for s in submissions)
         
         assignment_data.append({
             'assignment': assignment,
-            'submission': submission,
-            'status': 'graded' if submission and submission.reviewed else 'submitted' if submission else 'not_submitted'
+            'submission': latest_submission,
+            'submissions': submissions,
+            'best_grade': best_grade,
+            'status': 'graded' if graded_scores else ('submitted' if submissions else 'not_submitted'),
+            'has_pending': has_pending
         })
     
     quiz_data = []
@@ -1678,8 +1686,8 @@ def student_detail_grades(course_id, student_id):
     total_quizzes = len(quizzes)
     attempted_quizzes = sum(1 for q in quiz_data if q['attempts'])
     
-    # Grade averages
-    assignment_grades = [s['submission'].grade for s in assignment_data if s['submission'] and s['submission'].grade is not None]
+    # Grade averages (uses official best score across attempts)
+    assignment_grades = [a['best_grade'] for a in assignment_data if a['best_grade'] is not None]
     assignment_avg = sum(assignment_grades) / len(assignment_grades) if assignment_grades else None
     
     quiz_scores = [q['best_score'] for q in quiz_data if q['best_score'] is not None]
@@ -1712,39 +1720,37 @@ def student_detail_grades(course_id, student_id):
 @teacher_bp.route('/serve-upload/<path:filename>')
 @login_required
 def serve_upload(filename):
-    """Serve uploaded student assignment files reliably."""
-    from flask import render_template_string
+    """Serve uploaded student assignment files reliably with inline and download support."""
+    from flask import render_template_string, request, send_from_directory, redirect, current_app
     upload_dir = current_app.config['UPLOAD_FOLDER']
     clean_filename = filename.lstrip('/')
+    is_download = request.args.get('download') == '1'
     
     if clean_filename.startswith(('http://', 'https://')):
         return redirect(clean_filename)
 
     target_path = os.path.join(upload_dir, clean_filename)
     if os.path.exists(target_path):
-        return send_from_directory(upload_dir, clean_filename)
+        return send_from_directory(upload_dir, clean_filename, as_attachment=is_download)
 
     static_dir = os.path.join(current_app.root_path, 'static')
     if os.path.exists(os.path.join(static_dir, clean_filename)):
-        return send_from_directory(static_dir, clean_filename)
+        return send_from_directory(static_dir, clean_filename, as_attachment=is_download)
     elif os.path.exists(os.path.join(static_dir, 'uploads', clean_filename)):
-        return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename)
+        return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename, as_attachment=is_download)
 
     # Friendly fallback explaining ephemeral storage reset
     return render_template_string('''
         <!DOCTYPE html>
         <html>
-        <head><title>File Reset - Pace Academy</title><script src="https://cdn.tailwindcss.com"></script></head>
+        <head><title>File Notice - Pace Academy</title><script src="https://cdn.tailwindcss.com"></script></head>
         <body class="bg-gray-50 h-screen flex items-center justify-center p-4">
             <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-md text-center">
                 <div class="text-5xl mb-4">⚠️</div>
-                <h3 class="text-xl font-extrabold text-gray-900 mb-2">File Storage Notice</h3>
+                <h3 class="text-xl font-extrabold text-gray-900 mb-2">File Notice</h3>
                 <p class="text-xs text-gray-600 mb-6 leading-relaxed">
-                    This file (<span class="font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">{{ filename }}</span>) was uploaded to local storage before a server redeploy.
+                    This file (<span class="font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">{{ filename }}</span>) is unavailable.
                 </p>
-                <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl mb-6 text-left text-xs text-indigo-900 leading-relaxed">
-                    💡 <strong>Persistent Cloud Storage:</strong> Add <code class="font-mono font-bold">CLOUDINARY_URL</code> to Render environment settings so all student assignment files are saved to Cloudinary permanently!
-                </div>
                 <button onclick="window.close(); history.back();" class="px-6 py-3 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-indigo-700 transition">Go Back</button>
             </div>
         </body>
@@ -1754,37 +1760,53 @@ def serve_upload(filename):
 @teacher_bp.route('/preview-submission/<int:submission_id>')
 @teacher_required
 def preview_submission(submission_id):
-    """AJAX endpoint to preview a submission"""
+    """AJAX endpoint to preview a submission and return all sibling attempt records"""
     from app.models import AssignmentSubmission, db
+    from flask import url_for
     
     submission = AssignmentSubmission.query.get_or_404(submission_id)
     course = submission.assignment.section.course
     
-    # If course is unassigned/imported, auto-assign current teacher
     if course.teacher_id is None:
         course.teacher_id = current_user.id
         db.session.commit()
     elif not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
+
+    # Fetch all attempts for this student & assignment
+    sibling_submissions = AssignmentSubmission.query.filter_by(
+        assignment_id=submission.assignment_id,
+        student_id=submission.student_id
+    ).order_by(AssignmentSubmission.submitted_at.desc()).all()
+    
+    attempts_list = []
+    for sub in sibling_submissions:
+        f_url = None
+        if sub.file_path:
+            if sub.file_path.startswith(('http://', 'https://')):
+                f_url = sub.file_path
+            else:
+                f_url = url_for('teacher.serve_upload', filename=sub.file_path.lstrip('/'))
         
-    file_url = None
-    if submission.file_path:
-        if submission.file_path.startswith(('http://', 'https://')):
-            file_url = submission.file_path
-        else:
-            file_url = url_for('teacher.serve_upload', filename=submission.file_path.lstrip('/'))
+        attempts_list.append({
+            'id': sub.id,
+            'attempt_number': sub.attempt_number or (len(sibling_submissions) - sibling_submissions.index(sub)),
+            'submission_text': sub.submission_text or '',
+            'submission_type': sub.submission_type or 'text',
+            'code_submission': sub.code_submission or '',
+            'programming_language': sub.programming_language or '',
+            'file_path': sub.file_path or '',
+            'file_url': f_url or '',
+            'feedback': sub.feedback or '',
+            'grade': sub.grade,
+            'reviewed': sub.reviewed,
+            'submitted_at': sub.submitted_at.strftime('%d %b %Y, %H:%M') if sub.submitted_at else ''
+        })
 
     return jsonify({
-        'id': submission.id,
-        'submission_text': submission.submission_text or '',
-        'submission_type': submission.submission_type or 'text',
-        'code_submission': submission.code_submission or '',
-        'programming_language': submission.programming_language or '',
-        'file_path': submission.file_path or '',
-        'file_url': file_url or '',
-        'feedback': submission.feedback or '',
-        'grade': submission.grade,
-        'reviewed': submission.reviewed
+        'current_id': submission.id,
+        'assignment_title': submission.assignment.title,
+        'attempts': attempts_list
     })
     
 @teacher_bp.route('/course/<int:course_id>/builder')

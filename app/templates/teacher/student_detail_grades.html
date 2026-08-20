@@ -254,122 +254,166 @@
 </div>
 
 <script>
+<script>
+let modalAttempts = [];
+
 function viewSubmission(submissionId) {
     fetch(`/teacher/preview-submission/${submissionId}`)
         .then(response => response.json())
         .then(data => {
-            const content = document.getElementById('submissionContent');
-            let html = '<div class="space-y-6">';
-
-            // 1. Text or Code Submission
-            if (data.submission_type === 'code') {
-                html += '<div><h4 class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">💻 Code Submission:</h4>';
-                if (data.code_submission) {
-                    html += `
-                        <div class="bg-gray-900 text-green-400 p-4 rounded-2xl overflow-auto max-h-[350px] font-mono text-sm shadow-inner border border-gray-800">
-                            <pre><code>${escapeHtml(data.code_submission)}</code></pre>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2 font-medium">Language: <span class="font-bold text-gray-700">${data.programming_language || 'Auto-detected'}</span></p>
-                    `;
-                }
-                html += '</div>';
-            } else if (data.submission_text) {
-                html += '<div><h4 class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">📄 Text Submission:</h4>';
-                html += `<div class="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap bg-gray-50/80 p-4 rounded-2xl border border-gray-200 shadow-sm">${escapeHtml(data.submission_text)}</div></div>`;
+            modalAttempts = data.attempts || [];
+            if (!modalAttempts.length) {
+                showToast('No submission data found.', 'warning');
+                return;
             }
-
-            // 2. Inline File Previewer (Images, PDFs, or Document Cards)
-            if (data.file_path) {
-                const fileUrl = data.file_url || (data.file_path.startsWith('http') ? data.file_path : '/teacher/serve-upload/' + data.file_path.replace(/^\//, ''));
-                const fileName = data.file_path.split('/').pop().split('?')[0];
-                const ext = fileName.split('.').pop().toLowerCase();
-
-                html += '<div><h4 class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">📎 Attached Submission File:</h4>';
-
-                if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
-                    // Image inline preview
-                    html += `
-                        <div class="rounded-2xl border border-gray-200 overflow-hidden bg-gray-900 shadow-md">
-                            <div class="p-3 bg-gray-800 flex items-center justify-between text-xs text-gray-300">
-                                <span class="font-mono font-bold truncate max-w-md">${fileName}</span>
-                                <a href="${fileUrl}" target="_blank" download class="text-indigo-400 hover:text-indigo-300 font-bold underline">Open Full Image ↗</a>
-                            </div>
-                            <div class="p-4 flex justify-center bg-black/40">
-                                <img src="${fileUrl}" alt="Student File Preview" class="max-h-[450px] w-auto object-contain rounded-xl shadow">
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    // Interactive Document Card with Open Document and Download buttons
-                    html += `
-                        <div class="p-6 bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-white border border-indigo-200/80 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div class="flex items-center space-x-4">
-                                <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-indigo-200 flex-shrink-0">
-                                    ${ext === 'pdf' ? '📄' : (ext === 'zip' || ext === 'rar' || ext === '7z' ? '📦' : '📎')}
-                                </div>
-                                <div>
-                                    <h5 class="font-extrabold text-gray-900 text-base mb-0.5 truncate max-w-sm">${fileName}</h5>
-                                    <p class="text-xs text-indigo-700/80 font-mono flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                                        Uploaded Document (.${ext.toUpperCase()})
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-3">
-                                <a href="${fileUrl}" target="_blank" class="px-5 py-3 bg-white text-indigo-600 border border-indigo-200 text-xs font-extrabold rounded-xl shadow-sm hover:bg-indigo-50 transition-all flex items-center gap-1.5">
-                                    <span>👁️ Open / View Document ↗</span>
-                                </a>
-                                <a href="${fileUrl}" download target="_blank" class="px-6 py-3 bg-indigo-600 text-white text-xs font-extrabold rounded-xl shadow-md hover:bg-indigo-700 transition-all flex items-center gap-1.5">
-                                    <span>⬇ Download File</span>
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                }
-                html += '</div>';
-            }
-
-            // 3. Inline Grading & Feedback Form
-            html += `
-                <div class="mt-8 pt-6 border-t border-gray-200 bg-gray-50/90 p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <h4 class="text-sm font-black text-gray-900 mb-4 flex items-center space-x-2">
-                        <span>⭐ Grade & Provide Teacher Feedback</span>
-                    </h4>
-                    
-                    <form id="inlineGradingForm" onsubmit="submitInlineGrade(event, ${data.id})">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                            <div class="md:col-span-1">
-                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Grade (0 - 100)%</label>
-                                <input type="number" id="modalGradeInput" min="0" max="100" step="0.5" 
-                                       value="${data.grade !== null && data.grade !== undefined ? data.grade : ''}" 
-                                       placeholder="e.g. 85" 
-                                       class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl font-bold text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 shadow-sm" required>
-                            </div>
-                            <div class="md:col-span-3">
-                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Teacher Feedback / Remarks</label>
-                                <textarea id="modalFeedbackInput" rows="3" placeholder="Write feedback for the student..." 
-                                          class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 shadow-sm">${data.feedback || ''}</textarea>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-end space-x-3">
-                            <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-300 transition-all">Cancel</button>
-                            <button type="submit" id="saveGradeBtn" class="px-6 py-3 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-all flex items-center space-x-2">
-                                <span>Save Grade + Feedback ✓</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-
-            html += '</div>';
-
-            content.innerHTML = html;
+            
+            // Default to requested submissionId, or the first attempt (latest)
+            const targetId = submissionId || modalAttempts[0].id;
+            renderAttemptTab(targetId);
             document.getElementById('submissionModal').classList.remove('hidden');
         })
         .catch(error => {
             console.error('Submission view error:', error);
             showToast('Error loading submission details', 'danger');
         });
+}
+
+function renderAttemptTab(selectedId) {
+    const content = document.getElementById('submissionContent');
+    const data = modalAttempts.find(a => a.id === selectedId) || modalAttempts[0];
+    if (!data) return;
+
+    let html = '<div class="space-y-6">';
+
+    // 1. Attempt Selector Tabs (if multiple tries exist)
+    if (modalAttempts.length > 1) {
+        html += '<div class="bg-gray-50 p-3 rounded-2xl border border-gray-200 flex items-center gap-2 overflow-x-auto mb-6">';
+        html += '<span class="text-xs font-bold uppercase tracking-wider text-gray-500 px-2 shrink-0">Attempts (Max 3):</span>';
+        modalAttempts.forEach((att) => {
+            const isSelected = att.id === data.id;
+            const badgeText = att.reviewed ? `${att.grade}%` : 'Pending Review';
+            const badgeStyle = att.reviewed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+            html += `
+                <button type="button" onclick="renderAttemptTab(${att.id})" 
+                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-2 ${isSelected ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}">
+                    <span>Attempt #${att.attempt_number}</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${badgeStyle}">${badgeText}</span>
+                </button>
+            `;
+        });
+        html += '</div>';
+    }
+
+    // 2. Text or Code Submission
+    if (data.submission_type === 'code') {
+        html += '<div><h4 class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">💻 Code Submission (Attempt #' + data.attempt_number + '):</h4>';
+        if (data.code_submission) {
+            html += `
+                <div class="bg-gray-900 text-green-400 p-4 rounded-2xl overflow-auto max-h-[350px] font-mono text-sm shadow-inner border border-gray-800">
+                    <pre><code>${escapeHtml(data.code_submission)}</code></pre>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 font-medium">Language: <span class="font-bold text-gray-700">${data.programming_language || 'Auto-detected'}</span> · Submitted: ${data.submitted_at}</p>
+            `;
+        }
+        html += '</div>';
+    } else if (data.submission_text) {
+        html += '<div><h4 class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">📄 Text Submission (Attempt #' + data.attempt_number + '):</h4>';
+        html += `<div class="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap bg-gray-50/80 p-4 rounded-2xl border border-gray-200 shadow-sm">${escapeHtml(data.submission_text)}</div>`;
+        html += `<p class="text-xs text-gray-500 mt-2 font-medium">Submitted: ${data.submitted_at}</p></div>`;
+    }
+
+    // 3. Inline File Previewer (Images, PDFs, or Document Cards)
+    if (data.file_path) {
+        const fileUrl = data.file_url || (data.file_path.startsWith('http') ? data.file_path : '/teacher/serve-upload/' + data.file_path.replace(/^\//, ''));
+        const downloadUrl = fileUrl.includes('?') ? (fileUrl + '&download=1') : (fileUrl + '?download=1');
+        const fileName = data.file_path.split('/').pop().split('?')[0];
+        const ext = fileName.split('.').pop().toLowerCase();
+
+        html += '<div><h4 class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">📎 Attached Submission File (Attempt #' + data.attempt_number + '):</h4>';
+
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+            // Image inline preview
+            html += `
+                <div class="rounded-2xl border border-gray-200 overflow-hidden bg-gray-900 shadow-md">
+                    <div class="p-3 bg-gray-800 flex items-center justify-between text-xs text-gray-300">
+                        <span class="font-mono font-bold truncate max-w-md">${fileName}</span>
+                        <div class="flex items-center gap-3">
+                            <a href="${fileUrl}" target="_blank" class="text-indigo-300 hover:text-white font-bold">Open Full Image ↗</a>
+                            <a href="${downloadUrl}" download target="_blank" class="text-emerald-400 hover:text-emerald-300 font-bold">Download ⬇</a>
+                        </div>
+                    </div>
+                    <div class="p-4 flex justify-center bg-black/40">
+                        <img src="${fileUrl}" alt="Student File Preview" class="max-h-[450px] w-auto object-contain rounded-xl shadow">
+                    </div>
+                </div>
+            `;
+        } else {
+            // Interactive Document Card with Open Document and Download buttons
+            html += `
+                <div class="p-6 bg-gradient-to-r from-indigo-50/90 via-blue-50/60 to-white border border-indigo-200 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-indigo-200 flex-shrink-0">
+                            ${ext === 'pdf' ? '📄' : (ext === 'zip' || ext === 'rar' || ext === '7z' ? '📦' : '📎')}
+                        </div>
+                        <div>
+                            <h5 class="font-extrabold text-gray-900 text-base mb-0.5 truncate max-w-sm">${fileName}</h5>
+                            <p class="text-xs text-indigo-700/80 font-mono flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                                Uploaded Document (.${ext.toUpperCase()})
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <a href="${fileUrl}" target="_blank" class="px-5 py-3 bg-white text-indigo-600 border border-indigo-200 text-xs font-extrabold rounded-xl shadow-sm hover:bg-indigo-50 transition-all flex items-center gap-1.5">
+                            <span>👁️ Open / View Document ↗</span>
+                        </a>
+                        <a href="${downloadUrl}" download target="_blank" class="px-6 py-3 bg-indigo-600 text-white text-xs font-extrabold rounded-xl shadow-md hover:bg-indigo-700 transition-all flex items-center gap-1.5">
+                            <span>⬇ Download File</span>
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+        html += '</div>';
+    }
+
+    // 4. Inline Grading & Feedback Form for THIS Attempt
+    html += `
+        <div class="mt-8 pt-6 border-t border-gray-200 bg-gray-50/90 p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                    <span>⭐ Grade Attempt #${data.attempt_number} & Provide Feedback</span>
+                </h4>
+                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">Attempt ID: #${data.id}</span>
+            </div>
+            
+            <form id="inlineGradingForm" onsubmit="submitInlineGrade(event, ${data.id})">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Grade (0 - 100)%</label>
+                        <input type="number" id="modalGradeInput" min="0" max="100" step="0.5" 
+                               value="${data.grade !== null && data.grade !== undefined ? data.grade : ''}" 
+                               placeholder="e.g. 85" 
+                               class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl font-bold text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 shadow-sm" required>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Teacher Feedback / Remarks</label>
+                        <textarea id="modalFeedbackInput" rows="3" placeholder="Write feedback for the student..." 
+                                  class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 shadow-sm">${data.feedback || ''}</textarea>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-300 transition-all">Cancel</button>
+                    <button type="submit" id="saveGradeBtn" class="px-6 py-3 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-all flex items-center space-x-2">
+                        <span>Save Grade + Feedback ✓</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    html += '</div>';
+    content.innerHTML = html;
 }
 
 function submitInlineGrade(event, submissionId) {
@@ -397,7 +441,7 @@ function submitInlineGrade(event, submissionId) {
     .then(res => res.json())
     .then(resData => {
         if (resData.success) {
-            showToast('Grade and feedback saved successfully!', 'success');
+            showToast('Grade and feedback saved successfully for Attempt!', 'success');
             closeModal();
             setTimeout(() => window.location.reload(), 800);
         } else {
