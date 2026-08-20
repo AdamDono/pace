@@ -389,16 +389,19 @@
         const nextSecId = data.next_section_id || data.nextSectionId;
         const isCompleted = data.is_course_completed || data.isCourseCompleted;
 
+        // 1. Instantly render green checkmark for completed section
         if (currentSecId) {
             const currentBtn = document.getElementById('sidebar-link-' + currentSecId);
             if (currentBtn) {
+                currentBtn.setAttribute('data-completed', 'true');
                 const iconBox = currentBtn.querySelector('.flex-shrink-0');
                 if (iconBox) {
-                    iconBox.innerHTML = '<span class="text-green-600 font-bold text-base">✓</span>';
+                    iconBox.innerHTML = '<div class="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold shadow-sm">✓</div>';
                 }
             }
         }
 
+        // 2. Unlock and highlight next section
         if (nextSecId) {
             const nextBtn = document.getElementById('sidebar-link-' + nextSecId);
             if (nextBtn) {
@@ -407,13 +410,17 @@
                 nextBtn.classList.add('cursor-pointer');
                 
                 const nextIconBox = nextBtn.querySelector('.flex-shrink-0');
-                if (nextIconBox && nextIconBox.textContent.includes('🔒')) {
-                    nextIconBox.innerHTML = '📄';
+                if (nextIconBox && (nextIconBox.innerHTML.includes('🔒') || nextIconBox.textContent.includes('🔒'))) {
+                    nextIconBox.innerHTML = '<div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300"></div>';
                 }
 
-                // Highlight active link in syllabus sidebar
-                document.querySelectorAll('[id^="sidebar-link-"]').forEach(el => el.classList.remove('bg-indigo-50', 'border-indigo-500', 'font-bold'));
-                nextBtn.classList.add('bg-indigo-50', 'border-indigo-500', 'font-bold');
+                // Update active sidebar link styling
+                document.querySelectorAll('.sidebar-section-link').forEach(el => {
+                    el.classList.remove('bg-indigo-50/80', 'border-indigo-600', 'font-bold');
+                    el.classList.add('bg-white', 'border-transparent');
+                });
+                nextBtn.classList.remove('bg-white', 'border-transparent');
+                nextBtn.classList.add('bg-indigo-50/80', 'border-indigo-600', 'font-bold');
 
                 // Expand parent module if collapsed
                 const parentModuleId = nextBtn.getAttribute('data-parent-module-id');
@@ -421,14 +428,26 @@
                     const moduleContainer = document.getElementById(parentModuleId);
                     if (moduleContainer && moduleContainer.classList.contains('hidden')) {
                         moduleContainer.classList.remove('hidden');
-                        const arrow = document.getElementById('module-arrow-' + parentModuleId.split('-')[1]);
+                        const arrowId = parentModuleId.replace('module-', 'module-arrow-');
+                        const arrow = document.getElementById(arrowId);
                         if (arrow) arrow.style.transform = 'rotate(180deg)';
                     }
                 }
             }
         }
 
-        // Smooth scroll to top of reader container
+        // 3. Recalculate progress percentage live on sidebar
+        const allLinks = document.querySelectorAll('.sidebar-section-link');
+        const completedLinks = document.querySelectorAll('.sidebar-section-link[data-completed="true"], .sidebar-section-link .bg-emerald-500');
+        if (allLinks.length > 0) {
+            const pct = Math.round((completedLinks.length / allLinks.length) * 100);
+            const progressBar = document.getElementById('course-progress-bar');
+            const progressText = document.getElementById('progress-percentage');
+            if (progressBar) progressBar.style.width = pct + '%';
+            if (progressText) progressText.textContent = pct + '%';
+        }
+
+        // 4. Smooth scroll to top of reader container
         const mainReader = document.getElementById('main-reader-content');
         if (mainReader) mainReader.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
