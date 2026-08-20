@@ -58,22 +58,26 @@ def start_scheduler():
     is_production = os.getenv('FLASK_DEBUG', 'false').lower() != 'true'
 
     if is_reloader_child or is_production:
-        from apscheduler.schedulers.background import BackgroundScheduler
-        from apscheduler.triggers.cron import CronTrigger
-        from app.utils.digest import send_weekly_digests
+        try:
+            from apscheduler.schedulers.background import BackgroundScheduler
+            from apscheduler.triggers.cron import CronTrigger
+            from app.utils.digest import send_weekly_digests
 
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(
-            func=send_weekly_digests,
-            args=[app],
-            trigger=CronTrigger(day_of_week='mon', hour=8, minute=0),
-            id='weekly_digest',
-            name='Weekly Digest Email',
-            replace_existing=True,
-        )
-        scheduler.start()
-        print("✅ Scheduler started — weekly digest fires every Monday 08:00")
-        return scheduler
+            scheduler = BackgroundScheduler()
+            scheduler.add_job(
+                func=send_weekly_digests,
+                args=[app],
+                trigger=CronTrigger(day_of_week='mon', hour=8, minute=0),
+                id='weekly_digest',
+                name='Weekly Digest Email',
+                replace_existing=True,
+            )
+            scheduler.start()
+            print("✅ Scheduler started — weekly digest fires every Monday 08:00")
+            return scheduler
+        except ImportError:
+            print("⚠️ Notice: 'apscheduler' not installed locally — skipping background cron scheduler.")
+            return None
     return None
 
 
