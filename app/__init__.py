@@ -87,9 +87,9 @@ def create_app():
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@paceacademy.com')
 
-    # Configure 10-minute session inactivity limit
+    # Configure 20-minute session inactivity limit
     from datetime import timedelta
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
     app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 
     # Create upload directory if it doesn't exist
@@ -196,13 +196,13 @@ def create_app():
                 now_ts = datetime.now(timezone.utc).timestamp()
                 last_activity = session.get('last_activity')
 
-                # 10 minutes = 600 seconds
+                # 20 minutes = 1200 seconds
                 if last_activity:
                     try:
-                        if (now_ts - float(last_activity)) > 600:
+                        if (now_ts - float(last_activity)) > 1200:
                             logout_user()
                             session.pop('last_activity', None)
-                            flash('Your session has expired due to 10 minutes of inactivity. Please log in again.', 'warning')
+                            flash('Your session has expired due to 20 minutes of inactivity. Please log in again.', 'warning')
                             return redirect(url_for('auth.login'))
                     except (ValueError, TypeError):
                         pass

@@ -1,4 +1,4 @@
-<!-- Client-Side 10-Minute Inactivity Lockout Component -->
+<!-- Client-Side 20-Minute Inactivity Lockout Component -->
 {% if current_user and current_user.is_authenticated %}
 <div id="inactivityModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-[99999] p-4 transition-all duration-300">
     <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-gray-100 text-center animate-bounce-short">
@@ -7,7 +7,7 @@
         </div>
         <h3 class="text-xl font-extrabold text-gray-900 mb-2">Inactivity Session Warning</h3>
         <p class="text-sm text-gray-600 mb-4 leading-relaxed">
-            You have been inactive for 9 minutes. For security, your session will automatically lock out in <span id="inactivityCountdown" class="font-black text-red-600 font-mono text-base">60</span> seconds.
+            You have been inactive for 19 minutes. For security, your session will automatically lock out in <span id="inactivityCountdown" class="font-black text-red-600 font-mono text-base">60</span> seconds.
         </p>
         <div class="w-full bg-gray-100 rounded-full h-2 mb-6 overflow-hidden">
             <div id="inactivityProgress" class="bg-amber-500 h-2 rounded-full transition-all duration-1000" style="width: 100%;"></div>
@@ -22,8 +22,8 @@
 
 <script>
 (function() {
-    const INACTIVITY_LIMIT_MS = 10 * 60 * 1000; // 10 minutes total
-    const WARNING_TIME_MS = 9 * 60 * 1000;     // Warn at 9 minutes (60 sec remaining)
+    const INACTIVITY_LIMIT_MS = 20 * 60 * 1000; // 20 minutes total
+    const WARNING_TIME_MS = 19 * 60 * 1000;     // Warn at 19 minutes (60 sec remaining)
     
     let lastActivityTime = Date.now();
     let warningTimer = null;
