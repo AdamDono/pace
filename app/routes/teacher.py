@@ -2304,3 +2304,223 @@ def toggle_live_question(question_id):
     q.is_answered = not q.is_answered
     db.session.commit()
     return jsonify({'success': True, 'is_answered': q.is_answered}), 200
+
+
+# ══════════════════════════════════════════════════════════════
+# PACE AI COURSE & QUIZ GENERATOR ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+@teacher_bp.route('/ai/get-lesson-templates', methods=['GET'])
+@teacher_required
+def ai_get_lesson_templates():
+    """Retrieve teacher's published sections to use as style-cloning templates"""
+    from app.models import Course, Section
+    courses = Course.query.filter_by(teacher_id=current_user.id).all()
+    course_ids = [c.id for c in courses]
+    
+    sections = Section.query.filter(
+        Section.course_id.in_(course_ids),
+        Section.content.isnot(None)
+    ).order_by(Section.created_at.desc()).limit(15).all()
+    
+    templates = []
+    for s in sections:
+        if s.content and len(s.content.strip()) > 100:
+            templates.append({
+                'id': s.id,
+                'title': f"{s.course.title} — {s.title}",
+                'content': s.content[:1500]  # Reference excerpt
+            })
+            
+    return jsonify({'success': True, 'templates': templates})
+
+
+@teacher_bp.route('/ai/generate-blueprint', methods=['POST'])
+@teacher_required
+def ai_generate_blueprint():
+    """Generate a multi-module course outline from teacher prompt"""
+    from app.services.ai_service import AIService
+    data = request.get_json() or {}
+    
+    title = data.get('title', '').strip()
+    topic = data.get('topic', '').strip()
+    level = data.get('level', 'Beginner')
+    duration_weeks = int(data.get('duration_weeks', 4))
+    accreditation = data.get('accreditation', '').strip()
+    custom_instructions = data.get('custom_instructions', '').strip()
+    reference_template = data.get('reference_template', '').strip()
+    model = data.get('model', 'gemini-1.5-flash')
+    
+    if not title or not topic:
+        return jsonify({'success': False, 'message': 'Course Title and Topic are required.'}), 400
+        
+    try:
+        blueprint = AIService.generate_course_blueprint(
+            title=title,
+            topic=topic,
+            level=level,
+            duration_weeks=duration_weeks,
+            accreditation=accreditation,
+            custom_instructions=custom_instructions,
+            reference_template=reference_template,
+            model=model
+        )
+        return jsonify({'success': True, 'blueprint': blueprint})
+    except Exception as e:
+        logger.error(f"AI Blueprint generation error: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@teacher_bp.route('/ai/generate-lesson-content', methods=['POST'])
+@teacher_required
+def ai_generate_lesson_content():
+    """Generate Quill-compatible rich HTML for a single lesson"""
+    from app.services.ai_service import AIService
+    data = request.get_json() or {}
+    
+    course_title = data.get('course_title', 'Course').strip()
+    module_title = data.get('module_title', 'Module').strip()
+    lesson_title = data.get('lesson_title', '').strip()
+    custom_instructions = data.get('custom_instructions', '').strip()
+    reference_template = data.get('reference_template', '').strip()
+    model = data.get('model', 'gemini-1.5-flash')
+    
+    if not lesson_title:
+        return jsonify({'success': False, 'message': 'Lesson title is required.'}), 400
+        
+    try:
+        html_content = AIService.generate_lesson_html(
+            course_title=course_title,
+            module_title=module_title,
+            lesson_title=lesson_title,
+            custom_instructions=custom_instructions,
+            reference_template=reference_template,
+            model=model
+        )
+        return jsonify({'success': True, 'html_content': html_content})
+    except Exception as e:
+        logger.error(f"AI Lesson HTML generation error: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@teacher_bp.route('/ai/generate-quiz', methods=['POST'])
+@teacher_required
+def ai_generate_quiz():
+    """Generate assessment quiz with choices and explanations"""
+    from app.services.ai_service import AIService
+    data = request.get_json() or {}
+    
+    lesson_title = data.get('lesson_title', 'Lesson Assessment').strip()
+    lesson_content = data.get('lesson_content', '').strip()
+    num_questions = int(data.get('num_questions', 5))
+    passing_score = float(data.get('passing_score', 70.0))
+    model = data.get('model', 'gemini-1.5-flash')
+    
+    if not lesson_content:
+        return jsonify({'success': False, 'message': 'Lesson content is required to generate quiz.'}), 400
+        
+    try:
+        quiz_data = AIService.generate_quiz_for_lesson(
+            lesson_title=lesson_title,
+            lesson_content=lesson_content,
+            num_questions=num_questions,
+            passing_score=passing_score,
+            model=model
+        )
+        return jsonify({'success': True, 'quiz': quiz_data})
+    except Exception as e:
+        logger.error(f"AI Quiz generation error: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@teacher_bp.route('/ai/create-course-bundle', methods=['POST'])
+@teacher_required
+def ai_create_course_bundle():
+    """Commit an AI-generated course blueprint into database tables"""
+    from app.models import Course, Module, Section, Quiz, QuizQuestion
+    import json
+    data = request.get_json() or {}
+    blueprint = data.get('blueprint')
+    
+    if not blueprint or not isinstance(blueprint, dict):
+        return jsonify({'success': False, 'message': 'Invalid course blueprint data.'}), 400
+        
+    try:
+        # 1. Create Course
+        course = Course(
+            teacher_id=current_user.id,
+            title=blueprint.get('title', 'Untitled AI Course'),
+            description=blueprint.get('short_description', 'Course created with Pace AI.'),
+            category=blueprint.get('category', 'programming'),
+            difficulty_level=blueprint.get('difficulty_level', 'beginner'),
+            estimated_duration=int(blueprint.get('estimated_duration', 10)),
+            learning_objectives=json.dumps(blueprint.get('learning_objectives', [])),
+            prerequisites=json.dumps(blueprint.get('prerequisites', [])),
+            tags=blueprint.get('tags', 'AI Generated'),
+            status='draft',
+            is_draft=True
+        )
+        db.session.add(course)
+        db.session.flush()  # Obtain course.id
+        
+        # 2. Iterate through Modules & Lessons
+        for mod_idx, mod_data in enumerate(blueprint.get('modules', [])):
+            module = Module(
+                course_id=course.id,
+                title=mod_data.get('title', f"Module {mod_idx + 1}"),
+                description=mod_data.get('description', ''),
+                order=mod_idx
+            )
+            db.session.add(module)
+            db.session.flush()  # Obtain module.id
+            
+            for les_idx, les_data in enumerate(mod_data.get('lessons', [])):
+                section = Section(
+                    course_id=course.id,
+                    module_id=module.id,
+                    title=les_data.get('title', f"Lesson {les_idx + 1}"),
+                    content=les_data.get('content_html', f"<h2>{les_data.get('title', 'Lesson')}</h2><p>{les_data.get('summary', '')}</p>"),
+                    section_type='text',
+                    order=les_idx,
+                    duration=les_data.get('estimated_minutes', 15),
+                    is_published=False
+                )
+                db.session.add(section)
+                db.session.flush()
+                
+                # If quiz is attached to lesson
+                quiz_data = les_data.get('quiz')
+                if quiz_data and isinstance(quiz_data, dict):
+                    quiz = Quiz(
+                        section_id=section.id,
+                        title=quiz_data.get('title', f"{section.title} - Quiz"),
+                        passing_score=float(quiz_data.get('passing_score', 70.0)),
+                        time_limit=quiz_data.get('time_limit', 10),
+                        show_correct_answers=True
+                    )
+                    db.session.add(quiz)
+                    db.session.flush()
+                    
+                    for q_item in quiz_data.get('questions', []):
+                        qq = QuizQuestion(
+                            quiz_id=quiz.id,
+                            question_text=q_item.get('question_text', ''),
+                            option_a=q_item.get('option_a', 'A'),
+                            option_b=q_item.get('option_b', 'B'),
+                            option_c=q_item.get('option_c', 'C'),
+                            option_d=q_item.get('option_d', 'D'),
+                            correct_answer=q_item.get('correct_answer', 'option_a')
+                        )
+                        db.session.add(qq)
+
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Course successfully created with all modules and lessons!',
+            'course_id': course.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating course bundle: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500

@@ -43,13 +43,19 @@
             </div>
 
             <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-bold text-gray-700">Lesson Content</label>
+                    <button type="button" onclick="promptAIGenerateLesson()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg text-xs font-black shadow-sm transition-all transform hover:scale-105 cursor-pointer">
+                        <span>✨</span>
+                        <span>AI Draft Lesson</span>
+                    </button>
+                </div>
                 <!-- Quill Editor Container -->
                 <div id="editor-container"></div>
                 <!-- Hidden textarea to store content -->
                 <textarea id="content-editor" name="content" class="hidden">{{ section.content or '' }}</textarea>
                 <p class="text-sm text-gray-500 mt-2">
-                    💡 <strong>Pro tip:</strong> Format text, embed videos/images, create lists, add links - all without domain restrictions!
+                    💡 <strong>Pro tip:</strong> Click "AI Draft Lesson" to auto-write structured notes, code examples, and callout boxes directly into Quill!
                 </p>
             </div>
 
@@ -302,10 +308,62 @@ function initQuillWithMonaco() {
             'content-editor',
             '✨ Create content with tables, emojis, H5P, and source code editor!'
         );
+        window.quill = quill;
         console.log('✅ Enhanced Quill loaded: Tables, Emojis, H5P, Source Code!');
         console.log('✅ Monaco available:', typeof monaco !== 'undefined');
     };
     document.head.appendChild(script);
+}
+
+function promptAIGenerateLesson() {
+    const topic = prompt("Enter specific instructions or concepts to cover in this lesson:", "{{ section.title }}");
+    if (!topic) return;
+
+    const btn = event ? event.target.closest('button') : null;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>✨ Drafting with AI...</span>';
+    }
+
+    fetch('/teacher/ai/generate-lesson-content', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            course_title: "{{ course.title }}",
+            module_title: "{{ section.module.title if section.module else 'Module' }}",
+            lesson_title: "{{ section.title }}",
+            custom_instructions: topic,
+            model: "gemini-1.5-flash"
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        if (data.success && data.html_content) {
+            if (window.quill) {
+                window.quill.root.innerHTML = data.html_content;
+                document.getElementById('content-editor').value = data.html_content;
+            } else {
+                document.getElementById('content-editor').value = data.html_content;
+            }
+        } else {
+            alert(data.message || 'Error drafting lesson.');
+        }
+    })
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        alert('AI Error: ' + err.message);
+    });
 }
 </script>
 

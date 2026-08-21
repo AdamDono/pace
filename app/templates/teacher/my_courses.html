@@ -9,6 +9,11 @@
             <p class="text-xs text-gray-500 mt-1">Manage, build, and publish educational modules.</p>
         </div>
         <div class="flex gap-2.5 flex-wrap">
+            <button type="button" onclick="openAICourseModal()"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-indigo-200 transform hover:scale-105 cursor-pointer">
+                <span>✨</span>
+                <span>Create with AI</span>
+            </button>
             <a href="{{ url_for('teacher.create_course_wizard') }}"
                class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-150 transform hover:scale-105">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -151,4 +156,6 @@
         </a>
     </div>
 </div>
+
+{% include 'teacher/components/ai_course_modal.html' %}
 {% endblock %}

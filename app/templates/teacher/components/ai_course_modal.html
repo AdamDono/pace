@@ -1,0 +1,388 @@
+<!-- Pace AI Course & Quiz Generator Modal Component -->
+<div id="aiCourseModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
+    
+    <div class="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="px-8 py-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner">
+                    ✨
+                </div>
+                <div>
+                    <h3 class="text-xl font-black tracking-tight">Pace AI Curriculum & Course Architect</h3>
+                    <p class="text-xs text-blue-100 font-medium">Design full accredited courses, Quill lessons & quizzes in seconds</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeAICourseModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-lg transition-colors cursor-pointer">
+                ✕
+            </button>
+        </div>
+
+        <!-- Wizard Step Indicators -->
+        <div class="px-8 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between text-xs font-bold text-gray-500 shrink-0">
+            <div id="step-tab-1" class="flex items-center space-x-2 text-blue-600">
+                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">1</span>
+                <span>Course Brief & Style</span>
+            </div>
+            <div class="w-12 h-px bg-gray-200"></div>
+            <div id="step-tab-2" class="flex items-center space-x-2 text-gray-400">
+                <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs">2</span>
+                <span>Blueprint Review</span>
+            </div>
+            <div class="w-12 h-px bg-gray-200"></div>
+            <div id="step-tab-3" class="flex items-center space-x-2 text-gray-400">
+                <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs">3</span>
+                <span>Generate & Publish</span>
+            </div>
+        </div>
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="p-8 overflow-y-auto space-y-6 flex-1">
+            
+            <!-- STEP 1: Course Brief Form -->
+            <div id="ai-step-1" class="space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Course Title <span class="text-red-500">*</span></label>
+                        <input type="text" id="ai-course-title" placeholder="e.g. Fullstack Web Development with Flask & PostgreSQL" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Core Topic / Subject Focus <span class="text-red-500">*</span></label>
+                        <textarea id="ai-course-topic" rows="2" placeholder="e.g. Modern backend APIs, database modeling, authentication, REST endpoints, and deployment." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Difficulty Level</label>
+                        <select id="ai-course-level" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white">
+                            <option value="Beginner">Beginner (Foundational)</option>
+                            <option value="Intermediate" selected>Intermediate (Job-Ready)</option>
+                            <option value="Advanced">Advanced (Mastery)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Target Duration</label>
+                        <select id="ai-course-duration" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white">
+                            <option value="2">2 Weeks (Express Skill Track)</option>
+                            <option value="4" selected>4 Weeks (Standard Course - 4 Modules)</option>
+                            <option value="8">8 Weeks (Comprehensive Learnership)</option>
+                            <option value="12">12 Weeks (Full Qualification)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">SETA / NQF Standard (Optional)</label>
+                        <input type="text" id="ai-course-accreditation" placeholder="e.g. NQF Level 5, SAQA ID 115753" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">AI Engine</label>
+                        <select id="ai-course-model" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white">
+                            <option value="gemini-3.5-flash" selected>⚡ Gemini 3.5 Flash (Next-Gen High Speed)</option>
+                            <option value="gemini-2.5-pro">🧠 Gemini 2.5 Pro (Deep Reasoning & Pedagogy)</option>
+                            <option value="gemini-2.5-flash">🚀 Gemini 2.5 Flash (Standard Fast Draft)</option>
+                            <option value="gemini-pro-latest">✨ Gemini Pro Latest</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Match My Style (Few-Shot Cloning) Accordion -->
+                <div class="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-3">
+                    <div class="flex items-center justify-between cursor-pointer" onclick="toggleStyleCloning()">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-base">🎨</span>
+                            <span class="text-xs font-black text-blue-900 uppercase tracking-wider">"Match My Style" Template Cloning (Optional)</span>
+                        </div>
+                        <span id="style-clone-toggle-icon" class="text-blue-600 font-bold text-sm">▼</span>
+                    </div>
+                    
+                    <div id="style-clone-body" class="space-y-3 pt-2">
+                        <p class="text-xs text-blue-800 leading-relaxed">
+                            Select one of your existing Pace lessons or paste a sample layout with your preferred headings, 💡 Pro-Tips, and code format. The AI will replicate your exact style!
+                        </p>
+                        
+                        <div class="flex gap-2">
+                            <select id="ai-template-dropdown" onchange="onSelectExistingTemplate(this)" class="w-full px-3 py-2 rounded-lg border border-blue-200 text-xs font-medium bg-white">
+                                <option value="">-- Choose from your previous Pace lessons --</option>
+                            </select>
+                            <button type="button" onclick="loadLessonTemplates()" class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-bold transition-colors">
+                                Refresh
+                            </button>
+                        </div>
+
+                        <textarea id="ai-reference-template" rows="3" placeholder="Or paste your reference section markdown/HTML here..." class="w-full px-3 py-2 rounded-lg border border-blue-200 text-xs font-mono"></textarea>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Special Instructions for the AI</label>
+                    <input type="text" id="ai-custom-instructions" placeholder="e.g. Include 1 coding exercise per lesson, use real South African examples, maintain encouraging tone." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium">
+                </div>
+            </div>
+
+            <!-- STEP 2: Interactive Blueprint Review -->
+            <div id="ai-step-2" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                        <h4 id="blueprint-title" class="text-lg font-black text-gray-900"></h4>
+                        <p id="blueprint-desc" class="text-xs text-gray-500 mt-0.5"></p>
+                    </div>
+                    <span id="blueprint-badge" class="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-extrabold uppercase"></span>
+                </div>
+
+                <!-- Module Tree -->
+                <div id="blueprint-modules-container" class="space-y-4">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- STEP 3: Generation & Saving Progress -->
+            <div id="ai-step-3" class="hidden py-12 text-center space-y-6">
+                <div class="relative w-20 h-20 mx-auto">
+                    <div class="w-20 h-20 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-2xl">✨</div>
+                </div>
+                <div>
+                    <h4 class="text-xl font-black text-gray-900 mb-2">Architecting Your Course...</h4>
+                    <p id="ai-progress-status" class="text-sm text-gray-500 font-medium">Generating rich Quill lessons, formatting code snippets, and creating quizzes...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between shrink-0">
+            <button type="button" id="ai-modal-prev-btn" onclick="goToStep(1)" class="hidden px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors">
+                ← Back to Brief
+            </button>
+            <div class="flex items-center space-x-3 ml-auto">
+                <button type="button" onclick="closeAICourseModal()" class="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" id="ai-modal-primary-btn" onclick="handleGenerateBlueprint()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black shadow-lg hover:shadow-blue-500/25 transition-all flex items-center space-x-2 cursor-pointer">
+                    <span>Generate Blueprint</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Logic Script -->
+<script>
+    let currentAIStep = 1;
+    let generatedBlueprint = null;
+
+    function openAICourseModal() {
+        document.getElementById('aiCourseModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        goToStep(1);
+        loadLessonTemplates();
+    }
+
+    function closeAICourseModal() {
+        document.getElementById('aiCourseModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function toggleStyleCloning() {
+        const body = document.getElementById('style-clone-body');
+        const icon = document.getElementById('style-clone-toggle-icon');
+        if (body.classList.contains('hidden')) {
+            body.classList.remove('hidden');
+            icon.innerText = '▲';
+        } else {
+            body.classList.add('hidden');
+            icon.innerText = '▼';
+        }
+    }
+
+    function loadLessonTemplates() {
+        fetch('/teacher/ai/get-lesson-templates')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.templates) {
+                    const dropdown = document.getElementById('ai-template-dropdown');
+                    dropdown.innerHTML = '<option value="">-- Choose from your previous Pace lessons --</option>';
+                    data.templates.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t.content;
+                        opt.innerText = t.title;
+                        dropdown.appendChild(opt);
+                    });
+                }
+            })
+            .catch(err => console.log('Template load info:', err));
+    }
+
+    function onSelectExistingTemplate(dropdown) {
+        if (dropdown.value) {
+            document.getElementById('ai-reference-template').value = dropdown.value;
+        }
+    }
+
+    function goToStep(step) {
+        currentAIStep = step;
+        document.getElementById('ai-step-1').classList.toggle('hidden', step !== 1);
+        document.getElementById('ai-step-2').classList.toggle('hidden', step !== 2);
+        document.getElementById('ai-step-3').classList.toggle('hidden', step !== 3);
+
+        const prevBtn = document.getElementById('ai-modal-prev-btn');
+        const primBtn = document.getElementById('ai-modal-primary-btn');
+
+        // Tab indicator styling
+        ['step-tab-1', 'step-tab-2', 'step-tab-3'].forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if (idx + 1 === step) {
+                el.className = 'flex items-center space-x-2 text-blue-600 font-bold';
+            } else if (idx + 1 < step) {
+                el.className = 'flex items-center space-x-2 text-emerald-600 font-bold';
+            } else {
+                el.className = 'flex items-center space-x-2 text-gray-400 font-medium';
+            }
+        });
+
+        if (step === 1) {
+            prevBtn.classList.add('hidden');
+            primBtn.innerHTML = '<span>Generate Blueprint</span> <span>→</span>';
+            primBtn.onclick = handleGenerateBlueprint;
+        } else if (step === 2) {
+            prevBtn.classList.remove('hidden');
+            primBtn.innerHTML = '<span>✨ Generate Full Course & Quizzes</span> <span>→</span>';
+            primBtn.onclick = handleCommitCourseBundle;
+        } else if (step === 3) {
+            prevBtn.classList.add('hidden');
+            primBtn.classList.add('hidden');
+        }
+    }
+
+    function handleGenerateBlueprint() {
+        const title = document.getElementById('ai-course-title').value.trim();
+        const topic = document.getElementById('ai-course-topic').value.trim();
+        const level = document.getElementById('ai-course-level').value;
+        const duration_weeks = document.getElementById('ai-course-duration').value;
+        const accreditation = document.getElementById('ai-course-accreditation').value.trim();
+        const model = document.getElementById('ai-course-model').value;
+        const reference_template = document.getElementById('ai-reference-template').value.trim();
+        const custom_instructions = document.getElementById('ai-custom-instructions').value.trim();
+
+        if (!title || !topic) {
+            alert('Please provide both Course Title and Main Topic Focus.');
+            return;
+        }
+
+        const primBtn = document.getElementById('ai-modal-primary-btn');
+        const origHtml = primBtn.innerHTML;
+        primBtn.disabled = true;
+        primBtn.innerHTML = '<span>Architecting Blueprint...</span>';
+
+        fetch('/teacher/ai/generate-blueprint', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                title,
+                topic,
+                level,
+                duration_weeks,
+                accreditation,
+                model,
+                reference_template,
+                custom_instructions
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            primBtn.disabled = false;
+            primBtn.innerHTML = origHtml;
+
+            if (data.success && data.blueprint) {
+                generatedBlueprint = data.blueprint;
+                renderBlueprintPreview(data.blueprint);
+                goToStep(2);
+            } else {
+                alert(data.message || 'Failed to generate blueprint. Please check your API key.');
+            }
+        })
+        .catch(err => {
+            primBtn.disabled = false;
+            primBtn.innerHTML = origHtml;
+            alert('Error contacting AI service: ' + err.message);
+        });
+    }
+
+    function renderBlueprintPreview(bp) {
+        document.getElementById('blueprint-title').innerText = bp.title || 'Course Outline';
+        document.getElementById('blueprint-desc').innerText = bp.short_description || '';
+        document.getElementById('blueprint-badge').innerText = (bp.difficulty_level || 'Intermediate') + ' • ' + (bp.estimated_duration || 20) + ' hrs';
+
+        const container = document.getElementById('blueprint-modules-container');
+        container.innerHTML = '';
+
+        (bp.modules || []).forEach((mod, mIdx) => {
+            const modCard = document.createElement('div');
+            modCard.className = 'p-5 rounded-2xl bg-gray-50/80 border border-gray-200/80 space-y-3';
+            
+            let lessonsHtml = '';
+            (mod.lessons || []).forEach((les, lIdx) => {
+                lessonsHtml += `
+                    <div class="flex items-center justify-between py-2 px-3 bg-white rounded-xl border border-gray-100 text-xs font-medium text-gray-700 shadow-sm">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-blue-500 font-bold">📄 ${mIdx + 1}.${lIdx + 1}</span>
+                            <span>${les.title}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400 font-bold">${les.estimated_minutes || 15} mins</span>
+                    </div>
+                `;
+            });
+
+            modCard.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <h5 class="text-sm font-black text-gray-900">Module ${mIdx + 1}: ${mod.title}</h5>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">${(mod.lessons || []).length} Lessons</span>
+                </div>
+                <p class="text-xs text-gray-500">${mod.description || ''}</p>
+                <div class="space-y-1.5 pt-1">
+                    ${lessonsHtml}
+                </div>
+            `;
+            container.appendChild(modCard);
+        });
+    }
+
+    function handleCommitCourseBundle() {
+        if (!generatedBlueprint) return;
+
+        goToStep(3);
+
+        fetch('/teacher/ai/create-course-bundle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ blueprint: generatedBlueprint })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.course_id) {
+                document.getElementById('ai-progress-status').innerText = 'Course saved! Opening course builder...';
+                setTimeout(() => {
+                    window.location.href = `/teacher/course-builder/${data.course_id}`;
+                }, 1200);
+            } else {
+                alert(data.message || 'Error saving course.');
+                goToStep(2);
+            }
+        })
+        .catch(err => {
+            alert('Error creating course bundle: ' + err.message);
+            goToStep(2);
+        });
+    }
+</script>
