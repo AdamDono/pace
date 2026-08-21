@@ -27,6 +27,7 @@ instance/
 *.sqlite3
 *.tar.gz
 *.dir
+2026-*Z/
 
 # Logs and temp files
 *.log

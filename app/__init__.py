@@ -87,6 +87,9 @@ def create_app():
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@paceacademy.com')
 
+    # Enable template auto-reload for instant design updates
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+
     # Configure 20-minute session inactivity limit
     from datetime import timedelta
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
