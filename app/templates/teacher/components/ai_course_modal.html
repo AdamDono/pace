@@ -282,8 +282,7 @@
         fetch('/teacher/ai/generate-blueprint', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 title,
@@ -296,23 +295,28 @@
                 custom_instructions
             })
         })
-        .then(res => res.json())
+        .then(async res => {
+            const data = await res.json().catch(() => null);
+            if (res.ok && data && data.success) {
+                return data;
+            } else {
+                throw new Error((data && data.message) ? data.message : `Server returned status ${res.status}`);
+            }
+        })
         .then(data => {
             primBtn.disabled = false;
             primBtn.innerHTML = origHtml;
 
-            if (data.success && data.blueprint) {
+            if (data.blueprint) {
                 generatedBlueprint = data.blueprint;
                 renderBlueprintPreview(data.blueprint);
                 goToStep(2);
-            } else {
-                alert(data.message || 'Failed to generate blueprint. Please check your API key.');
             }
         })
         .catch(err => {
             primBtn.disabled = false;
             primBtn.innerHTML = origHtml;
-            alert('Error contacting AI service: ' + err.message);
+            alert('AI Service: ' + err.message);
         });
     }
 
@@ -363,21 +367,24 @@
         fetch('/teacher/ai/create-course-bundle', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ blueprint: generatedBlueprint })
         })
-        .then(res => res.json())
+        .then(async res => {
+            const data = await res.json().catch(() => null);
+            if (res.ok && data && data.success) {
+                return data;
+            } else {
+                throw new Error((data && data.message) ? data.message : `Server returned status ${res.status}`);
+            }
+        })
         .then(data => {
-            if (data.success && data.course_id) {
+            if (data.course_id) {
                 document.getElementById('ai-progress-status').innerText = 'Course saved! Opening course builder...';
                 setTimeout(() => {
                     window.location.href = `/teacher/course-builder/${data.course_id}`;
                 }, 1200);
-            } else {
-                alert(data.message || 'Error saving course.');
-                goToStep(2);
             }
         })
         .catch(err => {

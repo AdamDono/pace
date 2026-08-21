@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.decorators import teacher_required
 from app.forms import ProfileForm
-from app import db
+from app import db, csrf
 from app.utils.email import send_enrollment_email
 from app.utils.file_helpers import allowed_file, allowed_file_size
 import os
@@ -2312,6 +2312,7 @@ def toggle_live_question(question_id):
 
 @teacher_bp.route('/ai/get-lesson-templates', methods=['GET'])
 @teacher_required
+@csrf.exempt
 def ai_get_lesson_templates():
     """Retrieve teacher's published sections to use as style-cloning templates"""
     from app.models import Course, Section
@@ -2337,6 +2338,7 @@ def ai_get_lesson_templates():
 
 @teacher_bp.route('/ai/generate-blueprint', methods=['POST'])
 @teacher_required
+@csrf.exempt
 def ai_generate_blueprint():
     """Generate a multi-module course outline from teacher prompt"""
     from app.services.ai_service import AIService
@@ -2349,7 +2351,7 @@ def ai_generate_blueprint():
     accreditation = data.get('accreditation', '').strip()
     custom_instructions = data.get('custom_instructions', '').strip()
     reference_template = data.get('reference_template', '').strip()
-    model = data.get('model', 'gemini-1.5-flash')
+    model = data.get('model', 'gemini-3.5-flash')
     
     if not title or not topic:
         return jsonify({'success': False, 'message': 'Course Title and Topic are required.'}), 400
@@ -2373,6 +2375,7 @@ def ai_generate_blueprint():
 
 @teacher_bp.route('/ai/generate-lesson-content', methods=['POST'])
 @teacher_required
+@csrf.exempt
 def ai_generate_lesson_content():
     """Generate Quill-compatible rich HTML for a single lesson"""
     from app.services.ai_service import AIService
@@ -2383,7 +2386,7 @@ def ai_generate_lesson_content():
     lesson_title = data.get('lesson_title', '').strip()
     custom_instructions = data.get('custom_instructions', '').strip()
     reference_template = data.get('reference_template', '').strip()
-    model = data.get('model', 'gemini-1.5-flash')
+    model = data.get('model', 'gemini-3.5-flash')
     
     if not lesson_title:
         return jsonify({'success': False, 'message': 'Lesson title is required.'}), 400
@@ -2405,6 +2408,7 @@ def ai_generate_lesson_content():
 
 @teacher_bp.route('/ai/generate-quiz', methods=['POST'])
 @teacher_required
+@csrf.exempt
 def ai_generate_quiz():
     """Generate assessment quiz with choices and explanations"""
     from app.services.ai_service import AIService
@@ -2414,7 +2418,7 @@ def ai_generate_quiz():
     lesson_content = data.get('lesson_content', '').strip()
     num_questions = int(data.get('num_questions', 5))
     passing_score = float(data.get('passing_score', 70.0))
-    model = data.get('model', 'gemini-1.5-flash')
+    model = data.get('model', 'gemini-3.5-flash')
     
     if not lesson_content:
         return jsonify({'success': False, 'message': 'Lesson content is required to generate quiz.'}), 400
@@ -2435,6 +2439,7 @@ def ai_generate_quiz():
 
 @teacher_bp.route('/ai/create-course-bundle', methods=['POST'])
 @teacher_required
+@csrf.exempt
 def ai_create_course_bundle():
     """Commit an AI-generated course blueprint into database tables"""
     from app.models import Course, Module, Section, Quiz, QuizQuestion

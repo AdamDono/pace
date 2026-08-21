@@ -30,51 +30,71 @@ class AIService:
         return os.getenv("GEMINI_API_KEY")
 
     @classmethod
+    def _normalize_model(cls, model: Optional[str]) -> str:
+        if not model:
+            return cls.DEFAULT_MODEL
+        model_clean = model.strip().lower()
+        if model_clean in cls.ALLOWED_MODELS:
+            return model_clean
+        if "pro" in model_clean:
+            return "gemini-pro-latest"
+        return cls.DEFAULT_MODEL
+
+    @classmethod
     def _call_gemini(cls, prompt: str, system_instruction: Optional[str] = None, model: Optional[str] = None, response_json: bool = False) -> str:
-        """Call Google Gemini REST API with specified system prompt and temperature."""
+        """Call Google Gemini REST API with fallback and error handling."""
         api_key = cls.get_api_key()
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file or Render dashboard.")
         
-        target_model = model if model in cls.ALLOWED_MODELS else cls.DEFAULT_MODEL
-        url = f"{cls.BASE_URL}/{target_model}:generateContent?key={api_key}"
+        target_model = cls._normalize_model(model)
+        models_to_try = [target_model]
+        if target_model != cls.DEFAULT_MODEL:
+            models_to_try.append(cls.DEFAULT_MODEL)
+        if "gemini-flash-latest" not in models_to_try:
+            models_to_try.append("gemini-flash-latest")
 
-        payload: Dict[str, Any] = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
+        last_error = None
+        for current_model in models_to_try:
+            url = f"{cls.BASE_URL}/{current_model}:generateContent?key={api_key}"
+
+            payload: Dict[str, Any] = {
+                "contents": [
+                    {
+                        "parts": [{"text": prompt}]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "topP": 0.95,
+                    "topK": 40,
+                    "maxOutputTokens": 8192,
                 }
-            ],
-            "generationConfig": {
-                "temperature": 0.4,
-                "topP": 0.95,
-                "topK": 40,
-                "maxOutputTokens": 8192,
-            }
-        }
-
-        if system_instruction:
-            payload["systemInstruction"] = {
-                "parts": [{"text": system_instruction}]
             }
 
-        if response_json:
-            payload["generationConfig"]["responseMimeType"] = "application/json"
+            if system_instruction:
+                payload["systemInstruction"] = {
+                    "parts": [{"text": system_instruction}]
+                }
 
-        headers = {"Content-Type": "application/json"}
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
-        
-        if response.status_code != 200:
-            logger.error(f"Gemini API Error {response.status_code}: {response.text}")
-            raise RuntimeError(f"Google Gemini API error ({response.status_code}): {response.text}")
+            if response_json:
+                payload["generationConfig"]["responseMimeType"] = "application/json"
 
-        data = response.json()
-        try:
-            content_text = data["candidates"][0]["content"]["parts"][0]["text"]
-            return content_text.strip()
-        except (KeyError, IndexError) as e:
-            logger.error(f"Failed to parse Gemini response: {data}")
-            raise ValueError("Invalid response format from Gemini API") from e
+            headers = {"Content-Type": "application/json"}
+            try:
+                response = requests.post(url, headers=headers, json=payload, timeout=60)
+                if response.status_code == 200:
+                    data = response.json()
+                    content_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    return content_text.strip()
+                else:
+                    logger.warning(f"Gemini API returned {response.status_code} for {current_model}: {response.text}")
+                    last_error = f"Gemini API ({response.status_code}): {response.text}"
+            except Exception as ex:
+                logger.warning(f"Request exception for model {current_model}: {ex}")
+                last_error = str(ex)
+
+        raise RuntimeError(f"Google Gemini generation failed: {last_error}")
 
     @classmethod
     def generate_course_blueprint(

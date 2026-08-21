@@ -329,32 +329,36 @@ function promptAIGenerateLesson() {
     fetch('/teacher/ai/generate-lesson-content', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             course_title: "{{ course.title }}",
             module_title: "{{ section.module.title if section.module else 'Module' }}",
             lesson_title: "{{ section.title }}",
             custom_instructions: topic,
-            model: "gemini-1.5-flash"
+            model: "gemini-3.5-flash"
         })
     })
-    .then(res => res.json())
+    .then(async res => {
+        const data = await res.json().catch(() => null);
+        if (res.ok && data && data.success) {
+            return data;
+        } else {
+            throw new Error((data && data.message) ? data.message : `Server returned status ${res.status}`);
+        }
+    })
     .then(data => {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
-        if (data.success && data.html_content) {
+        if (data.html_content) {
             if (window.quill) {
                 window.quill.root.innerHTML = data.html_content;
                 document.getElementById('content-editor').value = data.html_content;
             } else {
                 document.getElementById('content-editor').value = data.html_content;
             }
-        } else {
-            alert(data.message || 'Error drafting lesson.');
         }
     })
     .catch(err => {
@@ -362,7 +366,7 @@ function promptAIGenerateLesson() {
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
-        alert('AI Error: ' + err.message);
+        alert('AI Service: ' + err.message);
     });
 }
 </script>
