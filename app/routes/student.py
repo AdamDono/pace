@@ -1453,3 +1453,33 @@ def ping_live_attendance(session_id):
         db.session.commit()
         return jsonify({'status': 'active'}), 200
     return jsonify({'status': 'not_found'}), 404
+
+
+@student_bp.route('/live-classroom/<int:session_id>/ask-question', methods=['POST'])
+@login_required
+@student_required
+def ask_live_question(session_id):
+    """Submit a pre-meeting question for an upcoming or live session"""
+    from app.models import LiveSession, LiveQuestion, Enrollment
+    session_obj = LiveSession.query.get_or_404(session_id)
+    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=session_obj.course_id).first()
+    
+    if not enrollment:
+        flash('You are not enrolled in this course.', 'danger')
+        return redirect(url_for('student.live_classrooms'))
+        
+    question_text = request.form.get('question_text', '').strip()
+    if not question_text:
+        flash('Please type a question before submitting.', 'warning')
+        return redirect(url_for('student.live_classrooms'))
+        
+    new_q = LiveQuestion(
+        session_id=session_id,
+        student_id=current_user.id,
+        question_text=question_text
+    )
+    db.session.add(new_q)
+    db.session.commit()
+    
+    flash('❓ Question submitted to instructor for the live session!', 'success')
+    return redirect(url_for('student.live_classrooms'))

@@ -2249,3 +2249,58 @@ def delete_live_session(session_id):
     
     flash(f"Live Session '{title}' deleted.", 'info')
     return redirect(url_for('teacher.live_classrooms'))
+
+
+@teacher_bp.route('/live-classroom/<int:session_id>/attendance/export')
+@teacher_required
+def export_live_attendance(session_id):
+    """Export attendance CSV report for a live classroom session"""
+    import csv
+    import io
+    from flask import Response
+    from app.models import LiveSession, LiveAttendance
+
+    session_obj = LiveSession.query.get_or_404(session_id)
+    if session_obj.course.teacher_id != current_user.id and current_user.role != 'admin':
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('teacher.live_classrooms'))
+
+    attendances = LiveAttendance.query.filter_by(session_id=session_id).order_by(LiveAttendance.joined_at.asc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Student Name', 'Email', 'Joined At (UTC)', 'Last Active At (UTC)', 'Active Duration (Mins)'])
+
+    for a in attendances:
+        student_name = a.student.full_name if a.student else 'Unknown'
+        student_email = a.student.email if a.student else ''
+        joined_str = a.joined_at.strftime('%Y-%m-%d %H:%M:%S') if a.joined_at else ''
+        last_str = a.last_ping.strftime('%Y-%m-%d %H:%M:%S') if a.last_ping else joined_str
+        
+        mins = 1
+        if a.joined_at and a.last_ping:
+            delta = a.last_ping - a.joined_at
+            mins = max(1, int(delta.total_seconds() / 60))
+            
+        writer.writerow([student_name, student_email, joined_str, last_str, mins])
+
+    filename = f"attendance_session_{session_id}_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
+@teacher_bp.route('/live-classroom/question/<int:question_id>/toggle-answered', methods=['POST'])
+@teacher_required
+def toggle_live_question(question_id):
+    """Mark a pre-meeting question as answered/unanswered"""
+    from app.models import LiveQuestion
+    q = LiveQuestion.query.get_or_404(question_id)
+    if q.session.course.teacher_id != current_user.id and current_user.role != 'admin':
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        
+    q.is_answered = not q.is_answered
+    db.session.commit()
+    return jsonify({'success': True, 'is_answered': q.is_answered}), 200

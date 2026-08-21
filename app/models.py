@@ -614,3 +614,19 @@ class LiveAttendance(db.Model):
     
     session = db.relationship('LiveSession', backref=db.backref('attendances', lazy=True, cascade='all, delete-orphan'))
     student = db.relationship('User', backref='live_attendances')
+
+
+class LiveQuestion(db.Model):
+    """Pre-meeting student questions submitted for live sessions"""
+    __tablename__ = 'live_questions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('live_sessions.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    question_text = db.Column(db.Text, nullable=False)
+    is_answered = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    session = db.relationship('LiveSession', backref=db.backref('questions', lazy=True, cascade='all, delete-orphan'))
+    student = db.relationship('User', backref='live_questions')
