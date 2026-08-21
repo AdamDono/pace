@@ -260,6 +260,18 @@ def create_app():
 
                 # Active or upcoming live sessions for enrolled courses
                 from app.models import LiveSession
+                from datetime import datetime, timedelta
+                
+                # Auto-expire stale live sessions whose duration has passed
+                now = datetime.utcnow()
+                stale_sessions = LiveSession.query.filter_by(status='live').all()
+                for s in stale_sessions:
+                    start_ref = s.started_at or s.scheduled_at
+                    if start_ref and now > (start_ref + timedelta(minutes=s.duration_minutes or 60)):
+                        s.status = 'ended'
+                        s.ended_at = now
+                db.session.commit()
+
                 active_live_session = LiveSession.query.filter(
                     LiveSession.course_id.in_(enrolled_course_ids) if enrolled_course_ids else False,
                     LiveSession.status == 'live'

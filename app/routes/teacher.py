@@ -2074,6 +2074,18 @@ def edit_section_content(course_id, section_id):
 def live_classrooms():
     """List all scheduled, live, and past virtual classrooms for the teacher's courses"""
     from app.models import LiveSession, Course, LiveAttendance
+    from datetime import datetime, timedelta
+
+    # Auto-expire stale live sessions whose duration has passed
+    now = datetime.utcnow()
+    stale_sessions = LiveSession.query.filter_by(status='live').all()
+    for s in stale_sessions:
+        start_ref = s.started_at or s.scheduled_at
+        if start_ref and now > (start_ref + timedelta(minutes=s.duration_minutes or 60)):
+            s.status = 'ended'
+            s.ended_at = now
+    db.session.commit()
+
     my_courses = Course.query.filter_by(teacher_id=current_user.id).all()
     course_ids = [c.id for c in my_courses]
     
@@ -2219,3 +2231,21 @@ def live_room(session_id):
         return redirect(url_for('teacher.live_classrooms'))
         
     return render_template('live_room.html', session_obj=session_obj, is_host=True)
+
+
+@teacher_bp.route('/live-classroom/<int:session_id>/delete', methods=['POST'])
+@teacher_required
+def delete_live_session(session_id):
+    """Delete or cancel a live session"""
+    from app.models import LiveSession
+    session_obj = LiveSession.query.get_or_404(session_id)
+    if session_obj.course.teacher_id != current_user.id and current_user.role != 'admin':
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('teacher.live_classrooms'))
+        
+    title = session_obj.title
+    db.session.delete(session_obj)
+    db.session.commit()
+    
+    flash(f"Live Session '{title}' deleted.", 'info')
+    return redirect(url_for('teacher.live_classrooms'))

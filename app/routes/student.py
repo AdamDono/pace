@@ -1379,6 +1379,17 @@ def grades():
 def live_classrooms():
     """Student view of upcoming, active live video classrooms for enrolled courses"""
     from app.models import LiveSession, Enrollment, Course
+    from datetime import datetime, timedelta
+
+    # Auto-expire stale live sessions
+    now = datetime.utcnow()
+    stale_sessions = LiveSession.query.filter_by(status='live').all()
+    for s in stale_sessions:
+        start_ref = s.started_at or s.scheduled_at
+        if start_ref and now > (start_ref + timedelta(minutes=s.duration_minutes or 60)):
+            s.status = 'ended'
+            s.ended_at = now
+    db.session.commit()
     
     enrollments = Enrollment.query.filter_by(student_id=current_user.id).all()
     enrolled_course_ids = [e.course_id for e in enrollments]

@@ -55,79 +55,66 @@
         </div>
     </header>
 
-    <!-- Main Content Container: Meeting Frame or Custom Link -->
-    <main class="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
-        {% if session_obj.custom_meeting_url %}
-        <!-- Custom External Meeting Embed / Launch Card -->
-        <div class="max-w-lg w-full p-8 bg-gray-900 rounded-3xl border border-gray-800 text-center shadow-2xl space-y-6">
-            <div class="w-16 h-16 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center text-3xl mx-auto border border-indigo-500/30">
+    <!-- Main Content Container: Meeting Lobby & Room Launcher -->
+    <main class="flex-1 relative bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="max-w-xl w-full p-8 sm:p-10 bg-gray-900/90 backdrop-blur-md rounded-3xl border border-gray-800 text-center shadow-2xl space-y-6 my-auto">
+            <div class="w-20 h-20 bg-indigo-600/20 text-indigo-400 rounded-3xl flex items-center justify-center text-4xl mx-auto border border-indigo-500/30 shadow-inner">
                 🎥
             </div>
-            <div>
-                <h3 class="text-xl font-black text-white mb-2">{{ session_obj.title }}</h3>
-                <p class="text-xs text-gray-400 leading-relaxed">{{ session_obj.description or 'This session is hosted on an external video conferencing platform.' }}</p>
+            <div class="space-y-2">
+                <span class="px-3 py-1 bg-red-600/90 text-white font-black text-[10px] uppercase tracking-wider rounded-full inline-block animate-pulse">
+                    🔴 LIVE CLASSROOM ACTIVE
+                </span>
+                <h2 class="text-2xl font-extrabold text-white tracking-tight">{{ session_obj.title }}</h2>
+                <p class="text-xs text-indigo-300 font-semibold">{{ session_obj.course.title }}</p>
+                {% if session_obj.description %}
+                <p class="text-xs text-gray-400 max-w-md mx-auto pt-2">{{ session_obj.description }}</p>
+                {% endif %}
             </div>
-            <a href="{{ session_obj.custom_meeting_url }}" target="_blank" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 text-sm">
-                <span>Launch Meeting Room ↗</span>
-                <i class="fas fa-external-link-alt text-xs"></i>
-            </a>
+
+            <!-- Pre-filled User Information Card -->
+            <div class="bg-gray-950/80 p-4 rounded-2xl border border-gray-800/80 flex items-center justify-between text-left">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-600 text-white font-black flex items-center justify-center text-sm shadow">
+                        {{ current_user.full_name[0]|upper }}
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-white">{{ current_user.full_name }}</p>
+                        <p class="text-[11px] text-gray-400">{{ current_user.email }}</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    {% if is_host %}Host Instructor{% else %}Enrolled Student{% endif %}
+                </span>
+            </div>
+
+            <!-- Launch Button: Direct Full-Window Open (Unlimited Time) -->
+            <div class="space-y-3 pt-2">
+                <a href="{% if session_obj.custom_meeting_url %}{{ session_obj.custom_meeting_url }}{% else %}https://meet.jit.si/{{ session_obj.room_name }}{% endif %}"
+                   target="_blank"
+                   onclick="startAttendancePing()"
+                   class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-gray-950 font-black rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 text-sm">
+                    <i class="fas fa-video text-base"></i>
+                    <span>Enter Live Video Room (Unlimited Time) ↗</span>
+                </a>
+                <p class="text-[11px] text-gray-400 leading-relaxed">
+                    ✨ Opens HD Video Room in a dedicated tab with <strong>unlimited time, zero popups, screen sharing, and recording</strong>.
+                </p>
+            </div>
         </div>
-        {% else %}
-        <!-- Built-in Jitsi Meet Container -->
-        <div id="jitsi-container" class="w-full h-full"></div>
-        {% endif %}
     </main>
 
-    {% if not session_obj.custom_meeting_url %}
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const domain = "meet.jit.si";
-            const options = {
-                roomName: "{{ session_obj.room_name }}",
-                width: "100%",
-                height: "100%",
-                parentNode: document.querySelector('#jitsi-container'),
-                userInfo: {
-                    displayName: "{{ current_user.full_name }}",
-                    email: "{{ current_user.email }}"
-                },
-                configOverwrite: {
-                    startWithAudioMuted: {% if is_host %}false{% else %}true{% endif %},
-                    startWithVideoMuted: false,
-                    prejoinPageEnabled: false,
-                    disableDeepLinking: true
-                },
-                interfaceConfigOverwrite: {
-                    SHOW_JITSI_WATERMARK: false,
-                    SHOW_WATERMARK_FOR_GUESTS: false,
-                    TOOLBAR_BUTTONS: [
-                        'microphone', 'camera', 'desktop', 'fullscreen',
-                        'f画面シェア', 'hangup', 'chat', 'raisehand',
-                        'tileview', 'settings', 'whiteboard'
-                    ]
-                }
-            };
-
-            const api = new JitsiMeetExternalAPI(domain, options);
-
-            api.addEventListener('videoConferenceLeft', function () {
-                window.location.href = "{% if is_host %}{{ url_for('teacher.live_classrooms') }}{% else %}{{ url_for('student.live_classrooms') }}{% endif %}";
-            });
-
-            // Attendance heartbeat ping every 30 seconds
+        function startAttendancePing() {
             {% if not is_host %}
-            setInterval(function () {
-                fetch("{{ url_for('student.ping_live_attendance', session_id=session_obj.id) }}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token() }}'
-                    }
-                }).catch(err => console.log('Attendance ping notice:', err));
-            }, 30000);
+            fetch("{{ url_for('student.ping_live_attendance', session_id=session_obj.id) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            }).catch(err => console.log('Ping error:', err));
             {% endif %}
-        });
+        }
     </script>
-    {% endif %}
-
 </body>
 </html>
