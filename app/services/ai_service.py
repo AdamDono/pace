@@ -117,6 +117,8 @@ class AIService:
             "Always output strictly valid JSON matching the requested schema."
         )
 
+        ref_block = f"REFERENCE STYLE / STRUCTURE EXAMPLE TO EMULATE:\n{reference_template}\n" if reference_template else ""
+
         user_prompt = f"""
 Create a structured course blueprint for:
 - Course Title: {title}
@@ -126,8 +128,7 @@ Create a structured course blueprint for:
 - Accreditation / Standard (if any): {accreditation or 'Standard Practical Skills'}
 - Specific Teacher Instructions: {custom_instructions or 'Create balanced theoretical and practical modules with hands-on coding/application.'}
 
-{f'REFERENCE STYLE / STRUCTURE EXAMPLE TO EMULATE:\n{reference_template}' if reference_template else ''}
-
+{ref_block}
 Return a JSON object with this exact structure:
 {{
   "title": "{title}",
@@ -180,6 +181,8 @@ Return a JSON object with this exact structure:
             "and <pre class=\"ql-syntax\" spellcheck=\"false\"><code>...</code></pre> for code snippets."
         )
 
+        ref_block = f"REFERENCE LESSON STYLE TO CLONE (Follow this exact layout and tone):\n{reference_template}\n" if reference_template else ""
+
         user_prompt = f"""
 Generate a complete, comprehensive lesson for:
 - Course: {course_title}
@@ -187,8 +190,7 @@ Generate a complete, comprehensive lesson for:
 - Lesson Title: {lesson_title}
 - Instructions: {custom_instructions or 'Provide clear explanation, practical real-world analogy, step-by-step code/examples, common pitfalls, and key takeaways.'}
 
-{f'REFERENCE LESSON STYLE TO CLONE (Follow this exact layout and tone):\n{reference_template}' if reference_template else ''}
-
+{ref_block}
 Required Sections in HTML:
 1. <h2>Introduction & Context</h2>
 2. <blockquote><strong>💡 Key Principle:</strong> ...</blockquote>
