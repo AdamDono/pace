@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pace Academy | Accredited Skills & Digital Education Platform for Africa</title>
-    <meta name="description" content="Pace Academy connects young Africans, educators, and SETA/QCTO accreditation standards to deliver affordable, job-ready digital qualifications across South Africa and Africa.">
+    <meta name="description"
+        content="Pace Academy connects young Africans, educators, and SETA/QCTO accreditation standards to deliver affordable, job-ready digital qualifications across South Africa and Africa.">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <!-- Premium Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
     <script>
         if (!document.querySelector('link[href*="tailwind.min.css"]').sheet) {
@@ -21,120 +24,314 @@
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
+
         .modern-bg {
             background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%);
             position: relative;
         }
+
         .hero-glow {
             background: radial-gradient(circle at 50% 40%, rgba(99, 102, 241, 0.04) 0%, transparent 60%);
         }
+
         .glass-header {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
+
         .glass-card {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(0, 0, 0, 0.06);
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         .glass-card:hover {
             background: rgba(255, 255, 255, 0.95);
             border-color: rgba(99, 102, 241, 0.2);
             transform: translateY(-4px);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
         }
+
         .text-gradient {
             background: linear-gradient(135deg, #1e1b4b 30%, #4f46e5 70%, #6366f1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         .cta-btn {
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         .cta-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
         }
+
         .comparison-grid {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(168, 85, 247, 0.01) 100%);
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
+
         .floating-circle {
             animation: float 8s ease-in-out infinite;
         }
+
         @keyframes float {
-            0%, 100% { transform: translateY(0px) scale(1); }
-            50% { transform: translateY(-12px) scale(1.03); }
+
+            0%,
+            100% {
+                transform: translateY(0px) scale(1);
+            }
+
+            50% {
+                transform: translateY(-12px) scale(1.03);
+            }
         }
+
         .floating {
             animation: floatBadge 6s ease-in-out infinite;
         }
+
         @keyframes floatBadge {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
+
         .student-img {
             filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.12));
             transform: rotate(-3deg) scale(1);
             transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         .student-img:hover {
             filter: drop-shadow(0 30px 45px rgba(0, 0, 0, 0.18));
             transform: rotate(1deg) scale(1.05);
         }
+
         .cta-card-dark {
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.25);
         }
+
         .cta-blue-btn {
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         .cta-blue-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
         }
+
         .cta-glass-btn {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.15);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         .cta-glass-btn:hover {
             background: rgba(255, 255, 255, 0.12);
             transform: translateY(-2px);
         }
-        a, button, select, input {
+
+        a,
+        button,
+        select,
+        input {
             outline: none !important;
             -webkit-tap-highlight-color: transparent;
         }
+
+        /* ── FAQ Accordion ── */
+        .faq-item {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            overflow: hidden;
+            transition: box-shadow 0.25s ease;
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        .faq-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 22px 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            gap: 16px;
+        }
+
+        .faq-icon {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .faq-icon.closed {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .faq-icon.open {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.35s ease;
+            padding: 0 24px;
+        }
+
+        .faq-answer.expanded {
+            max-height: 300px;
+            padding: 0 24px 20px;
+        }
+
+        /* ── Footer Wave ── */
+        .footer-cta-section {
+            background: #fff;
+            padding: 80px 24px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer-wave-wrapper {
+            position: relative;
+            margin-top: 60px;
+        }
+
+        .footer-wave-svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .footer-blue {
+            background: #1d4ed8;
+            padding: 0 24px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer-logo-seal {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            border: 4px solid rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 900;
+            color: #fff;
+            margin: -45px auto 0;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            letter-spacing: -1px;
+        }
+
+        .footer-col-title {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-link {
+            display: block;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            margin-bottom: 12px;
+            transition: opacity 0.2s;
+        }
+
+        .footer-link:hover {
+            opacity: 0.75;
+        }
+
+        .footer-watermark {
+            font-size: clamp(48px, 12vw, 120px);
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.06);
+            line-height: 1;
+            user-select: none;
+            pointer-events: none;
+            letter-spacing: -4px;
+        }
+
+        .social-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .social-icon-btn:hover {
+            color: #fff;
+        }
+
         .filter-btn {
             background: #ffffff;
             border: 1px solid rgba(0, 0, 0, 0.08);
             color: #4b5563;
         }
+
         .filter-btn:hover {
             border-color: rgba(37, 99, 235, 0.2);
             color: #2563eb;
         }
+
         .filter-btn.active-filter {
             background: #2563eb;
             border-color: #2563eb;
             color: #ffffff;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
+
         .scrollbar-none::-webkit-scrollbar {
             display: none;
         }
+
         .scrollbar-none {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
     </style>
 </head>
+
 <body class="modern-bg min-h-screen text-gray-800 selection:bg-blue-500/10 selection:text-blue-700 overflow-x-hidden">
 
     <!-- Sticky Navigation Header -->
@@ -148,30 +345,45 @@
             </a>
             <!-- Desktop Navigation Menu -->
             <div class="hidden md:flex items-center space-x-8">
-                <a href="#story" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Why Us</a>
-                <a href="#features" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Technology</a>
-                <a href="#enterprise" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Enterprise</a>
-                <a href="#courses" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors font-medium">Courses</a>
-                <a href="{{ url_for('auth.login') }}" class="cta-btn text-sm font-bold text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/10">
+                <a href="#story" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Why
+                    Us</a>
+                <a href="#features"
+                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Technology</a>
+                <a href="#enterprise"
+                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Enterprise</a>
+                <a href="#courses"
+                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors font-medium">Courses</a>
+                <a href="{{ url_for('auth.login') }}"
+                    class="cta-btn text-sm font-bold text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/10">
                     Sign In
                 </a>
             </div>
 
             <!-- Hamburger Button Toggler on Mobile -->
-            <button onclick="toggleMenu()" class="block md:hidden p-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition focus:outline-none" aria-label="Toggle Navigation">
+            <button onclick="toggleMenu()"
+                class="block md:hidden p-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition focus:outline-none"
+                aria-label="Toggle Navigation">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h12M4 18h6"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h12M4 18h6">
+                    </path>
                 </svg>
             </button>
         </div>
 
         <!-- Mobile Navigation Menu Panel -->
-        <div id="mobile-menu" class="hidden absolute top-20 left-0 right-0 bg-white bg-opacity-95 border-b border-gray-100 flex flex-col p-6 space-y-4 shadow-lg md:hidden backdrop-blur-md z-50">
-            <a href="#story" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Why Us</a>
-            <a href="#features" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Technology</a>
-            <a href="#enterprise" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Enterprise</a>
-            <a href="#courses" onclick="toggleMenu()" class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Courses</a>
-            <a href="{{ url_for('auth.login') }}" onclick="toggleMenu()" class="cta-btn text-base font-bold text-white py-3 rounded-xl text-center shadow-md">Sign In</a>
+        <div id="mobile-menu"
+            class="hidden absolute top-20 left-0 right-0 bg-white bg-opacity-95 border-b border-gray-100 flex flex-col p-6 space-y-4 shadow-lg md:hidden backdrop-blur-md z-50">
+            <a href="#story" onclick="toggleMenu()"
+                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Why
+                Us</a>
+            <a href="#features" onclick="toggleMenu()"
+                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Technology</a>
+            <a href="#enterprise" onclick="toggleMenu()"
+                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Enterprise</a>
+            <a href="#courses" onclick="toggleMenu()"
+                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Courses</a>
+            <a href="{{ url_for('auth.login') }}" onclick="toggleMenu()"
+                class="cta-btn text-base font-bold text-white py-3 rounded-xl text-center shadow-md">Sign In</a>
         </div>
     </header>
 
@@ -188,7 +400,7 @@
 
         function filterCatalog(type, value, buttonEl) {
             activeFilters[type] = value;
-            
+
             // Toggle active classes within the button group container
             const parent = buttonEl.parentElement;
             parent.querySelectorAll('.filter-btn').forEach(btn => {
@@ -203,7 +415,7 @@
                 const diff = card.getAttribute('data-difficulty');
 
                 const matchAcc = (activeFilters.accreditation === 'all' || acc === activeFilters.accreditation);
-                
+
                 let matchDiff = false;
                 if (activeFilters.difficulty === 'all') {
                     matchDiff = true;
@@ -230,19 +442,19 @@
             document.body.style.overflow = '';
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('enterpriseForm')?.addEventListener('submit', function(e) {
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('enterpriseForm')?.addEventListener('submit', function (e) {
                 e.preventDefault();
-                
+
                 const form = this;
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalText = submitBtn.innerHTML;
-                
+
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = 'Submitting Request...';
-                
+
                 const formData = new FormData(form);
-                
+
                 fetch('/apply-enterprise', {
                     method: 'POST',
                     body: formData,
@@ -250,126 +462,73 @@
                         'X-CSRFToken': formData.get('csrf_token')
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('ent-form-fields').classList.add('hidden');
-                        document.getElementById('ent-form-success').classList.remove('hidden');
-                        setTimeout(() => {
-                            closeEnterpriseModal();
-                            form.reset();
-                            document.getElementById('ent-form-fields').classList.remove('hidden');
-                            document.getElementById('ent-form-success').classList.add('hidden');
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('ent-form-fields').classList.add('hidden');
+                            document.getElementById('ent-form-success').classList.remove('hidden');
+                            setTimeout(() => {
+                                closeEnterpriseModal();
+                                form.reset();
+                                document.getElementById('ent-form-fields').classList.remove('hidden');
+                                document.getElementById('ent-form-success').classList.add('hidden');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalText;
+                            }, 4000);
+                        } else {
+                            alert(data.message || 'Something went wrong. Please try again.');
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = originalText;
-                        }, 4000);
-                    } else {
-                        alert(data.message || 'Something went wrong. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Network error. Please check your connection.');
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Network error. Please check your connection.');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                });
+                    });
             });
         });
     </script>
 
     <!-- Hero Section -->
-    <section class="relative pt-64 pb-20 px-6 hero-glow overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50/80">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-            
-            <!-- Left Column: Copy & Search Bar -->
-            <div class="lg:col-span-7 text-center lg:text-left">
-                <div class="flex items-center justify-center lg:justify-start space-x-2.5 mb-6">
-                    <span class="w-8 h-[2px] bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"></span>
-                    <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Non-Accredited & Accredited Skills Academy</span>
-                </div>
+    <section class="relative min-h-screen pt-36 pb-24 px-6 flex items-center justify-center overflow-hidden"
+        style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.45)), url('{{ url_for('static', filename='images/new_background.png') }}'); background-size: cover; background-position: center center; background-repeat: no-repeat;">
 
-                <h1 class="text-4xl md:text-[52px] font-black tracking-tight leading-[1.15] mb-6 text-gray-900">
-                    Giving every young South African access to <span class="text-gradient">accredited, high-quality skills...</span><br>
-                    <span class="text-gray-950 mt-3 block text-3xl md:text-[44px]">at a price that doesn't end the conversation.</span>
-                </h1>
+        <!-- Center Floating Content Container -->
+        <div class="max-w-4xl mx-auto text-center relative z-10 space-y-8 my-auto">
 
-                <p class="text-lg text-gray-600 leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
-                    In South Africa, 46% of young people are unemployed. Most are not unemployable, they are uncertified. Pace Academy makes accredited QCTO/SETA vocational qualifications affordable and structured for everyone.
-                </p>
+            <!-- Headline -->
+            <h1
+                class="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1] text-white drop-shadow-md">
+                Learn skills that actually<br class="hidden sm:inline"> move you forward.
+            </h1>
 
-                <!-- Call to Actions -->
-                <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                    <a href="#courses" class="cta-btn text-sm font-bold text-white px-8 py-4 rounded-xl shadow-lg shadow-blue-500/25 transition-all w-full sm:w-auto text-center">
-                        Browse Curriculum
-                    </a>
-                    <button onclick="openEnterpriseModal()" class="bg-white border border-gray-200 hover:border-gray-300 text-sm font-bold text-gray-700 px-8 py-4 rounded-xl shadow-sm transition-all cursor-pointer w-full sm:w-auto text-center">
-                        Institutional Solutions
-                    </button>
-                </div>
+            <!-- Subtitle -->
+            <p class="text-base sm:text-xl text-gray-100 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow">
+                Explore new skills, follow clear learning paths, and grow at your own pace without pressure.
+            </p>
+
+            <!-- Call to Action Button -->
+            <div class="pt-4 flex justify-center">
+                <a href="#courses"
+                    class="px-9 py-4 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-950 font-extrabold text-base rounded-full shadow-2xl hover:shadow-white/20 transition-all duration-300 transform hover:-translate-y-0.5 inline-flex items-center space-x-2">
+                    <span>Get Started Free</span>
+                </a>
             </div>
+        </div>
 
-            <!-- Right Column: Student Graphics & Badges -->
-            <div class="lg:col-span-5 relative flex justify-center items-center">
-                <!-- Blue Circle Frame Background -->
-                <div class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] md:w-[440px] md:h-[440px] rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 absolute scale-105 shadow-xl shadow-blue-500/10"></div>
-                
-                <!-- Cutout Student Asset -->
-                <img src="{{ url_for('static', filename='images/hero_student.png') }}" alt="Pace Student" class="relative z-10 w-[290px] sm:w-[360px] md:w-[480px] object-contain pointer-events-none student-img">
-                
-                <!-- Swirling Doodle Paths -->
-                <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 400" fill="none">
-                    <path d="M 50,300 Q 150,150 350,320" stroke="rgba(59, 130, 246, 0.12)" stroke-width="2" stroke-dasharray="6 6" />
-                    <path d="M 320,80 Q 200,200 80,100" stroke="rgba(99, 102, 241, 0.12)" stroke-width="2" stroke-dasharray="6 6" />
-                </svg>
-
-                <!-- Floating Badges -->
-                <!-- 1. QCTO Courses -->
-                <div class="absolute -top-6 right-0 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-2.5 shadow-lg border border-white/20 floating">
-                    <span class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-sm text-white">📚</span>
-                    <div>
-                        <p class="text-[9px] uppercase font-black text-gray-400">Accredited</p>
-                        <p class="text-xs font-bold text-gray-900">QCTO Courses</p>
-                    </div>
-                </div>
-
-                <!-- 2. SETA Courses -->
-                <div class="absolute top-1/3 -left-6 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-2.5 shadow-lg border border-white/20 floating" style="animation-delay: -2s;">
-                    <span class="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center text-sm text-white">🛡️</span>
-                    <div>
-                        <p class="text-[9px] uppercase font-black text-gray-400">Accredited</p>
-                        <p class="text-xs font-bold text-gray-900">SETA Courses</p>
-                    </div>
-                </div>
-
-                <!-- 3. Total Students -->
-                <div class="absolute bottom-16 -right-6 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-3 shadow-lg border border-white/20 floating" style="animation-delay: -4s;">
-                    <div class="flex -space-x-2">
-                        <div class="w-6 h-6 rounded-full bg-blue-500 border border-white flex items-center justify-center text-[8px] font-black text-white">AD</div>
-                        <div class="w-6 h-6 rounded-full bg-purple-500 border border-white flex items-center justify-center text-[8px] font-black text-white">SM</div>
-                        <div class="w-6 h-6 rounded-full bg-pink-500 border border-white flex items-center justify-center text-[8px] font-black text-white">MM</div>
-                    </div>
-                    <div>
-                        <p class="text-[9px] uppercase font-black text-gray-400">Total Learners</p>
-                        <p class="text-xs font-bold text-gray-900">50+ Enrolled</p>
-                    </div>
-                </div>
-
-                <!-- 4. Non-Accredited -->
-                <div class="absolute bottom-6 left-6 z-20 glass-card px-4 py-2.5 rounded-2xl hidden sm:flex items-center space-x-2.5 shadow-lg border border-white/20 floating" style="animation-delay: -1s;">
-                    <span class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-xs text-white">✓</span>
-                    <span class="text-xs font-bold text-gray-900">Non-Accredited Skills</span>
-                </div>
-            </div>
-
+        <!-- Subtle Bottom Curve Overlay -->
+        <div
+            class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none">
         </div>
     </section>
 
 
 
     <!-- Why Pace Exists Section -->
-    <section id="story" class="px-6 border-t border-gray-100 bg-white/40" style="padding-top: 106px; padding-bottom: 111px;">
+    <section id="story" class="px-6 border-t border-gray-100 bg-white/40"
+        style="padding-top: 106px; padding-bottom: 111px;">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
                 <!-- Text Story Column -->
@@ -380,38 +539,48 @@
                     </h3>
                     <div class="space-y-6 text-gray-600 text-base leading-relaxed">
                         <p>
-                            We built Pace Academy because we watched what happens when people have the talent but not the certificate. A young person who is brilliant at coding, design, or accounting but cannot afford the private college course that gets them through the door.
+                            We built Pace Academy because we watched what happens when people have the talent but not
+                            the certificate. A young person who is brilliant at coding, design, or accounting but cannot
+                            afford the private college course that gets them through the door.
                         </p>
                         <div class="my-6 border-l-4 border-blue-600 bg-blue-50/40 px-5 py-3.5 rounded-r-2xl">
-                            <p class="text-lg font-bold text-gray-950 italic">“That is not a skills problem. That is a systems problem.”</p>
+                            <p class="text-lg font-bold text-gray-950 italic">“That is not a skills problem. That is a
+                                systems problem.”</p>
                         </div>
                         <p>
-                            Pace connects educators, accreditation standards, and job-readiness in one place, making recognized qualifications accessible to anyone with a phone and a data connection.
+                            Pace connects educators, accreditation standards, and job-readiness in one place, making
+                            recognized qualifications accessible to anyone with a phone and a data connection.
                         </p>
                     </div>
                 </div>
 
                 <!-- Price Comparison Column -->
                 <div class="lg:col-span-6">
-                    <div class="comparison-grid p-8 rounded-3xl relative overflow-hidden bg-white shadow-sm border border-gray-100">
+                    <div
+                        class="comparison-grid p-8 rounded-3xl relative overflow-hidden bg-white shadow-sm border border-gray-100">
                         <h4 class="text-lg font-bold text-gray-950 mb-6 flex items-center">
                             <span class="mr-2">💡</span> Price Comparison Matrix
                         </h4>
-                        
+
                         <div class="space-y-6">
                             <!-- NQF Accredited -->
                             <div class="bg-gray-50/80 p-5 rounded-2xl border border-gray-100 shadow-sm">
                                 <div class="flex justify-between items-center mb-3">
                                     <span class="font-bold text-gray-800 text-sm">Accredited Course (NQF)</span>
-                                    <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-bold border border-emerald-100">Save up to 87%</span>
+                                    <span
+                                        class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-bold border border-emerald-100">Save
+                                        up to 87%</span>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Pace Academy</p>
-                                        <p class="text-2xl font-black text-blue-600">R2,500 <span class="text-xs font-semibold text-gray-500">to R8,000</span></p>
+                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Pace
+                                            Academy</p>
+                                        <p class="text-2xl font-black text-blue-600">R2,500 <span
+                                                class="text-xs font-semibold text-gray-500">to R8,000</span></p>
                                     </div>
                                     <div class="border-l border-gray-200 pl-4">
-                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Private College</p>
+                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Private
+                                            College</p>
                                         <p class="text-2xl font-bold text-gray-400 line-through">R30K - R40K</p>
                                     </div>
                                 </div>
@@ -421,15 +590,20 @@
                             <div class="bg-gray-50/80 p-5 rounded-2xl border border-gray-100 shadow-sm">
                                 <div class="flex justify-between items-center mb-3">
                                     <span class="font-bold text-gray-800 text-sm">Skills Courses</span>
-                                    <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-bold border border-emerald-100">Save up to 97%</span>
+                                    <span
+                                        class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-bold border border-emerald-100">Save
+                                        up to 97%</span>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Pace Academy</p>
-                                        <p class="text-2xl font-black text-blue-600">R250 <span class="text-xs font-semibold text-gray-500">/ month</span></p>
+                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Pace
+                                            Academy</p>
+                                        <p class="text-2xl font-black text-blue-600">R250 <span
+                                                class="text-xs font-semibold text-gray-500">/ month</span></p>
                                     </div>
                                     <div class="border-l border-gray-200 pl-4">
-                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Local Private Providers</p>
+                                        <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Local
+                                            Private Providers</p>
                                         <p class="text-2xl font-bold text-gray-400 line-through">R500 - R2,000</p>
                                     </div>
                                 </div>
@@ -447,71 +621,101 @@
             <div class="text-center mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">Target Ecosystem</h2>
                 <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900">Who Pace Academy Is Built For</h3>
-                <p class="text-gray-600 max-w-2xl mx-auto mt-4">Whether you are an individual learner building career credentials or an institution scaling digital education, our platform provides tailored solutions.</p>
+                <p class="text-gray-600 max-w-2xl mx-auto mt-4">Whether you are an individual learner building career
+                    credentials or an institution scaling digital education, our platform provides tailored solutions.
+                </p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Persona 1 -->
-                <div class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
+                <div
+                    class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
                     <div>
-                        <div class="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">🎓</div>
+                        <div
+                            class="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                            🎓</div>
                         <h4 class="text-xl font-bold text-gray-900 mb-3">Young Job-Seekers & Students</h4>
                         <p class="text-gray-600 text-sm leading-relaxed mb-6">
-                            Get SETA & QCTO accredited qualifications or practical digital skills for just <strong class="text-gray-900">R250/month</strong>. Build verified proof of work.
+                            Get SETA & QCTO accredited qualifications or practical digital skills for just <strong
+                                class="text-gray-900">R250/month</strong>. Build verified proof of work.
                         </p>
                     </div>
                     <ul class="space-y-2 text-xs font-semibold text-gray-500 pt-4 border-t border-gray-200/60">
-                        <li class="flex items-center space-x-2"><span class="text-blue-500">✓</span><span>Self-paced NQF units</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-blue-500">✓</span><span>In-browser WASM code sandbox</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-blue-500">✓</span><span>Digital completion certificates</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-blue-500">✓</span><span>Self-paced NQF
+                                units</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-blue-500">✓</span><span>In-browser
+                                WASM code sandbox</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-blue-500">✓</span><span>Digital
+                                completion certificates</span></li>
                     </ul>
                 </div>
 
                 <!-- Persona 2 -->
-                <div class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
+                <div
+                    class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
                     <div>
-                        <div class="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">🏫</div>
+                        <div
+                            class="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                            🏫</div>
                         <h4 class="text-xl font-bold text-gray-900 mb-3">High Schools & Colleges</h4>
                         <p class="text-gray-600 text-sm leading-relaxed mb-6">
-                            Instantly deploy a modern LMS for your students without building complex software infrastructure from scratch.
+                            Instantly deploy a modern LMS for your students without building complex software
+                            infrastructure from scratch.
                         </p>
                     </div>
                     <ul class="space-y-2 text-xs font-semibold text-gray-500 pt-4 border-t border-gray-200/60">
-                        <li class="flex items-center space-x-2"><span class="text-indigo-500">✓</span><span>Classroom progress monitoring</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-indigo-500">✓</span><span>Assignment submission engine</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-indigo-500">✓</span><span>Automated quiz grading</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-indigo-500">✓</span><span>Classroom
+                                progress monitoring</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-indigo-500">✓</span><span>Assignment
+                                submission engine</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-indigo-500">✓</span><span>Automated
+                                quiz grading</span></li>
                     </ul>
                 </div>
 
                 <!-- Persona 3 -->
-                <div class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
+                <div
+                    class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
                     <div>
-                        <div class="w-14 h-14 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">🏛️</div>
+                        <div
+                            class="w-14 h-14 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                            🏛️</div>
                         <h4 class="text-xl font-bold text-gray-900 mb-3">SETA & QCTO Providers</h4>
                         <p class="text-gray-600 text-sm leading-relaxed mb-6">
-                            Turnkey accredited training delivery platform fully structured to meet SAQA, SETA, and QCTO compliance audit standards.
+                            Turnkey accredited training delivery platform fully structured to meet SAQA, SETA, and QCTO
+                            compliance audit standards.
                         </p>
                     </div>
                     <ul class="space-y-2 text-xs font-semibold text-gray-500 pt-4 border-t border-gray-200/60">
-                        <li class="flex items-center space-x-2"><span class="text-purple-500">✓</span><span>Unit standard module mapping</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-purple-500">✓</span><span>Logbook & section tracking</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-purple-500">✓</span><span>Audit-ready progress digests</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-purple-500">✓</span><span>Unit
+                                standard module mapping</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-purple-500">✓</span><span>Logbook &
+                                section tracking</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-purple-500">✓</span><span>Audit-ready
+                                progress digests</span></li>
                     </ul>
                 </div>
 
                 <!-- Persona 4 -->
-                <div class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
+                <div
+                    class="glass-card p-8 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all group">
                     <div>
-                        <div class="w-14 h-14 bg-pink-50 border border-pink-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">🏢</div>
+                        <div
+                            class="w-14 h-14 bg-pink-50 border border-pink-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                            🏢</div>
                         <h4 class="text-xl font-bold text-gray-900 mb-3">Corporates & Sponsors</h4>
                         <p class="text-gray-600 text-sm leading-relaxed mb-6">
-                            Upskill junior employees and manage corporate learnership cohorts at affordable flat-rate annual pricing.
+                            Upskill junior employees and manage corporate learnership cohorts at affordable flat-rate
+                            annual pricing.
                         </p>
                     </div>
                     <ul class="space-y-2 text-xs font-semibold text-gray-500 pt-4 border-t border-gray-200/60">
-                        <li class="flex items-center space-x-2"><span class="text-pink-500">✓</span><span>Bulk student onboarding</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-pink-500">✓</span><span>White-labeled academies</span></li>
-                        <li class="flex items-center space-x-2"><span class="text-pink-500">✓</span><span>Dedicated lead dashboards</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-pink-500">✓</span><span>Bulk student
+                                onboarding</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-pink-500">✓</span><span>White-labeled
+                                academies</span></li>
+                        <li class="flex items-center space-x-2"><span class="text-pink-500">✓</span><span>Dedicated lead
+                                dashboards</span></li>
                     </ul>
                 </div>
             </div>
@@ -524,28 +728,36 @@
             <div class="text-center mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">The Technology Moat</h2>
                 <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">Why This Is Hard to Copy</h3>
-                <p class="text-gray-600 max-w-2xl mx-auto">Pace is built with specialized native engines to maximize classroom engagement and track real understanding.</p>
+                <p class="text-gray-600 max-w-2xl mx-auto">Pace is built with specialized native engines to maximize
+                    classroom engagement and track real understanding.</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                 <!-- Left 7 Cols: Feature Grid -->
                 <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <!-- Moat 1 -->
-                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                    <div
+                        class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
                         <div>
-                            <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl mb-4">💻</div>
+                            <div
+                                class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl mb-4">
+                                💻</div>
                             <h4 class="text-lg font-bold text-gray-900 mb-2">In-Browser Code Execution</h4>
                             <p class="text-gray-600 text-xs leading-relaxed">
-                                Run student code safely inside the browser with Python, JavaScript, Java, and C++ compilers.
+                                Run student code safely inside the browser with Python, JavaScript, Java, and C++
+                                compilers.
                             </p>
                         </div>
                         <span class="text-[10px] font-bold text-blue-600 mt-4 uppercase">Monaco VS Code Engine</span>
                     </div>
 
                     <!-- Moat 2 -->
-                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                    <div
+                        class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
                         <div>
-                            <div class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl mb-4">🎥</div>
+                            <div
+                                class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl mb-4">
+                                🎥</div>
                             <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Video System</h4>
                             <p class="text-gray-600 text-xs leading-relaxed">
                                 Inject timed check-point questions directly into lesson videos to verify comprehension.
@@ -555,9 +767,12 @@
                     </div>
 
                     <!-- Moat 3 -->
-                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                    <div
+                        class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
                         <div>
-                            <div class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl mb-4">📊</div>
+                            <div
+                                class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl mb-4">
+                                📊</div>
                             <h4 class="text-lg font-bold text-gray-900 mb-2">Deep Analytics Stack</h4>
                             <p class="text-gray-600 text-xs leading-relaxed">
                                 Real-time tracking of student section time, quiz outcomes, and module completion rates.
@@ -567,12 +782,16 @@
                     </div>
 
                     <!-- Moat 4 -->
-                    <div class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
+                    <div
+                        class="glass-card p-6 rounded-3xl flex flex-col justify-between shadow-sm bg-white border border-gray-100">
                         <div>
-                            <div class="w-12 h-12 bg-pink-50 border border-pink-100 rounded-2xl flex items-center justify-center text-xl mb-4">⚡</div>
+                            <div
+                                class="w-12 h-12 bg-pink-50 border border-pink-100 rounded-2xl flex items-center justify-center text-xl mb-4">
+                                ⚡</div>
                             <h4 class="text-lg font-bold text-gray-900 mb-2">Lightweight & Progressive</h4>
                             <p class="text-gray-600 text-xs leading-relaxed">
-                                Progressive video streaming and client-side processing tailored for local mobile data usage.
+                                Progressive video streaming and client-side processing tailored for local mobile data
+                                usage.
                             </p>
                         </div>
                         <span class="text-[10px] font-bold text-pink-600 mt-4 uppercase">Mobile-Optimized</span>
@@ -581,12 +800,17 @@
 
                 <!-- Right 5 Cols: Human Cutout Image Graphic -->
                 <div class="lg:col-span-5 relative flex justify-center items-center">
-                    <div class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 absolute scale-105 shadow-xl shadow-indigo-500/10"></div>
-                    <img src="{{ url_for('static', filename='images/student_female.png') }}" alt="Pace Learner" class="relative z-10 w-[280px] sm:w-[340px] object-contain pointer-events-none student-img">
-                    
+                    <div
+                        class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 absolute scale-105 shadow-xl shadow-indigo-500/10">
+                    </div>
+                    <img src="{{ url_for('static', filename='images/student_female.png') }}" alt="Pace Learner"
+                        class="relative z-10 w-[280px] sm:w-[340px] object-contain pointer-events-none student-img">
+
                     <!-- Floating Badge -->
-                    <div class="absolute bottom-6 right-2 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2 shadow-lg border border-white/20">
-                        <span class="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center text-xs text-white">⚡</span>
+                    <div
+                        class="absolute bottom-6 right-2 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2 shadow-lg border border-white/20">
+                        <span
+                            class="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center text-xs text-white">⚡</span>
                         <div>
                             <p class="text-[9px] uppercase font-black text-gray-400">Low-Data Optimized</p>
                             <p class="text-xs font-bold text-gray-900">Mobile Phone Ready</p>
@@ -602,19 +826,27 @@
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">Enterprise Solutions</h2>
-                <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">Built for Corporates, NGOs & Institutions</h3>
-                <p class="text-gray-600 max-w-2xl mx-auto mt-4">Scale your organizational training, white-label the learning ecosystem, or license SETA/QCTO curriculum systems.</p>
+                <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4">Built for Corporates, NGOs &
+                    Institutions</h3>
+                <p class="text-gray-600 max-w-2xl mx-auto mt-4">Scale your organizational training, white-label the
+                    learning ecosystem, or license SETA/QCTO curriculum systems.</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                 <!-- Left 5 Cols: Educator Male Cutout Image -->
                 <div class="lg:col-span-5 relative flex justify-center items-center order-2 lg:order-1">
-                    <div class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 absolute scale-105 shadow-xl shadow-blue-500/10"></div>
-                    <img src="{{ url_for('static', filename='images/educator_male.png') }}" alt="Pace Educator & Partner" class="relative z-10 w-[290px] sm:w-[350px] object-contain pointer-events-none student-img">
-                    
+                    <div
+                        class="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 absolute scale-105 shadow-xl shadow-blue-500/10">
+                    </div>
+                    <img src="{{ url_for('static', filename='images/educator_male.png') }}"
+                        alt="Pace Educator & Partner"
+                        class="relative z-10 w-[290px] sm:w-[350px] object-contain pointer-events-none student-img">
+
                     <!-- Floating Badge -->
-                    <div class="absolute top-6 left-2 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 shadow-lg border border-white/20">
-                        <span class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs text-white">🏛️</span>
+                    <div
+                        class="absolute top-6 left-2 z-20 glass-card px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 shadow-lg border border-white/20">
+                        <span
+                            class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs text-white">🏛️</span>
                         <div>
                             <p class="text-[9px] uppercase font-black text-gray-400">Institutional</p>
                             <p class="text-xs font-bold text-gray-900">White-Label Partner</p>
@@ -625,38 +857,56 @@
                 <!-- Right 7 Cols: Solutions Cards -->
                 <div class="lg:col-span-7 space-y-6 order-1 lg:order-2">
                     <!-- Solution 1 -->
-                    <div class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl shrink-0">🏢</div>
+                    <div
+                        class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div
+                            class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-xl shrink-0">
+                            🏢</div>
                         <div>
                             <h4 class="text-lg font-bold text-gray-900 mb-1">Corporate L&D Upskilling</h4>
                             <p class="text-gray-600 text-xs leading-relaxed">
-                                Train your workforce on modern coding and technical skills. Keep track of employee learning progress, run sandboxed coding tests, and extract deep metrics.
+                                Train your workforce on modern coding and technical skills. Keep track of employee
+                                learning progress, run sandboxed coding tests, and extract deep metrics.
                             </p>
-                            <span class="text-[10px] font-bold text-blue-600 mt-2 inline-block uppercase tracking-wider">Employee Training Portals</span>
+                            <span
+                                class="text-[10px] font-bold text-blue-600 mt-2 inline-block uppercase tracking-wider">Employee
+                                Training Portals</span>
                         </div>
                     </div>
 
                     <!-- Solution 2 -->
-                    <div class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                        <div class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl shrink-0">🏷️</div>
+                    <div
+                        class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div
+                            class="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-xl shrink-0">
+                            🏷️</div>
                         <div>
                             <h4 class="text-lg font-bold text-gray-900 mb-1">White-Label Deployments</h4>
                             <p class="text-gray-600 text-xs leading-relaxed">
-                                Deploy a fully branded instance of Pace Academy under your custom domain. Perfect for large-scale NGOs, corporate academies, and government digital programs.
+                                Deploy a fully branded instance of Pace Academy under your custom domain. Perfect for
+                                large-scale NGOs, corporate academies, and government digital programs.
                             </p>
-                            <span class="text-[10px] font-bold text-indigo-600 mt-2 inline-block uppercase tracking-wider">Custom Branded LMS</span>
+                            <span
+                                class="text-[10px] font-bold text-indigo-600 mt-2 inline-block uppercase tracking-wider">Custom
+                                Branded LMS</span>
                         </div>
                     </div>
 
                     <!-- Solution 3 -->
-                    <div class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                        <div class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl shrink-0">🏛️</div>
+                    <div
+                        class="glass-card p-6 rounded-3xl flex items-start space-x-5 bg-gray-50/50 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div
+                            class="w-12 h-12 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-center text-xl shrink-0">
+                            🏛️</div>
                         <div>
                             <h4 class="text-lg font-bold text-gray-900 mb-1">Institutional Licensing</h4>
                             <p class="text-gray-600 text-xs leading-relaxed">
-                                Unlock annual flat-rate licensing for private colleges, high school hubs, tutoring academies, and registered SETA/QCTO training providers.
+                                Unlock annual flat-rate licensing for private colleges, high school hubs, tutoring
+                                academies, and registered SETA/QCTO training providers.
                             </p>
-                            <span class="text-[10px] font-bold text-purple-600 mt-2 inline-block uppercase tracking-wider">SETA & QCTO Licensing</span>
+                            <span
+                                class="text-[10px] font-bold text-purple-600 mt-2 inline-block uppercase tracking-wider">SETA
+                                & QCTO Licensing</span>
                         </div>
                     </div>
                 </div>
@@ -672,91 +922,119 @@
                     <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">Active Curriculum</h2>
                     <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900">Live Course Catalog</h3>
                 </div>
-                <a href="{{ url_for('auth.login') }}" class="text-blue-600 hover:text-blue-700 font-bold text-sm flex items-center space-x-1.5 transition-colors mt-4 md:mt-0">
+                <a href="{{ url_for('auth.login') }}"
+                    class="text-blue-600 hover:text-blue-700 font-bold text-sm flex items-center space-x-1.5 transition-colors mt-4 md:mt-0">
                     <span>View all courses</span>
                     <span>→</span>
                 </a>
             </div>
 
             {% if courses %}
-                <!-- Interactive Catalog Filters -->
-                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12 pb-6 border-b border-gray-200/60 w-full overflow-hidden">
-                    <div class="flex flex-nowrap sm:flex-wrap items-center gap-2.5 overflow-x-auto w-full pb-2 sm:pb-0 scrollbar-none">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0 mr-1">Category:</span>
-                        <button onclick="filterCatalog('accreditation', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">All</button>
-                        <button onclick="filterCatalog('accreditation', 'accredited', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Accredited (QCTO/SETA)</button>
-                        <button onclick="filterCatalog('accreditation', 'non', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Skills (Non-Accredited)</button>
-                    </div>
-                    
-                    <div class="flex flex-nowrap sm:flex-wrap items-center gap-2.5 overflow-x-auto w-full pb-2 sm:pb-0 scrollbar-none">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0 mr-1">Difficulty:</span>
-                        <button onclick="filterCatalog('difficulty', 'all', this)" class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">All Levels</button>
-                        <button onclick="filterCatalog('difficulty', 'beginner', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Beginner Friendly</button>
-                        <button onclick="filterCatalog('difficulty', 'advanced', this)" class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Intermediate/Advanced</button>
-                    </div>
+            <!-- Interactive Catalog Filters -->
+            <div
+                class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12 pb-6 border-b border-gray-200/60 w-full overflow-hidden">
+                <div
+                    class="flex flex-nowrap sm:flex-wrap items-center gap-2.5 overflow-x-auto w-full pb-2 sm:pb-0 scrollbar-none">
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0 mr-1">Category:</span>
+                    <button onclick="filterCatalog('accreditation', 'all', this)"
+                        class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">All</button>
+                    <button onclick="filterCatalog('accreditation', 'accredited', this)"
+                        class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Accredited
+                        (QCTO/SETA)</button>
+                    <button onclick="filterCatalog('accreditation', 'non', this)"
+                        class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Skills
+                        (Non-Accredited)</button>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {% for course in courses %}
-                        <div class="course-card glass-card rounded-3xl overflow-hidden flex flex-col h-full bg-white shadow-sm" data-accreditation="{% if course.category in ['QCTO', 'SETA'] %}accredited{% else %}non{% endif %}" data-difficulty="{{ course.difficulty_level|lower or 'none' }}">
-                            <!-- Banner Image with Fallback -->
-                            <div class="h-48 relative overflow-hidden bg-gray-100 border-b border-gray-100">
-                                {% if course.banner_image %}
-                                    <img src="{{ course.banner_image|media_url }}" 
-                                         alt="{{ course.title }}" 
-                                         class="w-full h-full object-cover"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                {% endif %}
-                                <div class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center p-6 text-center {% if course.banner_image %}absolute inset-0{% endif %}" {% if course.banner_image %}style="display: none;"{% endif %}>
-                                    <span class="text-4xl mb-3">🎓</span>
-                                    <span class="text-xs uppercase tracking-widest font-black text-blue-600">{{ course.category or 'Skills Path' }}</span>
-                                </div>
-                                <div class="absolute top-3 right-3 flex items-center space-x-1.5 z-10">
-                                    {% if course.is_coming_soon %}
-                                    <span class="bg-purple-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
-                                        🚀 Coming Soon
-                                    </span>
-                                    {% endif %}
-                                    {% if course.max_seats %}
-                                    <span class="bg-amber-500 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
-                                        🔥 {{ course.seats_remaining }} Seats Left
-                                    </span>
-                                    {% endif %}
-                                    <span class="bg-blue-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
-                                        {{ course.difficulty_level or 'Beginner' }}
-                                    </span>
-                                </div>
-                            </div>
+                <div
+                    class="flex flex-nowrap sm:flex-wrap items-center gap-2.5 overflow-x-auto w-full pb-2 sm:pb-0 scrollbar-none">
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0 mr-1">Difficulty:</span>
+                    <button onclick="filterCatalog('difficulty', 'all', this)"
+                        class="filter-btn active-filter text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">All
+                        Levels</button>
+                    <button onclick="filterCatalog('difficulty', 'beginner', this)"
+                        class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Beginner
+                        Friendly</button>
+                    <button onclick="filterCatalog('difficulty', 'advanced', this)"
+                        class="filter-btn text-[11px] font-bold px-4 py-2 rounded-full border transition-all whitespace-nowrap shrink-0">Intermediate/Advanced</button>
+                </div>
+            </div>
 
-                            <!-- Content -->
-                            <div class="p-6 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <div class="flex items-center space-x-2 text-[11px] font-bold text-blue-600 mb-3 uppercase tracking-wider">
-                                        <span>{{ course.category or 'Academy' }}</span>
-                                        <span>•</span>
-                                        <span>{% if course.estimated_duration %}{{ course.estimated_duration }} Hours{% else %}Self-paced{% endif %}</span>
-                                    </div>
-                                    <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-1">{{ course.title }}</h3>
-                                    <p class="text-gray-600 text-sm leading-relaxed mb-6 line-clamp-2">{{ course.description|striptags|truncate(150) }}</p>
-                                </div>
-
-                                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                                    <span class="text-xs text-gray-500">By {{ course.teacher.first_name or course.teacher.username if course.teacher else 'Staff Instructor' }}</span>
-                                    <a href="{{ url_for('auth.public_course_detail', course_id=course.id) }}" class="text-blue-600 hover:text-blue-700 font-bold text-xs transition-colors flex items-center space-x-1">
-                                        <span>View Course</span>
-                                        <span>→th</span>
-                                    </a>
-                                </div>
-                            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for course in courses %}
+                <div class="course-card glass-card rounded-3xl overflow-hidden flex flex-col h-full bg-white shadow-sm"
+                    data-accreditation="{% if course.category in ['QCTO', 'SETA'] %}accredited{% else %}non{% endif %}"
+                    data-difficulty="{{ course.difficulty_level|lower or 'none' }}">
+                    <!-- Banner Image with Fallback -->
+                    <div class="h-48 relative overflow-hidden bg-gray-100 border-b border-gray-100">
+                        {% if course.banner_image %}
+                        <img src="{{ course.banner_image|media_url }}" alt="{{ course.title }}"
+                            class="w-full h-full object-cover"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        {% endif %}
+                        <div class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center p-6 text-center {% if course.banner_image %}absolute inset-0{% endif %}"
+                            {% if course.banner_image %}style="display: none;" {% endif %}>
+                            <span class="text-4xl mb-3">🎓</span>
+                            <span class="text-xs uppercase tracking-widest font-black text-blue-600">{{ course.category
+                                or 'Skills Path' }}</span>
                         </div>
-                    {% endfor %}
+                        <div class="absolute top-3 right-3 flex items-center space-x-1.5 z-10">
+                            {% if course.is_coming_soon %}
+                            <span
+                                class="bg-purple-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
+                                🚀 Coming Soon
+                            </span>
+                            {% endif %}
+                            {% if course.max_seats %}
+                            <span
+                                class="bg-amber-500 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
+                                🔥 {{ course.seats_remaining }} Seats Left
+                            </span>
+                            {% endif %}
+                            <span
+                                class="bg-blue-600 text-white font-bold text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
+                                {{ course.difficulty_level or 'Beginner' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div
+                                class="flex items-center space-x-2 text-[11px] font-bold text-blue-600 mb-3 uppercase tracking-wider">
+                                <span>{{ course.category or 'Academy' }}</span>
+                                <span>•</span>
+                                <span>{% if course.estimated_duration %}{{ course.estimated_duration }} Hours{% else
+                                    %}Self-paced{% endif %}</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-1">{{ course.title }}</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed mb-6 line-clamp-2">{{
+                                course.description|striptags|truncate(150) }}</p>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                            <span class="text-xs text-gray-500">By {{ course.teacher.first_name or
+                                course.teacher.username if course.teacher else 'Staff Instructor' }}</span>
+                            <a href="{{ url_for('auth.public_course_detail', course_id=course.id) }}"
+                                class="text-blue-600 hover:text-blue-700 font-bold text-xs transition-colors flex items-center space-x-1">
+                                <span>View Course</span>
+                                <span>→</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
+            </div>
             {% else %}
-                <div class="glass-card p-12 text-center rounded-3xl bg-white shadow-sm">
-                    <span class="text-4xl mb-4 block">📚</span>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">No Active Curriculums Published</h3>
-                    <p class="text-gray-500 text-sm max-w-md mx-auto">Educators are currently creating NQF-aligned materials. Access the dashboard to view templates!</p>
-                </div>
+            <div class="glass-card p-12 text-center rounded-3xl bg-white shadow-sm">
+                <span class="text-4xl mb-4 block">📚</span>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">No Active Curriculums Published</h3>
+                <p class="text-gray-500 text-sm max-w-md mx-auto">Educators are currently creating NQF-aligned
+                    materials. Access the dashboard to view templates!</p>
+            </div>
             {% endif %}
         </div>
     </section>
@@ -767,7 +1045,8 @@
             <div class="text-center mb-20">
                 <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">Our Core Team</h2>
                 <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900">Built by Pace Tech</h3>
-                <p class="text-gray-600 max-w-2xl mx-auto mt-4">We sit in the same classrooms, faced the same barriers, and entered the same job market. We solved a problem we lived first-hand.</p>
+                <p class="text-gray-600 max-w-2xl mx-auto mt-4">We sit in the same classrooms, faced the same barriers,
+                    and entered the same job market. We solved a problem we lived first-hand.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
@@ -775,17 +1054,22 @@
                 <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-white shadow-sm">
                     <div>
                         <div class="flex items-center space-x-4 mb-6">
-                            <img src="{{ url_for('static', filename='images/headshot_adam.jpg') }}" alt="Adam Dono" class="w-16 h-16 rounded-2xl object-cover shadow-md border border-gray-100">
+                            <img src="{{ url_for('static', filename='images/headshot_adam.jpg') }}" alt="Adam Dono"
+                                class="w-16 h-16 rounded-2xl object-cover shadow-md border border-gray-100">
                             <div>
                                 <h4 class="text-xl font-bold text-gray-900">Adam Dono</h4>
-                                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest">Co-Founder & CEO</p>
+                                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest">Co-Founder & CEO
+                                </p>
                             </div>
                         </div>
                         <p class="text-gray-600 text-sm leading-relaxed mb-6">
-                            Fullstack developer with 4 years of professional experience. Leads product direction, business strategy, and platform vision for Pace Academy. Knows the learner journey from the inside.
+                            Fullstack developer with 4 years of professional experience. Leads product direction,
+                            business strategy, and platform vision for Pace Academy. Knows the learner journey from the
+                            inside.
                         </p>
                     </div>
-                    <a href="https://www.linkedin.com/in/adam-dono-85b766242/" target="_blank" class="inline-flex items-center space-x-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-4 py-2.5 rounded-xl transition-all">
+                    <a href="https://www.linkedin.com/in/adam-dono-85b766242/" target="_blank"
+                        class="inline-flex items-center space-x-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-4 py-2.5 rounded-xl transition-all">
                         <span>View LinkedIn Profile</span>
                         <span>↗</span>
                     </a>
@@ -795,162 +1079,349 @@
                 <div class="glass-card p-8 rounded-3xl flex flex-col justify-between bg-white shadow-sm">
                     <div>
                         <div class="flex items-center space-x-4 mb-6">
-                            <img src="{{ url_for('static', filename='images/headshot_sihle.png') }}" alt="Sihle Mofokeng" class="w-16 h-16 rounded-2xl object-cover shadow-md border border-gray-100">
+                            <img src="{{ url_for('static', filename='images/headshot_sihle.png') }}"
+                                alt="Sihle Mofokeng"
+                                class="w-16 h-16 rounded-2xl object-cover shadow-md border border-gray-100">
                             <div>
                                 <h4 class="text-xl font-bold text-gray-900">Sihle Mofokeng</h4>
-                                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest">Co-Founder & CTO</p>
+                                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest">Co-Founder & CTO
+                                </p>
                             </div>
                         </div>
                         <p class="text-gray-600 text-sm leading-relaxed mb-6">
-                            Fullstack developer with 4 years of professional experience. Owns technical architecture, platform engineering, and compiler sandbox infrastructure behind Pace Academy.
+                            Fullstack developer with 4 years of professional experience. Owns technical architecture,
+                            platform engineering, and compiler sandbox infrastructure behind Pace Academy.
                         </p>
                     </div>
-                    <a href="https://www.linkedin.com/in/sihle-mofokeng-563474224/" target="_blank" class="inline-flex items-center space-x-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-4 py-2.5 rounded-xl transition-all">
+                    <a href="https://www.linkedin.com/in/sihle-mofokeng-563474224/" target="_blank"
+                        class="inline-flex items-center space-x-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-4 py-2.5 rounded-xl transition-all">
                         <span>View LinkedIn Profile</span>
                         <span>↗</span>
                     </a>
                 </div>
             </div>
-            
+
             <p class="text-center text-sm font-semibold text-gray-500 mt-12">
-                "Two fullstack developers. 8 years combined professional experience. One problem we lived before solving it."
+                "Two fullstack developers. 8 years combined professional experience. One problem we lived before solving
+                it."
             </p>
         </div>
     </section>
 
     <!-- Frequently Asked Questions (FAQ) Section -->
-    <section id="faq" class="py-24 px-6 border-t border-gray-100 bg-white">
-        <div class="max-w-4xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">Frequently Asked Questions</h2>
-                <h3 class="text-3xl md:text-5xl font-extrabold text-gray-900">Got Questions? We Have Answers.</h3>
-                <p class="text-gray-600 max-w-2xl mx-auto mt-4">Everything you need to know about enrollment, SETA/QCTO accreditation, and institutional licensing.</p>
+    <section id="faq" class="py-24 px-6 bg-white" style="border-top: 1px solid #f3f4f6;">
+        <div class="max-w-2xl mx-auto">
+            <!-- Section Heading -->
+            <div class="text-center mb-14">
+                <h2 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight">
+                    Frequently asked<br>questions
+                </h2>
             </div>
 
-            <div class="space-y-4">
-                <!-- Question 1 -->
-                <details class="group glass-card rounded-2xl bg-gray-50/50 border border-gray-100 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-                    <summary class="flex items-center justify-between font-bold text-gray-900 text-lg">
-                        <span>How does enrollment work if learners cannot self-enroll?</span>
-                        <span class="ml-4 transition-transform duration-300 group-open:rotate-180 text-blue-600 text-xl">↓</span>
-                    </summary>
-                    <div class="mt-4 text-gray-600 text-sm leading-relaxed border-t border-gray-200/60 pt-4">
-                        To maintain high quality and manage cohort seat limits, learners click <strong class="text-gray-900">"Apply to Enroll"</strong> on any public course page to submit their application. Our admissions queue reviews applicant details and automatically dispatches their secure login credentials via email once approved.
-                    </div>
-                </details>
+            <!-- FAQ Accordion -->
+            <div class="space-y-3" id="faq-accordion">
 
-                <!-- Question 2 -->
-                <details class="group glass-card rounded-2xl bg-gray-50/50 border border-gray-100 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-                    <summary class="flex items-center justify-between font-bold text-gray-900 text-lg">
-                        <span>Are qualifications SETA and QCTO accredited?</span>
-                        <span class="ml-4 transition-transform duration-300 group-open:rotate-180 text-blue-600 text-xl">↓</span>
-                    </summary>
-                    <div class="mt-4 text-gray-600 text-sm leading-relaxed border-t border-gray-200/60 pt-4">
-                        Yes! Pace Academy hosts both NQF-aligned accredited occupational qualifications (QCTO and SETA mapped unit standards) and practical non-accredited short skills courses designed for rapid job readiness.
-                    </div>
-                </details>
-
-                <!-- Question 3 -->
-                <details class="group glass-card rounded-2xl bg-gray-50/50 border border-gray-100 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-                    <summary class="flex items-center justify-between font-bold text-gray-900 text-lg">
-                        <span>Can students study on a smartphone or low-data mobile connection?</span>
-                        <span class="ml-4 transition-transform duration-300 group-open:rotate-180 text-blue-600 text-xl">↓</span>
-                    </summary>
-                    <div class="mt-4 text-gray-600 text-sm leading-relaxed border-t border-gray-200/60 pt-4">
-                        Absolutely. The entire Pace LMS platform is optimized for mobile responsiveness and low data consumption. Students can read course modules, take assessment quizzes, and even run code compiled directly inside their phone's browser using our WebAssembly sandbox engine.
-                    </div>
-                </details>
-
-                <!-- Question 4 -->
-                <details class="group glass-card rounded-2xl bg-gray-50/50 border border-gray-100 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-                    <summary class="flex items-center justify-between font-bold text-gray-900 text-lg">
-                        <span>How does institutional licensing work for high schools, colleges & corporates?</span>
-                        <span class="ml-4 transition-transform duration-300 group-open:rotate-180 text-blue-600 text-xl">↓</span>
-                    </summary>
-                    <div class="mt-4 text-gray-600 text-sm leading-relaxed border-t border-gray-200/60 pt-4">
-                        We provide flat annual licensing tiers for schools, training providers, and corporate learnership sponsors. This gives your entire institution access to white-labeled academies, teacher curriculum authoring tools, automated homework grading, and real-time student progress monitoring dashboards.
-                    </div>
-                </details>
-
-                <!-- Question 5 -->
-                <details class="group glass-card rounded-2xl bg-gray-50/50 border border-gray-100 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer transition-all">
-                    <summary class="flex items-center justify-between font-bold text-gray-900 text-lg">
-                        <span>How do students receive their certificates upon completion?</span>
-                        <span class="ml-4 transition-transform duration-300 group-open:rotate-180 text-blue-600 text-xl">↓</span>
-                    </summary>
-                    <div class="mt-4 text-gray-600 text-sm leading-relaxed border-t border-gray-200/60 pt-4">
-                        Once a student completes all required module sections, assignments, and assessment quizzes, the system automatically generates an official downloadable PDF Certificate complete with a unique verification ID for employer validation.
-                    </div>
-                </details>
-            </div>
-        </div>
-    </section>
-
-    <!-- Partners / Call to Action / Get in Touch Section -->
-    <section class="py-24 px-6 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200/50">
-        <div class="max-w-5xl mx-auto p-12 md:p-16 rounded-3xl text-center relative overflow-hidden shadow-2xl border border-blue-900/40" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 27, 75, 0.85) 100%), url('{{ url_for('static', filename='images/cta_bg.png') }}') center/cover no-repeat;">
-            <!-- Glowing mesh gradient blobs -->
-            <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500 bg-opacity-20 rounded-full filter blur-3xl z-0 pointer-events-none"></div>
-            <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500 bg-opacity-25 rounded-full filter blur-3xl z-0 pointer-events-none"></div>
-            
-            <div class="relative z-10">
-                <h2 class="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight">Let's Build This Together</h2>
-                <p class="text-gray-200 text-base max-w-2xl mx-auto leading-relaxed mb-10 font-medium">
-                    If you are an investor, a learning partner, a SETA body, or an institution looking to provide accredited online training, we want to hear from you. The platform is ready.
-                </p>
-                <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <button onclick="openEnterpriseModal()" class="cta-blue-btn text-base font-bold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center shadow-lg cursor-pointer">
-                        Partner With Us
+                <!-- Q1 -->
+                <div class="faq-item" id="faq-item-1">
+                    <button class="faq-btn" onclick="toggleFaq(1)" aria-expanded="true">
+                        <span class="font-semibold text-gray-900 text-base">Who is Pace Academy for?</span>
+                        <span class="faq-icon open" id="faq-icon-1">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 9L7 4l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
                     </button>
-                    <a href="{{ url_for('auth.login') }}" class="cta-glass-btn text-base font-semibold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center">
-                        Enter Learning Hub
-                    </a>
+                    <div class="faq-answer expanded" id="faq-answer-1">
+                        <p class="text-gray-500 text-sm leading-relaxed">Pace Academy is built for students, young
+                            professionals, and lifelong learners who want to earn recognized qualifications and build
+                            practical skills at their own pace — without pressure or rigid schedules.</p>
+                    </div>
                 </div>
+
+                <!-- Q2 -->
+                <div class="faq-item" id="faq-item-2">
+                    <button class="faq-btn" onclick="toggleFaq(2)" aria-expanded="false">
+                        <span class="font-semibold text-gray-900 text-base">How does enrollment work?</span>
+                        <span class="faq-icon closed" id="faq-icon-2">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer" id="faq-answer-2">
+                        <p class="text-gray-500 text-sm leading-relaxed">Learners click "Apply to Enroll" on any course
+                            page to submit an application. Our admissions team reviews it and sends secure login
+                            credentials via email once approved.</p>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="faq-item" id="faq-item-3">
+                    <button class="faq-btn" onclick="toggleFaq(3)" aria-expanded="false">
+                        <span class="font-semibold text-gray-900 text-base">Are qualifications SETA and QCTO
+                            accredited?</span>
+                        <span class="faq-icon closed" id="faq-icon-3">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer" id="faq-answer-3">
+                        <p class="text-gray-500 text-sm leading-relaxed">Yes! Pace hosts NQF-aligned occupational
+                            qualifications (QCTO and SETA mapped) and practical short skills courses for rapid job
+                            readiness.</p>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="faq-item" id="faq-item-4">
+                    <button class="faq-btn" onclick="toggleFaq(4)" aria-expanded="false">
+                        <span class="font-semibold text-gray-900 text-base">Can I learn on a smartphone or with limited
+                            data?</span>
+                        <span class="faq-icon closed" id="faq-icon-4">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer" id="faq-answer-4">
+                        <p class="text-gray-500 text-sm leading-relaxed">Absolutely. Pace is fully optimized for mobile
+                            and low-data connections. You can read modules, submit assignments, and take quizzes
+                            directly from your phone.</p>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="faq-item" id="faq-item-5">
+                    <button class="faq-btn" onclick="toggleFaq(5)" aria-expanded="false">
+                        <span class="font-semibold text-gray-900 text-base">Do I get a certificate after completing a
+                            course?</span>
+                        <span class="faq-icon closed" id="faq-icon-5">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer" id="faq-answer-5">
+                        <p class="text-gray-500 text-sm leading-relaxed">Yes! Once you complete all modules,
+                            assessments, and assignments, the system automatically generates an official downloadable
+                            PDF certificate with a unique verification ID.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- See More CTA -->
+            <div class="text-center mt-10">
+                <a href="#story"
+                    class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-7 py-3 rounded-full transition-all duration-200 shadow-sm hover:shadow-md">
+                    See more questions
+                </a>
             </div>
         </div>
     </section>
+
+    <script>
+        function toggleFaq(id) {
+            const totalFaqs = 5;
+            for (let i = 1; i <= totalFaqs; i++) {
+                const answer = document.getElementById('faq-answer-' + i);
+                const icon = document.getElementById('faq-icon-' + i);
+                const btn = document.querySelector('#faq-item-' + i + ' .faq-btn');
+                if (i === id) {
+                    const isOpen = answer.classList.contains('expanded');
+                    if (isOpen) {
+                        answer.classList.remove('expanded');
+                        icon.className = 'faq-icon closed';
+                        icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                        btn.setAttribute('aria-expanded', 'false');
+                    } else {
+                        answer.classList.add('expanded');
+                        icon.className = 'faq-icon open';
+                        icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9L7 4l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                        btn.setAttribute('aria-expanded', 'true');
+                    }
+                } else {
+                    answer.classList.remove('expanded');
+                    icon.className = 'faq-icon closed';
+                    icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                }
+            }
+        }
+    </script>
+
+    <!-- ══════════════════════════════════════════════════════════
+         FOOTER  —  Wave CTA + Blue Footer
+    ══════════════════════════════════════════════════════════ -->
+
+    <!-- White CTA above the wave -->
+    <section class="footer-cta-section">
+        <h2 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight max-w-xl mx-auto">
+            Start learning in a way<br>that feels right for you.
+        </h2>
+        <a href="{{ url_for('auth.register') }}"
+            class="inline-block mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-8 py-3.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5">
+            Get started for free
+        </a>
+
+        <!-- SVG Wave transition into blue -->
+        <div class="footer-wave-wrapper">
+            <svg class="footer-wave-svg" viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none">
+                <path d="M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 L1440,120 L0,120 Z" fill="#1d4ed8" />
+            </svg>
+        </div>
+    </section>
+
+    <!-- Blue Footer body -->
+    <footer class="footer-blue">
+
+        <!-- Pace logo seal centered on the wave -->
+        <div class="footer-logo-seal">P</div>
+
+        <!-- Three-column link grid -->
+        <div class="max-w-4xl mx-auto mt-14 grid grid-cols-1 sm:grid-cols-3 gap-10 text-center">
+            <!-- Explore -->
+            <div>
+                <p class="footer-col-title">Explore</p>
+                <a href="#courses" class="footer-link">Courses</a>
+                <a href="#features" class="footer-link">Learning Paths</a>
+                <a href="#courses" class="footer-link">Popular Classes</a>
+                <a href="#courses" class="footer-link">Categories</a>
+                <a href="{{ url_for('auth.login') }}" class="footer-link">Certificates</a>
+            </div>
+            <!-- Resources -->
+            <div>
+                <p class="footer-col-title">Resources</p>
+                <a href="#faq" class="footer-link">FAQ</a>
+                <a href="#story" class="footer-link">Our Story</a>
+                <a href="#features" class="footer-link">Learning Guide</a>
+                <a href="#enterprise" class="footer-link">Enterprise</a>
+            </div>
+            <!-- Company -->
+            <div>
+                <p class="footer-col-title">Company</p>
+                <a href="#story" class="footer-link">About Pace</a>
+                <a href="#enterprise" class="footer-link">Partners</a>
+                <a href="{{ url_for('auth.login') }}" class="footer-link">Privacy Policy</a>
+                <a href="{{ url_for('auth.login') }}" class="footer-link">Terms of Service</a>
+            </div>
+        </div>
+
+        <!-- Social row -->
+        <div class="mt-12">
+            <p class="text-sm text-white/50 mb-5">Follow us on social media for updates, learning tips, and new courses.
+            </p>
+            <div class="flex items-center justify-center gap-8 flex-wrap">
+                <a href="#" class="social-icon-btn">
+                    <!-- Instagram -->
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
+                    </svg>
+                    Instagram
+                </a>
+                <a href="#" class="social-icon-btn">
+                    <!-- LinkedIn -->
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <rect x="2" y="2" width="20" height="20" rx="4" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M7 10v7M7 7v.01M12 17v-4a2 2 0 0 1 4 0v4M12 10v7" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                    LinkedIn
+                </a>
+                <a href="#" class="social-icon-btn">
+                    <!-- Facebook -->
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+                            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Facebook
+                </a>
+                <a href="#" class="social-icon-btn">
+                    <!-- X / Twitter -->
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                    Twitter
+                </a>
+            </div>
+        </div>
+
+        <!-- Copyright -->
+        <p class="mt-10 text-sm text-white/40">© 2026 Pace Academy. All Rights Reserved</p>
+
+        <!-- Watermark -->
+        <div class="footer-watermark mt-6">Pace Academy</div>
+
+    </footer>
 
     <!-- Enterprise Inquiry Modal -->
-    <div id="enterpriseModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm p-4">
+    <div id="enterpriseModal"
+        class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="glass-card max-w-lg w-full bg-white rounded-3xl p-8 relative shadow-2xl border border-gray-200/80">
             <!-- Close Button -->
-            <button onclick="closeEnterpriseModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button onclick="closeEnterpriseModal()"
+                class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
             </button>
-            
+
             <div id="ent-form-fields">
                 <h3 class="text-2xl font-black text-gray-900 mb-2">Institutional Partnerships</h3>
-                <p class="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-6">Request custom licensing & proposals</p>
-                
+                <p class="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-6">Request custom licensing &
+                    proposals</p>
+
                 <form id="enterpriseForm" class="space-y-5">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Contact Person</label>
-                            <input type="text" name="full_name" required placeholder="Your full name" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Contact
+                                Person</label>
+                            <input type="text" name="full_name" required placeholder="Your full name"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Institution / Company</label>
-                            <input type="text" name="organization" required placeholder="Organization name" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                            <label
+                                class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Institution
+                                / Company</label>
+                            <input type="text" name="organization" required placeholder="Organization name"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
-                            <input type="email" name="email" required placeholder="contact@organization.com" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email
+                                Address</label>
+                            <input type="email" name="email" required placeholder="contact@organization.com"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
-                            <input type="tel" name="phone" required placeholder="e.g. 082 123 4567" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone
+                                Number</label>
+                            <input type="tel" name="phone" required placeholder="e.g. 082 123 4567"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all">
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Inquiry Focus</label>
-                            <select name="inquiry_type" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all cursor-pointer bg-white">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Inquiry
+                                Focus</label>
+                            <select name="inquiry_type" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all cursor-pointer bg-white">
                                 <option value="licensing">Institutional Course Licensing</option>
                                 <option value="whitelabel">White-Labeled Academy</option>
                                 <option value="custom">Custom Syllabus Development</option>
@@ -958,8 +1429,10 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Estimated Learners</label>
-                            <select name="estimated_learners" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all cursor-pointer bg-white">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Estimated
+                                Learners</label>
+                            <select name="estimated_learners"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all cursor-pointer bg-white">
                                 <option value="20">1 - 20 learners</option>
                                 <option value="100">21 - 100 learners</option>
                                 <option value="500">101 - 500 learners</option>
@@ -967,35 +1440,37 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Requirements / Message</label>
-                        <textarea name="message" rows="3" placeholder="Briefly describe your institution's specific goals or integration needs..." class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all resize-none"></textarea>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Requirements
+                            / Message</label>
+                        <textarea name="message" rows="3"
+                            placeholder="Briefly describe your institution's specific goals or integration needs..."
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all resize-none"></textarea>
                     </div>
-                    
-                    <button type="submit" class="cta-btn w-full text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10 cursor-pointer">
+
+                    <button type="submit"
+                        class="cta-btn w-full text-center text-sm font-bold text-white py-4 rounded-xl shadow-lg shadow-blue-500/10 cursor-pointer">
                         Request Proposal
                     </button>
                 </form>
             </div>
-            
+
             <!-- Success Panel -->
             <div id="ent-form-success" class="hidden text-center py-10">
-                <div class="w-16 h-16 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">📈</div>
+                <div
+                    class="w-16 h-16 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
+                    📈</div>
                 <h3 class="text-2xl font-black text-gray-900 mb-3">Proposal Request Received!</h3>
                 <p class="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
-                    Excellent! We've received your partnership request. A confirmation email containing initial overview details has been sent to you. We'll prepare a custom pricing sheet and follow up shortly!
+                    Excellent! We've received your partnership request. A confirmation email containing initial overview
+                    details has been sent to you. We'll prepare a custom pricing sheet and follow up shortly!
                 </p>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="pt-12 pb-16 border-t border-gray-200/60 text-center">
-        <p class="text-xs text-gray-500">
-            © 2026 Pace Academy. Powered by Pace Tech. All rights reserved.
-        </p>
-    </footer>
 
 </body>
+
 </html>

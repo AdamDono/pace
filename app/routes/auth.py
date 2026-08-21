@@ -12,10 +12,20 @@ def home():
     if current_user.is_authenticated:
         return redirect_based_on_role()
     
-    from app.models import Course
+    from app.models import Course, Enrollment, User
     # Get approved public courses for display on the landing page
     courses = Course.query.filter(Course.status == 'approved', Course.visibility != 'private').limit(6).all()
-    return render_template('auth/landing.html', courses=courses)
+
+    # Live stats for about section
+    learner_count = User.query.filter_by(role='student').count()
+    course_count  = Course.query.filter(Course.status == 'approved').count()
+
+    return render_template(
+        'auth/landing.html',
+        courses=courses,
+        learner_count=learner_count,
+        course_count=course_count,
+    )
 
 @auth_bp.route('/course/<int:course_id>')
 def public_course_detail(course_id):
