@@ -1260,30 +1260,55 @@
          FOOTER  —  Wave CTA + Blue Footer
     ══════════════════════════════════════════════════════════ -->
 
-    <!-- White CTA above the wave -->
-    <section class="footer-cta-section">
-        <h2 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight max-w-xl mx-auto">
-            Start learning in a way<br>that feels right for you.
-        </h2>
-        <a href="{{ url_for('auth.register') }}"
-            class="inline-block mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-8 py-3.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5">
-            Get started for free
-        </a>
+    <!-- Let's Build This Together CTA Section -->
+    <section id="enterprise" class="py-24 px-6 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200/50">
+        <div class="max-w-5xl mx-auto p-12 md:p-16 rounded-3xl text-center relative overflow-hidden shadow-2xl border border-blue-900/40" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 27, 75, 0.88) 100%), url('{{ url_for('static', filename='images/cta_bg.png') }}') center/cover no-repeat;">
+            <!-- Glowing blobs -->
+            <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500 bg-opacity-20 rounded-full filter blur-3xl z-0 pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500 bg-opacity-25 rounded-full filter blur-3xl z-0 pointer-events-none"></div>
 
-        <!-- SVG Wave transition into blue -->
+            <div class="relative z-10">
+                <h2 class="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight">Let's Build This Together</h2>
+                <p class="text-gray-200 text-base max-w-2xl mx-auto leading-relaxed mb-10 font-medium">
+                    If you are an investor, a learning partner, a SETA body, or an institution looking to provide accredited online training, we want to hear from you. The platform is ready.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                    <button onclick="openEnterpriseModal()" class="cta-blue-btn text-base font-bold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center shadow-lg cursor-pointer">
+                        Partner With Us
+                    </button>
+                    <a href="{{ url_for('auth.login') }}" class="cta-glass-btn text-base font-semibold text-white px-8 py-4 rounded-2xl w-full sm:w-auto text-center">
+                        Enter Learning Hub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Start Learning CTA + Wave into Blue Footer -->
+    <section class="footer-cta-section">
+        <div class="footer-cta-content">
+            <h2 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight max-w-xl mx-auto">
+                Start learning in a way<br>that feels right for you.
+            </h2>
+            <a href="{{ url_for('auth.login') }}"
+                class="inline-block mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-8 py-3.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                Get started for free
+            </a>
+        </div>
+
+        <!-- Perfected layered SVG wave transition -->
         <div class="footer-wave-wrapper">
-            <svg class="footer-wave-svg" viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="none">
-                <path d="M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 L1440,120 L0,120 Z" fill="#1d4ed8" />
+            <svg class="footer-wave-svg" viewBox="0 0 1440 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                <!-- Back layer (lighter shade) -->
+                <path d="M0,80 C180,140 360,20 540,80 C720,140 900,20 1080,80 C1260,140 1380,60 1440,80 L1440,160 L0,160 Z" fill="#2563eb" opacity="0.4"/>
+                <!-- Front layer (solid) -->
+                <path d="M0,100 C120,40 300,130 480,90 C660,50 840,130 1020,85 C1200,40 1350,110 1440,95 L1440,160 L0,160 Z" fill="#1d4ed8"/>
             </svg>
         </div>
     </section>
 
     <!-- Blue Footer body -->
-    <footer class="footer-blue">
-
-        <!-- Pace logo seal centered on the wave -->
-        <div class="footer-logo-seal">P</div>
+    <footer class="footer-blue" style="padding-top: 48px;">
 
         <!-- Three-column link grid -->
         <div class="max-w-4xl mx-auto mt-14 grid grid-cols-1 sm:grid-cols-3 gap-10 text-center">

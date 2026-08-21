@@ -191,7 +191,7 @@ def create_app():
             from datetime import datetime, timezone
 
             # Skip static assets and public auth endpoints
-            if request.endpoint and (request.endpoint.startswith('static') or request.endpoint in ('auth.login', 'auth.logout', 'auth.register', 'auth.forgot_password', 'auth.ping_session', 'health.health_check')):
+            if request.endpoint and (request.endpoint.startswith('static') or request.endpoint in ('auth.login', 'auth.logout', 'auth.forgot_password', 'auth.ping_session', 'health.health_check')):
                 return
 
             if current_user and current_user.is_authenticated:
