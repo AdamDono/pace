@@ -64,6 +64,17 @@ class User(db.Model, UserMixin):
         self.login_count = 0
 
     @property
+    def full_name(self):
+        """Return full name if present, else fallback to username or email prefix"""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        elif self.username:
+            return self.username
+        return self.email.split('@')[0]
+
+    @property
     def password(self):
         raise AttributeError('password is not a readable attribute')
 
