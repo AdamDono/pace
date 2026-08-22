@@ -1,8 +1,16 @@
 import os
 import json
 import logging
-import requests
+import ssl
+import urllib.request
+import urllib.error
 from typing import Dict, Any, List, Optional
+
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +76,10 @@ class AIService:
 
     @classmethod
     def _call_gemini(cls, prompt: str, system_instruction: Optional[str] = None, model: Optional[str] = None, response_json: bool = False) -> str:
-        """Call Google Gemini REST API with fallback and error handling."""
+        """Call Google Gemini REST API with dual transport (requests + urllib) and fallback."""
         api_key = cls.get_api_key()
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your Render dashboard Environment Variables.")
         
         target_model = cls._normalize_model(model)
         models_to_try = [target_model]
@@ -104,18 +114,44 @@ class AIService:
             if response_json:
                 payload["generationConfig"]["responseMimeType"] = "application/json"
 
-            headers = {"Content-Type": "application/json"}
+            # 1. Try with requests if installed
+            if HAS_REQUESTS:
+                try:
+                    res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=60)
+                    if res.status_code == 200:
+                        data = res.json()
+                        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    else:
+                        logger.warning(f"Gemini API (requests) {res.status_code} for {current_model}: {res.text}")
+                        last_error = f"Gemini API ({res.status_code}): {res.text}"
+                except Exception as ex:
+                    logger.warning(f"requests transport failed for {current_model}: {ex}")
+                    last_error = str(ex)
+
+            # 2. Fallback to urllib.request
             try:
-                response = requests.post(url, headers=headers, json=payload, timeout=60)
-                if response.status_code == 200:
-                    data = response.json()
-                    content_text = data["candidates"][0]["content"]["parts"][0]["text"]
-                    return content_text.strip()
-                else:
-                    logger.warning(f"Gemini API returned {response.status_code} for {current_model}: {response.text}")
-                    last_error = f"Gemini API ({response.status_code}): {response.text}"
+                json_data = json.dumps(payload).encode('utf-8')
+                req = urllib.request.Request(
+                    url,
+                    data=json_data,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                try:
+                    ssl_ctx = ssl.create_default_context()
+                except Exception:
+                    ssl_ctx = ssl._create_unverified_context()
+
+                with urllib.request.urlopen(req, timeout=60, context=ssl_ctx) as response:
+                    resp_body = response.read().decode('utf-8')
+                    data = json.loads(resp_body)
+                    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            except urllib.error.HTTPError as ex:
+                err_text = ex.read().decode('utf-8', errors='ignore')
+                logger.warning(f"Gemini API (urllib) HTTPError {ex.code} for {current_model}: {err_text}")
+                last_error = f"Gemini API ({ex.code}): {err_text}"
             except Exception as ex:
-                logger.warning(f"Request exception for model {current_model}: {ex}")
+                logger.warning(f"urllib transport failed for {current_model}: {ex}")
                 last_error = str(ex)
 
         raise RuntimeError(f"Google Gemini generation failed: {last_error}")
