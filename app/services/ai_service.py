@@ -26,8 +26,9 @@ class AIService:
     ALLOWED_MODELS = [
         "gemini-3.5-flash",
         "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-flash-lite-latest",
         "gemini-flash-latest",
-        "gemini-3.1-flash-lite",
         "gemini-pro-latest"
     ]
 
@@ -46,7 +47,9 @@ class AIService:
 
     @staticmethod
     def _parse_json_safely(text: str) -> Dict[str, Any]:
-        """Strip any markdown wrapping and extract clean JSON dictionary"""
+        """Safely extract and parse JSON even if wrapped in markdown fences."""
+        if not text:
+            return {}
         cleaned = text.strip()
         if cleaned.startswith("```json"):
             cleaned = cleaned[7:]
@@ -70,23 +73,31 @@ class AIService:
         model_clean = model.strip().lower()
         if model_clean in cls.ALLOWED_MODELS:
             return model_clean
-        if "pro" in model_clean:
-            return "gemini-pro-latest"
+        if "lite" in model_clean:
+            return "gemini-3.5-flash-lite"
+        if "3.6" in model_clean:
+            return "gemini-3.6-flash"
         return cls.DEFAULT_MODEL
 
     @classmethod
     def _call_gemini(cls, prompt: str, system_instruction: Optional[str] = None, model: Optional[str] = None, response_json: bool = False) -> str:
-        """Call Google Gemini REST API with dual transport (requests + urllib) and fallback."""
+        """Call Google Gemini REST API with smart model failover and dual transport."""
         api_key = cls.get_api_key()
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your Render dashboard Environment Variables.")
         
         target_model = cls._normalize_model(model)
         models_to_try = [target_model]
-        if target_model != cls.DEFAULT_MODEL:
-            models_to_try.append(cls.DEFAULT_MODEL)
-        if "gemini-flash-latest" not in models_to_try:
-            models_to_try.append("gemini-flash-latest")
+        fallback_pool = [
+            "gemini-3.5-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-flash-latest"
+        ]
+        for candidate in fallback_pool:
+            if candidate not in models_to_try:
+                models_to_try.append(candidate)
 
         last_error = None
         for current_model in models_to_try:
@@ -123,7 +134,8 @@ class AIService:
                         return data["candidates"][0]["content"]["parts"][0]["text"].strip()
                     else:
                         logger.warning(f"Gemini API (requests) {res.status_code} for {current_model}: {res.text}")
-                        last_error = f"Gemini API ({res.status_code}): {res.text}"
+                        last_error = f"{current_model}: {res.text}"
+                        continue  # Immediately failover to next model in pool!
                 except Exception as ex:
                     logger.warning(f"requests transport failed for {current_model}: {ex}")
                     last_error = str(ex)
@@ -149,12 +161,13 @@ class AIService:
             except urllib.error.HTTPError as ex:
                 err_text = ex.read().decode('utf-8', errors='ignore')
                 logger.warning(f"Gemini API (urllib) HTTPError {ex.code} for {current_model}: {err_text}")
-                last_error = f"Gemini API ({ex.code}): {err_text}"
+                last_error = f"{current_model} ({ex.code}): {err_text}"
+                continue  # Failover to next model
             except Exception as ex:
                 logger.warning(f"urllib transport failed for {current_model}: {ex}")
                 last_error = str(ex)
 
-        raise RuntimeError(f"Google Gemini generation failed: {last_error}")
+        raise RuntimeError(f"Google Gemini generation failed across all fallback models: {last_error}")
 
     @classmethod
     def generate_course_blueprint(
