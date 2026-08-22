@@ -2565,7 +2565,7 @@ def apply_{func_name}():
                             "option_b": "To bypass industry-standard quality checks",
                             "option_c": "To eliminate the need for documentation",
                             "option_d": "None of the above",
-                            "correct_answer": "option_a"
+                            "correct_answer": "a"
                         },
                         {
                             "question_text": f"Which best practice is essential when implementing {lesson_title}?",
@@ -2573,7 +2573,7 @@ def apply_{func_name}():
                             "option_b": "Hardcoding static values without tokens",
                             "option_c": "Skipping team reviews",
                             "option_d": "Avoiding documentation",
-                            "correct_answer": "option_a"
+                            "correct_answer": "a"
                         },
                         {
                             "question_text": f"How does {lesson_title} fit into {mod_title}?",
@@ -2581,7 +2581,7 @@ def apply_{func_name}():
                             "option_b": "It is an optional, deprecated component",
                             "option_c": "It is unrelated to the course curriculum",
                             "option_d": "It replaces all other modules",
-                            "correct_answer": "option_a"
+                            "correct_answer": "a"
                         }
                     ]
 
@@ -2596,6 +2596,12 @@ def apply_{func_name}():
                 db.session.flush()
                 
                 for q_item in questions_list:
+                    # Normalize answer to 1 single character ('a', 'b', 'c', or 'd') for VARCHAR(1) column
+                    raw_ans = str(q_item.get('correct_answer', 'a')).strip().lower()
+                    if 'option_' in raw_ans:
+                        raw_ans = raw_ans.replace('option_', '')
+                    char_ans = raw_ans[0] if raw_ans and raw_ans[0] in ['a', 'b', 'c', 'd'] else 'a'
+
                     qq = QuizQuestion(
                         quiz_id=quiz.id,
                         question_text=q_item.get('question_text', ''),
@@ -2603,7 +2609,7 @@ def apply_{func_name}():
                         option_b=q_item.get('option_b', 'B'),
                         option_c=q_item.get('option_c', 'C'),
                         option_d=q_item.get('option_d', 'D'),
-                        correct_answer=q_item.get('correct_answer', 'option_a')
+                        correct_answer=char_ans
                     )
                     db.session.add(qq)
 

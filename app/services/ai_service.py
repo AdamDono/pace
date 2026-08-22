@@ -312,7 +312,7 @@ Return JSON with this exact schema:
       "option_b": "Second option",
       "option_c": "Third option",
       "option_d": "Fourth option",
-      "correct_answer": "option_a",
+      "correct_answer": "a",
       "explanation": "Why this answer is correct..."
     }}
   ]
