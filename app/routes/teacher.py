@@ -2475,6 +2475,11 @@ def ai_create_course_bundle():
         db.session.flush()  # Obtain course.id
         
         # 2. Iterate through Modules & Lessons
+        from app.services.ai_service import AIService
+        model_name = blueprint.get('model', 'gemini-3.5-flash')
+        reference_template = blueprint.get('reference_template')
+        custom_instructions = blueprint.get('custom_instructions')
+
         for mod_idx, mod_data in enumerate(blueprint.get('modules', [])):
             module = Module(
                 course_id=course.id,
@@ -2486,21 +2491,51 @@ def ai_create_course_bundle():
             db.session.flush()  # Obtain module.id
             
             for les_idx, les_data in enumerate(mod_data.get('lessons', [])):
+                lesson_title = les_data.get('title', f"Lesson {les_idx + 1}")
+                content_html = les_data.get('content_html')
+
+                # Generate full comprehensive lesson HTML if not already in blueprint
+                if not content_html or len(content_html.strip()) < 150:
+                    try:
+                        content_html = AIService.generate_lesson_html(
+                            course_title=course.title,
+                            module_title=module.title,
+                            lesson_title=lesson_title,
+                            custom_instructions=f"{custom_instructions or ''}. Focus on: {les_data.get('summary', '')}",
+                            reference_template=reference_template,
+                            model=model_name
+                        )
+                    except Exception as ex:
+                        logger.warning(f"Failed to generate rich lesson HTML for '{lesson_title}': {ex}")
+                        content_html = f"<h2>{lesson_title}</h2><p>{les_data.get('summary', '')}</p>"
+
                 section = Section(
                     course_id=course.id,
                     module_id=module.id,
-                    title=les_data.get('title', f"Lesson {les_idx + 1}"),
-                    content=les_data.get('content_html', f"<h2>{les_data.get('title', 'Lesson')}</h2><p>{les_data.get('summary', '')}</p>"),
+                    title=lesson_title,
+                    content=content_html,
                     section_type='text',
                     order=les_idx,
-                    duration=les_data.get('estimated_minutes', 15),
+                    duration=les_data.get('estimated_minutes', 20),
                     is_published=False
                 )
                 db.session.add(section)
                 db.session.flush()
                 
-                # If quiz is attached to lesson
+                # Generate or attach quiz
                 quiz_data = les_data.get('quiz')
+                if not quiz_data and content_html and len(content_html) > 200:
+                    try:
+                        quiz_data = AIService.generate_quiz_for_lesson(
+                            lesson_title=lesson_title,
+                            lesson_content=content_html,
+                            num_questions=3,
+                            passing_score=70.0,
+                            model=model_name
+                        )
+                    except Exception as ex:
+                        logger.warning(f"Failed to generate quiz for '{lesson_title}': {ex}")
+
                 if quiz_data and isinstance(quiz_data, dict):
                     quiz = Quiz(
                         section_id=section.id,
