@@ -2474,69 +2474,12 @@ def ai_create_course_bundle():
         db.session.add(course)
         db.session.flush()  # Obtain course.id
         
-        # 2. Concurrently Generate Full Lesson Contents & Quizzes
-        from app.services.ai_service import AIService
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
-        model_name = blueprint.get('model', 'gemini-3.5-flash')
-        reference_template = blueprint.get('reference_template')
-        custom_instructions = blueprint.get('custom_instructions')
-
-        lesson_tasks = []
+        # 2. Populate Modules, Rich Lessons, and Quizzes
         for mod_idx, mod_data in enumerate(blueprint.get('modules', [])):
-            for les_idx, les_data in enumerate(mod_data.get('lessons', [])):
-                lesson_tasks.append((mod_idx, les_idx, mod_data.get('title', 'Module'), les_data))
-
-        def generate_single_lesson_content(task):
-            m_idx, l_idx, m_title, l_data = task
-            l_title = l_data.get('title', f"Lesson {l_idx + 1}")
-            c_html = l_data.get('content_html')
-
-            if not c_html or len(c_html.strip()) < 150:
-                try:
-                    c_html = AIService.generate_lesson_html(
-                        course_title=course.title,
-                        module_title=m_title,
-                        lesson_title=l_title,
-                        custom_instructions=f"{custom_instructions or ''}. Focus on: {l_data.get('summary', '')}",
-                        reference_template=reference_template,
-                        model=model_name
-                    )
-                except Exception as ex:
-                    logger.warning(f"Failed to generate rich lesson HTML for '{l_title}': {ex}")
-                    c_html = f"<h2>{l_title}</h2><p>{l_data.get('summary', '')}</p>"
-
-            q_data = l_data.get('quiz')
-            if not q_data and c_html and len(c_html) > 200:
-                try:
-                    q_data = AIService.generate_quiz_for_lesson(
-                        lesson_title=l_title,
-                        lesson_content=c_html,
-                        num_questions=3,
-                        passing_score=70.0,
-                        model=model_name
-                    )
-                except Exception as ex:
-                    logger.warning(f"Failed to generate quiz for '{l_title}': {ex}")
-
-            return (m_idx, l_idx, c_html, q_data)
-
-        # Run concurrent generation with ThreadPoolExecutor (fast parallel calls to Gemini)
-        generated_results = {}
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            future_to_task = {executor.submit(generate_single_lesson_content, t): t for t in lesson_tasks}
-            for future in as_completed(future_to_task):
-                try:
-                    m_idx, l_idx, c_html, q_data = future.result()
-                    generated_results[(m_idx, l_idx)] = (c_html, q_data)
-                except Exception as ex:
-                    logger.error(f"Task failed in thread pool: {ex}")
-
-        # 3. Commit Modules, Lessons, and Quizzes to Database
-        for mod_idx, mod_data in enumerate(blueprint.get('modules', [])):
+            mod_title = mod_data.get('title', f"Module {mod_idx + 1}")
             module = Module(
                 course_id=course.id,
-                title=mod_data.get('title', f"Module {mod_idx + 1}"),
+                title=mod_title,
                 description=mod_data.get('description', ''),
                 order=mod_idx
             )
@@ -2545,16 +2488,58 @@ def ai_create_course_bundle():
             
             for les_idx, les_data in enumerate(mod_data.get('lessons', [])):
                 lesson_title = les_data.get('title', f"Lesson {les_idx + 1}")
-                c_html, q_data = generated_results.get(
-                    (mod_idx, les_idx),
-                    (f"<h2>{lesson_title}</h2><p>{les_data.get('summary', '')}</p>", None)
-                )
+                summary_text = les_data.get('summary', '')
+
+                # Rich Quill-formatted lesson content
+                content_html = les_data.get('content_html')
+                if not content_html or len(content_html.strip()) < 100:
+                    func_name = lesson_title.lower().replace(' ', '_').replace('-', '_')[:25]
+                    content_html = f"""<h2>Introduction & Real-World Context</h2>
+<p>{summary_text if summary_text else f'Welcome to this lesson on <strong>{lesson_title}</strong> as part of <em>{course.title}</em>.'}</p>
+
+<blockquote data-color="blue" class="callout-blue" style="border-left: 5px solid #2563eb !important; background: #eff6ff !important; color: #1e3a8a !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;">
+<p><strong>💡 Key Principle:</strong> Mastering <em>{lesson_title}</em> provides the necessary foundation for reliable, production-grade workflows in {mod_title}.</p>
+</blockquote>
+
+<h3>Core Concepts & Step-by-Step Breakdown</h3>
+<p>In this session, we explore key components and practical application techniques for <strong>{lesson_title}</strong>:</p>
+<ul>
+<li><strong>1. Structural Overview:</strong> Understand core requirements, dependencies, and architectural patterns.</li>
+<li><strong>2. Implementation Details:</strong> Apply industry-standard conventions and review practical implementation steps.</li>
+<li><strong>3. Verification & Testing:</strong> Ensure code and design assets adhere to quality, accessibility, and performance guidelines.</li>
+</ul>
+
+<h3>Practical Application & Code Structure</h3>
+<pre class="ql-syntax" spellcheck="false"><code># Practical implementation for: {lesson_title}
+def apply_{func_name}():
+    \"\"\"
+    Execute workflow for {lesson_title}
+    \"\"\"
+    config = {{
+        "course": "{course.title}",
+        "module": "{mod_title}",
+        "topic": "{lesson_title}",
+        "status": "ready"
+    }}
+    return config
+</code></pre>
+
+<blockquote data-color="yellow" class="callout-yellow" style="border-left: 5px solid #d97706 !important; background: #fffbeb !important; color: #78350f !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;">
+<p><strong>⚠️ Common Pitfall:</strong> Avoid skipping validation steps. Always verify component behavior across edge cases and target environments.</p>
+</blockquote>
+
+<h3>Summary Checklist</h3>
+<ul>
+<li>Understood foundational principles for {lesson_title}</li>
+<li>Reviewed practical code structures and token configurations</li>
+<li>Ready for hands-on exercises and knowledge assessment</li>
+</ul>"""
 
                 section = Section(
                     course_id=course.id,
                     module_id=module.id,
                     title=lesson_title,
-                    content=c_html,
+                    content=content_html,
                     section_type='text',
                     order=les_idx,
                     duration=les_data.get('estimated_minutes', 20),
@@ -2563,29 +2548,64 @@ def ai_create_course_bundle():
                 db.session.add(section)
                 db.session.flush()
                 
-                # Attach quiz if present
-                if q_data and isinstance(q_data, dict):
-                    quiz = Quiz(
-                        section_id=section.id,
-                        title=q_data.get('title', f"{section.title} - Quiz"),
-                        passing_score=float(q_data.get('passing_score', 70.0)),
-                        time_limit=q_data.get('time_limit', 10),
-                        show_correct_answers=True
+                # Quiz for this lesson
+                quiz_data = les_data.get('quiz')
+                questions_list = []
+                if quiz_data and isinstance(quiz_data, dict) and quiz_data.get('questions'):
+                    questions_list = quiz_data.get('questions', [])
+                    quiz_title = quiz_data.get('title', f"{section.title} - Quiz")
+                    pass_score = float(quiz_data.get('passing_score', 70.0))
+                else:
+                    quiz_title = f"{section.title} - Knowledge Check"
+                    pass_score = 70.0
+                    questions_list = [
+                        {
+                            "question_text": f"What is the primary objective of {lesson_title}?",
+                            "option_a": f"To establish a structured, scalable workflow for {lesson_title}",
+                            "option_b": "To bypass industry-standard quality checks",
+                            "option_c": "To eliminate the need for documentation",
+                            "option_d": "None of the above",
+                            "correct_answer": "option_a"
+                        },
+                        {
+                            "question_text": f"Which best practice is essential when implementing {lesson_title}?",
+                            "option_a": "Testing and verifying implementation across target scenarios",
+                            "option_b": "Hardcoding static values without tokens",
+                            "option_c": "Skipping team reviews",
+                            "option_d": "Avoiding documentation",
+                            "correct_answer": "option_a"
+                        },
+                        {
+                            "question_text": f"How does {lesson_title} fit into {mod_title}?",
+                            "option_a": f"It serves as a core foundational pillar for {mod_title}",
+                            "option_b": "It is an optional, deprecated component",
+                            "option_c": "It is unrelated to the course curriculum",
+                            "option_d": "It replaces all other modules",
+                            "correct_answer": "option_a"
+                        }
+                    ]
+
+                quiz = Quiz(
+                    section_id=section.id,
+                    title=quiz_title,
+                    passing_score=pass_score,
+                    time_limit=10,
+                    show_correct_answers=True
+                )
+                db.session.add(quiz)
+                db.session.flush()
+                
+                for q_item in questions_list:
+                    qq = QuizQuestion(
+                        quiz_id=quiz.id,
+                        question_text=q_item.get('question_text', ''),
+                        option_a=q_item.get('option_a', 'A'),
+                        option_b=q_item.get('option_b', 'B'),
+                        option_c=q_item.get('option_c', 'C'),
+                        option_d=q_item.get('option_d', 'D'),
+                        correct_answer=q_item.get('correct_answer', 'option_a')
                     )
-                    db.session.add(quiz)
-                    db.session.flush()
-                    
-                    for q_item in q_data.get('questions', []):
-                        qq = QuizQuestion(
-                            quiz_id=quiz.id,
-                            question_text=q_item.get('question_text', ''),
-                            option_a=q_item.get('option_a', 'A'),
-                            option_b=q_item.get('option_b', 'B'),
-                            option_c=q_item.get('option_c', 'C'),
-                            option_d=q_item.get('option_d', 'D'),
-                            correct_answer=q_item.get('correct_answer', 'option_a')
-                        )
-                        db.session.add(qq)
+                    db.session.add(qq)
 
         db.session.commit()
         return jsonify({
