@@ -383,8 +383,8 @@
             if (data.course_id) {
                 document.getElementById('ai-progress-status').innerText = 'Course saved! Opening course builder...';
                 setTimeout(() => {
-                    window.location.href = `/teacher/course-builder/${data.course_id}`;
-                }, 1200);
+                    window.location.href = `/teacher/course/${data.course_id}/builder`;
+                }, 1000);
             }
         })
         .catch(err => {

@@ -1846,6 +1846,12 @@ def course_builder(course_id):
     
     return render_template('teacher/course_builder.html', course=course, modules=modules)
 
+@teacher_bp.route('/course-builder/<int:course_id>')
+@teacher_required
+def course_builder_alias(course_id):
+    """Alias redirect for course builder"""
+    return redirect(url_for('teacher.course_builder', course_id=course_id))
+
 @teacher_bp.route('/course/<int:course_id>/submit-review', methods=['POST'])
 @teacher_required
 def submit_course_for_review(course_id):
