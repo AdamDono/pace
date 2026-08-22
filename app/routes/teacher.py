@@ -2474,12 +2474,65 @@ def ai_create_course_bundle():
         db.session.add(course)
         db.session.flush()  # Obtain course.id
         
-        # 2. Iterate through Modules & Lessons
+        # 2. Concurrently Generate Full Lesson Contents & Quizzes
         from app.services.ai_service import AIService
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         model_name = blueprint.get('model', 'gemini-3.5-flash')
         reference_template = blueprint.get('reference_template')
         custom_instructions = blueprint.get('custom_instructions')
 
+        lesson_tasks = []
+        for mod_idx, mod_data in enumerate(blueprint.get('modules', [])):
+            for les_idx, les_data in enumerate(mod_data.get('lessons', [])):
+                lesson_tasks.append((mod_idx, les_idx, mod_data.get('title', 'Module'), les_data))
+
+        def generate_single_lesson_content(task):
+            m_idx, l_idx, m_title, l_data = task
+            l_title = l_data.get('title', f"Lesson {l_idx + 1}")
+            c_html = l_data.get('content_html')
+
+            if not c_html or len(c_html.strip()) < 150:
+                try:
+                    c_html = AIService.generate_lesson_html(
+                        course_title=course.title,
+                        module_title=m_title,
+                        lesson_title=l_title,
+                        custom_instructions=f"{custom_instructions or ''}. Focus on: {l_data.get('summary', '')}",
+                        reference_template=reference_template,
+                        model=model_name
+                    )
+                except Exception as ex:
+                    logger.warning(f"Failed to generate rich lesson HTML for '{l_title}': {ex}")
+                    c_html = f"<h2>{l_title}</h2><p>{l_data.get('summary', '')}</p>"
+
+            q_data = l_data.get('quiz')
+            if not q_data and c_html and len(c_html) > 200:
+                try:
+                    q_data = AIService.generate_quiz_for_lesson(
+                        lesson_title=l_title,
+                        lesson_content=c_html,
+                        num_questions=3,
+                        passing_score=70.0,
+                        model=model_name
+                    )
+                except Exception as ex:
+                    logger.warning(f"Failed to generate quiz for '{l_title}': {ex}")
+
+            return (m_idx, l_idx, c_html, q_data)
+
+        # Run concurrent generation with ThreadPoolExecutor (fast parallel calls to Gemini)
+        generated_results = {}
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            future_to_task = {executor.submit(generate_single_lesson_content, t): t for t in lesson_tasks}
+            for future in as_completed(future_to_task):
+                try:
+                    m_idx, l_idx, c_html, q_data = future.result()
+                    generated_results[(m_idx, l_idx)] = (c_html, q_data)
+                except Exception as ex:
+                    logger.error(f"Task failed in thread pool: {ex}")
+
+        # 3. Commit Modules, Lessons, and Quizzes to Database
         for mod_idx, mod_data in enumerate(blueprint.get('modules', [])):
             module = Module(
                 course_id=course.id,
@@ -2492,28 +2545,16 @@ def ai_create_course_bundle():
             
             for les_idx, les_data in enumerate(mod_data.get('lessons', [])):
                 lesson_title = les_data.get('title', f"Lesson {les_idx + 1}")
-                content_html = les_data.get('content_html')
-
-                # Generate full comprehensive lesson HTML if not already in blueprint
-                if not content_html or len(content_html.strip()) < 150:
-                    try:
-                        content_html = AIService.generate_lesson_html(
-                            course_title=course.title,
-                            module_title=module.title,
-                            lesson_title=lesson_title,
-                            custom_instructions=f"{custom_instructions or ''}. Focus on: {les_data.get('summary', '')}",
-                            reference_template=reference_template,
-                            model=model_name
-                        )
-                    except Exception as ex:
-                        logger.warning(f"Failed to generate rich lesson HTML for '{lesson_title}': {ex}")
-                        content_html = f"<h2>{lesson_title}</h2><p>{les_data.get('summary', '')}</p>"
+                c_html, q_data = generated_results.get(
+                    (mod_idx, les_idx),
+                    (f"<h2>{lesson_title}</h2><p>{les_data.get('summary', '')}</p>", None)
+                )
 
                 section = Section(
                     course_id=course.id,
                     module_id=module.id,
                     title=lesson_title,
-                    content=content_html,
+                    content=c_html,
                     section_type='text',
                     order=les_idx,
                     duration=les_data.get('estimated_minutes', 20),
@@ -2522,32 +2563,19 @@ def ai_create_course_bundle():
                 db.session.add(section)
                 db.session.flush()
                 
-                # Generate or attach quiz
-                quiz_data = les_data.get('quiz')
-                if not quiz_data and content_html and len(content_html) > 200:
-                    try:
-                        quiz_data = AIService.generate_quiz_for_lesson(
-                            lesson_title=lesson_title,
-                            lesson_content=content_html,
-                            num_questions=3,
-                            passing_score=70.0,
-                            model=model_name
-                        )
-                    except Exception as ex:
-                        logger.warning(f"Failed to generate quiz for '{lesson_title}': {ex}")
-
-                if quiz_data and isinstance(quiz_data, dict):
+                # Attach quiz if present
+                if q_data and isinstance(q_data, dict):
                     quiz = Quiz(
                         section_id=section.id,
-                        title=quiz_data.get('title', f"{section.title} - Quiz"),
-                        passing_score=float(quiz_data.get('passing_score', 70.0)),
-                        time_limit=quiz_data.get('time_limit', 10),
+                        title=q_data.get('title', f"{section.title} - Quiz"),
+                        passing_score=float(q_data.get('passing_score', 70.0)),
+                        time_limit=q_data.get('time_limit', 10),
                         show_correct_answers=True
                     )
                     db.session.add(quiz)
                     db.session.flush()
                     
-                    for q_item in quiz_data.get('questions', []):
+                    for q_item in q_data.get('questions', []):
                         qq = QuizQuestion(
                             quiz_id=quiz.id,
                             question_text=q_item.get('question_text', ''),
