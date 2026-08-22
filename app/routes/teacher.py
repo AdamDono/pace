@@ -2474,9 +2474,7 @@ def ai_create_course_bundle():
         db.session.add(course)
         db.session.flush()  # Obtain course.id
         
-        # 2. Populate Modules, Rich Lessons, Dedicated Assignments, and Quizzes
-        course_level = blueprint.get('difficulty_level', 'Beginner').title()
-        
+        # 2. Populate Modules, Rich Lessons, and Quizzes
         for mod_idx, mod_data in enumerate(blueprint.get('modules', [])):
             mod_title = mod_data.get('title', f"Module {mod_idx + 1}")
             module = Module(
@@ -2488,233 +2486,137 @@ def ai_create_course_bundle():
             db.session.add(module)
             db.session.flush()  # Obtain module.id
             
-            section_order = 0
-            lesson_titles = []
-
-            # 2a. Create Interactive Reading Lessons
             for les_idx, les_data in enumerate(mod_data.get('lessons', [])):
                 lesson_title = les_data.get('title', f"Lesson {les_idx + 1}")
-                lesson_titles.append(lesson_title)
                 summary_text = les_data.get('summary', '')
-                func_name = lesson_title.lower().replace(' ', '_').replace('-', '_')[:25]
-                class_name = lesson_title.replace(' ', '').replace('-', '')[:30]
 
-                # Full rich lesson HTML content
+                # Rich Quill-formatted lesson content
                 content_html = les_data.get('content_html')
                 if not content_html or len(content_html.strip()) < 100:
-                    content_html = f"""<h2>1. Introduction & Real-World Context</h2>
+                    func_name = lesson_title.lower().replace(' ', '_').replace('-', '_')[:25]
+                    content_html = f"""<h2>Introduction & Real-World Context</h2>
 <p>{summary_text if summary_text else f'Welcome to this lesson on <strong>{lesson_title}</strong> as part of <em>{course.title}</em>.'}</p>
-<p>In modern production environments, mastering <strong>{lesson_title}</strong> ensures that your projects remain scalable, maintainable, and aligned with team-wide architecture standards. Throughout this lesson, we break down foundational theories into actionable execution steps.</p>
 
 <blockquote data-color="blue" class="callout-blue" style="border-left: 5px solid #2563eb !important; background: #eff6ff !important; color: #1e3a8a !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;">
-<p><strong>💡 Core Principle:</strong> <em>{lesson_title}</em> bridges conceptual theory and production implementation. Prioritize clear structure, clean contracts, and consistent naming conventions.</p>
+<p><strong>💡 Key Principle:</strong> Mastering <em>{lesson_title}</em> provides the necessary foundation for reliable, production-grade workflows in {mod_title}.</p>
 </blockquote>
 
-<h2>2. Core Concepts & Step-by-Step Breakdown</h2>
-<p>To implement <strong>{lesson_title}</strong> effectively in <em>{mod_title}</em>, follow these 3 core pillars:</p>
-<ol>
-<li><strong>Architectural Foundation:</strong> Establish well-defined boundaries, dependencies, and state hierarchies before writing code or designing components.</li>
-<li><strong>Modular Implementation:</strong> Build reusable, composable units that can be tested, refactored, and extended independently.</li>
-<li><strong>Quality Assurance & Validation:</strong> Verify edge cases, validate inputs, and ensure strict compliance with accessibility and performance standards.</li>
-</ol>
+<h3>Core Concepts & Step-by-Step Breakdown</h3>
+<p>In this session, we explore key components and practical application techniques for <strong>{lesson_title}</strong>:</p>
+<ul>
+<li><strong>1. Structural Overview:</strong> Understand core requirements, dependencies, and architectural patterns.</li>
+<li><strong>2. Implementation Details:</strong> Apply industry-standard conventions and review practical implementation steps.</li>
+<li><strong>3. Verification & Testing:</strong> Ensure code and design assets adhere to quality, accessibility, and performance guidelines.</li>
+</ul>
 
-<h2>3. Hands-On Implementation & Working Code</h2>
-<p>Here is the reference architecture and working implementation template for <strong>{lesson_title}</strong>:</p>
-
-<pre class="ql-syntax" spellcheck="false"><code>/**
- * Reference Implementation: {lesson_title}
- * Context: {course.title} - {mod_title}
- * Level: {course_level}
- */
-
-class {class_name}Manager:
-    def __init__(self, context_name="{lesson_title}"):
-        self.context_name = context_name
-        self.initialized = True
-        self.metrics = {{
-            "status": "active",
-            "compliance_score": 100,
-            "version": "1.0.0"
-        }}
-
-    def execute_workflow(self, payload: dict) -> dict:
-        \"\"\"Executes the standard pipeline for {lesson_title}.\"\"\"
-        if not self.initialized:
-            raise RuntimeError("System not initialized")
-        
-        # Process and validate payload
-        result = {{
-            "topic": self.context_name,
-            "processed": True,
-            "payload_summary": payload,
-            "status": "SUCCESS"
-        }}
-        return result
-
-# Instantiate and execute
-instance = {class_name}Manager()
-response = instance.execute_workflow({{"module": "{mod_title}", "step": "verification"}})
-print(response)
+<h3>Practical Application & Code Structure</h3>
+<pre class="ql-syntax" spellcheck="false"><code># Practical implementation for: {lesson_title}
+def apply_{func_name}():
+    \"\"\"
+    Execute workflow for {lesson_title}
+    \"\"\"
+    config = {{
+        "course": "{course.title}",
+        "module": "{mod_title}",
+        "topic": "{lesson_title}",
+        "status": "ready"
+    }}
+    return config
 </code></pre>
 
 <blockquote data-color="yellow" class="callout-yellow" style="border-left: 5px solid #d97706 !important; background: #fffbeb !important; color: #78350f !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;">
-<p><strong>⚠️ Common Pitfall:</strong> Avoid hardcoding configuration values directly inside component files. Always decouple configuration from business logic to maintain multi-environment compatibility.</p>
+<p><strong>⚠️ Common Pitfall:</strong> Avoid skipping validation steps. Always verify component behavior across edge cases and target environments.</p>
 </blockquote>
 
-<h2>4. Summary Checklist & Action Items</h2>
+<h3>Summary Checklist</h3>
 <ul>
-<li>✅ Understood the strategic purpose and fundamentals of {lesson_title}</li>
-<li>✅ Reviewed the reference architecture and hands-on code sample</li>
-<li>✅ Verified common edge cases and best practices</li>
-<li>👉 Complete the module assignment and take the assessment quiz below to test your mastery!</li>
+<li>Understood foundational principles for {lesson_title}</li>
+<li>Reviewed practical code structures and token configurations</li>
+<li>Ready for hands-on exercises and knowledge assessment</li>
 </ul>"""
 
-                lesson_section = Section(
+                section = Section(
                     course_id=course.id,
                     module_id=module.id,
                     title=lesson_title,
                     content=content_html,
                     section_type='text',
-                    order=section_order,
+                    order=les_idx,
                     duration=les_data.get('estimated_minutes', 20),
                     is_published=False
                 )
-                db.session.add(lesson_section)
+                db.session.add(section)
                 db.session.flush()
-                section_order += 1
+                
+                # Quiz for this lesson
+                quiz_data = les_data.get('quiz')
+                questions_list = []
+                if quiz_data and isinstance(quiz_data, dict) and quiz_data.get('questions'):
+                    questions_list = quiz_data.get('questions', [])
+                    quiz_title = quiz_data.get('title', f"{section.title} - Quiz")
+                    pass_score = float(quiz_data.get('passing_score', 70.0))
+                else:
+                    quiz_title = f"{section.title} - Knowledge Check"
+                    pass_score = 70.0
+                    questions_list = [
+                        {
+                            "question_text": f"What is the primary objective of {lesson_title}?",
+                            "option_a": f"To establish a structured, scalable workflow for {lesson_title}",
+                            "option_b": "To bypass industry-standard quality checks",
+                            "option_c": "To eliminate the need for documentation",
+                            "option_d": "None of the above",
+                            "correct_answer": "a"
+                        },
+                        {
+                            "question_text": f"Which best practice is essential when implementing {lesson_title}?",
+                            "option_a": "Testing and verifying implementation across target scenarios",
+                            "option_b": "Hardcoding static values without tokens",
+                            "option_c": "Skipping team reviews",
+                            "option_d": "Avoiding documentation",
+                            "correct_answer": "a"
+                        },
+                        {
+                            "question_text": f"How does {lesson_title} fit into {mod_title}?",
+                            "option_a": f"It serves as a core foundational pillar for {mod_title}",
+                            "option_b": "It is an optional, deprecated component",
+                            "option_c": "It is unrelated to the course curriculum",
+                            "option_d": "It replaces all other modules",
+                            "correct_answer": "a"
+                        }
+                    ]
 
-            # 2b. Create Dedicated Module Practical Assignment
-            assignment_title = f"{mod_title} - Practical Project"
-            assignment_desc = f"""<h2>🎯 Project Brief: {mod_title}</h2>
-<p>Apply the concepts learned across <strong>{mod_title}</strong> to solve this real-world scenario for <em>{course.title}</em>.</p>
-
-<h3>📋 Scenario & Objective</h3>
-<p>You have been tasked with building and deploying the core functionality for <strong>{mod_title}</strong>. Your implementation must follow industry best practices, remain modular, and include verification tests.</p>
-
-<h3>📦 Deliverable Requirements</h3>
-<ul>
-<li><strong>1. Source Code / Assets:</strong> Submit your completed project files, repository URL, or design artifacts.</li>
-<li><strong>2. Technical Summary:</strong> A concise 1-2 paragraph write-up explaining your architectural choices and how you solved key challenges.</li>
-<li><strong>3. Verification Proof:</strong> Screenshots or test output demonstrating successful execution and edge-case handling.</li>
-</ul>
-
-<blockquote data-color="green" class="callout-green" style="border-left: 5px solid #16a34a !important; background: #f0fdf4 !important; color: #14532d !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;">
-<p><strong>🟢 Pro Tip:</strong> Ensure your code includes clear comments and adheres to clean architecture principles for maximum points.</p>
-</blockquote>
-
-<h3>📊 Grading Rubric (100 Points Total)</h3>
-<ul>
-<li><strong>Functionality & Completeness (40 Pts):</strong> Meets all specified requirements and executes without errors.</li>
-<li><strong>Architecture & Code Quality (30 Pts):</strong> Clean organization, proper separation of concerns, and effective modularity.</li>
-<li><strong>Testing & Robustness (20 Pts):</strong> Handles edge cases gracefully with verified test coverage.</li>
-<li><strong>Documentation & Clarity (10 Pts):</strong> Well-documented write-up and clean commit history/comments.</li>
-</ul>"""
-
-            assign_section = Section(
-                course_id=course.id,
-                module_id=module.id,
-                title=f"Assignment: {mod_title} Project",
-                content=assignment_desc,
-                section_type='assignment',
-                order=section_order,
-                duration=45,
-                is_published=False
-            )
-            db.session.add(assign_section)
-            db.session.flush()
-            section_order += 1
-
-            assignment_rec = Assignment(
-                section_id=assign_section.id,
-                title=assignment_title,
-                description=assignment_desc,
-                allow_file_upload=True,
-                max_attempts=3
-            )
-            db.session.add(assignment_rec)
-            db.session.flush()
-
-            # 2c. Create Dedicated Module Knowledge Assessment Quiz
-            quiz_title = f"{mod_title} - Knowledge Assessment"
-            quiz_section = Section(
-                course_id=course.id,
-                module_id=module.id,
-                title=f"Quiz: {mod_title} Assessment",
-                content=f"<p>Test your understanding of the core concepts covered in <strong>{mod_title}</strong>.</p>",
-                section_type='quiz',
-                order=section_order,
-                duration=15,
-                is_published=False
-            )
-            db.session.add(quiz_section)
-            db.session.flush()
-            section_order += 1
-
-            quiz_rec = Quiz(
-                section_id=quiz_section.id,
-                title=quiz_title,
-                passing_score=75.0,
-                time_limit=15,
-                show_correct_answers=True
-            )
-            db.session.add(quiz_rec)
-            db.session.flush()
-
-            # Generate 4 Module-Specific Assessment Questions
-            questions_list = [
-                {
-                    "question_text": f"What is the primary architectural objective of {mod_title}?",
-                    "option_a": f"To establish a modular, scalable, and verifiable system workflow",
-                    "option_b": "To eliminate the need for testing and quality verification",
-                    "option_c": "To hardcode static configurations directly into components",
-                    "option_d": "To bypass industry-standard naming conventions",
-                    "correct_answer": "a"
-                },
-                {
-                    "question_text": f"When building components for {mod_title}, which practice is strongly recommended?",
-                    "option_a": "Decoupling business logic from configuration parameters and maintaining strict contracts",
-                    "option_b": "Bypassing error handling to prioritize development speed",
-                    "option_c": "Storing all component states in global namespace",
-                    "option_d": "Avoiding documentation and code comments",
-                    "correct_answer": "a"
-                },
-                {
-                    "question_text": f"How should you verify the reliability of your deliverables in {mod_title}?",
-                    "option_a": "By executing test suites, validating edge cases, and checking performance standards",
-                    "option_b": "By assuming code functions correctly without execution",
-                    "option_c": "By deploying directly to production without testing",
-                    "option_d": "By skipping verification if there are no syntax errors",
-                    "correct_answer": "a"
-                },
-                {
-                    "question_text": f"What is the most effective workflow when completing {mod_title}?",
-                    "option_a": "Review lesson concepts, build the practical assignment project, and validate with the assessment quiz",
-                    "option_b": "Skip the readings and take only the quiz",
-                    "option_c": "Complete the project without reviewing architectural principles",
-                    "option_d": "None of the above",
-                    "correct_answer": "a"
-                }
-            ]
-
-            for q_item in questions_list:
-                raw_ans = str(q_item.get('correct_answer', 'a')).strip().lower()
-                char_ans = raw_ans[0] if raw_ans and raw_ans[0] in ['a', 'b', 'c', 'd'] else 'a'
-
-                qq = QuizQuestion(
-                    quiz_id=quiz_rec.id,
-                    question_text=q_item.get('question_text', ''),
-                    option_a=q_item.get('option_a', 'A'),
-                    option_b=q_item.get('option_b', 'B'),
-                    option_c=q_item.get('option_c', 'C'),
-                    option_d=q_item.get('option_d', 'D'),
-                    correct_answer=char_ans
+                quiz = Quiz(
+                    section_id=section.id,
+                    title=quiz_title,
+                    passing_score=pass_score,
+                    time_limit=10,
+                    show_correct_answers=True
                 )
-                db.session.add(qq)
+                db.session.add(quiz)
+                db.session.flush()
+                
+                for q_item in questions_list:
+                    # Normalize answer to 1 single character ('a', 'b', 'c', or 'd') for VARCHAR(1) column
+                    raw_ans = str(q_item.get('correct_answer', 'a')).strip().lower()
+                    if 'option_' in raw_ans:
+                        raw_ans = raw_ans.replace('option_', '')
+                    char_ans = raw_ans[0] if raw_ans and raw_ans[0] in ['a', 'b', 'c', 'd'] else 'a'
+
+                    qq = QuizQuestion(
+                        quiz_id=quiz.id,
+                        question_text=q_item.get('question_text', ''),
+                        option_a=q_item.get('option_a', 'A'),
+                        option_b=q_item.get('option_b', 'B'),
+                        option_c=q_item.get('option_c', 'C'),
+                        option_d=q_item.get('option_d', 'D'),
+                        correct_answer=char_ans
+                    )
+                    db.session.add(qq)
 
         db.session.commit()
         return jsonify({
             'success': True,
-            'message': 'Course successfully created with all modules, full lessons, practical assignments, and assessment quizzes!',
+            'message': 'Course successfully created with all modules and lessons!',
             'course_id': course.id
         })
         
