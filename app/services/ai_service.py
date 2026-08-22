@@ -27,7 +27,33 @@ class AIService:
     def get_api_key(cls) -> Optional[str]:
         from dotenv import load_dotenv
         load_dotenv()
-        return os.getenv("GEMINI_API_KEY")
+        key = os.getenv("GEMINI_API_KEY")
+        if not key or not key.strip():
+            try:
+                from flask import current_app
+                key = current_app.config.get("GEMINI_API_KEY")
+            except Exception:
+                pass
+        return key.strip() if key else None
+
+    @staticmethod
+    def _parse_json_safely(text: str) -> Dict[str, Any]:
+        """Strip any markdown wrapping and extract clean JSON dictionary"""
+        cleaned = text.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        first_brace = cleaned.find("{")
+        last_brace = cleaned.rfind("}")
+        if first_brace != -1 and last_brace != -1:
+            cleaned = cleaned[first_brace:last_brace + 1]
+
+        return json.loads(cleaned)
 
     @classmethod
     def _normalize_model(cls, model: Optional[str]) -> str:
@@ -44,8 +70,6 @@ class AIService:
     def _call_gemini(cls, prompt: str, system_instruction: Optional[str] = None, model: Optional[str] = None, response_json: bool = False) -> str:
         """Call Google Gemini REST API with fallback and error handling."""
         api_key = cls.get_api_key()
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file or Render dashboard.")
         
         target_model = cls._normalize_model(model)
         models_to_try = [target_model]
@@ -156,7 +180,7 @@ Return a JSON object with this exact structure:
 }}
 """
         raw_json = cls._call_gemini(user_prompt, system_instruction=system_prompt, model=model, response_json=True)
-        return json.loads(raw_json)
+        return cls._parse_json_safely(raw_json)
 
     @classmethod
     def generate_lesson_html(
@@ -259,7 +283,7 @@ Return JSON with this exact schema:
 }}
 """
         raw_json = cls._call_gemini(user_prompt, system_instruction=system_prompt, model=model, response_json=True)
-        return json.loads(raw_json)
+        return cls._parse_json_safely(raw_json)
 
     @classmethod
     def generate_complete_course_bundle(
