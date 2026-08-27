@@ -249,8 +249,9 @@ def forgot_password():
             serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
             token = serializer.dumps(user.email, salt='password-reset-salt')
             
-            # Generate absolute reset URL
-            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            # Generate absolute reset URL using BASE_URL config to ensure correct scheme and domain
+            base_url = current_app.config.get('BASE_URL', 'https://pace-academy.co.za').rstrip('/')
+            reset_url = f"{base_url}{url_for('auth.reset_password', token=token)}"
             
             send_email(
                 subject='Reset Your Password - Pace Academy',
