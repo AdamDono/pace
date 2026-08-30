@@ -2671,6 +2671,14 @@ def add_co_teacher(course_id):
         return jsonify({'success': False, 'message': 'This teacher is already a co-teacher on this course.'}), 400
         
     course.co_teachers.append(target_user)
+    
+    # Send email notification to the co-teacher
+    try:
+        from app.utils.email import send_co_teacher_added_email
+        send_co_teacher_added_email(target_user, course)
+    except Exception as e:
+        logger.error(f"Failed to send co-teacher email: {e}")
+        
     db.session.commit()
     return jsonify({
         'success': True, 

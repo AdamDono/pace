@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            padding-bottom: 24px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+        .logo-text .pace {
+            color: #2563eb;
+        }
+        .logo-text .academy {
+            color: #0f172a;
+        }
+        .tagline {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+            font-weight: 500;
+        }
+        h1 {
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 32px 0 16px 0;
+            line-height: 1.25;
+        }
+        p {
+            margin: 0 0 20px 0;
+            font-size: 15px;
+            color: #475569;
+        }
+        .course-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 30px 0;
+        }
+        .course-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 8px 0;
+        }
+        .course-description {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+            transition: all 0.2s ease;
+        }
+        .info-box {
+            background-color: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            padding: 24px;
+            border-radius: 16px;
+            margin: 30px 0;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #6d28d9;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .info-box ul {
+            margin: 12px 0 0 0;
+            padding-left: 20px;
+            font-size: 14px;
+            color: #5b21b6;
+            font-weight: 500;
+        }
+        .info-box li {
+            margin-bottom: 10px;
+        }
+        .info-box li:last-child {
+            margin-bottom: 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #f1f5f9;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">
+                    <span class="pace">Pace</span><span class="academy">Academy</span>
+                </div>
+                <p class="tagline">Educator Collaboration Portal</p>
+            </div>
+
+            <h1>🧑‍🏫 Added as a Co-Teacher!</h1>
+            <p>Hello {{ user.first_name or user.username or 'Educator' }},</p>
+            <p>You have been successfully added as a **Co-Teacher / Assistant** to collaborator on a course repository by the primary course owner. You now have matching permissions to edit modules, structure lesson contents, manage interactive questions, and view/grade student assessments.</p>
+
+            <div class="course-card">
+                <div class="course-title">{{ course.title }}</div>
+                <div class="course-description">{{ course.description|striptags|truncate(200) }}</div>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{ course_url }}" class="button" target="_blank">Manage Course Repository</a>
+            </div>
+
+            <div class="info-box">
+                <h3>📖 Collaboration Capabilities:</h3>
+                <ul>
+                    <li>Build modules, chapters, and rich Quill lesson reading contents</li>
+                    <li>Compose knowledge-check quizzes, questions, and assignment parameters</li>
+                    <li>Grade student submissions, submit grading feedback, and monitor progress</li>
+                    <li>Moderate and lead interactive Live Classroom sessions</li>
+                </ul>
+            </div>
+
+            <p>Log in to your teacher dashboard to access this course. Thank you for empowering our African learners!</p>
+            <p>Best regards,<br><strong>The Pace Academy team</strong></p>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p><strong>Pace Academy</strong></p>
+                <div style="font-size: 11px; margin-top: 10px; color: #cbd5e1;">
+                    This is an automated message. Please do not reply directly to this email.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

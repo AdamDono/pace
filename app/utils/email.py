@@ -198,6 +198,17 @@ def send_course_approved_email(teacher, course):
         course_url=current_app.config.get('BASE_URL', 'http://localhost:5000') + f'/teacher/course/{course.id}/manage-sections'
     )
 
+def send_co_teacher_added_email(user, course):
+    """Notify teacher when they are added as a co-teacher to a course"""
+    return send_email(
+        subject=f'You have been added as a co-teacher for "{course.title}"',
+        recipient=user.email,
+        template='co_teacher_added',
+        user=user,
+        course=course,
+        course_url=current_app.config.get('BASE_URL', 'https://pace-academy.co.za') + f'/course-builder/{course.id}'
+    )
+
 def send_course_rejected_email(teacher, course, feedback):
     """Notify teacher when their course is rejected"""
     return send_email(
