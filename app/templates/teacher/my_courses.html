@@ -56,6 +56,7 @@
     <div class="space-y-4">
         {% for course in courses %}
         {% set draft_flag = (course.is_draft or course.status == 'draft') %}
+        {% set is_co_teacher = (course.teacher_id != current_user.id and current_user in course.co_teachers) %}
         <div class="bg-white rounded-2xl border border-gray-150 p-4 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap mb-1">
@@ -67,6 +68,11 @@
                         {% else %}bg-gray-50 text-gray-600 border-gray-250{% endif %}">
                         {{ course.status.title() }}
                     </span>
+                    {% if is_co_teacher %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold border flex-shrink-0 bg-purple-50 text-purple-700 border-purple-250">
+                        Co-Teacher
+                    </span>
+                    {% endif %}
                 </div>
                 {% if course.admin_feedback and course.status == 'rejected' %}
                 <div class="mt-2 text-xs text-red-700 bg-red-50/80 border border-red-100 rounded-lg p-2.5 inline-block">
@@ -91,7 +97,13 @@
                     class="inline-flex items-center text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg transition-colors">
                     Enroll Students
                 </a>
-                {% if draft_flag %}
+                {% if course.teacher_id == current_user.id %}
+                <a href="{{ url_for('teacher.manage_co_teachers', course_id=course.id) }}"
+                    class="inline-flex items-center text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg transition-colors">
+                    Manage Team
+                </a>
+                {% endif %}
+                {% if draft_flag and not is_co_teacher %}
                 <button type="button" 
                     class="inline-flex items-center text-[11px] font-bold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg transition-colors"
                     onclick="document.getElementById('delete-draft-{{ course.id }}').classList.remove('hidden')">

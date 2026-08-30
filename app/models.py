@@ -127,10 +127,24 @@ class User(db.Model, UserMixin):
     ratings = db.relationship('Rating', back_populates='user')
 
     def is_teacher_for_course(self, course_id):
-        """Check if the user is the teacher for a specific course."""
+        """Check if the user is the teacher or a co-teacher for a specific course."""
         if self.role != 'teacher':
             return False
-        return any(course.id == course_id for course in self.taught_courses)
+        # Check if they are the primary owner/creator
+        if any(course.id == course_id for course in self.taught_courses):
+            return True
+        # Check if they are in the co_teachers list of the course
+        from app.models import Course
+        course = Course.query.get(course_id)
+        if course and self in course.co_teachers:
+            return True
+        return False
+
+# Association table for additional assisting/co-teachers on a course
+course_co_teachers = db.Table('course_co_teachers',
+    db.Column('course_id', db.Integer, db.ForeignKey('courses.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+)
 
 class Course(db.Model):
     __tablename__ = 'courses'
@@ -169,6 +183,7 @@ class Course(db.Model):
     max_seats = db.Column(db.Integer, nullable=True)  # Optional student capacity cap
     
     teacher = db.relationship('User', backref='taught_courses')
+    co_teachers = db.relationship('User', secondary=course_co_teachers, backref='assisted_courses')
     modules = db.relationship('Module', 
                              back_populates='course',
                              order_by='Module.order',

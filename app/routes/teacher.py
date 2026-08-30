@@ -194,8 +194,8 @@ def course_analytics(course_id):
     
     course = Course.query.get_or_404(course_id)
     
-    # Verify teacher owns this course
-    if course.teacher_id != current_user.id:
+    # Verify teacher owns or co-teaches this course
+    if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     # === BASIC STATS ===
@@ -644,7 +644,7 @@ def edit_course(course_id):
     from app.models import Course, db  # Moved here
     from app.forms import CourseForm  # Moved here
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
+    if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     form = CourseForm(obj=course)
@@ -738,9 +738,10 @@ def edit_course(course_id):
 def my_courses():
     from app.models import Course  # Moved here
     status_filter = request.args.get('status', 'all')
-    # Teachers can view their owned courses, unassigned courses, and imported Moodle courses
+    # Teachers can view their owned courses, assisted (co-teacher) courses, unassigned courses, and imported Moodle courses
     query = Course.query.filter(
         (Course.teacher_id == current_user.id) | 
+        (Course.co_teachers.any(id=current_user.id)) |
         (Course.teacher_id == None) |
         (Course.description.like('%Moodle%'))
     ).order_by(Course.created_at.desc())
@@ -766,7 +767,7 @@ def claim_course(course_id):
 def enroll_students(course_id):
     from app.models import Course, User, Enrollment, db  # Moved here
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
+    if not current_user.is_teacher_for_course(course.id):
         abort(403)
 
     if request.method == 'POST':
@@ -803,7 +804,7 @@ def enroll_students(course_id):
 def create_section(course_id):
     from app.models import Course, Section, db  # Moved here
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
+    if not current_user.is_teacher_for_course(course.id):
         abort(403)
 
     if request.method == 'POST':
@@ -833,7 +834,7 @@ def create_section(course_id):
 def manage_sections(course_id):
     """Redirect old section management to new module-based system"""
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
+    if not current_user.is_teacher_for_course(course.id):
         flash('You are not authorized to manage this course.', 'danger')
         return redirect(url_for('teacher.my_courses'))
     
@@ -1259,8 +1260,8 @@ def view_quiz_attempts(course_id, section_id):
 def teacher_view_ratings(course_id):
     from app.models import Course, Rating, User, db  # Moved here
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
-        flash('You can only view ratings for your own courses.', 'error')
+    if not current_user.is_teacher_for_course(course.id):
+        flash('You can only view ratings for your own or co-taught courses.', 'error')
         return redirect(url_for('teacher.dashboard'))
     ratings = Rating.query.filter_by(course_id=course_id).join(User, Rating.user_id == User.id).all()
     return render_template('teacher/course_ratings.html', course=course, ratings=ratings)
@@ -1279,7 +1280,7 @@ def edit_module(course_id, module_id):
     course = Course.query.get_or_404(course_id)
     module = Module.query.get_or_404(module_id)
 
-    if course.teacher_id != current_user.id or module.course_id != course_id:
+    if not current_user.is_teacher_for_course(course.id) or module.course_id != course_id:
         abort(403)
 
     if request.method == 'POST':
@@ -1374,9 +1375,9 @@ def preview_course(course_id):
     from app.models import Course, Section, Module
     course = Course.query.get_or_404(course_id)
 
-    # Only allow preview if user is the teacher OR the course is published
-    if current_user.is_authenticated and course.teacher_id == current_user.id:
-        # Teacher can see all content
+    # Only allow preview if user is the teacher or a co-teacher OR the course is published
+    if current_user.is_authenticated and current_user.is_teacher_for_course(course.id):
+        # Teacher or co-teacher can see all content
         pass
     elif not course.is_published:
         # Unauthenticated users can only see published courses
@@ -1836,6 +1837,10 @@ def course_builder(course_id):
     """Notion-style course content builder"""
     from app.models import Course, Module, Section, db
     course = Course.query.get_or_404(course_id)
+    # Ensure teacher is authorized to manage this course
+    if not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
+        abort(403)
+    
     # If course is unassigned or imported, auto-assign current teacher
     if course.teacher_id is None:
         course.teacher_id = current_user.id
@@ -2127,7 +2132,7 @@ def create_live_session():
         return redirect(url_for('teacher.live_classrooms'))
         
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id and current_user.role != 'admin':
+    if not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
         flash('Unauthorized course access.', 'danger')
         return redirect(url_for('teacher.live_classrooms'))
         
@@ -2196,7 +2201,7 @@ def start_live_session(session_id):
     """Launch a scheduled live classroom and switch status to 'live'"""
     from app.models import LiveSession
     session_obj = LiveSession.query.get_or_404(session_id)
-    if session_obj.course.teacher_id != current_user.id and current_user.role != 'admin':
+    if not current_user.is_teacher_for_course(session_obj.course.id) and current_user.role != 'admin':
         flash('Unauthorized action.', 'danger')
         return redirect(url_for('teacher.live_classrooms'))
         
@@ -2624,3 +2629,77 @@ def apply_{func_name}():
         db.session.rollback()
         logger.error(f"Error creating course bundle: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ─── Co-Teachers Management ───────────────────────────────────────────────────
+
+@teacher_bp.route('/course/<int:course_id>/co-teachers', methods=['GET'])
+@teacher_required
+def manage_co_teachers(course_id):
+    """Manage teaching collaborators (co-teachers) for a course"""
+    from app.models import Course
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id and current_user.role != 'admin':
+        abort(403)
+    return render_template('teacher/co_teachers.html', course=course)
+
+
+@teacher_bp.route('/course/<int:course_id>/co-teachers/add', methods=['POST'])
+@teacher_required
+def add_co_teacher(course_id):
+    """Add a teacher as a co-teacher/assistant to a course by email"""
+    from app.models import Course, User, db
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id and current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Only the course owner can manage co-teachers.'}), 403
+        
+    email = request.form.get('email', '').strip()
+    if not email:
+        return jsonify({'success': False, 'message': 'Email address is required.'}), 400
+        
+    target_user = User.query.filter_by(email=email).first()
+    if not target_user:
+        return jsonify({'success': False, 'message': 'User with this email not found.'}), 404
+        
+    if target_user.role != 'teacher':
+        return jsonify({'success': False, 'message': 'Only users with the role of Teacher can be added as co-teachers.'}), 400
+        
+    if target_user.id == course.teacher_id:
+        return jsonify({'success': False, 'message': 'You are already the primary owner of this course.'}), 400
+        
+    if target_user in course.co_teachers:
+        return jsonify({'success': False, 'message': 'This teacher is already a co-teacher on this course.'}), 400
+        
+    course.co_teachers.append(target_user)
+    db.session.commit()
+    return jsonify({
+        'success': True, 
+        'message': f'{target_user.username or target_user.email} has been successfully added as a co-teacher!',
+        'user': {
+            'id': target_user.id,
+            'username': target_user.username or target_user.email,
+            'email': target_user.email
+        }
+    })
+
+
+@teacher_bp.route('/course/<int:course_id>/co-teachers/remove', methods=['POST'])
+@teacher_required
+def remove_co_teacher(course_id):
+    """Remove a teacher from the co-teachers list"""
+    from app.models import Course, User, db
+    course = Course.query.get_or_404(course_id)
+    if course.teacher_id != current_user.id and current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Only the course owner can manage co-teachers.'}), 403
+        
+    user_id = request.form.get('user_id', type=int)
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+        
+    target_user = User.query.get(user_id)
+    if not target_user or target_user not in course.co_teachers:
+        return jsonify({'success': False, 'message': 'Teacher is not a co-teacher on this course.'}), 404
+        
+    course.co_teachers.remove(target_user)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'{target_user.username or target_user.email} has been removed from the co-teachers list.'})
