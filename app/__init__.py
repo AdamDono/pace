@@ -90,9 +90,9 @@ def create_app():
     # Enable template auto-reload for instant design updates
     app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-    # Configure 20-minute session inactivity limit
+    # Configure 9-hour session inactivity limit
     from datetime import timedelta
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=9)
     app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 
     # Create upload directory if it doesn't exist
@@ -199,13 +199,13 @@ def create_app():
                 now_ts = datetime.now(timezone.utc).timestamp()
                 last_activity = session.get('last_activity')
 
-                # 20 minutes = 1200 seconds
+                # 9 hours = 32400 seconds
                 if last_activity:
                     try:
-                        if (now_ts - float(last_activity)) > 1200:
+                        if (now_ts - float(last_activity)) > 32400:
                             logout_user()
                             session.pop('last_activity', None)
-                            flash('Your session has expired due to 20 minutes of inactivity. Please log in again.', 'warning')
+                            flash('Your session has expired due to 9 hours of inactivity. Please log in again.', 'warning')
                             return redirect(url_for('auth.login'))
                     except (ValueError, TypeError):
                         pass

@@ -7,7 +7,7 @@
         </div>
         <h3 class="text-xl font-extrabold text-gray-900 mb-2">Inactivity Session Warning</h3>
         <p class="text-sm text-gray-600 mb-4 leading-relaxed">
-            You have been inactive for 19 minutes. For security, your session will automatically lock out in <span id="inactivityCountdown" class="font-black text-red-600 font-mono text-base">60</span> seconds.
+            You have been inactive for 8 hours and 59 minutes. For security, your session will automatically lock out in <span id="inactivityCountdown" class="font-black text-red-600 font-mono text-base">60</span> seconds.
         </p>
         <div class="w-full bg-gray-100 rounded-full h-2 mb-6 overflow-hidden">
             <div id="inactivityProgress" class="bg-amber-500 h-2 rounded-full transition-all duration-1000" style="width: 100%;"></div>
@@ -22,8 +22,8 @@
 
 <script>
 (function() {
-    const INACTIVITY_LIMIT_MS = 20 * 60 * 1000; // 20 minutes total
-    const WARNING_TIME_MS = 19 * 60 * 1000;     // Warn at 19 minutes (60 sec remaining)
+    const INACTIVITY_LIMIT_MS = 9 * 60 * 60 * 1000; // 9 hours total
+    const WARNING_TIME_MS = INACTIVITY_LIMIT_MS - (60 * 1000); // Warn 60 seconds before limit
     
     let lastActivityTime = Date.now();
     let warningTimer = null;
