@@ -1455,8 +1455,8 @@ def gradebook():
     from app.models import Course, Enrollment, AssignmentSubmission, QuizAttempt, Assignment, Quiz, Section
     from sqlalchemy import func
     
-    # Get all courses for this teacher
-    courses = Course.query.filter_by(teacher_id=current_user.id).all()
+    # Get all courses for this teacher (owner or co-teacher)
+    courses = Course.query.filter((Course.teacher_id == current_user.id) | Course.co_teachers.any(id=current_user.id)).all()
     
     gradebook_data = []
     
@@ -1513,7 +1513,7 @@ def course_gradebook(course_id):
     from app.models import Course, Enrollment, AssignmentSubmission, QuizAttempt, Assignment, Quiz, Section, User
     
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
+    if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     # Get all enrollments for this course
