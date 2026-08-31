@@ -603,12 +603,12 @@
             <div class="sticky top-0 z-30 px-4 sm:px-8 py-3.5 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 flex items-center justify-between flex-shrink-0 shadow-xs">
                 <div class="flex items-center space-x-2 min-w-0">
                     <button type="button" onclick="toggleCourseSidebar()" id="sidebar-toggle-btn"
-                            class="inline-flex items-center space-x-1.5 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition mr-2"
-                            title="Toggle Sidebar (Expand Reading Canvas)">
-                        <i class="fas fa-chevron-left text-indigo-600" id="sidebar-toggle-icon"></i>
-                        <span id="sidebar-toggle-text">◀ Collapse Sidebar</span>
+                            class="inline-flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold h-9 w-9 md:w-auto md:px-3 rounded-lg shadow-sm transition mr-2 flex-shrink-0 animate-fade-in"
+                            title="Toggle Sidebar">
+                        <i class="fas fa-chevron-left text-indigo-600 mr-0 md:mr-1.5" id="sidebar-toggle-icon"></i>
+                        <span id="sidebar-toggle-text" class="hidden md:inline">Collapse Sidebar</span>
                     </button>
-                    <a href="{{ url_for('student.dashboard') }}" class="md:hidden text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center mr-2">
+                    <a href="{{ url_for('student.dashboard') }}" class="md:hidden text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center mr-2 flex-shrink-0">
                         ← Back
                     </a>
                     <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider truncate" id="reader-breadcrumbs">
