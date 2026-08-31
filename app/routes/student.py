@@ -652,6 +652,319 @@ def view_ratings(course_id):
     ratings = Rating.query.filter_by(course_id=course_id).all()
     return render_template('admin/course_ratings.html', course=course, ratings=ratings)
 
+def generate_certificate_pdf(output_dest, course, student_name, completion_date=None, certificate_id=None, instructor_name=None):
+    """
+    Generates an executive, co-branded landscape certificate PDF for a course.
+    output_dest: file path or BytesIO stream
+    course: Course instance
+    student_name: str
+    completion_date: str or None
+    certificate_id: str or None
+    instructor_name: str or None
+    """
+    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.colors import HexColor
+    from reportlab.lib.utils import ImageReader
+    import io, requests
+
+    if not completion_date:
+        completion_date = datetime.utcnow().strftime('%B %d, %Y')
+    if not certificate_id:
+        certificate_id = f"CERT-{course.id}-{int(datetime.utcnow().timestamp())}"
+
+    # Setup page geometry (Landscape Letter: 792 x 612)
+    width, height = landscape(letter)
+    c = canvas.Canvas(output_dest, pagesize=landscape(letter))
+
+    # Theme Palettes
+    theme = getattr(course, 'certificate_theme', 'gold') or 'gold'
+    themes = {
+        'gold': {
+            'primary': HexColor('#B8860B'),       # Rich Dark Gold
+            'secondary': HexColor('#D4AF37'),     # Warm Gold
+            'accent': HexColor('#1E3A8A'),        # Royal Blue
+            'border_outer': HexColor('#D4AF37'),
+            'border_inner': HexColor('#B8860B'),
+            'title_color': HexColor('#B8860B'),
+            'name_box_bg': HexColor('#FDFCFA'),
+            'name_box_border': HexColor('#E5D5A5'),
+            'name_text': HexColor('#1E3A8A'),
+            'seal_bg': HexColor('#FFD700'),
+            'seal_border': HexColor('#B8860B'),
+            'subtext': HexColor('#4B5563')
+        },
+        'navy': {
+            'primary': HexColor('#1E3A8A'),       # Deep Navy
+            'secondary': HexColor('#2563EB'),     # Electric Blue
+            'accent': HexColor('#3B82F6'),
+            'border_outer': HexColor('#1E3A8A'),
+            'border_inner': HexColor('#3B82F6'),
+            'title_color': HexColor('#1E3A8A'),
+            'name_box_bg': HexColor('#F8FAFC'),
+            'name_box_border': HexColor('#93C5FD'),
+            'name_text': HexColor('#1E3A8A'),
+            'seal_bg': HexColor('#3B82F6'),
+            'seal_border': HexColor('#1E3A8A'),
+            'subtext': HexColor('#475569')
+        },
+        'emerald': {
+            'primary': HexColor('#065F46'),       # Deep Emerald
+            'secondary': HexColor('#059669'),     # Green
+            'accent': HexColor('#D4AF37'),        # Gold accent
+            'border_outer': HexColor('#059669'),
+            'border_inner': HexColor('#D4AF37'),
+            'title_color': HexColor('#065F46'),
+            'name_box_bg': HexColor('#F0FDF4'),
+            'name_box_border': HexColor('#86EFAC'),
+            'name_text': HexColor('#065F46'),
+            'seal_bg': HexColor('#10B981'),
+            'seal_border': HexColor('#065F46'),
+            'subtext': HexColor('#374151')
+        },
+        'dark': {
+            'primary': HexColor('#111827'),       # Charcoal Black
+            'secondary': HexColor('#4F46E5'),     # Indigo
+            'accent': HexColor('#6366F1'),
+            'border_outer': HexColor('#1F2937'),
+            'border_inner': HexColor('#4F46E5'),
+            'title_color': HexColor('#111827'),
+            'name_box_bg': HexColor('#F9FAFB'),
+            'name_box_border': HexColor('#CBD5E1'),
+            'name_text': HexColor('#111827'),
+            'seal_bg': HexColor('#4F46E5'),
+            'seal_border': HexColor('#1F2937'),
+            'subtext': HexColor('#4B5563')
+        },
+        'burgundy': {
+            'primary': HexColor('#831843'),       # Deep Burgundy
+            'secondary': HexColor('#BE185D'),     # Crimson Rose
+            'accent': HexColor('#D4AF37'),        # Gold
+            'border_outer': HexColor('#831843'),
+            'border_inner': HexColor('#D4AF37'),
+            'title_color': HexColor('#831843'),
+            'name_box_bg': HexColor('#FFF1F2'),
+            'name_box_border': HexColor('#FECDD3'),
+            'name_text': HexColor('#831843'),
+            'seal_bg': HexColor('#BE185D'),
+            'seal_border': HexColor('#831843'),
+            'subtext': HexColor('#4B5563')
+        }
+    }
+    palette = themes.get(theme, themes['gold'])
+
+    # Helper to load and draw images gracefully
+    def draw_image_safe(src, x, y, max_w, max_h):
+        if not src:
+            return False
+        try:
+            if src.startswith(('http://', 'https://')):
+                res = requests.get(src, timeout=3)
+                if res.status_code == 200:
+                    stream = io.BytesIO(res.content)
+                    reader = ImageReader(stream)
+                    c.drawImage(reader, x, y, width=max_w, height=max_h, preserveAspectRatio=True, mask='auto')
+                    return True
+            else:
+                local_f = os.path.join(current_app.config['UPLOAD_FOLDER'], src)
+                if not os.path.exists(local_f):
+                    local_f = os.path.join(current_app.root_path, 'static', src)
+                if os.path.exists(local_f):
+                    reader = ImageReader(local_f)
+                    c.drawImage(reader, x, y, width=max_w, height=max_h, preserveAspectRatio=True, mask='auto')
+                    return True
+        except Exception as e:
+            logger.warning(f"Failed to draw image on certificate: {e}")
+        return False
+
+    # 1. Background Fill (Soft tint)
+    c.setFillColor(HexColor('#FFFFFF'))
+    c.rect(0, 0, width, height, stroke=0, fill=1)
+
+    # 2. Ornate Double Borders & Corner Highlights
+    c.setStrokeColor(palette['border_outer'])
+    c.setLineWidth(5)
+    c.rect(22, 22, width - 44, height - 44, stroke=1, fill=0)
+
+    c.setStrokeColor(palette['border_inner'])
+    c.setLineWidth(1.5)
+    c.rect(30, 30, width - 60, height - 60, stroke=1, fill=0)
+
+    # Decorative Corner Ornaments
+    c.setStrokeColor(palette['secondary'])
+    c.setLineWidth(2.5)
+    corner_len = 35
+    # Top-Left
+    c.line(30, height - 30, 30 + corner_len, height - 30)
+    c.line(30, height - 30, 30, height - 30 - corner_len)
+    # Top-Right
+    c.line(width - 30 - corner_len, height - 30, width - 30, height - 30)
+    c.line(width - 30, height - 30, width - 30, height - 30 - corner_len)
+    # Bottom-Left
+    c.line(30, 30, 30 + corner_len, 30)
+    c.line(30, 30, 30, 30 + corner_len)
+    # Bottom-Right
+    c.line(width - 30 - corner_len, 30, width - 30, 30)
+    c.line(width - 30, 30, width - 30, 30 + corner_len)
+
+    # 3. Header & Dual Branding
+    has_partner = bool(course.partner_name or course.partner_logo)
+    
+    # Try drawing partner logo on top-right if available
+    if course.partner_logo:
+        draw_image_safe(course.partner_logo, width - 150, height - 85, 100, 45)
+
+    # Institution Names
+    c.setFillColor(palette['primary'])
+    c.setFont("Helvetica-Bold", 18)
+    if has_partner and course.partner_name:
+        c.drawCentredString(width / 2, height - 65, "PACE ACADEMY")
+        c.setFont("Helvetica-Bold", 11)
+        c.setFillColor(palette['subtext'])
+        c.drawCentredString(width / 2, height - 82, f"IN JOINT COLLABORATION WITH {course.partner_name.upper()}")
+    else:
+        c.drawCentredString(width / 2, height - 65, "PACE ACADEMY")
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(palette['subtext'])
+        c.drawCentredString(width / 2, height - 82, "SKILLS & VOCATIONAL EDUCATION PLATFORM")
+
+    # Accreditation / Qualification Ribbon (if present)
+    accred_text = course.partner_accreditation_number or course.accreditation_name
+    if accred_text:
+        c.setFillColor(HexColor('#F3F4F6'))
+        c.setStrokeColor(palette['border_inner'])
+        c.setLineWidth(0.8)
+        ribbon_w = min(500, max(260, len(accred_text) * 7 + 30))
+        c.roundRect((width - ribbon_w) / 2, height - 110, ribbon_w, 20, 5, stroke=1, fill=1)
+        c.setFillColor(palette['primary'])
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(width / 2, height - 103, f"★ ACCREDITATION / PROVIDER: {accred_text.upper()}")
+
+    # 4. Certificate Title
+    cert_title = (getattr(course, 'custom_certificate_title', None) or "CERTIFICATE OF COMPLETION").upper()
+    c.setFillColor(palette['title_color'])
+    c.setFont("Helvetica-Bold", 24)
+    title_y = height - 145 if accred_text else height - 130
+    c.drawCentredString(width / 2, title_y, cert_title)
+
+    # Divider bar under title
+    c.setStrokeColor(palette['secondary'])
+    c.setLineWidth(1.5)
+    c.line(width / 2 - 140, title_y - 12, width / 2 + 140, title_y - 12)
+
+    # 5. Recipient Section
+    c.setFillColor(HexColor('#4B5563'))
+    c.setFont("Helvetica-Oblique", 13)
+    c.drawCentredString(width / 2, title_y - 35, "This is to certify that")
+
+    # Student Name Plaque
+    plaque_w = 500
+    plaque_h = 44
+    plaque_x = (width - plaque_w) / 2
+    plaque_y = title_y - 90
+    c.setFillColor(palette['name_box_bg'])
+    c.setStrokeColor(palette['name_box_border'])
+    c.setLineWidth(1.2)
+    c.roundRect(plaque_x, plaque_y, plaque_w, plaque_h, 8, stroke=1, fill=1)
+
+    c.setFillColor(palette['name_text'])
+    c.setFont("Helvetica-Bold", 24)
+    c.drawCentredString(width / 2, plaque_y + 13, student_name)
+
+    # 6. Course Award Description
+    c.setFillColor(HexColor('#4B5563'))
+    c.setFont("Helvetica", 11)
+    c.drawCentredString(width / 2, plaque_y - 22, "has successfully fulfilled all required coursework, assessments, and competencies in")
+
+    c.setFillColor(palette['primary'])
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(width / 2, plaque_y - 44, f'"{course.title}"')
+
+    c.setFillColor(HexColor('#6B7280'))
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawCentredString(width / 2, plaque_y - 62, "Demonstrating dedication to vocational mastery, practical skills, and academic excellence.")
+
+    # 7. Signatures & Certified Seal (Bottom Section)
+    # Left: Official Seal & Date
+    seal_x = 100
+    seal_y = 110
+    c.setStrokeColor(palette['seal_border'])
+    c.setFillColor(palette['seal_bg'])
+    c.setLineWidth(2)
+    c.circle(seal_x, seal_y, 34, stroke=1, fill=1)
+
+    c.setFillColor(HexColor('#FFFFFF'))
+    c.circle(seal_x, seal_y, 29, stroke=0, fill=1)
+
+    c.setFillColor(palette['primary'])
+    c.setFont("Helvetica-Bold", 8)
+    c.drawCentredString(seal_x, seal_y + 6, "★ PACE ★")
+    c.setFont("Helvetica-Bold", 7)
+    c.drawCentredString(seal_x, seal_y - 4, "VERIFIED")
+    c.setFont("Helvetica", 6)
+    c.drawCentredString(seal_x, seal_y - 13, "ACCREDITED")
+
+    # Date
+    c.setFillColor(HexColor('#374151'))
+    c.setFont("Helvetica", 9)
+    c.drawString(60, 52, "Date of Issuance:")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(60, 40, completion_date)
+
+    # Center: Primary Course Instructor Signatory
+    if not instructor_name:
+        if course.teacher:
+            instructor_name = f"{course.teacher.first_name or ''} {course.teacher.last_name or ''}".strip() or course.teacher.username or course.teacher.email.split('@')[0]
+        else:
+            instructor_name = "Pace Academic Board"
+
+    c.setFont("Helvetica", 9)
+    c.setFillColor(HexColor('#4B5563'))
+    c.drawCentredString(width / 2, 115, "Course Instructor")
+    c.setStrokeColor(HexColor('#374151'))
+    c.setLineWidth(0.8)
+    c.line(width / 2 - 80, 95, width / 2 + 80, 95)
+    c.setFont("Helvetica-BoldOblique", 11)
+    c.setFillColor(HexColor('#1F2937'))
+    c.drawCentredString(width / 2, 80, instructor_name)
+    c.setFont("Helvetica", 8)
+    c.setFillColor(HexColor('#6B7280'))
+    c.drawCentredString(width / 2, 68, "Lead Instructor / Educator")
+
+    # Right: Partner Executive Signatory (if custom) OR Pace Curriculum Head (Adam Dono)
+    right_x = width - 150
+    if course.partner_signatory_name:
+        sig_name = course.partner_signatory_name
+        sig_title = course.partner_signatory_title or "Executive Director"
+        sig_org = course.partner_name or "Partner Institution"
+        if course.partner_signatory_signature:
+            draw_image_safe(course.partner_signatory_signature, right_x - 60, 96, 120, 30)
+    else:
+        sig_name = "Adam Dono"
+        sig_title = "Head of Curriculum"
+        sig_org = "Pace Academy Board"
+
+    c.setFont("Helvetica", 9)
+    c.setFillColor(HexColor('#4B5563'))
+    c.drawCentredString(right_x, 115, "Authorized Signatory")
+    c.setStrokeColor(HexColor('#374151'))
+    c.setLineWidth(0.8)
+    c.line(right_x - 80, 95, right_x + 80, 95)
+    c.setFont("Helvetica-BoldOblique", 11)
+    c.setFillColor(HexColor('#1F2937'))
+    c.drawCentredString(right_x, 80, sig_name)
+    c.setFont("Helvetica", 8)
+    c.setFillColor(HexColor('#6B7280'))
+    c.drawCentredString(right_x, 68, f"{sig_title} · {sig_org}")
+
+    # 8. Bottom Verification Footer
+    c.setFillColor(HexColor('#9CA3AF'))
+    c.setFont("Helvetica", 8)
+    c.drawCentredString(width / 2, 34, f"Certificate ID: {certificate_id}  ·  Verify at pace-academy.co.za")
+
+    c.save()
+    return True
+
 @student_bp.route('/generate_certificate/<int:enrollment_id>', methods=['POST'])
 @login_required
 @student_required
@@ -680,155 +993,14 @@ def generate_certificate(enrollment_id):
     certificate_filename = f"certificate_{enrollment.id}_{int(datetime.utcnow().timestamp())}.pdf"
     certificate_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate_filename)
 
-    c = canvas.Canvas(certificate_path, pagesize=letter)
-    width, height = letter
-    
-    # ===== ELEGANT BORDER DESIGN =====
-    # Outer gold border
-    c.setStrokeColor(HexColor('#D4AF37'))  # Gold
-    c.setLineWidth(8)
-    c.rect(30, 30, width - 60, height - 60, stroke=1, fill=0)
-    
-    # Inner border with gradient effect (multiple lines)
-    c.setStrokeColor(HexColor('#B8860B'))  # Dark gold
-    c.setLineWidth(2)
-    c.rect(40, 40, width - 80, height - 80, stroke=1, fill=0)
-    
-    # Decorative corner accents
-    c.setStrokeColor(HexColor('#FFD700'))  # Bright gold
-    c.setLineWidth(3)
-    # Top left corner
-    c.line(40, height - 80, 100, height - 80)
-    c.line(40, height - 80, 40, height - 140)
-    # Top right corner
-    c.line(width - 100, height - 80, width - 40, height - 80)
-    c.line(width - 40, height - 80, width - 40, height - 140)
-    # Bottom left corner
-    c.line(40, 80, 100, 80)
-    c.line(40, 80, 40, 140)
-    # Bottom right corner
-    c.line(width - 100, 80, width - 40, 80)
-    c.line(width - 40, 80, width - 40, 140)
-    
-    # ===== HEADER SECTION =====
-    c.setFillColor(HexColor('#1E3A8A'))  # Deep blue
-    c.setFont("Helvetica-Bold", 28)
-    c.drawCentredString(width / 2, height - 120, "PACE ACADEMY")
-    
-    c.setFillColor(HexColor('#4B5563'))  # Slate gray
-    c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(width / 2, height - 140, "SKILLS & VOCATIONAL EDUCATION PLATFORM")
-    
-    c.setStrokeColor(HexColor('#D4AF37'))
-    c.setLineWidth(1)
-    c.line(200, height - 155, width - 200, height - 155)
-    
-    # ===== TITLE SECTION =====
-    c.setFillColor(HexColor('#D4AF37'))  # Gold
-    c.setFont("Helvetica-Bold", 24)
-    c.drawCentredString(width / 2, height - 210, "CERTIFICATE OF COMPLETION")
-    
-    c.setStrokeColor(HexColor('#D4AF37'))
-    c.setLineWidth(1)
-    c.line(150, height - 250, width - 150, height - 250)
-    
-    # ===== PRESENTED TO SECTION =====
-    c.setFillColor(HexColor('#666666'))  # Gray
-    c.setFont("Helvetica-Oblique", 16)
-    c.drawCentredString(width / 2, height - 290, "This certificate is proudly presented to")
-    
-    # ===== STUDENT NAME (HIGHLIGHTED) =====
-    c.setFillColor(HexColor('#F0F8FF'))  # Alice blue background
-    c.setStrokeColor(HexColor('#4169E1'))  # Royal blue border
-    c.setLineWidth(1)
-    c.roundRect(120, height - 360, width - 240, 50, 10, stroke=1, fill=1)
-    
-    c.setFillColor(HexColor('#1E3A8A'))  # Dark blue
-    c.setFont("Helvetica-Bold", 32)
-    c.drawCentredString(width / 2, height - 345, user_name)
-    
-    # ===== COURSE DESCRIPTION =====
-    c.setFillColor(HexColor('#333333'))  # Dark gray
-    c.setFont("Helvetica", 14)
-    course_name = enrollment.course.title
-    c.drawCentredString(width / 2, height - 400, "For successfully completing the course")
-    
-    c.setFont("Helvetica-Bold", 16)
-    c.setFillColor(HexColor('#4169E1'))  # Royal blue
-    c.drawCentredString(width / 2, height - 430, f'"{course_name}"')
-    
-    c.setFont("Helvetica", 12)
-    c.setFillColor(HexColor('#666666'))  # Gray
-    c.drawCentredString(width / 2, height - 460, "with dedication and commitment to learning excellence")
-    
-    # ===== DATE AND SIGNATURE SECTION =====
-    c.setFont("Helvetica", 12)
-    c.setFillColor(HexColor('#333333'))
-    completion_date = datetime.utcnow().strftime('%B %d, %Y')
-    c.drawString(70, 180, "Date of Completion:")
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(70, 160, completion_date)
-    
-    # --- Dual Signatures ---
-    if enrollment.course.teacher:
-        teacher_name = enrollment.course.teacher.username or enrollment.course.teacher.email.split('@')[0]
-    else:
-        teacher_name = "Pace Academic Board"
-
-    c.setFont("Helvetica", 12)
-    c.setFillColor(HexColor('#333333'))
-    c.drawString(width / 2 - 60, 180, "Course Instructor:")
-    # Signature line
-    c.setStrokeColor(HexColor('#000000'))
-    c.setLineWidth(1)
-    c.line(width / 2 - 60, 155, width / 2 + 80, 155)
-    # Teacher Name (Cursive-style fallback)
-    c.setFont("Helvetica-Oblique", 11)
-    c.drawCentredString(width / 2 + 10, 140, teacher_name)
-    
-    # 2. Adam Dono Signature (Head of Curriculum)
-    c.setFont("Helvetica", 12)
-    c.setFillColor(HexColor('#333333'))
-    c.drawString(width - 220, 180, "Head of Curriculum:")
-    # Signature line
-    c.setStrokeColor(HexColor('#000000'))
-    c.setLineWidth(1)
-    c.line(width - 220, 155, width - 50, 155)
-    # Signature Name
-    c.setFont("Helvetica-BoldOblique", 11)
-    c.drawCentredString(width - 135, 140, "Adam Dono")
-    c.setFont("Helvetica", 9)
-    c.drawCentredString(width - 135, 125, "Pace Academy")
-    
-    # ===== SEAL/BADGE =====
-    # Draw a circular seal
-    c.setStrokeColor(HexColor('#D4AF37'))  # Gold
-    c.setFillColor(HexColor('#FFD700'))  # Bright gold
-    c.setLineWidth(3)
-    seal_x, seal_y = 100, 120
-    c.circle(seal_x, seal_y, 40, stroke=1, fill=1)
-    
-    # Inner circle
-    c.setFillColor(HexColor('#FFFFFF'))  # White
-    c.circle(seal_x, seal_y, 35, stroke=0, fill=1)
-    
-    # Seal text
-    c.setFillColor(HexColor('#D4AF37'))  # Gold
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(seal_x, seal_y + 5, "CERTIFIED")
-    c.setFont("Helvetica", 8)
-    c.drawCentredString(seal_x, seal_y - 10, "COMPLETION")
-    
-    # ===== FOOTER =====
-    c.setFillColor(HexColor('#999999'))
-    c.setFont("Helvetica-Oblique", 9)
-    certificate_id = f"CERT-{enrollment.id}-{int(datetime.utcnow().timestamp())}"
-    c.drawCentredString(width / 2, 60, f"Certificate ID: {certificate_id}")
-    c.drawCentredString(width / 2, 45, "This certificate verifies successful course completion")
-    
-    # Save the PDF
-    logger.debug(f"Saving certificate to {certificate_path}")
-    c.save()
+    # Generate Landscape Certificate PDF
+    generate_certificate_pdf(
+        output_dest=certificate_path,
+        course=enrollment.course,
+        student_name=user_name,
+        completion_date=datetime.utcnow().strftime('%B %d, %Y'),
+        certificate_id=f"CERT-{enrollment.id}-{int(datetime.utcnow().timestamp())}"
+    )
 
     enrollment.certificate_path = certificate_filename
     db.session.commit()

@@ -720,6 +720,54 @@ def edit_course(course_id):
                 seats_val = request.form.get('max_seats', '').strip()
                 course.max_seats = int(seats_val) if seats_val.isdigit() else None
 
+            # Certificate Customization & Partner Co-Branding
+            if 'certificate_theme' in request.form:
+                course.certificate_theme = request.form.get('certificate_theme', 'gold')
+            if 'custom_certificate_title' in request.form:
+                course.custom_certificate_title = request.form.get('custom_certificate_title', '').strip() or None
+            if 'partner_name' in request.form:
+                course.partner_name = request.form.get('partner_name', '').strip() or None
+            if 'partner_accreditation_number' in request.form:
+                course.partner_accreditation_number = request.form.get('partner_accreditation_number', '').strip() or None
+            if 'partner_signatory_name' in request.form:
+                course.partner_signatory_name = request.form.get('partner_signatory_name', '').strip() or None
+            if 'partner_signatory_title' in request.form:
+                course.partner_signatory_title = request.form.get('partner_signatory_title', '').strip() or None
+
+            # Handle Partner Logo File Upload
+            partner_logo_file = request.files.get('partner_logo')
+            if partner_logo_file and partner_logo_file.filename:
+                if allowed_file(partner_logo_file.filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}):
+                    try:
+                        from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                        cloudinary_url = upload_file_to_cloudinary(partner_logo_file, folder="pace_partner_logos")
+                    except Exception:
+                        cloudinary_url = None
+                    if cloudinary_url:
+                        course.partner_logo = cloudinary_url
+                    else:
+                        logo_filename = f"partner_logo_{course.id}_{uuid.uuid4().hex[:8]}{os.path.splitext(partner_logo_file.filename)[1]}"
+                        logo_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], logo_filename)
+                        partner_logo_file.save(logo_save_path)
+                        course.partner_logo = logo_filename
+
+            # Handle Partner Signature File Upload
+            partner_sig_file = request.files.get('partner_signatory_signature')
+            if partner_sig_file and partner_sig_file.filename:
+                if allowed_file(partner_sig_file.filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}):
+                    try:
+                        from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                        cloudinary_url = upload_file_to_cloudinary(partner_sig_file, folder="pace_signatures")
+                    except Exception:
+                        cloudinary_url = None
+                    if cloudinary_url:
+                        course.partner_signatory_signature = cloudinary_url
+                    else:
+                        sig_filename = f"partner_sig_{course.id}_{uuid.uuid4().hex[:8]}{os.path.splitext(partner_sig_file.filename)[1]}"
+                        sig_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], sig_filename)
+                        partner_sig_file.save(sig_save_path)
+                        course.partner_signatory_signature = sig_filename
+
             # Update other fields
             form.populate_obj(course)
             db.session.commit()
@@ -732,6 +780,38 @@ def edit_course(course_id):
             flash(f'Error: {str(e)}', 'danger')
     
     return render_template('teacher/edit_course.html', form=form, course=course)
+
+@teacher_bp.route('/course/<int:course_id>/certificate-preview')
+@login_required
+@teacher_required
+def certificate_preview(course_id):
+    """Generate and return a live sample preview PDF for a course's configured certificate design."""
+    from app.models import Course
+    from app.routes.student import generate_certificate_pdf
+    from flask import send_file
+    import io
+
+    course = Course.query.get_or_404(course_id)
+    if not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
+        abort(403)
+
+    pdf_buffer = io.BytesIO()
+    user_display_name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.username or "Sample Student"
+    
+    generate_certificate_pdf(
+        output_dest=pdf_buffer,
+        course=course,
+        student_name=user_display_name,
+        completion_date=datetime.utcnow().strftime('%B %d, %Y'),
+        certificate_id=f"PREVIEW-{course.id}-SAMPLE"
+    )
+    pdf_buffer.seek(0)
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=False,
+        download_name=f"Certificate_Preview_{course.id}.pdf"
+    )
 
 @teacher_bp.route('/my-courses')
 @teacher_required

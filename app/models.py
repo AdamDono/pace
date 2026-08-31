@@ -182,6 +182,16 @@ class Course(db.Model):
     is_coming_soon = db.Column(db.Boolean, default=False, index=True)  # Waitlist / Pre-launch mode
     max_seats = db.Column(db.Integer, nullable=True)  # Optional student capacity cap
     
+    # Custom & Co-Branded Certificate Design Fields
+    certificate_theme = db.Column(db.String(30), default='gold')  # 'gold', 'navy', 'emerald', 'dark', 'burgundy'
+    custom_certificate_title = db.Column(db.String(120), nullable=True)  # e.g. "Certificate of Completion"
+    partner_name = db.Column(db.String(150), nullable=True)  # Skills provider / corporate partner name
+    partner_logo = db.Column(db.String(255), nullable=True)  # Partner logo image path or Cloudinary URL
+    partner_accreditation_number = db.Column(db.String(120), nullable=True)  # e.g. "QCTO Reg No: 07-QCTO/SDP..."
+    partner_signatory_name = db.Column(db.String(120), nullable=True)  # Partner Director / Signatory name
+    partner_signatory_title = db.Column(db.String(120), nullable=True)  # Partner Director / Signatory title
+    partner_signatory_signature = db.Column(db.String(255), nullable=True)  # Partner signature image path
+    
     teacher = db.relationship('User', backref='taught_courses')
     co_teachers = db.relationship('User', secondary=course_co_teachers, backref='assisted_courses')
     modules = db.relationship('Module', 
