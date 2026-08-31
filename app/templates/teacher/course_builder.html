@@ -183,16 +183,16 @@
                                 </h3>
                                 <p class="text-xs text-gray-500">Customize the completion certificate style and add partner/SETA/QCTO co-branding.</p>
                             </div>
-                            <a href="{{ url_for('teacher.certificate_preview', course_id=course.id) }}" target="_blank"
-                               class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold rounded-lg transition flex items-center gap-1.5 shadow-xs">
+                            <button type="button" onclick="previewCertificateLive({{ course.id }})"
+                               class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold rounded-lg transition flex items-center gap-1.5 shadow-xs cursor-pointer">
                                 <span>👁️ Preview Certificate ↗</span>
-                            </a>
+                            </button>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Certificate Color Theme</label>
-                                <select name="certificate_theme" class="w-full p-2 border rounded-lg bg-white text-sm">
+                                <select name="certificate_theme" id="cert-theme-select" class="w-full p-2 border rounded-lg bg-white text-sm">
                                     <option value="gold" {% if course.certificate_theme == 'gold' or not course.certificate_theme %}selected{% endif %}>🏆 Classic Gold & Royal Blue</option>
                                     <option value="navy" {% if course.certificate_theme == 'navy' %}selected{% endif %}>💎 Royal Navy Blue</option>
                                     <option value="emerald" {% if course.certificate_theme == 'emerald' %}selected{% endif %}>🌿 Emerald Green & Gold (Skills/Eco)</option>
@@ -203,7 +203,7 @@
 
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Custom Certificate Heading</label>
-                                <input type="text" name="custom_certificate_title" value="{{ course.custom_certificate_title or '' }}"
+                                <input type="text" name="custom_certificate_title" id="cert-title-input" value="{{ course.custom_certificate_title or '' }}"
                                        placeholder="e.g. Certificate of Completion / Achievement"
                                        class="w-full p-2 border rounded-lg text-sm bg-white">
                             </div>
@@ -216,13 +216,13 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-1">Partner Organization Name</label>
-                                    <input type="text" name="partner_name" value="{{ course.partner_name or '' }}"
+                                    <input type="text" name="partner_name" id="cert-partner-name" value="{{ course.partner_name or '' }}"
                                            placeholder="e.g. Tshiamo Impact Partners / MICT SETA"
                                            class="w-full p-2 border rounded-lg text-sm bg-white">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-1">Partner Accreditation / Reg No.</label>
-                                    <input type="text" name="partner_accreditation_number" value="{{ course.partner_accreditation_number or '' }}"
+                                    <input type="text" name="partner_accreditation_number" id="cert-partner-accred" value="{{ course.partner_accreditation_number or '' }}"
                                            placeholder="e.g. QCTO Reg: 07-QCTO/SDP... or MICT/2026/..."
                                            class="w-full p-2 border rounded-lg text-sm bg-white">
                                 </div>
@@ -241,29 +241,63 @@
                                     <p class="text-[11px] text-gray-500 mt-0.5">Displayed on the top-right of the certificate.</p>
                                 </div>
 
+                                <!-- Signature Creator & Uploader -->
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Partner Signatory Signature (Optional)</label>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">Partner Signatory Signature</label>
                                     {% if course.partner_signatory_signature %}
                                     <div class="mb-2 flex items-center space-x-3 bg-white p-2 rounded-lg border">
-                                        <img src="{{ course.partner_signatory_signature|media_url }}" alt="Partner Signature" class="h-10 w-24 object-contain rounded border bg-gray-50">
-                                        <span class="text-xs text-gray-500 truncate">Current Signature</span>
+                                        <img src="{{ course.partner_signatory_signature|media_url }}" alt="Partner Signature" class="h-8 w-24 object-contain rounded border bg-gray-50">
+                                        <span class="text-xs text-gray-500 truncate">Current Saved Signature</span>
                                     </div>
                                     {% endif %}
-                                    <input type="file" name="partner_signatory_signature" accept="image/*" class="w-full p-1.5 border rounded-lg text-xs bg-white">
-                                    <p class="text-[11px] text-gray-500 mt-0.5">Digital signature image for the certificate footer.</p>
+
+                                    <input type="hidden" name="partner_signature_data" id="partnerSignatureData" value="">
+
+                                    <!-- Signature Modes Selector -->
+                                    <div class="border rounded-xl bg-white overflow-hidden p-2.5 space-y-2">
+                                        <div class="flex items-center gap-1.5 border-b pb-1.5">
+                                            <button type="button" onclick="setSigTab('draw')" id="sigTabDrawBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600 text-white transition">✏️ Draw</button>
+                                            <button type="button" onclick="setSigTab('type')" id="sigTabTypeBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">✍️ Cursive</button>
+                                            <button type="button" onclick="setSigTab('upload')" id="sigTabUploadBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">📁 Upload File</button>
+                                        </div>
+
+                                        <!-- Draw Mode -->
+                                        <div id="sigDrawMode" class="space-y-1.5">
+                                            <div class="relative border border-dashed border-gray-300 rounded-lg bg-gray-50/50">
+                                                <canvas id="signatureCanvas" width="340" height="90" class="w-full h-24 touch-none cursor-crosshair rounded-lg bg-white"></canvas>
+                                                <span class="absolute bottom-1 right-2 text-[10px] text-gray-400 select-none pointer-events-none">Sign with mouse/finger</span>
+                                            </div>
+                                            <div class="flex justify-end">
+                                                <button type="button" onclick="clearSignatureCanvas()" class="text-[11px] text-red-600 hover:underline font-bold">Clear Pad</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Cursive Mode -->
+                                        <div id="sigTypeMode" class="hidden space-y-2">
+                                            <input type="text" id="sigTextInput" oninput="renderCursiveSignature(this.value)" placeholder="Type signatory name e.g. Dr. S. Khumalo" class="w-full p-2 border rounded-lg text-xs">
+                                            <div class="p-2 border rounded-lg bg-white h-14 flex items-center justify-center">
+                                                <span id="cursivePreview" style="font-family: 'Brush Script MT', 'Caveat', 'Dancing Script', cursive; font-size: 24px; color: #1E3A8A;">Signatory Preview</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Upload Mode -->
+                                        <div id="sigUploadMode" class="hidden">
+                                            <input type="file" name="partner_signatory_signature" accept="image/*" class="w-full p-1.5 border rounded-lg text-xs bg-white">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-1">Partner Signatory Full Name</label>
-                                    <input type="text" name="partner_signatory_name" value="{{ course.partner_signatory_name or '' }}"
+                                    <input type="text" name="partner_signatory_name" id="cert-sig-name" value="{{ course.partner_signatory_name or '' }}"
                                            placeholder="e.g. Dr. S. Khumalo"
                                            class="w-full p-2 border rounded-lg text-sm bg-white">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-1">Partner Signatory Title</label>
-                                    <input type="text" name="partner_signatory_title" value="{{ course.partner_signatory_title or '' }}"
+                                    <input type="text" name="partner_signatory_title" id="cert-sig-title" value="{{ course.partner_signatory_title or '' }}"
                                            placeholder="e.g. Executive Director / Head of Training"
                                            class="w-full p-2 border rounded-lg text-sm bg-white">
                                 </div>
@@ -729,5 +763,132 @@
             acc.classList.remove('block');
         }
     }
+
+    // --- Signature Pad & Cursive Generator Logic ---
+    let sigCanvas, sigCtx, isDrawing = false;
+
+    function initSignaturePad() {
+        sigCanvas = document.getElementById('signatureCanvas');
+        if (!sigCanvas) return;
+        sigCtx = sigCanvas.getContext('2d');
+        sigCtx.strokeStyle = '#1E3A8A';
+        sigCtx.lineWidth = 2.5;
+        sigCtx.lineCap = 'round';
+        sigCtx.lineJoin = 'round';
+
+        function getPos(e) {
+            const rect = sigCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (sigCanvas.width / rect.width),
+                y: (clientY - rect.top) * (sigCanvas.height / rect.height)
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            sigCtx.beginPath();
+            sigCtx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            sigCtx.lineTo(pos.x, pos.y);
+            sigCtx.stroke();
+            e.preventDefault();
+        }
+
+        function stopDrawing(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            document.getElementById('partnerSignatureData').value = sigCanvas.toDataURL('image/png');
+        }
+
+        sigCanvas.addEventListener('mousedown', startDrawing);
+        sigCanvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        sigCanvas.addEventListener('touchstart', startDrawing, { passive: false });
+        sigCanvas.addEventListener('touchmove', draw, { passive: false });
+        window.addEventListener('touchend', stopDrawing);
+    }
+
+    function clearSignatureCanvas() {
+        if (!sigCanvas || !sigCtx) return;
+        sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+        document.getElementById('partnerSignatureData').value = '';
+    }
+
+    function setSigTab(tab) {
+        document.getElementById('sigDrawMode').classList.toggle('hidden', tab !== 'draw');
+        document.getElementById('sigTypeMode').classList.toggle('hidden', tab !== 'type');
+        document.getElementById('sigUploadMode').classList.toggle('hidden', tab !== 'upload');
+
+        const activeClass = 'bg-indigo-600 text-white';
+        const inactiveClass = 'bg-gray-100 text-gray-600 hover:bg-gray-200';
+
+        document.getElementById('sigTabDrawBtn').className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'draw' ? activeClass : inactiveClass}`;
+        document.getElementById('sigTabTypeBtn').className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'type' ? activeClass : inactiveClass}`;
+        document.getElementById('sigTabUploadBtn').className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'upload' ? activeClass : inactiveClass}`;
+
+        if (tab === 'type') {
+            const textVal = document.getElementById('sigTextInput').value || document.getElementById('cert-sig-name')?.value || 'Signatory';
+            renderCursiveSignature(textVal);
+        }
+    }
+
+    function renderCursiveSignature(text) {
+        const preview = document.getElementById('cursivePreview');
+        if (preview) preview.textContent = text || 'Signatory Preview';
+
+        if (!sigCanvas || !sigCtx) return;
+        sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+        sigCtx.font = 'italic 34px "Brush Script MT", "Caveat", "Dancing Script", cursive';
+        sigCtx.fillStyle = '#1E3A8A';
+        sigCtx.textAlign = 'center';
+        sigCtx.textBaseline = 'middle';
+        sigCtx.fillText(text || 'Signatory', sigCanvas.width / 2, sigCanvas.height / 2);
+
+        document.getElementById('partnerSignatureData').value = sigCanvas.toDataURL('image/png');
+    }
+
+    function previewCertificateLive(courseId) {
+        // Create dynamic form with live modal values
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/teacher/course/${courseId}/certificate-preview`;
+        form.target = '_blank';
+
+        const fields = {
+            'csrf_token': '{{ csrf_token() }}',
+            'certificate_theme': document.getElementById('cert-theme-select')?.value || 'gold',
+            'custom_certificate_title': document.getElementById('cert-title-input')?.value || '',
+            'partner_name': document.getElementById('cert-partner-name')?.value || '',
+            'partner_accreditation_number': document.getElementById('cert-partner-accred')?.value || '',
+            'partner_signatory_name': document.getElementById('cert-sig-name')?.value || '',
+            'partner_signatory_title': document.getElementById('cert-sig-title')?.value || '',
+            'partner_signature_data': document.getElementById('partnerSignatureData')?.value || ''
+        };
+
+        for (const [key, val] of Object.entries(fields)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = val;
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        setTimeout(() => form.remove(), 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initSignaturePad();
+    });
 </script>
 {% endblock %}

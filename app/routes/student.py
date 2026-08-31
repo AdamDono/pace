@@ -758,7 +758,15 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
         if not src:
             return False
         try:
-            if src.startswith(('http://', 'https://')):
+            if src.startswith('data:image'):
+                import base64
+                header, encoded = src.split(',', 1)
+                img_data = base64.b64decode(encoded)
+                stream = io.BytesIO(img_data)
+                reader = ImageReader(stream)
+                c.drawImage(reader, x, y, width=max_w, height=max_h, preserveAspectRatio=True, mask='auto')
+                return True
+            elif src.startswith(('http://', 'https://')):
                 res = requests.get(src, timeout=3)
                 if res.status_code == 200:
                     stream = io.BytesIO(res.content)

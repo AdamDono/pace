@@ -768,6 +768,21 @@ def edit_course(course_id):
                         partner_sig_file.save(sig_save_path)
                         course.partner_signatory_signature = sig_filename
 
+            # Handle Drawn / Canvas Signature (Base64)
+            partner_sig_data = request.form.get('partner_signature_data')
+            if partner_sig_data and partner_sig_data.startswith('data:image'):
+                try:
+                    import base64
+                    header, encoded = partner_sig_data.split(',', 1)
+                    sig_bytes = base64.b64decode(encoded)
+                    sig_filename = f"partner_sig_{course.id}_{uuid.uuid4().hex[:8]}.png"
+                    sig_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], sig_filename)
+                    with open(sig_save_path, 'wb') as f:
+                        f.write(sig_bytes)
+                    course.partner_signatory_signature = sig_filename
+                except Exception as err:
+                    logger.warning(f"Error saving drawn signature: {err}")
+
             # Update other fields
             form.populate_obj(course)
             db.session.commit()
@@ -781,7 +796,7 @@ def edit_course(course_id):
     
     return render_template('teacher/edit_course.html', form=form, course=course)
 
-@teacher_bp.route('/course/<int:course_id>/certificate-preview')
+@teacher_bp.route('/course/<int:course_id>/certificate-preview', methods=['GET', 'POST'])
 @login_required
 @teacher_required
 def certificate_preview(course_id):
@@ -789,18 +804,40 @@ def certificate_preview(course_id):
     from app.models import Course
     from app.routes.student import generate_certificate_pdf
     from flask import send_file
-    import io
+    import io, copy
 
     course = Course.query.get_or_404(course_id)
     if not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
         abort(403)
+
+    # In-memory copy for live preview with unsaved form inputs
+    preview_course = copy.copy(course)
+    
+    if request.method == 'POST':
+        if request.form.get('certificate_theme'):
+            preview_course.certificate_theme = request.form.get('certificate_theme')
+        if request.form.get('custom_certificate_title') is not None:
+            preview_course.custom_certificate_title = request.form.get('custom_certificate_title').strip() or None
+        if request.form.get('partner_name') is not None:
+            preview_course.partner_name = request.form.get('partner_name').strip() or None
+        if request.form.get('partner_accreditation_number') is not None:
+            preview_course.partner_accreditation_number = request.form.get('partner_accreditation_number').strip() or None
+        if request.form.get('partner_signatory_name') is not None:
+            preview_course.partner_signatory_name = request.form.get('partner_signatory_name').strip() or None
+        if request.form.get('partner_signatory_title') is not None:
+            preview_course.partner_signatory_title = request.form.get('partner_signatory_title').strip() or None
+
+        # Drawn signature canvas data
+        sig_data = request.form.get('partner_signature_data')
+        if sig_data and sig_data.startswith('data:image'):
+            preview_course.partner_signatory_signature = sig_data
 
     pdf_buffer = io.BytesIO()
     user_display_name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.username or "Sample Student"
     
     generate_certificate_pdf(
         output_dest=pdf_buffer,
-        course=course,
+        course=preview_course,
         student_name=user_display_name,
         completion_date=datetime.utcnow().strftime('%B %d, %Y'),
         certificate_id=f"PREVIEW-{course.id}-SAMPLE"
