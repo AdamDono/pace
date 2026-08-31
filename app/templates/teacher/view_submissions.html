@@ -112,10 +112,17 @@
                         <div id="teacher-output-content" class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm min-h-[80px] max-h-[200px] overflow-auto"></div>
                     </div>
                 </div>
-                <div id="filePreview" class="hidden">
-                    <a id="fileLink" href="#" target="_blank" class="text-blue-600 hover:underline">📎 View Uploaded File</a>
-                </div>
-                </div>
+                 <div id="filePreview" class="hidden mt-3">
+                    <div class="flex items-center gap-2">
+                        <a id="fileLink" href="#" target="_blank" class="px-4 py-2 bg-white text-indigo-600 border border-indigo-200 text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-50 transition">
+                            👁️ View File ↗
+                        </a>
+                        <a id="fileDownloadLink" href="#" download target="_blank" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow hover:bg-indigo-700 transition">
+                            📥 Download File
+                        </a>
+                    </div>
+                 </div>
+                 </div>
             
                 <!-- Grade Input -->
                 <div class="mb-4">
@@ -212,7 +219,9 @@ function openModal(submissionData) {
         // Also show file if uploaded
         if (submissionData.file_path) {
             document.getElementById('filePreview').classList.remove('hidden');
-            document.getElementById('fileLink').href = submissionData.file_path.startsWith('http') ? submissionData.file_path : `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
+            const fileUrl = submissionData.file_path.startsWith('http') ? submissionData.file_path : `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
+            document.getElementById('fileLink').href = fileUrl;
+            document.getElementById('fileDownloadLink').href = fileUrl;
         }
     } else {
         // Show text submission
@@ -223,7 +232,9 @@ function openModal(submissionData) {
         // Show file if uploaded
         if (submissionData.file_path) {
             document.getElementById('filePreview').classList.remove('hidden');
-            document.getElementById('fileLink').href = submissionData.file_path.startsWith('http') ? submissionData.file_path : `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
+            const fileUrl = submissionData.file_path.startsWith('http') ? submissionData.file_path : `{{ url_for('static', filename='uploads/') }}` + submissionData.file_path;
+            document.getElementById('fileLink').href = fileUrl;
+            document.getElementById('fileDownloadLink').href = fileUrl;
         }
     }
     

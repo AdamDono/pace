@@ -1075,7 +1075,7 @@ def view_submissions(course_id, section_id):
     from app.models import Course, Section, Assignment, AssignmentSubmission  # Moved here
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
-    if section.course_id != course_id or course.teacher_id != current_user.id:
+    if section.course_id != course_id or not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     assignments = Assignment.query.filter_by(section_id=section_id).all()
@@ -1092,7 +1092,7 @@ def review_submission(course_id, section_id, submission_id):
     course = Course.query.get_or_404(course_id)
     section = Section.query.get_or_404(section_id)
     submission = AssignmentSubmission.query.get_or_404(submission_id)
-    if section.course_id != course_id or course.teacher_id != current_user.id:
+    if section.course_id != course_id or not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     feedback = request.form.get('feedback')
@@ -1608,7 +1608,7 @@ def bulk_grade_course(course_id):
     from app.models import Course, AssignmentSubmission, Assignment, Section
     
     course = Course.query.get_or_404(course_id)
-    if course.teacher_id != current_user.id:
+    if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     # Get all ungraded submissions
@@ -1642,7 +1642,7 @@ def student_detail_grades(course_id, student_id):
     course = Course.query.get_or_404(course_id)
     student = User.query.get_or_404(student_id)
     
-    if course.teacher_id != current_user.id:
+    if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     # Get enrollment
