@@ -475,8 +475,37 @@
 <div class="h-full bg-gray-50 flex flex-col overflow-hidden relative">
     <div id="flashed-messages-data" class="hidden" data-messages='{{ get_flashed_messages(with_categories=true)|tojson }}'></div>
 
-    <!-- Full 2-Column LMS Course Reader (Responsive for mobile & desktop) -->
-    <div class="flex flex-grow flex-row overflow-hidden relative">
+    <!-- Mobile Screen: Desktop Recommended Blocker with Bypass option -->
+    <div id="mobile-desktop-notice" class="hidden flex-1 bg-gray-50 flex flex-col items-center justify-center p-6 text-center z-10 overflow-y-auto">
+        <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 max-w-sm w-full flex flex-col items-center">
+            <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-5">
+                <span class="text-3xl">💻</span>
+            </div>
+            <span class="bg-blue-100 text-blue-700 font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full mb-3">
+                Desktop Recommended
+            </span>
+            <h2 class="text-xl font-bold text-gray-900 mb-2 leading-snug">
+                Please Switch to Desktop
+            </h2>
+            <p class="text-gray-600 text-xs leading-relaxed mb-6">
+                Pace Academy's interactive video lessons, quizzes, H5P modules, and code assignments are optimized for desktop or tablet screens for the best learning experience.
+            </p>
+
+            <div class="flex flex-col gap-3 w-full">
+                <button type="button" onclick="bypassMobileNotice()"
+                   class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 text-xs">
+                    <span>Proceed Anyway</span>
+                </button>
+                <a href="{{ url_for('student.dashboard') }}"
+                   class="w-full bg-gray-150 hover:bg-gray-200 text-gray-700 font-bold py-3 px-5 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs">
+                    <span>Return to Student Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full 2-Column LMS Course Reader -->
+    <div id="course-reader-container" class="hidden md:flex flex-grow flex-row overflow-hidden relative">
         <!-- Sidebar: Course Menu (320px) - Absolute overlay on mobile, static on desktop -->
         <div id="desktop-course-sidebar" class="absolute left-0 top-0 md:static z-40 md:z-auto w-80 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full shadow-2xl md:shadow-none overflow-y-auto transition-all duration-300">
             <!-- Sidebar Header -->
@@ -1217,13 +1246,44 @@
         }
     }
 
+    function bypassMobileNotice() {
+        sessionStorage.setItem('pace_mobile_bypass', 'true');
+        const notice = document.getElementById('mobile-desktop-notice');
+        const reader = document.getElementById('course-reader-container');
+        if (notice) notice.classList.add('hidden');
+        if (reader) {
+            reader.classList.remove('hidden');
+            reader.classList.add('flex');
+        }
+    }
+
     // Restore sidebar state from localStorage on page load & add mobile listeners
     document.addEventListener('DOMContentLoaded', function() {
         var sidebar = document.getElementById('desktop-course-sidebar');
         var toggleBtnText = document.getElementById('sidebar-toggle-text');
         var toggleBtnIcon = document.getElementById('sidebar-toggle-icon');
+        var notice = document.getElementById('mobile-desktop-notice');
+        var reader = document.getElementById('course-reader-container');
         
         if (window.innerWidth < 768) {
+            const isBypassed = sessionStorage.getItem('pace_mobile_bypass') === 'true';
+            if (isBypassed) {
+                if (notice) notice.classList.add('hidden');
+                if (reader) {
+                    reader.classList.remove('hidden');
+                    reader.classList.add('flex');
+                }
+            } else {
+                if (notice) {
+                    notice.classList.remove('hidden');
+                    notice.classList.add('flex');
+                }
+                if (reader) {
+                    reader.classList.add('hidden');
+                    reader.classList.remove('flex');
+                }
+            }
+
             // Mobile: Start hidden by default
             if (sidebar) sidebar.classList.add('hidden');
             if (toggleBtnText) toggleBtnText.textContent = '☰ Course Menu';
