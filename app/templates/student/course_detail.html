@@ -475,34 +475,10 @@
 <div class="h-full bg-gray-50 flex flex-col overflow-hidden relative">
     <div id="flashed-messages-data" class="hidden" data-messages='{{ get_flashed_messages(with_categories=true)|tojson }}'></div>
 
-    <!-- Mobile Screen: Desktop Required Notice -->
-    <div class="md:hidden flex-1 bg-gray-50 flex flex-col items-center justify-center p-6 text-center z-10 overflow-y-auto">
-        <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 max-w-sm w-full flex flex-col items-center">
-            <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-5">
-                <span class="text-3xl">💻</span>
-            </div>
-            <span class="bg-blue-100 text-blue-700 font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full mb-3">
-                Desktop Recommended
-            </span>
-            <h2 class="text-xl font-bold text-gray-900 mb-2 leading-snug">
-                Please Switch to Desktop
-            </h2>
-            <p class="text-gray-600 text-xs leading-relaxed mb-6">
-                Pace Academy's interactive video lessons, quizzes, H5P modules, and code assignments are optimized for desktop or tablet screens for the best learning experience.
-            </p>
-
-            <a href="{{ url_for('student.dashboard') }}"
-               class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 text-xs">
-                <i class="fas fa-arrow-left"></i>
-                <span>Return to Student Dashboard</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Desktop View: Full 2-Column LMS Course Reader -->
-    <div class="hidden md:flex flex-grow flex-row overflow-hidden relative">
-        <!-- Desktop Sidebar: Course Menu (320px) -->
-        <div id="desktop-course-sidebar" class="w-80 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full overflow-y-auto transition-all duration-300">
+    <!-- Full 2-Column LMS Course Reader (Responsive for mobile & desktop) -->
+    <div class="flex flex-grow flex-row overflow-hidden relative">
+        <!-- Sidebar: Course Menu (320px) - Absolute overlay on mobile, static on desktop -->
+        <div id="desktop-course-sidebar" class="absolute left-0 top-0 md:static z-40 md:z-auto w-80 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full shadow-2xl md:shadow-none overflow-y-auto transition-all duration-300">
             <!-- Sidebar Header -->
             <div class="p-6 border-b border-gray-150">
                 <a href="{{ url_for('student.dashboard') }}" class="inline-flex items-center text-xs text-indigo-600 hover:text-indigo-800 font-semibold mb-3 transition-colors">
@@ -598,7 +574,7 @@
             <div class="sticky top-0 z-30 px-4 sm:px-8 py-3.5 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 flex items-center justify-between flex-shrink-0 shadow-xs">
                 <div class="flex items-center space-x-2 min-w-0">
                     <button type="button" onclick="toggleCourseSidebar()" id="sidebar-toggle-btn"
-                            class="hidden md:inline-flex items-center space-x-1.5 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition mr-2"
+                            class="inline-flex items-center space-x-1.5 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition mr-2"
                             title="Toggle Sidebar (Expand Reading Canvas)">
                         <i class="fas fa-chevron-left text-indigo-600" id="sidebar-toggle-icon"></i>
                         <span id="sidebar-toggle-text">◀ Collapse Sidebar</span>
@@ -621,7 +597,7 @@
             </div>
 
             <!-- Reader Canvas -->
-            <div class="flex-1 p-8 md:p-12 max-w-5xl mx-auto w-full transition-all duration-300">
+            <div class="flex-1 p-4 sm:p-8 md:p-12 max-w-5xl mx-auto w-full transition-all duration-300">
                 <div id="main-reader-content" class="prose prose-indigo max-w-none">
                     {% if first_section %}
                         <div class="flex items-center justify-center py-20"
@@ -1224,30 +1200,54 @@
         
         if (!sidebar) return;
         
+        const isMobile = window.innerWidth < 768;
+        
         if (sidebar.classList.contains('hidden')) {
             // Expand Sidebar
             sidebar.classList.remove('hidden');
-            if (toggleBtnText) toggleBtnText.textContent = '◀ Collapse Sidebar';
-            if (toggleBtnIcon) toggleBtnIcon.className = 'fas fa-chevron-left text-indigo-600';
+            if (toggleBtnText) toggleBtnText.textContent = isMobile ? '✕ Close Menu' : '◀ Collapse Sidebar';
+            if (toggleBtnIcon) toggleBtnIcon.className = isMobile ? 'fas fa-times text-indigo-600' : 'fas fa-chevron-left text-indigo-600';
             localStorage.setItem('pace_sidebar_collapsed', 'false');
         } else {
             // Collapse Sidebar (Expand Reading Canvas)
             sidebar.classList.add('hidden');
-            if (toggleBtnText) toggleBtnText.textContent = '▶ Expand Sidebar / Course Menu';
-            if (toggleBtnIcon) toggleBtnIcon.className = 'fas fa-bars text-indigo-600';
+            if (toggleBtnText) toggleBtnText.textContent = isMobile ? '☰ Course Menu' : '▶ Expand Sidebar / Course Menu';
+            if (toggleBtnIcon) toggleBtnIcon.className = isMobile ? 'fas fa-bars text-indigo-600' : 'fas fa-chevron-right text-indigo-600';
             localStorage.setItem('pace_sidebar_collapsed', 'true');
         }
     }
 
-    // Restore sidebar state from localStorage on page load
+    // Restore sidebar state from localStorage on page load & add mobile listeners
     document.addEventListener('DOMContentLoaded', function() {
-        if (localStorage.getItem('pace_sidebar_collapsed') === 'true') {
-            var sidebar = document.getElementById('desktop-course-sidebar');
-            var toggleBtnText = document.getElementById('sidebar-toggle-text');
-            var toggleBtnIcon = document.getElementById('sidebar-toggle-icon');
+        var sidebar = document.getElementById('desktop-course-sidebar');
+        var toggleBtnText = document.getElementById('sidebar-toggle-text');
+        var toggleBtnIcon = document.getElementById('sidebar-toggle-icon');
+        
+        if (window.innerWidth < 768) {
+            // Mobile: Start hidden by default
             if (sidebar) sidebar.classList.add('hidden');
-            if (toggleBtnText) toggleBtnText.textContent = '▶ Expand Sidebar / Course Menu';
+            if (toggleBtnText) toggleBtnText.textContent = '☰ Course Menu';
             if (toggleBtnIcon) toggleBtnIcon.className = 'fas fa-bars text-indigo-600';
+            
+            // Auto-close sidebar on mobile when a link is clicked
+            if (sidebar) {
+                sidebar.addEventListener('click', function(e) {
+                    const link = e.target.closest('.sidebar-section-link');
+                    if (link && !sidebar.classList.contains('hidden')) {
+                        // Close sidebar after a short delay to allow HTMX swap trigger
+                        setTimeout(() => {
+                            toggleCourseSidebar();
+                        }, 200);
+                    }
+                });
+            }
+        } else {
+            // Desktop: Restore state from localStorage
+            if (localStorage.getItem('pace_sidebar_collapsed') === 'true') {
+                if (sidebar) sidebar.classList.add('hidden');
+                if (toggleBtnText) toggleBtnText.textContent = '▶ Expand Sidebar / Course Menu';
+                if (toggleBtnIcon) toggleBtnIcon.className = 'fas fa-bars text-indigo-600';
+            }
         }
     });
 </script>
