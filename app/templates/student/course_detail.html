@@ -986,9 +986,10 @@
                         activeYtTimers[sectionId] = setInterval(() => {
                             const currentTime = player.getCurrentTime();
                             const duration = player.getDuration();
+                            const speed = player.getPlaybackRate ? player.getPlaybackRate() : 1.0;
                             if (duration > 0) {
                                 const percent = (currentTime / duration) * 100;
-                                saveYtProgress(sectionId, currentTime, duration, percent);
+                                saveYtProgress(sectionId, currentTime, duration, percent, speed);
                             }
                         }, 5000);
                     } else {
@@ -999,9 +1000,10 @@
                         }
                         const currentTime = player.getCurrentTime();
                         const duration = player.getDuration();
+                        const speed = player.getPlaybackRate ? player.getPlaybackRate() : 1.0;
                         if (duration > 0) {
                             const percent = (currentTime / duration) * 100;
-                            saveYtProgress(sectionId, currentTime, duration, percent);
+                            saveYtProgress(sectionId, currentTime, duration, percent, speed);
                         }
                     }
                 }
@@ -1009,7 +1011,7 @@
         });
     }
 
-    function saveYtProgress(sectionId, currentTime, duration, percent) {
+    function saveYtProgress(sectionId, currentTime, duration, percent, playbackSpeed) {
         fetch('/student/video-progress/' + sectionId, {
             method: 'POST',
             headers: {
@@ -1020,8 +1022,8 @@
                 current_time: currentTime,
                 duration: duration,
                 watch_percentage: percent,
-                total_watch_time: 0,
-                playback_speed: 1.0,
+                total_watch_time: currentTime,
+                playback_speed: playbackSpeed || 1.0,
                 play_count: 1
             })
         })

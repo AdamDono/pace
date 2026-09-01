@@ -1296,16 +1296,28 @@ def video_progress(section_id):
             db.session.add(progress)
         
         # Update progress
-        progress.video_current_time = data.get('current_time', 0)
-        progress.duration = data.get('duration', 0)
-        progress.watch_percentage = data.get('watch_percentage', 0)
-        progress.total_watch_time = data.get('total_watch_time', 0)
-        progress.playback_speed = data.get('playback_speed', 1.0)
-        progress.play_count = data.get('play_count', 0)
+        curr_time = float(data.get('current_time') or 0)
+        dur = float(data.get('duration') or 0)
+        pct = float(data.get('watch_percentage') or 0)
+        
+        progress.video_current_time = curr_time
+        if dur > 0:
+            progress.duration = dur
+        progress.watch_percentage = max(progress.watch_percentage or 0, round(pct, 1))
+        
+        # Calculate/accumulate real total watch time in seconds
+        watch_time_input = float(data.get('total_watch_time') or 0)
+        if watch_time_input > 0:
+            progress.total_watch_time = max(progress.total_watch_time or 0, watch_time_input)
+        elif curr_time > 0:
+            progress.total_watch_time = max(progress.total_watch_time or 0, curr_time)
+            
+        progress.playback_speed = float(data.get('playback_speed') or 1.0)
+        progress.play_count = max(progress.play_count or 1, int(data.get('play_count') or 1))
         progress.last_watched = datetime.utcnow()
         
-        # Mark as completed if watched >90%
-        if progress.watch_percentage >= 90:
+        # Mark as completed if watched >= 85%
+        if progress.watch_percentage >= 85:
             progress.completed = True
             if not enrollment_section.completed:
                 enrollment_section.completed = True

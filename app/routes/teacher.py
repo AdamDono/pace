@@ -365,30 +365,49 @@ def course_analytics(course_id):
     }
     
     # === VIDEO ANALYTICS ===
-    video_sections = Section.query.filter(
-        Section.course_id == course_id,
-        db.or_(
-            Section.section_type == 'video',
-            Section.video_url != None,
-            Section.media_file.like('%.mp4')
-        )
-    ).all()
+    # Filter ONLY actual video sections (exclude quizzes, assignments, and text lessons without videos)
+    all_sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    video_sections = []
+    for s in all_sections:
+        # Exclude quizzes and assignments
+        if s.section_type in ('quiz', 'assignment'):
+            continue
+        
+        # Explicit video section type
+        if s.section_type in ('video', 'interactive_video'):
+            video_sections.append(s)
+            continue
+            
+        # Or has a real, non-empty video URL (YouTube, Vimeo, or MP4/WebM)
+        if s.video_url and s.video_url.strip():
+            v_url = s.video_url.strip().lower()
+            if any(k in v_url for k in ('youtube.com', 'youtu.be', 'vimeo.com')) or v_url.endswith(('.mp4', '.webm', '.ogg', '.m4v')):
+                video_sections.append(s)
+                continue
+                
+        # Or has an uploaded video media file
+        if s.media_file and s.media_file.strip().lower().endswith(('.mp4', '.webm', '.ogg', '.m4v')):
+            video_sections.append(s)
+            continue
     
     video_analytics = []
     for video_section in video_sections:
-        # Get all watch progress for this video
+        # Get all watch progress records for this video
         watch_data = VideoWatchProgress.query.filter_by(section_id=video_section.id).all()
+        # Filter to records where student actually interacted (viewed or watched > 0)
+        active_watch_data = [w for w in watch_data if (w.total_watch_time and w.total_watch_time > 0) or (w.watch_percentage and w.watch_percentage > 0) or (w.video_current_time and w.video_current_time > 0)]
         
-        if watch_data:
-            total_views = len(watch_data)
-            avg_watch_pct = sum([w.watch_percentage for w in watch_data]) / total_views if total_views > 0 else 0
-            avg_watch_time = sum([w.total_watch_time for w in watch_data]) / total_views if total_views > 0 else 0
-            completed_count = sum([1 for w in watch_data if w.completed])
+        if active_watch_data:
+            total_views = len(active_watch_data)
+            avg_watch_pct = sum([w.watch_percentage or 0 for w in active_watch_data]) / total_views if total_views > 0 else 0
+            # Calculate total watch time in seconds, fallback to video_current_time if total_watch_time was not accumulated
+            avg_watch_time = sum([w.total_watch_time if (w.total_watch_time and w.total_watch_time > 0) else (w.video_current_time or 0) for w in active_watch_data]) / total_views if total_views > 0 else 0
+            completed_count = sum([1 for w in active_watch_data if w.completed or (w.watch_percentage and w.watch_percentage >= 85)])
             completion_rate_video = (completed_count / total_views * 100) if total_views > 0 else 0
-            avg_speed = sum([w.playback_speed for w in watch_data]) / total_views if total_views > 0 else 1.0
-            total_play_count = sum([w.play_count for w in watch_data])
+            avg_speed = sum([w.playback_speed or 1.0 for w in active_watch_data]) / total_views if total_views > 0 else 1.0
+            total_play_count = sum([w.play_count or 1 for w in active_watch_data])
         else:
-            total_views = 0
+            total_views = len(watch_data)
             avg_watch_pct = 0
             avg_watch_time = 0
             completed_count = 0
