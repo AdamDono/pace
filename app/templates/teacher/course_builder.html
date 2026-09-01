@@ -209,6 +209,56 @@
                             </div>
                         </div>
 
+                        <!-- Lead Course Instructor Signature Section -->
+                        <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-100 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-bold text-blue-900 uppercase tracking-wider">✍️ Lead Course Instructor Signature</h4>
+                                <span class="text-[11px] text-blue-700 font-medium">Instructor: {{ course.teacher.first_name ~ ' ' ~ course.teacher.last_name if course.teacher and (course.teacher.first_name or course.teacher.last_name) else (course.teacher.username if course.teacher else 'Lead Instructor') }}</span>
+                            </div>
+
+                            {% if course.instructor_signature %}
+                            <div class="flex items-center space-x-3 bg-white p-2 rounded-lg border">
+                                <img src="{{ course.instructor_signature|media_url }}" alt="Instructor Signature" class="h-8 w-24 object-contain rounded border bg-gray-50">
+                                <span class="text-xs text-gray-500 truncate">Current Saved Instructor Signature</span>
+                            </div>
+                            {% endif %}
+
+                            <input type="hidden" name="instructor_signature_data" id="instructorSignatureData" value="">
+
+                            <!-- Signature Modes Selector for Instructor -->
+                            <div class="border rounded-xl bg-white overflow-hidden p-2.5 space-y-2">
+                                <div class="flex items-center gap-1.5 border-b pb-1.5">
+                                    <button type="button" onclick="setSigTab('inst', 'draw')" id="instSigTabDrawBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-600 text-white transition">✏️ Draw</button>
+                                    <button type="button" onclick="setSigTab('inst', 'type')" id="instSigTabTypeBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">✍️ Cursive</button>
+                                    <button type="button" onclick="setSigTab('inst', 'upload')" id="instSigTabUploadBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">📁 Upload File</button>
+                                </div>
+
+                                <!-- Draw Mode -->
+                                <div id="instSigDrawMode" class="space-y-1.5">
+                                    <div class="relative border border-dashed border-gray-300 rounded-lg bg-gray-50/50">
+                                        <canvas id="instructorSigCanvas" width="340" height="90" class="w-full h-24 touch-none cursor-crosshair rounded-lg bg-white"></canvas>
+                                        <span class="absolute bottom-1 right-2 text-[10px] text-gray-400 select-none pointer-events-none">Sign with mouse/finger</span>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="button" onclick="clearSignatureCanvas('inst')" class="text-[11px] text-red-600 hover:underline font-bold">Clear Pad</button>
+                                    </div>
+                                </div>
+
+                                <!-- Cursive Mode -->
+                                <div id="instSigTypeMode" class="hidden space-y-2">
+                                    <input type="text" id="instSigTextInput" oninput="renderCursiveSignature('inst', this.value)" placeholder="Type instructor name e.g. {{ course.teacher.first_name if course.teacher else 'Instructor Name' }}" class="w-full p-2 border rounded-lg text-xs">
+                                    <div class="p-2 border rounded-lg bg-white h-14 flex items-center justify-center">
+                                        <span id="instCursivePreview" style="font-family: 'Brush Script MT', 'Caveat', 'Dancing Script', cursive; font-size: 24px; color: #1E3A8A;">{{ course.teacher.first_name ~ ' ' ~ course.teacher.last_name if course.teacher and (course.teacher.first_name or course.teacher.last_name) else (course.teacher.username if course.teacher else 'Instructor Signature') }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Mode -->
+                                <div id="instSigUploadMode" class="hidden">
+                                    <input type="file" name="instructor_signature" accept="image/*" class="w-full p-1.5 border rounded-lg text-xs bg-white">
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Partner Details Container -->
                         <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-4">
                             <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Partner / Skills Provider Co-Branding (Optional)</h4>
@@ -241,9 +291,9 @@
                                     <p class="text-[11px] text-gray-500 mt-0.5">Displayed on the top-right of the certificate.</p>
                                 </div>
 
-                                <!-- Signature Creator & Uploader -->
+                                <!-- Signature Creator & Uploader for Partner -->
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Partner Signatory Signature</label>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">Authorized / Partner Signatory Signature</label>
                                     {% if course.partner_signatory_signature %}
                                     <div class="mb-2 flex items-center space-x-3 bg-white p-2 rounded-lg border">
                                         <img src="{{ course.partner_signatory_signature|media_url }}" alt="Partner Signature" class="h-8 w-24 object-contain rounded border bg-gray-50">
@@ -256,32 +306,32 @@
                                     <!-- Signature Modes Selector -->
                                     <div class="border rounded-xl bg-white overflow-hidden p-2.5 space-y-2">
                                         <div class="flex items-center gap-1.5 border-b pb-1.5">
-                                            <button type="button" onclick="setSigTab('draw')" id="sigTabDrawBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600 text-white transition">✏️ Draw</button>
-                                            <button type="button" onclick="setSigTab('type')" id="sigTabTypeBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">✍️ Cursive</button>
-                                            <button type="button" onclick="setSigTab('upload')" id="sigTabUploadBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">📁 Upload File</button>
+                                            <button type="button" onclick="setSigTab('partner', 'draw')" id="partnerSigTabDrawBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600 text-white transition">✏️ Draw</button>
+                                            <button type="button" onclick="setSigTab('partner', 'type')" id="partnerSigTabTypeBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">✍️ Cursive</button>
+                                            <button type="button" onclick="setSigTab('partner', 'upload')" id="partnerSigTabUploadBtn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">📁 Upload File</button>
                                         </div>
 
                                         <!-- Draw Mode -->
-                                        <div id="sigDrawMode" class="space-y-1.5">
+                                        <div id="partnerSigDrawMode" class="space-y-1.5">
                                             <div class="relative border border-dashed border-gray-300 rounded-lg bg-gray-50/50">
-                                                <canvas id="signatureCanvas" width="340" height="90" class="w-full h-24 touch-none cursor-crosshair rounded-lg bg-white"></canvas>
+                                                <canvas id="partnerSigCanvas" width="340" height="90" class="w-full h-24 touch-none cursor-crosshair rounded-lg bg-white"></canvas>
                                                 <span class="absolute bottom-1 right-2 text-[10px] text-gray-400 select-none pointer-events-none">Sign with mouse/finger</span>
                                             </div>
                                             <div class="flex justify-end">
-                                                <button type="button" onclick="clearSignatureCanvas()" class="text-[11px] text-red-600 hover:underline font-bold">Clear Pad</button>
+                                                <button type="button" onclick="clearSignatureCanvas('partner')" class="text-[11px] text-red-600 hover:underline font-bold">Clear Pad</button>
                                             </div>
                                         </div>
 
                                         <!-- Cursive Mode -->
-                                        <div id="sigTypeMode" class="hidden space-y-2">
-                                            <input type="text" id="sigTextInput" oninput="renderCursiveSignature(this.value)" placeholder="Type signatory name e.g. Dr. S. Khumalo" class="w-full p-2 border rounded-lg text-xs">
+                                        <div id="partnerSigTypeMode" class="hidden space-y-2">
+                                            <input type="text" id="partnerSigTextInput" oninput="renderCursiveSignature('partner', this.value)" placeholder="Type signatory name e.g. Dr. S. Khumalo" class="w-full p-2 border rounded-lg text-xs">
                                             <div class="p-2 border rounded-lg bg-white h-14 flex items-center justify-center">
-                                                <span id="cursivePreview" style="font-family: 'Brush Script MT', 'Caveat', 'Dancing Script', cursive; font-size: 24px; color: #1E3A8A;">Signatory Preview</span>
+                                                <span id="partnerCursivePreview" style="font-family: 'Brush Script MT', 'Caveat', 'Dancing Script', cursive; font-size: 24px; color: #1E3A8A;">Signatory Preview</span>
                                             </div>
                                         </div>
 
                                         <!-- Upload Mode -->
-                                        <div id="sigUploadMode" class="hidden">
+                                        <div id="partnerSigUploadMode" class="hidden">
                                             <input type="file" name="partner_signatory_signature" accept="image/*" class="w-full p-1.5 border rounded-lg text-xs bg-white">
                                         </div>
                                     </div>
@@ -764,96 +814,108 @@
         }
     }
 
-    // --- Signature Pad & Cursive Generator Logic ---
-    let sigCanvas, sigCtx, isDrawing = false;
+    // --- Signature Pad & Cursive Generator Logic (Dual Support: Instructor & Partner) ---
+    const _sigPads = {
+        inst: { canvasId: 'instructorSigCanvas', dataId: 'instructorSignatureData', canvas: null, ctx: null, drawing: false },
+        partner: { canvasId: 'partnerSigCanvas', dataId: 'partnerSignatureData', canvas: null, ctx: null, drawing: false }
+    };
 
-    function initSignaturePad() {
-        sigCanvas = document.getElementById('signatureCanvas');
-        if (!sigCanvas) return;
-        sigCtx = sigCanvas.getContext('2d');
-        sigCtx.strokeStyle = '#1E3A8A';
-        sigCtx.lineWidth = 2.5;
-        sigCtx.lineCap = 'round';
-        sigCtx.lineJoin = 'round';
+    function initDualSignaturePads() {
+        ['inst', 'partner'].forEach(type => {
+            const cfg = _sigPads[type];
+            cfg.canvas = document.getElementById(cfg.canvasId);
+            if (!cfg.canvas) return;
 
-        function getPos(e) {
-            const rect = sigCanvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return {
-                x: (clientX - rect.left) * (sigCanvas.width / rect.width),
-                y: (clientY - rect.top) * (sigCanvas.height / rect.height)
-            };
-        }
+            cfg.ctx = cfg.canvas.getContext('2d');
+            cfg.ctx.strokeStyle = '#1E3A8A';
+            cfg.ctx.lineWidth = 2.5;
+            cfg.ctx.lineCap = 'round';
+            cfg.ctx.lineJoin = 'round';
 
-        function startDrawing(e) {
-            isDrawing = true;
-            const pos = getPos(e);
-            sigCtx.beginPath();
-            sigCtx.moveTo(pos.x, pos.y);
-            e.preventDefault();
-        }
+            function getPos(e) {
+                const rect = cfg.canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * (cfg.canvas.width / rect.width),
+                    y: (clientY - rect.top) * (cfg.canvas.height / rect.height)
+                };
+            }
 
-        function draw(e) {
-            if (!isDrawing) return;
-            const pos = getPos(e);
-            sigCtx.lineTo(pos.x, pos.y);
-            sigCtx.stroke();
-            e.preventDefault();
-        }
+            function start(e) {
+                cfg.drawing = true;
+                const pos = getPos(e);
+                cfg.ctx.beginPath();
+                cfg.ctx.moveTo(pos.x, pos.y);
+                e.preventDefault();
+            }
 
-        function stopDrawing(e) {
-            if (!isDrawing) return;
-            isDrawing = false;
-            document.getElementById('partnerSignatureData').value = sigCanvas.toDataURL('image/png');
-        }
+            function move(e) {
+                if (!cfg.drawing) return;
+                const pos = getPos(e);
+                cfg.ctx.lineTo(pos.x, pos.y);
+                cfg.ctx.stroke();
+                e.preventDefault();
+            }
 
-        sigCanvas.addEventListener('mousedown', startDrawing);
-        sigCanvas.addEventListener('mousemove', draw);
-        window.addEventListener('mouseup', stopDrawing);
+            function stop(e) {
+                if (!cfg.drawing) return;
+                cfg.drawing = false;
+                document.getElementById(cfg.dataId).value = cfg.canvas.toDataURL('image/png');
+            }
 
-        sigCanvas.addEventListener('touchstart', startDrawing, { passive: false });
-        sigCanvas.addEventListener('touchmove', draw, { passive: false });
-        window.addEventListener('touchend', stopDrawing);
+            cfg.canvas.addEventListener('mousedown', start);
+            cfg.canvas.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', stop);
+
+            cfg.canvas.addEventListener('touchstart', start, { passive: false });
+            cfg.canvas.addEventListener('touchmove', move, { passive: false });
+            window.addEventListener('touchend', stop);
+        });
     }
 
-    function clearSignatureCanvas() {
-        if (!sigCanvas || !sigCtx) return;
-        sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-        document.getElementById('partnerSignatureData').value = '';
+    function clearSignatureCanvas(type) {
+        const cfg = _sigPads[type];
+        if (!cfg || !cfg.canvas || !cfg.ctx) return;
+        cfg.ctx.clearRect(0, 0, cfg.canvas.width, cfg.canvas.height);
+        document.getElementById(cfg.dataId).value = '';
     }
 
-    function setSigTab(tab) {
-        document.getElementById('sigDrawMode').classList.toggle('hidden', tab !== 'draw');
-        document.getElementById('sigTypeMode').classList.toggle('hidden', tab !== 'type');
-        document.getElementById('sigUploadMode').classList.toggle('hidden', tab !== 'upload');
-
-        const activeClass = 'bg-indigo-600 text-white';
+    function setSigTab(type, tab) {
+        const prefix = type === 'inst' ? 'instSig' : 'partnerSig';
+        const colorClass = type === 'inst' ? 'bg-blue-600 text-white' : 'bg-indigo-600 text-white';
         const inactiveClass = 'bg-gray-100 text-gray-600 hover:bg-gray-200';
 
-        document.getElementById('sigTabDrawBtn').className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'draw' ? activeClass : inactiveClass}`;
-        document.getElementById('sigTabTypeBtn').className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'type' ? activeClass : inactiveClass}`;
-        document.getElementById('sigTabUploadBtn').className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'upload' ? activeClass : inactiveClass}`;
+        document.getElementById(`${prefix}DrawMode`).classList.toggle('hidden', tab !== 'draw');
+        document.getElementById(`${prefix}TypeMode`).classList.toggle('hidden', tab !== 'type');
+        document.getElementById(`${prefix}UploadMode`).classList.toggle('hidden', tab !== 'upload');
+
+        document.getElementById(`${prefix}TabDrawBtn`).className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'draw' ? colorClass : inactiveClass}`;
+        document.getElementById(`${prefix}TabTypeBtn`).className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'type' ? colorClass : inactiveClass}`;
+        document.getElementById(`${prefix}TabUploadBtn`).className = `px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${tab === 'upload' ? colorClass : inactiveClass}`;
 
         if (tab === 'type') {
-            const textVal = document.getElementById('sigTextInput').value || document.getElementById('cert-sig-name')?.value || 'Signatory';
-            renderCursiveSignature(textVal);
+            const inputVal = document.getElementById(`${prefix}TextInput`)?.value || (type === 'partner' ? document.getElementById('cert-sig-name')?.value : 'Instructor Signature') || 'Signatory';
+            renderCursiveSignature(type, inputVal);
         }
     }
 
-    function renderCursiveSignature(text) {
-        const preview = document.getElementById('cursivePreview');
+    function renderCursiveSignature(type, text) {
+        const previewId = type === 'inst' ? 'instCursivePreview' : 'partnerCursivePreview';
+        const preview = document.getElementById(previewId);
         if (preview) preview.textContent = text || 'Signatory Preview';
 
-        if (!sigCanvas || !sigCtx) return;
-        sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-        sigCtx.font = 'italic 34px "Brush Script MT", "Caveat", "Dancing Script", cursive';
-        sigCtx.fillStyle = '#1E3A8A';
-        sigCtx.textAlign = 'center';
-        sigCtx.textBaseline = 'middle';
-        sigCtx.fillText(text || 'Signatory', sigCanvas.width / 2, sigCanvas.height / 2);
+        const cfg = _sigPads[type];
+        if (!cfg || !cfg.canvas || !cfg.ctx) return;
 
-        document.getElementById('partnerSignatureData').value = sigCanvas.toDataURL('image/png');
+        cfg.ctx.clearRect(0, 0, cfg.canvas.width, cfg.canvas.height);
+        cfg.ctx.font = 'italic 34px "Brush Script MT", "Caveat", "Dancing Script", cursive';
+        cfg.ctx.fillStyle = '#1E3A8A';
+        cfg.ctx.textAlign = 'center';
+        cfg.ctx.textBaseline = 'middle';
+        cfg.ctx.fillText(text || 'Signatory', cfg.canvas.width / 2, cfg.canvas.height / 2);
+
+        document.getElementById(cfg.dataId).value = cfg.canvas.toDataURL('image/png');
     }
 
     function previewCertificateLive(courseId) {
@@ -867,6 +929,7 @@
             'csrf_token': '{{ csrf_token() }}',
             'certificate_theme': document.getElementById('cert-theme-select')?.value || 'gold',
             'custom_certificate_title': document.getElementById('cert-title-input')?.value || '',
+            'instructor_signature_data': document.getElementById('instructorSignatureData')?.value || '',
             'partner_name': document.getElementById('cert-partner-name')?.value || '',
             'partner_accreditation_number': document.getElementById('cert-partner-accred')?.value || '',
             'partner_signatory_name': document.getElementById('cert-sig-name')?.value || '',
@@ -888,7 +951,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        initSignaturePad();
+        initDualSignaturePads();
     });
 </script>
 {% endblock %}

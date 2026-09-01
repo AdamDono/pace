@@ -753,37 +753,89 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
     }
     palette = themes.get(theme, themes['gold'])
 
-    # Helper to load and draw images gracefully
+    # Helper to load and draw images with true centered aspect ratio scaling
     def draw_image_safe(src, x, y, max_w, max_h):
         if not src:
             return False
         try:
+            from PIL import Image as PILImage
+            reader = None
+            orig_w, orig_h = None, None
+            
             if src.startswith('data:image'):
                 import base64
                 header, encoded = src.split(',', 1)
                 img_data = base64.b64decode(encoded)
+                pil_img = PILImage.open(io.BytesIO(img_data))
+                orig_w, orig_h = pil_img.size
                 stream = io.BytesIO(img_data)
                 reader = ImageReader(stream)
-                c.drawImage(reader, x, y, width=max_w, height=max_h, preserveAspectRatio=True, mask='auto')
-                return True
             elif src.startswith(('http://', 'https://')):
                 res = requests.get(src, timeout=3)
                 if res.status_code == 200:
+                    pil_img = PILImage.open(io.BytesIO(res.content))
+                    orig_w, orig_h = pil_img.size
                     stream = io.BytesIO(res.content)
                     reader = ImageReader(stream)
-                    c.drawImage(reader, x, y, width=max_w, height=max_h, preserveAspectRatio=True, mask='auto')
-                    return True
             else:
                 local_f = os.path.join(current_app.config['UPLOAD_FOLDER'], src)
                 if not os.path.exists(local_f):
                     local_f = os.path.join(current_app.root_path, 'static', src)
                 if os.path.exists(local_f):
+                    pil_img = PILImage.open(local_f)
+                    orig_w, orig_h = pil_img.size
                     reader = ImageReader(local_f)
-                    c.drawImage(reader, x, y, width=max_w, height=max_h, preserveAspectRatio=True, mask='auto')
-                    return True
+
+            if reader and orig_w and orig_h:
+                aspect = orig_w / orig_h
+                box_aspect = max_w / max_h
+                if box_aspect > aspect:
+                    render_h = max_h
+                    render_w = max_h * aspect
+                else:
+                    render_w = max_w
+                    render_h = max_w / aspect
+                
+                # Perfect horizontal and vertical centering inside bounding box
+                render_x = x + (max_w - render_w) / 2
+                render_y = y + (max_h - render_h) / 2
+                c.drawImage(reader, render_x, render_y, width=render_w, height=render_h, mask='auto')
+                return True
         except Exception as e:
             logger.warning(f"Failed to draw image on certificate: {e}")
         return False
+
+    # Helper to render a perfectly aligned signature block
+    def draw_signature_block(center_x, baseline_y, label, signatory_name, signatory_title, sig_src=None):
+        # 1. Top Section Label
+        c.setFont("Helvetica-Bold", 8)
+        c.setFillColor(HexColor('#6B7280'))
+        c.drawCentredString(center_x, baseline_y + 40, label.upper())
+
+        # 2. Signature Drawing (Image or Cursive Fallback)
+        if sig_src:
+            sig_box_w = 130
+            sig_box_h = 36
+            draw_image_safe(sig_src, center_x - (sig_box_w / 2), baseline_y + 2, sig_box_w, sig_box_h)
+        else:
+            c.setFont("Helvetica-Oblique", 11)
+            c.setFillColor(HexColor('#1E3A8A'))
+            c.drawCentredString(center_x, baseline_y + 8, signatory_name)
+
+        # 3. Horizontal Line
+        c.setStrokeColor(HexColor('#4B5563'))
+        c.setLineWidth(0.8)
+        c.line(center_x - 80, baseline_y, center_x + 80, baseline_y)
+
+        # 4. Printed Signatory Name
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(HexColor('#111827'))
+        c.drawCentredString(center_x, baseline_y - 14, signatory_name)
+
+        # 5. Designation / Title
+        c.setFont("Helvetica", 8)
+        c.setFillColor(HexColor('#6B7280'))
+        c.drawCentredString(center_x, baseline_y - 25, signatory_title)
 
     # 1. Background Fill (Soft tint)
     c.setFillColor(HexColor('#FFFFFF'))
@@ -926,44 +978,36 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
         else:
             instructor_name = "Pace Academic Board"
 
-    c.setFont("Helvetica", 9)
-    c.setFillColor(HexColor('#4B5563'))
-    c.drawCentredString(width / 2, 115, "Course Instructor")
-    c.setStrokeColor(HexColor('#374151'))
-    c.setLineWidth(0.8)
-    c.line(width / 2 - 80, 95, width / 2 + 80, 95)
-    c.setFont("Helvetica-BoldOblique", 11)
-    c.setFillColor(HexColor('#1F2937'))
-    c.drawCentredString(width / 2, 80, instructor_name)
-    c.setFont("Helvetica", 8)
-    c.setFillColor(HexColor('#6B7280'))
-    c.drawCentredString(width / 2, 68, "Lead Instructor / Educator")
+    instructor_sig = getattr(course, 'instructor_signature', None)
+    draw_signature_block(
+        center_x=width / 2,
+        baseline_y=95,
+        label="Course Instructor",
+        signatory_name=instructor_name,
+        signatory_title="Lead Instructor / Educator",
+        sig_src=instructor_sig
+    )
 
     # Right: Partner Executive Signatory (if custom) OR Pace Curriculum Head (Adam Dono)
     right_x = width - 150
     if course.partner_signatory_name:
         sig_name = course.partner_signatory_name
         sig_title = course.partner_signatory_title or "Executive Director"
-        sig_org = course.partner_name or "Partner Institution"
-        if course.partner_signatory_signature:
-            draw_image_safe(course.partner_signatory_signature, right_x - 60, 96, 120, 30)
+        sig_org = f"{sig_title} · {course.partner_name}" if course.partner_name else sig_title
+        sig_src = getattr(course, 'partner_signatory_signature', None)
     else:
         sig_name = "Adam Dono"
-        sig_title = "Head of Curriculum"
-        sig_org = "Pace Academy Board"
+        sig_org = "Head of Curriculum · Pace Academy"
+        sig_src = getattr(course, 'partner_signatory_signature', None)
 
-    c.setFont("Helvetica", 9)
-    c.setFillColor(HexColor('#4B5563'))
-    c.drawCentredString(right_x, 115, "Authorized Signatory")
-    c.setStrokeColor(HexColor('#374151'))
-    c.setLineWidth(0.8)
-    c.line(right_x - 80, 95, right_x + 80, 95)
-    c.setFont("Helvetica-BoldOblique", 11)
-    c.setFillColor(HexColor('#1F2937'))
-    c.drawCentredString(right_x, 80, sig_name)
-    c.setFont("Helvetica", 8)
-    c.setFillColor(HexColor('#6B7280'))
-    c.drawCentredString(right_x, 68, f"{sig_title} · {sig_org}")
+    draw_signature_block(
+        center_x=right_x,
+        baseline_y=95,
+        label="Authorized Signatory",
+        signatory_name=sig_name,
+        signatory_title=sig_org,
+        sig_src=sig_src
+    )
 
     # 8. Bottom Verification Footer
     c.setFillColor(HexColor('#9CA3AF'))

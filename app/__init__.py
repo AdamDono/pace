@@ -146,6 +146,7 @@ def create_app():
             add_column_if_missing('courses', 'max_seats', 'INTEGER')
             add_column_if_missing('courses', 'certificate_theme', 'VARCHAR(30) DEFAULT \'gold\'')
             add_column_if_missing('courses', 'custom_certificate_title', 'VARCHAR(120)')
+            add_column_if_missing('courses', 'instructor_signature', 'VARCHAR(255)')
             add_column_if_missing('courses', 'partner_name', 'VARCHAR(150)')
             add_column_if_missing('courses', 'partner_logo', 'VARCHAR(255)')
             add_column_if_missing('courses', 'partner_accreditation_number', 'VARCHAR(120)')

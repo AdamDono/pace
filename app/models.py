@@ -185,6 +185,7 @@ class Course(db.Model):
     # Custom & Co-Branded Certificate Design Fields
     certificate_theme = db.Column(db.String(30), default='gold')  # 'gold', 'navy', 'emerald', 'dark', 'burgundy'
     custom_certificate_title = db.Column(db.String(120), nullable=True)  # e.g. "Certificate of Completion"
+    instructor_signature = db.Column(db.String(255), nullable=True)  # Lead Instructor signature image path or Cloudinary URL
     partner_name = db.Column(db.String(150), nullable=True)  # Skills provider / corporate partner name
     partner_logo = db.Column(db.String(255), nullable=True)  # Partner logo image path or Cloudinary URL
     partner_accreditation_number = db.Column(db.String(120), nullable=True)  # e.g. "QCTO Reg No: 07-QCTO/SDP..."

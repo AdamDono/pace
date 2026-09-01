@@ -751,6 +751,38 @@ def edit_course(course_id):
                         partner_logo_file.save(logo_save_path)
                         course.partner_logo = logo_filename
 
+            # Handle Instructor Signature File Upload
+            instructor_sig_file = request.files.get('instructor_signature')
+            if instructor_sig_file and instructor_sig_file.filename:
+                if allowed_file(instructor_sig_file.filename, allowed_extensions={'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}):
+                    try:
+                        from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                        cloudinary_url = upload_file_to_cloudinary(instructor_sig_file, folder="pace_signatures")
+                    except Exception:
+                        cloudinary_url = None
+                    if cloudinary_url:
+                        course.instructor_signature = cloudinary_url
+                    else:
+                        sig_filename = f"inst_sig_{course.id}_{uuid.uuid4().hex[:8]}{os.path.splitext(instructor_sig_file.filename)[1]}"
+                        sig_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], sig_filename)
+                        instructor_sig_file.save(sig_save_path)
+                        course.instructor_signature = sig_filename
+
+            # Handle Instructor Drawn / Canvas Signature (Base64)
+            instructor_sig_data = request.form.get('instructor_signature_data')
+            if instructor_sig_data and instructor_sig_data.startswith('data:image'):
+                try:
+                    import base64
+                    header, encoded = instructor_sig_data.split(',', 1)
+                    sig_bytes = base64.b64decode(encoded)
+                    sig_filename = f"inst_sig_{course.id}_{uuid.uuid4().hex[:8]}.png"
+                    sig_save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], sig_filename)
+                    with open(sig_save_path, 'wb') as f:
+                        f.write(sig_bytes)
+                    course.instructor_signature = sig_filename
+                except Exception as err:
+                    logger.warning(f"Error saving drawn instructor signature: {err}")
+
             # Handle Partner Signature File Upload
             partner_sig_file = request.files.get('partner_signatory_signature')
             if partner_sig_file and partner_sig_file.filename:
@@ -768,7 +800,7 @@ def edit_course(course_id):
                         partner_sig_file.save(sig_save_path)
                         course.partner_signatory_signature = sig_filename
 
-            # Handle Drawn / Canvas Signature (Base64)
+            # Handle Partner Drawn / Canvas Signature (Base64)
             partner_sig_data = request.form.get('partner_signature_data')
             if partner_sig_data and partner_sig_data.startswith('data:image'):
                 try:
@@ -827,7 +859,12 @@ def certificate_preview(course_id):
         if request.form.get('partner_signatory_title') is not None:
             preview_course.partner_signatory_title = request.form.get('partner_signatory_title').strip() or None
 
-        # Drawn signature canvas data
+        # Drawn Instructor signature canvas data
+        inst_sig_data = request.form.get('instructor_signature_data')
+        if inst_sig_data and inst_sig_data.startswith('data:image'):
+            preview_course.instructor_signature = inst_sig_data
+
+        # Drawn Partner signature canvas data
         sig_data = request.form.get('partner_signature_data')
         if sig_data and sig_data.startswith('data:image'):
             preview_course.partner_signatory_signature = sig_data
