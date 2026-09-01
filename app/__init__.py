@@ -128,6 +128,7 @@ def create_app():
             add_column_if_missing('enrollments', 'certificate_path', 'VARCHAR(255)')
             add_column_if_missing('enrollments', 'is_blocked', 'BOOLEAN DEFAULT FALSE')
             add_column_if_missing('enrollments', 'block_reason', 'VARCHAR(500)')
+            add_column_if_missing('enrollments', 'last_nudge_sent_at', 'TIMESTAMP')
             
             # Check and add columns to courses
             add_column_if_missing('courses', 'accreditation_name', 'VARCHAR(255)')
@@ -360,6 +361,16 @@ def create_app():
                 return values['filename']
             return flask_url_for(endpoint, **values)
         return dict(url_for=custom_url_for)
+
+    # CLI Commands
+    @app.cli.command('send-inactivity-nudges')
+    def cli_send_inactivity_nudges():
+        """Find inactive learners (7+ days) and dispatch personalized progress nudge emails."""
+        from app.utils.nudge import send_inactivity_nudges
+        import click
+        click.echo("Scanning for inactive learners...")
+        res = send_inactivity_nudges(app)
+        click.echo(f"Done! {res['nudges_sent']} nudge email(s) sent out of {res['total_candidates']} candidate(s).")
 
     return app
 

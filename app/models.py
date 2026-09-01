@@ -282,6 +282,7 @@ class Enrollment(db.Model):
     certificate_path = db.Column(db.String(255))  # Added for certificate storage
     is_blocked = db.Column(db.Boolean, default=False, index=True)  # Per-course block by admin
     block_reason = db.Column(db.String(500), nullable=True)  # Reason for blocking
+    last_nudge_sent_at = db.Column(db.DateTime, nullable=True)  # Timestamp of last inactivity nudge email
     
     student = db.relationship('User', back_populates='enrollments')
     course = db.relationship('Course', back_populates='enrollments')
