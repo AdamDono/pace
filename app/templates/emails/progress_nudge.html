@@ -42,18 +42,11 @@
             color: #ffffff;
             margin: 0;
         }
-        .partner-badge {
-            display: inline-block;
-            background-color: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            margin-top: 6px;
+        .tagline {
+            font-size: 12px;
             color: #e0e7ff;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            margin: 4px 0 0 0;
+            font-weight: 500;
         }
         .content {
             padding: 32px;
@@ -211,12 +204,10 @@
 <body>
     <div class="wrapper">
         <div class="container">
-            <!-- Header -->
+            <!-- Header (100% Pace Academy Branding) -->
             <div class="header">
                 <div class="logo-text">★ PACE ACADEMY</div>
-                {% if course.partner_name %}
-                <div class="partner-badge">In Partnership With {{ course.partner_name }}</div>
-                {% endif %}
+                <p class="tagline">Vocational & Digital Skills Excellence</p>
             </div>
 
             <!-- Content Area -->
@@ -268,7 +259,7 @@
 
                 <!-- Certificate Incentive -->
                 <div class="cert-incentive">
-                    🏆 <strong>Verified Certificate Ahead:</strong> Complete the remaining lessons in this course to earn your verified certificate of completion.
+                    🏆 <strong>Verified Certificate Ahead:</strong> Complete the remaining lessons in this course to earn your verified Pace Academy certificate of completion.
                 </div>
 
                 <p style="font-size: 13px; color: #64748b; text-align: center; margin-top: 24px;">
