@@ -868,17 +868,17 @@
             });
         }
 
-        // Auto-select active section on load (sessionStorage, or first_section)
-        const savedSectionId = sessionStorage.getItem('activeSectionId');
+        // Auto-select active section on load (using smart server-computed first_section)
+        const serverSectionId = "{{ first_section.id if first_section else '' }}";
         let targetLink = null;
         
-        if (savedSectionId) {
-            targetLink = document.getElementById('sidebar-link-' + savedSectionId);
+        if (serverSectionId) {
+            targetLink = document.getElementById('sidebar-link-' + serverSectionId);
         }
         
         if (!targetLink) {
-            // Fallback to first available section link
-            targetLink = document.querySelector('.sidebar-section-link');
+            // Fallback to first available unlocked section link
+            targetLink = document.querySelector('.sidebar-section-link:not([disabled])') || document.querySelector('.sidebar-section-link');
         }
         
         if (targetLink) {
@@ -894,27 +894,22 @@
                 }
             }
             
-            // Highlight it and set breadcrumbs (without triggering a second network fetch since first_section auto-loads)
+            // Highlight it and set breadcrumbs
             targetLink.classList.remove('border-transparent');
             targetLink.classList.add('bg-indigo-50', 'text-indigo-700', 'font-bold', 'border-l-4', 'border-indigo-600');
             
+            // Scroll into view within the sidebar if needed
+            targetLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            
             const parentHeader = document.querySelector(`button[onclick="toggleSidebarModule('${parentModuleId}')"]`);
             const moduleTitle = parentHeader ? parentHeader.querySelector('.font-bold').textContent.trim() : 'Course';
-            const sectionTitle = targetLink.querySelector('span.truncate').textContent.trim();
+            const sectionTitle = targetLink.querySelector('span.truncate')?.textContent.trim() || 'Lesson';
             document.getElementById('reader-breadcrumbs').textContent = `${moduleTitle} / ${sectionTitle}`;
-            
-            // If the loaded section is not the first section, trigger htmx load for it manually!
-            const firstSectionId = "{{ first_section.id if first_section else '' }}";
-            if (savedSectionId && savedSectionId !== firstSectionId) {
-                const url = targetLink.getAttribute('hx-get');
-                if (url && typeof htmx !== 'undefined') {
-                    htmx.ajax('GET', url, {target: '#main-reader-content', swap: 'innerHTML'});
-                }
-            }
 
-            // Start time tracking
+            // Save active section ID
             const activeSectionId = targetLink.getAttribute('data-section-id');
             if (activeSectionId) {
+                sessionStorage.setItem('activeSectionId_{{ course.id }}', activeSectionId);
                 startTimeTracking(activeSectionId);
             }
         }

@@ -58,18 +58,37 @@ def dashboard():
                 # Map enrollment sections
                 es_list = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
                 completed_sections = sum(1 for es in es_list if es.completed)
-                # Continue learning: pick most recent section
-                if es_list:
-                    last_es = max(es_list, key=lambda es: es.last_accessed or datetime.min)
-                    if last_es and last_es.last_accessed:
-                        last_accessed = last_es
-                        # Ensure section exists
-                        try:
-                            cont_section = Section.query.get(last_es.section_id)
-                            if cont_section:
-                                continue_learning.append({'course': course, 'section': cont_section, 'last_accessed': last_es.last_accessed})
-                        except Exception:
-                            pass
+                es_by_sec = {es.section_id: es for es in es_list}
+                
+                # Determine smart next / continue section for this course:
+                cont_section = None
+                
+                # 1. Did the user access an incomplete section most recently?
+                incomplete_accessed = [es for es in es_list if not es.completed and es.last_accessed]
+                if incomplete_accessed:
+                    best_es = max(incomplete_accessed, key=lambda es: es.last_accessed)
+                    cont_section = Section.query.get(best_es.section_id)
+                
+                # 2. If not, find the FIRST incomplete section in sequential order
+                if not cont_section:
+                    for sec in sections:
+                        es = es_by_sec.get(sec.id)
+                        if not (es and es.completed):
+                            cont_section = sec
+                            break
+                
+                # 3. If all sections completed, fallback to first section
+                if not cont_section and sections:
+                    cont_section = sections[0]
+
+                if cont_section:
+                    recent_time = datetime.min
+                    for es in es_list:
+                        if es.last_accessed and es.last_accessed > recent_time:
+                            recent_time = es.last_accessed
+                    if recent_time == datetime.min:
+                        recent_time = enrollment.created_at or datetime.utcnow()
+                    continue_learning.append({'course': course, 'section': cont_section, 'last_accessed': recent_time})
 
             completion = (completed_sections / total_sections * 100) if total_sections > 0 else 0
             progress_by_course[course.id] = round(completion, 1)
@@ -200,17 +219,43 @@ def course_detail(course_id):
     first_section = None
     target_section_id = request.args.get('section_id', type=int)
 
+    # 1. Explicit target section requested in URL query string
     if target_section_id:
         for sec in ordered_sections:
             if sec.id == target_section_id and sec.id not in locked_sections:
                 first_section = sec
                 break
 
+    # 2. Smart Resumption for Enrolled Student
+    if not first_section and enrollment:
+        es_list = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+        es_by_sec = {es.section_id: es for es in es_list}
+
+        # Priority A: Check if the student was actively on an incomplete, unlocked section
+        incomplete_accessed = [
+            es for es in es_list 
+            if not es.completed and es.last_accessed and es.section_id not in locked_sections
+        ]
+        if incomplete_accessed:
+            best_es = max(incomplete_accessed, key=lambda es: es.last_accessed)
+            first_section = next((s for s in ordered_sections if s.id == best_es.section_id), None)
+
+        # Priority B: Find the NEXT incomplete section in sequential order that is unlocked
+        if not first_section:
+            for sec in ordered_sections:
+                es = es_by_sec.get(sec.id)
+                if sec.id not in locked_sections and not (es and es.completed):
+                    first_section = sec
+                    break
+
+    # 3. Fallback: First unlocked section
     if not first_section:
         for sec in ordered_sections:
             if sec.id not in locked_sections:
                 first_section = sec
                 break
+
+    # 4. Ultimate Fallback: First section in course
     if not first_section and ordered_sections:
         first_section = ordered_sections[0]
 
