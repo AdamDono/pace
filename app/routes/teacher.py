@@ -389,6 +389,11 @@ def course_analytics(course_id):
         if s.media_file and s.media_file.strip().lower().endswith(('.mp4', '.webm', '.ogg', '.m4v')):
             video_sections.append(s)
             continue
+
+        # Or has an embedded video inside the rich-text content body
+        if s.content and any(k in s.content.lower() for k in ('youtube.com/embed', 'youtu.be', 'vimeo.com', '<video', '<iframe')):
+            video_sections.append(s)
+            continue
     
     video_analytics = []
     for video_section in video_sections:
