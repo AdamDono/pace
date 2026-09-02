@@ -70,6 +70,7 @@ class ProfileForm(FlaskForm):
     contact = StringField('Contact Information', validators=[Optional(), Length(max=120)])
     first_name = StringField('First Name', validators=[Optional(), Length(max=80)])
     last_name = StringField('Last Name', validators=[Optional(), Length(max=80)])
+    id_number = StringField('National ID / Passport Number', validators=[Optional(), Length(max=30)])
     specialization = StringField('Specialization / Area of Interest', validators=[Optional(), Length(max=200)])
     current_password = PasswordField('Current Password (only needed when changing password)', validators=[Optional()])
     new_password = PasswordField('New Password (leave blank to keep current)', validators=[Optional(), Length(min=6)])

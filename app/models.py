@@ -29,6 +29,7 @@ class User(db.Model, UserMixin):
     bio = db.Column(db.Text, nullable=True)
     contact = db.Column(db.String(120), nullable=True)
     profile_image = db.Column(db.String(255), nullable=True)
+    id_number = db.Column(db.String(30), nullable=True)  # SA National ID or Passport Number for certificate accreditation
     
     # Teacher-specific fields
     first_name = db.Column(db.String(80), nullable=True)
@@ -50,7 +51,7 @@ class User(db.Model, UserMixin):
 
     # Explicit __init__ to handle all fields
     def __init__(self, email, username, password, role, bio=None, contact=None, 
-                 first_name=None, last_name=None, specialization=None):
+                 first_name=None, last_name=None, specialization=None, id_number=None):
         self.email = email
         self.username = username
         self.password = password  # Triggers @password.setter
@@ -60,6 +61,7 @@ class User(db.Model, UserMixin):
         self.first_name = first_name
         self.last_name = last_name
         self.specialization = specialization
+        self.id_number = id_number
         self.created_at = datetime.utcnow()
         self.login_count = 0
 

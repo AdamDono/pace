@@ -690,14 +690,7 @@ def rate_course(course_id):
     return jsonify({'status': 'error', 'message': 'Course not completed.'}), 403
 
 @student_bp.route('/course/<int:course_id>/ratings')
-@login_required
-@admin_required
-def view_ratings(course_id):
-    course = Course.query.get_or_404(course_id)
-    ratings = Rating.query.filter_by(course_id=course_id).all()
-    return render_template('admin/course_ratings.html', course=course, ratings=ratings)
-
-def generate_certificate_pdf(output_dest, course, student_name, completion_date=None, certificate_id=None, instructor_name=None):
+def generate_certificate_pdf(output_dest, course, student_name, completion_date=None, certificate_id=None, instructor_name=None, student_id_number=None):
     """
     Generates an executive, co-branded landscape certificate PDF for a course.
     output_dest: file path or BytesIO stream
@@ -706,6 +699,7 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
     completion_date: str or None
     certificate_id: str or None
     instructor_name: str or None
+    student_id_number: str or None (National ID / Passport Number)
     """
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.pdfgen import canvas
@@ -858,12 +852,11 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
         c.drawCentredString(center_x, baseline_y + 40, label.upper())
 
         # 2. Signature Drawing (Image or Cursive Fallback)
+        drawn = False
         if sig_src:
-            sig_box_w = 130
-            sig_box_h = 36
-            draw_image_safe(sig_src, center_x - (sig_box_w / 2), baseline_y + 2, sig_box_w, sig_box_h)
-        else:
-            c.setFont("Helvetica-Oblique", 11)
+            drawn = draw_image_safe(sig_src, center_x - 75, baseline_y + 2, 150, 36)
+        if not drawn:
+            c.setFont("Times-BoldItalic", 16)
             c.setFillColor(HexColor('#1E3A8A'))
             c.drawCentredString(center_x, baseline_y + 8, signatory_name)
 
@@ -976,10 +969,19 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
     c.setFont("Helvetica-Bold", 24)
     c.drawCentredString(width / 2, plaque_y + 13, student_name)
 
+    # If National ID / Passport Number is provided (Accreditation requirement)
+    if student_id_number and str(student_id_number).strip():
+        c.setFont("Helvetica-Bold", 8.5)
+        c.setFillColor(HexColor('#4B5563'))
+        c.drawCentredString(width / 2, plaque_y - 13, f"NATIONAL ID / PASSPORT NO: {str(student_id_number).strip().upper()}")
+        award_desc_y = plaque_y - 28
+    else:
+        award_desc_y = plaque_y - 22
+
     # 6. Course Award Description
     c.setFillColor(HexColor('#4B5563'))
     c.setFont("Helvetica", 11)
-    c.drawCentredString(width / 2, plaque_y - 22, "has successfully fulfilled all required coursework, assessments, and competencies in")
+    c.drawCentredString(width / 2, award_desc_y, "has successfully fulfilled all required coursework, assessments, and competencies in")
 
     c.setFillColor(palette['primary'])
     c.setFont("Helvetica-Bold", 16)
@@ -1095,6 +1097,7 @@ def generate_certificate(enrollment_id):
         output_dest=certificate_path,
         course=enrollment.course,
         student_name=user_name,
+        student_id_number=current_user.id_number,
         completion_date=datetime.utcnow().strftime('%B %d, %Y'),
         certificate_id=f"CERT-{enrollment.id}-{int(datetime.utcnow().timestamp())}"
     )
@@ -1214,6 +1217,7 @@ def profile():
         current_user.contact = request.form.get('contact', current_user.contact or '')
         current_user.first_name = request.form.get('first_name', current_user.first_name or '')
         current_user.last_name = request.form.get('last_name', current_user.last_name or '')
+        current_user.id_number = (request.form.get('id_number') or form.id_number.data or '').strip() or None
         current_user.specialization = request.form.get('specialization', current_user.specialization or '')
         
         # Handle profile image upload
@@ -1247,6 +1251,7 @@ def profile():
         form.contact.data = current_user.contact
         form.first_name.data = current_user.first_name
         form.last_name.data = current_user.last_name
+        form.id_number.data = current_user.id_number
         form.specialization.data = current_user.specialization
     
     return render_template('student/profile.html', form=form)

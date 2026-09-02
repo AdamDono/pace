@@ -123,6 +123,9 @@ def create_app():
                         db_type = column_type.replace('VARCHAR', 'TEXT').replace('BOOLEAN', 'INTEGER')
                     db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {db_type};"))
             
+            # Check and add columns to users
+            add_column_if_missing('users', 'id_number', 'VARCHAR(30)')
+
             # Check and add columns to enrollments
             add_column_if_missing('enrollments', 'completed_at', 'TIMESTAMP')
             add_column_if_missing('enrollments', 'certificate_path', 'VARCHAR(255)')

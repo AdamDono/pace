@@ -465,6 +465,131 @@ def course_analytics(course_id):
                          engagement_metrics=engagement_metrics,
                          video_analytics=video_analytics)
 
+@teacher_bp.route('/course/<int:course_id>/export-compliance-csv')
+@teacher_required
+def export_compliance_csv(course_id):
+    """
+    Exports a comprehensive SETA / QCTO / Funder compliance report in CSV format.
+    Includes Learner details, SA National ID/Passport, Logbook hours/minutes,
+    Course Progress %, Assessment & Quiz averages, and Completion status.
+    """
+    import csv
+    import io
+    from flask import Response
+    from app.models import Course, Enrollment, EnrollmentSection, Section, Quiz, QuizAttempt, Assignment, AssignmentSubmission, User
+    from sqlalchemy import func
+
+    course = Course.query.get_or_404(course_id)
+    if not current_user.is_teacher_for_course(course.id):
+        abort(403)
+
+    enrollments = Enrollment.query.filter_by(course_id=course_id).all()
+    all_sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    total_sections = len(all_sections)
+    course_section_ids = [s.id for s in all_sections]
+    total_assignments = Assignment.query.join(Section).filter(Section.course_id == course_id).count()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # 1. Header Metadata Section
+    writer.writerow(["PACE ACADEMY - SETA / QCTO / FUNDER COMPLIANCE & ATTENDANCE REPORT"])
+    writer.writerow(["Course Title", course.title])
+    writer.writerow(["Accreditation / Qualification ID", course.partner_accreditation_number or course.accreditation_name or "N/A"])
+    writer.writerow(["Partner / Skills Provider", course.partner_name or "Pace Academy"])
+    writer.writerow(["Lead Instructor", course.teacher.full_name or course.teacher.username])
+    writer.writerow(["Total Enrolled Learners", len(enrollments)])
+    writer.writerow(["Report Generated At (UTC)", datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')])
+    writer.writerow([])  # Blank spacer row
+
+    # 2. Column Headers
+    writer.writerow([
+        "Learner Full Name",
+        "Email Address",
+        "SA National ID / Passport No.",
+        "Enrollment Date",
+        "Course Status",
+        "Completion Date",
+        "Completed Lessons",
+        "Total Lessons",
+        "Progress (%)",
+        "Total Logbook Time (Hours)",
+        "Total Logbook Time (Minutes)",
+        "Avg Quiz Score (%)",
+        "Assignments Submitted",
+        "Total Assignments",
+        "Last Active Date"
+    ])
+
+    # 3. Learner Rows
+    for enrollment in enrollments:
+        student = enrollment.student
+        if not student:
+            continue
+
+        student_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.username or student.email
+
+        # Completed sections
+        completed_sections = EnrollmentSection.query.filter_by(
+            enrollment_id=enrollment.id,
+            completed=True
+        ).count()
+        progress_pct = round((completed_sections / total_sections * 100), 1) if total_sections > 0 else 0
+
+        # Total time spent
+        total_time_secs = db.session.query(func.sum(EnrollmentSection.time_spent)).filter_by(
+            enrollment_id=enrollment.id
+        ).scalar() or 0
+        total_hours = round(total_time_secs / 3600, 2)
+        total_mins = round(total_time_secs / 60, 1)
+
+        # Last accessed date
+        last_activity = db.session.query(func.max(EnrollmentSection.last_accessed)).filter_by(
+            enrollment_id=enrollment.id
+        ).scalar()
+        last_active_str = last_activity.strftime('%Y-%m-%d %H:%M') if last_activity else (enrollment.enrolled_at.strftime('%Y-%m-%d %H:%M') if enrollment.enrolled_at else "N/A")
+
+        # Quiz score average
+        quiz_attempts = QuizAttempt.query.filter_by(student_id=student.id).join(Quiz).filter(
+            Quiz.section_id.in_(course_section_ids)
+        ).all() if course_section_ids else []
+        avg_quiz_score = round(sum([attempt.score for attempt in quiz_attempts]) / len(quiz_attempts), 1) if quiz_attempts else "N/A"
+
+        # Assignment Submissions
+        assignments_submitted = AssignmentSubmission.query.filter_by(student_id=student.id).join(
+            Assignment
+        ).join(Section).filter(Section.course_id == course_id).count()
+
+        status_str = "Completed" if enrollment.completed else ("Blocked" if enrollment.is_blocked else "In Progress")
+        completion_date_str = enrollment.completed_at.strftime('%Y-%m-%d') if enrollment.completed_at else "N/A"
+        enrolled_date_str = enrollment.enrolled_at.strftime('%Y-%m-%d') if enrollment.enrolled_at else "N/A"
+
+        writer.writerow([
+            student_name,
+            student.email,
+            getattr(student, 'id_number', None) or "Not Provided",
+            enrolled_date_str,
+            status_str,
+            completion_date_str,
+            completed_sections,
+            total_sections,
+            progress_pct,
+            total_hours,
+            total_mins,
+            avg_quiz_score,
+            assignments_submitted,
+            total_assignments,
+            last_active_str
+        ])
+
+    filename = f"SETA_Compliance_Report_{course.id}_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename={filename}"}
+    )
+
 @teacher_bp.route('/create-course-wizard', methods=['GET', 'POST'])
 @teacher_required
 def create_course_wizard():
@@ -900,6 +1025,7 @@ def certificate_preview(course_id):
         output_dest=pdf_buffer,
         course=preview_course,
         student_name=user_display_name,
+        student_id_number=getattr(current_user, 'id_number', None) or "9801025123088",
         completion_date=datetime.utcnow().strftime('%B %d, %Y'),
         certificate_id=f"PREVIEW-{course.id}-SAMPLE"
     )

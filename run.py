@@ -62,8 +62,10 @@ def start_scheduler():
             from apscheduler.schedulers.background import BackgroundScheduler
             from apscheduler.triggers.cron import CronTrigger
             from app.utils.digest import send_weekly_digests
+            from app.utils.nudge import send_inactivity_nudges
 
             scheduler = BackgroundScheduler()
+            # 1. Weekly Digest (Every Monday at 08:00 AM)
             scheduler.add_job(
                 func=send_weekly_digests,
                 args=[app],
@@ -72,8 +74,17 @@ def start_scheduler():
                 name='Weekly Digest Email',
                 replace_existing=True,
             )
+            # 2. Daily Inactivity & Progress Nudges (Every Morning at 09:00 AM)
+            scheduler.add_job(
+                func=send_inactivity_nudges,
+                args=[app],
+                trigger=CronTrigger(hour=9, minute=0),
+                id='daily_inactivity_nudges',
+                name='Daily Inactivity Nudge Emails',
+                replace_existing=True,
+            )
             scheduler.start()
-            print("✅ Scheduler started — weekly digest fires every Monday 08:00")
+            print("✅ Scheduler started — Weekly digest (Mondays 08:00) & Daily nudges (Daily 09:00) are active")
             return scheduler
         except ImportError:
             print("⚠️ Notice: 'apscheduler' not installed locally — skipping background cron scheduler.")

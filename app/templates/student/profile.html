@@ -95,6 +95,18 @@
                 </div>
             </div>
 
+            <!-- South African National ID / Passport Number -->
+            <div>
+                <label for="id_number" class="block text-sm font-medium text-gray-700 mb-2">
+                    National ID / Passport Number <span class="text-xs text-blue-600 font-normal">(Optional — printed on accredited SETA/QCTO certificates)</span>
+                </label>
+                {{ form.id_number(class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 font-mono", placeholder="e.g. 9801025123088 or A12345678") }}
+                {% for error in form.id_number.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                {% endfor %}
+                <p class="text-xs text-gray-500 mt-1">If provided, your South African ID or Passport number will be verified and included on your official certificate of completion.</p>
+            </div>
+
             <!-- Learning Interests / Path -->
             <div>
                 <label for="specialization" class="block text-sm font-medium text-gray-700 mb-2">
