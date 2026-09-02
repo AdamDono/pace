@@ -58,6 +58,7 @@ def create_app():
 
     app.jinja_env.filters['avatar_url'] = avatar_url_filter
     app.jinja_env.filters['media_url'] = avatar_url_filter
+    app.jinja_env.globals.update(min=min, max=max)
 
     # Configure database
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
