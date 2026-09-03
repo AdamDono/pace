@@ -1,0 +1,89 @@
+<!-- Embedded Course Forum Component for Course Reader -->
+<div id="course-forum-embedded-wrapper" class="space-y-6 animate-fade-in">
+    
+    <!-- Top Forum Header Banner -->
+    <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="bg-white/20 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">💬 Course Community</span>
+                <span class="text-xs text-indigo-200">Q&A & Discussion</span>
+            </div>
+            <h2 class="text-xl font-bold tracking-tight text-white">{{ course.title }}</h2>
+            <p class="text-xs text-indigo-200 mt-0.5">Ask questions, get help from instructors, and discuss lessons with peers.</p>
+        </div>
+
+        <button type="button" 
+                onclick="openAskQuestionModal()"
+                class="bg-white text-indigo-900 hover:bg-indigo-50 text-xs font-bold px-4 py-2.5 rounded-xl shadow transition transform hover:scale-105 flex items-center gap-1.5 flex-shrink-0">
+            <span>✏️</span> Ask a Question
+        </button>
+    </div>
+
+    <!-- Forum Dynamic Content Pane (Swaps between thread list and thread detail) -->
+    <div id="forum-embed-content">
+        {% include "forum/_thread_list.html" %}
+    </div>
+
+</div>
+
+<!-- Ask Question Modal (Accessible anywhere inside Course Reader) -->
+<div id="askQuestionModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-5 transform transition-all">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span>✏️</span> Ask a Question
+            </h3>
+            <button type="button" onclick="closeAskQuestionModal()" class="text-gray-400 hover:text-gray-600 text-lg font-bold p-1">
+                ✕
+            </button>
+        </div>
+
+        <form action="{{ url_for('forum.create_thread', course_id=course.id) }}" method="POST" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Title -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Question Title</label>
+                <input type="text" 
+                       name="title" 
+                       placeholder="e.g. How do I calculate the weighted average in Section 3?" 
+                       class="w-full text-sm p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-800"
+                       required>
+            </div>
+
+            <!-- Optional Lesson Tag -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Related Lesson / Activity (Optional)</label>
+                <select name="section_id" id="forum-modal-section-id" class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800">
+                    <option value="">General Course Question (No specific lesson)</option>
+                    {% if course.sections %}
+                        {% for s in course.sections %}
+                        <option value="{{ s.id }}">
+                            {{ s.title }} ({{ s.section_type|capitalize }})
+                        </option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <!-- Content -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Question Details & Code</label>
+                <textarea name="content" 
+                          rows="5" 
+                          placeholder="Describe your question or error in detail. Include code snippets or steps you tried..."
+                          class="w-full text-sm p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-800 leading-relaxed"
+                          required></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+                <button type="button" onclick="closeAskQuestionModal()" class="text-xs text-gray-500 hover:text-gray-700 font-semibold px-4 py-2">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-xs transition">
+                    Post Question
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

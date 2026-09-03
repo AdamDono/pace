@@ -536,11 +536,13 @@
 
                 <!-- Course Q&A Button -->
                 <div class="mt-3">
-                    <a href="{{ url_for('forum.course_forum', course_id=course.id) }}" 
-                       class="w-full flex items-center justify-center space-x-2 py-2.5 px-3 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-xl text-xs font-bold text-gray-700 hover:text-indigo-700 transition shadow-xs">
+                    <button type="button" 
+                            id="sidebar-forum-btn"
+                            onclick="loadEmbeddedForum()"
+                            class="w-full flex items-center justify-center space-x-2 py-2.5 px-3 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-xl text-xs font-bold text-gray-700 hover:text-indigo-700 transition shadow-xs">
                         <span>💬</span>
                         <span>Course Q&A Discussion</span>
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -582,12 +584,13 @@
                                     hx-get="{{ url_for('student.get_section_content', section_id=section.id) }}"
                                     hx-target="#main-reader-content"
                                     hx-swap="innerHTML"
+                                    onclick="showLessonView()"
                                     {% if section.id in locked_sections %}disabled{% endif %}>
                                 <div class="flex items-center space-x-2 flex-1 min-w-0">
                                     {% set section_completed = enrollment_sections.get(section.id) and enrollment_sections.get(section.id).completed %}
                                     <div class="flex-shrink-0 flex items-center justify-center w-5 h-5">
                                         {% if section.id in locked_sections %}
-                                            <span class="text-gray-400 text-xs">🔒</span>
+                                             <span class="text-gray-400 text-xs">🔒</span>
                                         {% elif section_completed %}
                                             <div class="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px]">✓</div>
                                         {% else %}
@@ -624,13 +627,27 @@
                         Select an activity
                     </div>
                 </div>
+                
+                <!-- Tab Controls & Certificate Action -->
                 <div class="flex items-center space-x-2 shrink-0">
-                    <a href="{{ url_for('forum.course_forum', course_id=course.id) }}" 
-                       class="inline-flex items-center gap-1.5 bg-white hover:bg-indigo-50 border border-gray-200 text-indigo-700 hover:text-indigo-800 text-xs font-bold py-1.5 px-3 rounded-lg shadow-xs transition"
-                       title="Course Discussion & Q&A">
-                        <span>💬</span>
-                        <span class="hidden sm:inline">Q&A Forum</span>
-                    </a>
+                    <div class="inline-flex p-0.5 bg-gray-200/70 rounded-xl">
+                        <button type="button" 
+                                id="reader-tab-lesson-btn"
+                                onclick="showLessonView()"
+                                class="inline-flex items-center gap-1.5 bg-white text-gray-900 shadow-xs text-xs font-bold py-1.5 px-3 rounded-lg transition"
+                                title="View Lesson Material">
+                            <span>📖</span>
+                            <span class="hidden sm:inline">Lesson</span>
+                        </button>
+                        <button type="button" 
+                                id="reader-tab-qa-btn"
+                                onclick="loadEmbeddedForum()"
+                                class="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-xs font-bold py-1.5 px-3 rounded-lg transition"
+                                title="Course Discussion & Q&A">
+                            <span>💬</span>
+                            <span class="hidden sm:inline">Q&A Forum</span>
+                        </button>
+                    </div>
 
                     {% if completion_percentage == 100 and enrollment %}
                     <div id="quick-certificate-box" class="shrink-0">
@@ -665,6 +682,11 @@
                             <p class="text-gray-500 text-sm mt-1">This course does not contain any lessons yet.</p>
                         </div>
                     {% endif %}
+                </div>
+
+                <!-- Embedded Course Q&A Container (Stays inside course reader) -->
+                <div id="course-forum-embedded-container" class="hidden">
+                    <!-- Dynamic Forum View loaded without leaving course -->
                 </div>
             </div>
         </div>
@@ -1325,7 +1347,252 @@
             }
         }
     });
+
+    /* =========================================================================
+       IN-COURSE Q&A & DISCUSSION FORUM CONTROLLER
+       ========================================================================= */
+    let currentCourseId = {{ course.id }};
+    let currentForumFilter = 'all';
+    let currentForumSectionId = '';
+
+    function loadEmbeddedForum(filter = 'all', sectionId = '') {
+        currentForumFilter = filter;
+        if (sectionId) currentForumSectionId = sectionId;
+
+        // Hide lesson content, show embedded forum
+        document.getElementById('main-reader-content').classList.add('hidden');
+        const forumContainer = document.getElementById('course-forum-embedded-container');
+        forumContainer.classList.remove('hidden');
+
+        // Update breadcrumbs
+        const breadcrumbs = document.getElementById('reader-breadcrumbs');
+        if (breadcrumbs) breadcrumbs.textContent = 'COURSE DISCUSSION & Q&A';
+
+        // Update top tabs
+        const tabLesson = document.getElementById('reader-tab-lesson-btn');
+        const tabQa = document.getElementById('reader-tab-qa-btn');
+        if (tabLesson) tabLesson.className = 'inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-xs font-bold py-1.5 px-3 rounded-lg transition';
+        if (tabQa) tabQa.className = 'inline-flex items-center gap-1.5 bg-white text-gray-900 shadow-xs text-xs font-bold py-1.5 px-3 rounded-lg transition';
+
+        // Un-highlight sidebar links, highlight forum button
+        document.querySelectorAll('.sidebar-section-link').forEach(el => el.classList.remove('border-indigo-600', 'bg-indigo-50/50'));
+        const forumBtn = document.getElementById('sidebar-forum-btn');
+        if (forumBtn) forumBtn.classList.add('bg-indigo-50', 'border-indigo-400', 'text-indigo-700');
+
+        forumReloadEmbeddedList();
+    }
+
+    function showLessonView() {
+        const forumContainer = document.getElementById('course-forum-embedded-container');
+        if (forumContainer) forumContainer.classList.add('hidden');
+        const readerContent = document.getElementById('main-reader-content');
+        if (readerContent) readerContent.classList.remove('hidden');
+
+        // Reset tabs
+        const tabLesson = document.getElementById('reader-tab-lesson-btn');
+        const tabQa = document.getElementById('reader-tab-qa-btn');
+        if (tabLesson) tabLesson.className = 'inline-flex items-center gap-1.5 bg-white text-gray-900 shadow-xs text-xs font-bold py-1.5 px-3 rounded-lg transition';
+        if (tabQa) tabQa.className = 'inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-xs font-bold py-1.5 px-3 rounded-lg transition';
+
+        const forumBtn = document.getElementById('sidebar-forum-btn');
+        if (forumBtn) forumBtn.classList.remove('bg-indigo-50', 'border-indigo-400', 'text-indigo-700');
+    }
+
+    function forumSetFilter(filterMode) {
+        currentForumFilter = filterMode;
+        if (filterMode === 'all') {
+            currentForumSectionId = '';
+        } else if (filterMode === 'this_lesson') {
+            currentForumSectionId = window.currentActiveSectionId || '';
+        }
+        forumReloadEmbeddedList();
+    }
+
+    function forumClearLessonFilter() {
+        currentForumSectionId = '';
+        currentForumFilter = 'all';
+        forumReloadEmbeddedList();
+    }
+
+    function forumApplyFilters() {
+        forumReloadEmbeddedList();
+    }
+
+    function forumChangePage(page) {
+        forumReloadEmbeddedList(page);
+    }
+
+    function forumReloadEmbeddedList(page = 1) {
+        const queryInput = document.getElementById('forum-search-input');
+        const query = queryInput ? queryInput.value : '';
+        const url = `/course/${currentCourseId}/forum?partial=1&filter=${currentForumFilter}&section_id=${currentForumSectionId}&q=${encodeURIComponent(query)}&page=${page}`;
+        
+        const forumContainer = document.getElementById('course-forum-embedded-container');
+        fetch(url, { headers: { 'HX-Request': 'true' } })
+            .then(res => res.text())
+            .then(html => {
+                forumContainer.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="bg-white/20 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">💬 Course Community</span>
+                                    <span class="text-xs text-indigo-200">Q&A & Discussion</span>
+                                </div>
+                                <h2 class="text-xl font-bold tracking-tight text-white">{{ course.title }}</h2>
+                                <p class="text-xs text-indigo-200 mt-0.5">Ask questions, get help from instructors, and discuss lessons with peers.</p>
+                            </div>
+                            <button type="button" onclick="openAskQuestionModal()" class="bg-white text-indigo-900 hover:bg-indigo-50 text-xs font-bold px-4 py-2.5 rounded-xl shadow transition transform hover:scale-105 flex items-center gap-1.5 flex-shrink-0">
+                                <span>✏️</span> Ask a Question
+                            </button>
+                        </div>
+                        <div id="forum-main-container">
+                            ${html}
+                        </div>
+                    </div>
+                `;
+            });
+    }
+
+    function forumLoadThread(threadId) {
+        const url = `/course/${currentCourseId}/forum/thread/${threadId}?partial=1`;
+        const forumContainer = document.getElementById('course-forum-embedded-container');
+        fetch(url, { headers: { 'HX-Request': 'true' } })
+            .then(res => res.text())
+            .then(html => {
+                forumContainer.innerHTML = `
+                    <div class="space-y-6">
+                        <div id="forum-main-container">
+                            ${html}
+                        </div>
+                    </div>
+                `;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+    }
+
+    function forumBackToList() {
+        forumReloadEmbeddedList();
+    }
+
+    function openAskQuestionModal() {
+        const modal = document.getElementById('askQuestionModal');
+        if (modal) modal.classList.remove('hidden');
+    }
+    function closeAskQuestionModal() {
+        const modal = document.getElementById('askQuestionModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function toggleNestedReplyForm(formId) {
+        const el = document.getElementById(formId);
+        if (el) el.classList.toggle('hidden');
+    }
+
+    function forumToggleThreadUpvote(threadId, btn) {
+        fetch(`/course/${currentCourseId}/forum/thread/${threadId}/upvote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const countSpan = btn.querySelector('.upvote-count');
+                if (countSpan) countSpan.textContent = data.upvotes_count;
+                if (data.upvoted) {
+                    btn.classList.add('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.remove('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                } else {
+                    btn.classList.remove('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                }
+            }
+        });
+    }
+
+    function forumToggleReplyUpvote(replyId, btn) {
+        fetch(`/course/${currentCourseId}/forum/reply/${replyId}/upvote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const countSpan = btn.querySelector('.upvote-count');
+                if (countSpan) countSpan.textContent = data.upvotes_count;
+                if (data.upvoted) {
+                    btn.classList.add('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.remove('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                } else {
+                    btn.classList.remove('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                }
+            }
+        });
+    }
 </script>
+
+<!-- Ask Question Modal (Accessible anywhere inside Course Reader) -->
+<div id="askQuestionModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-5 transform transition-all">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span>✏️</span> Ask a Question
+            </h3>
+            <button type="button" onclick="closeAskQuestionModal()" class="text-gray-400 hover:text-gray-600 text-lg font-bold p-1">
+                ✕
+            </button>
+        </div>
+
+        <form action="{{ url_for('forum.create_thread', course_id=course.id) }}" method="POST" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Title -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Question Title</label>
+                <input type="text" 
+                       name="title" 
+                       placeholder="e.g. How do I calculate the weighted average in Section 3?" 
+                       class="w-full text-sm p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-800"
+                       required>
+            </div>
+
+            <!-- Optional Lesson Tag -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Related Lesson / Activity (Optional)</label>
+                <select name="section_id" id="forum-modal-section-id" class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800">
+                    <option value="">General Course Question (No specific lesson)</option>
+                    {% if course.sections %}
+                        {% for s in course.sections %}
+                        <option value="{{ s.id }}">
+                            {{ s.title }} ({{ s.section_type|capitalize }})
+                        </option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <!-- Content -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Question Details & Code</label>
+                <textarea name="content" 
+                          rows="5" 
+                          placeholder="Describe your question or error in detail. Include code snippets or steps you tried..."
+                          class="w-full text-sm p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-800 leading-relaxed"
+                          required></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+                <button type="button" onclick="closeAskQuestionModal()" class="text-xs text-gray-500 hover:text-gray-700 font-semibold px-4 py-2">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-xs transition">
+                    Post Question
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Celebration Modal -->
 <div id="celebrationModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeCelebrationModal()">
