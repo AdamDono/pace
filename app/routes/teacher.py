@@ -637,6 +637,16 @@ def create_course_wizard():
                 course.prerequisites = request.form.get('prerequisites')
                 course.tags = request.form.get('tags')
 
+                # Ensure slug
+                if not course.slug:
+                    base_slug = Course.generate_slug(title, course.id)
+                    unique_slug = base_slug
+                    ctr = 1
+                    while Course.query.filter(Course.slug == unique_slug, Course.id != course.id).first():
+                        unique_slug = f"{base_slug}-{ctr}"
+                        ctr += 1
+                    course.slug = unique_slug
+
                 # Pricing & Tuition settings
                 course.pricing_type = request.form.get('pricing_type', 'monthly')
                 price_raw = request.form.get('price', '').strip()
@@ -890,6 +900,16 @@ def edit_course(course_id):
                     course.price = 250.0
             if course.pricing_type == 'free':
                 course.price = 0.0
+
+            # Ensure slug
+            if not course.slug:
+                base_slug = Course.generate_slug(course.title, course.id)
+                unique_slug = base_slug
+                ctr = 1
+                while Course.query.filter(Course.slug == unique_slug, Course.id != course.id).first():
+                    unique_slug = f"{base_slug}-{ctr}"
+                    ctr += 1
+                course.slug = unique_slug
 
             # Certificate Customization & Partner Co-Branding
             if 'certificate_theme' in request.form:

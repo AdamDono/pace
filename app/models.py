@@ -168,6 +168,7 @@ class Course(db.Model):
     resources = db.Column(db.Text, nullable=True)
     
     # New fields for enhanced course creation
+    slug = db.Column(db.String(140), unique=True, index=True, nullable=True)  # SEO-friendly URL slug
     category = db.Column(db.String(50), nullable=True)  # e.g., 'programming', 'design', 'business'
     accreditation_name = db.Column(db.String(255), nullable=True)  # e.g. 'National Certificate: IT Systems Support'
     difficulty_level = db.Column(db.String(20), default='intermediate')  # 'beginner', 'intermediate', 'advanced'
@@ -229,6 +230,22 @@ class Course(db.Model):
         if self.pricing_type == 'once_off':
             return f"R{val_str}"
         return f"R{val_str} pm"
+
+    @property
+    def slug_or_id(self):
+        """Returns slug if set, otherwise numeric ID as string"""
+        return self.slug if self.slug else str(self.id)
+
+    @staticmethod
+    def generate_slug(title, course_id=None):
+        """Generates clean, URL-friendly slug from title"""
+        import re, unicodedata
+        text = unicodedata.normalize('NFKD', title or '').encode('ascii', 'ignore').decode('utf-8')
+        text = re.sub(r'[^\w\s-]', '', text).strip().lower()
+        slug = re.sub(r'[-\s]+', '-', text)
+        if not slug and course_id:
+            slug = f"course-{course_id}"
+        return slug or "course"
 
 class Module(db.Model):
     __tablename__ = 'modules'

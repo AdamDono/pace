@@ -173,6 +173,25 @@ def create_app():
             add_column_if_missing('courses', 'partner_signatory_signature', 'VARCHAR(255)')
             add_column_if_missing('courses', 'price', 'FLOAT DEFAULT 250.0')
             add_column_if_missing('courses', 'pricing_type', 'VARCHAR(30) DEFAULT \'monthly\'')
+            add_column_if_missing('courses', 'slug', 'VARCHAR(140)')
+
+            # Auto-backfill slugs for existing courses missing a slug
+            try:
+                from app.models import Course
+                unslugged = Course.query.filter((Course.slug == None) | (Course.slug == '')).all()
+                for c in unslugged:
+                    base = Course.generate_slug(c.title, c.id)
+                    cand = base
+                    ctr = 1
+                    while Course.query.filter(Course.slug == cand, Course.id != c.id).first():
+                        cand = f"{base}-{ctr}"
+                        ctr += 1
+                    c.slug = cand
+                if unslugged:
+                    db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                app.logger.warning(f"Note on backfilling course slugs: {e}")
             
             # Check and add columns for multi-attempt limits (3 tries default)
             add_column_if_missing('assignments', 'max_attempts', 'INTEGER DEFAULT 3')

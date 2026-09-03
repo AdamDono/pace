@@ -27,24 +27,48 @@ def home():
         course_count=course_count,
     )
 
-@auth_bp.route('/course/<int:course_id>')
-def public_course_detail(course_id):
+@auth_bp.route('/courses/<identifier>')
+@auth_bp.route('/course/<identifier>')
+def public_course_detail(identifier):
     from app.models import Course
-    course = Course.query.get_or_404(course_id)
+    from flask import abort
+    
+    course = None
+    # If accessed via numeric ID, check and redirect to canonical SEO slug
+    if str(identifier).isdigit():
+        course = Course.query.get(int(identifier))
+        if course and course.slug:
+            return redirect(url_for('auth.public_course_detail', identifier=course.slug), code=301)
+    
+    if not course:
+        course = Course.query.filter_by(slug=identifier).first()
+        
+    if not course:
+        if str(identifier).isdigit():
+            course = Course.query.get_or_404(int(identifier))
+        else:
+            abort(404)
+
     if course.status != 'approved':
         if not (current_user.is_authenticated and (current_user.role == 'admin' or (current_user.role == 'teacher' and course.teacher_id == current_user.id))):
-            from flask import abort
             abort(404)
+
     return render_template('auth/public_course.html', course=course)
 
-@auth_bp.route('/apply-course/<int:course_id>', methods=['POST'])
+@auth_bp.route('/apply-course/<identifier>', methods=['POST'])
 @csrf.exempt
-def apply_course(course_id):
+def apply_course(identifier):
     from flask import jsonify
     from app.models import Course, Lead
     from app.utils.email import send_email
     
-    course = Course.query.get_or_404(course_id)
+    course = None
+    if str(identifier).isdigit():
+        course = Course.query.get(int(identifier))
+    if not course:
+        course = Course.query.filter_by(slug=identifier).first()
+    if not course:
+        return jsonify({'success': False, 'message': 'Course not found.'}), 404
     
     full_name = request.form.get('full_name')
     email = request.form.get('email')
