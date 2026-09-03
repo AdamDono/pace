@@ -409,7 +409,8 @@
             buttonEl.classList.add('active-filter');
 
             // Filter cards
-            const cards = document.querySelectorAll('.course-card');
+            const cards = document.querySelectorAll('#courses .course-card');
+            let visibleCount = 0;
             cards.forEach(card => {
                 const acc = card.getAttribute('data-accreditation');
                 const diff = card.getAttribute('data-difficulty');
@@ -427,11 +428,62 @@
 
                 if (matchAcc && matchDiff) {
                     card.style.display = 'flex';
+                    visibleCount++;
                 } else {
                     card.style.display = 'none';
                 }
             });
+
+            // Toggle empty state
+            const gridContainer = document.getElementById('catalogCoursesGrid');
+            const emptyState = document.getElementById('catalogEmptyState');
+            const emptyDetail = document.getElementById('catalogEmptyDetail');
+
+            if (emptyState) {
+                if (visibleCount === 0 && cards.length > 0) {
+                    if (gridContainer) gridContainer.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+
+                    let details = [];
+                    if (activeFilters.accreditation === 'accredited') details.push('Accredited (QCTO/SETA)');
+                    else if (activeFilters.accreditation === 'non') details.push('Skills (Non-Accredited)');
+
+                    if (activeFilters.difficulty === 'beginner') details.push('Beginner Friendly');
+                    else if (activeFilters.difficulty === 'advanced') details.push('Intermediate / Advanced');
+
+                    if (details.length > 0) {
+                        emptyDetail.innerHTML = `No public curriculums currently found matching <strong class="text-gray-800 font-bold">${details.join(' · ')}</strong>. Try selecting another category or show all courses.`;
+                    } else {
+                        emptyDetail.textContent = "We currently don't have published courses in this specific filter combination. Try selecting a different category or level.";
+                    }
+                } else {
+                    if (gridContainer) gridContainer.classList.remove('hidden');
+                    emptyState.classList.add('hidden');
+                }
+            }
         }
+
+        function resetCatalogFilters() {
+            activeFilters = {
+                accreditation: 'all',
+                difficulty: 'all'
+            };
+            document.querySelectorAll('#courses .filter-btn').forEach(btn => {
+                const txt = btn.textContent.trim().toLowerCase();
+                if (txt === 'all' || txt === 'all levels') {
+                    btn.classList.add('active-filter');
+                } else {
+                    btn.classList.remove('active-filter');
+                }
+            });
+            const cards = document.querySelectorAll('#courses .course-card');
+            cards.forEach(card => card.style.display = 'flex');
+            const gridContainer = document.getElementById('catalogCoursesGrid');
+            const emptyState = document.getElementById('catalogEmptyState');
+            if (gridContainer) gridContainer.classList.remove('hidden');
+            if (emptyState) emptyState.classList.add('hidden');
+        }
+        window.resetCatalogFilters = resetCatalogFilters;
         function openEnterpriseModal() {
             document.getElementById('enterpriseModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
@@ -1039,7 +1091,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div id="catalogCoursesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {% for course in courses %}
                 <div class="course-card glass-card rounded-3xl overflow-hidden flex flex-col h-full bg-white shadow-sm"
                     data-accreditation="{% if course.category in ['QCTO', 'SETA'] %}accredited{% else %}non{% endif %}"
@@ -1104,6 +1156,36 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+
+            <!-- Dynamic Empty State (Shown when 0 courses match catalog filters) -->
+            <div id="catalogEmptyState" class="hidden glass-card rounded-3xl border border-gray-200/80 p-8 sm:p-14 text-center max-w-xl mx-auto my-6 shadow-sm bg-white">
+                <div class="relative w-24 h-24 mx-auto mb-5 flex items-center justify-center">
+                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-100 via-indigo-50 to-purple-100"></div>
+                    <div class="relative z-10 w-16 h-16 rounded-2xl bg-white shadow-md border border-blue-100 flex items-center justify-center text-blue-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <span class="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                        0
+                    </span>
+                </div>
+
+                <h3 class="text-xl font-bold text-gray-900 mb-2">No matching curriculums found</h3>
+                <p class="text-gray-500 text-xs sm:text-sm mb-6 max-w-md mx-auto leading-relaxed" id="catalogEmptyDetail">
+                    We currently don't have published courses in this specific filter combination. Try selecting a different category or level.
+                </p>
+
+                <!-- Reset Filter Button -->
+                <button type="button" 
+                        onclick="resetCatalogFilters()"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition transform hover:scale-105">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>Show All Courses</span>
+                </button>
             </div>
             {% else %}
             <div class="glass-card p-12 text-center rounded-3xl bg-white shadow-sm">
