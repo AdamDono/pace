@@ -96,6 +96,11 @@ def create_app():
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=9)
     app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 
+    # Remember Me cookie configuration (30 days persistent login)
+    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+    app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+    app.config['REMEMBER_COOKIE_REFRESH_EACH_REQUEST'] = True
+
     # Create upload directory if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
