@@ -87,7 +87,7 @@ def dashboard():
                         if es.last_accessed and es.last_accessed > recent_time:
                             recent_time = es.last_accessed
                     if recent_time == datetime.min:
-                        recent_time = enrollment.created_at or datetime.utcnow()
+                        recent_time = getattr(enrollment, 'enrolled_at', None) or datetime.utcnow()
                     continue_learning.append({'course': course, 'section': cont_section, 'last_accessed': recent_time})
 
             completion = (completed_sections / total_sections * 100) if total_sections > 0 else 0
