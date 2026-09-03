@@ -84,16 +84,16 @@
             <!-- Actions buttons group -->
             <div class="flex items-center gap-2 flex-wrap md:flex-nowrap flex-shrink-0">
                 {% if course.status == 'approved' %}
-                <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
+                <a href="{{ url_for('student.course_detail', identifier=course.slug_or_id) }}"
                     class="inline-flex items-center text-[11px] font-bold bg-green-50 hover:bg-green-100 text-green-700 border border-green-250 px-3 py-1.5 rounded-lg transition-colors">
                     View Course
                 </a>
                 {% endif %}
-                <a href="{{ url_for('teacher.course_builder', course_id=course.id) }}"
+                <a href="{{ url_for('teacher.course_builder', identifier=course.slug_or_id) }}"
                     class="inline-flex items-center text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors">
                     Edit Course & Content
                 </a>
-                <a href="{{ url_for('teacher.enroll_students', course_id=course.id) }}"
+                <a href="{{ url_for('teacher.enroll_students', identifier=course.slug_or_id) }}"
                     class="inline-flex items-center text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg transition-colors">
                     Enroll Students
                 </a>

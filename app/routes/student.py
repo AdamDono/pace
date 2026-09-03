@@ -157,17 +157,32 @@ def course_progress():
         })
     return render_template('student/course_progress.html', courses=enrolled_courses, course_progress=course_progress)
 
+@student_bp.route('/courses/<identifier>')
+@student_bp.route('/course/<identifier>')
 @student_bp.route('/course/<int:course_id>')
 @login_required
-def course_detail(course_id):
-    course = Course.query.get_or_404(course_id)
+def course_detail(identifier=None, course_id=None):
+    from flask import abort
+    ident = identifier if identifier is not None else course_id
+    course = None
+    if str(ident).isdigit():
+        course = Course.query.get(int(ident))
+        if course and course.slug:
+            return redirect(url_for('student.course_detail', identifier=course.slug), code=301)
+    if not course:
+        course = Course.query.filter_by(slug=str(ident)).first()
+    if not course:
+        if str(ident).isdigit():
+            course = Course.query.get_or_404(int(ident))
+        else:
+            abort(404)
     
     # Check authorization based on role
     if current_user.role == 'student':
         if course.status != 'approved':
             flash('This course has not been published or approved yet.', 'danger')
             return redirect(url_for('student.dashboard'))
-        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first()
         if not enrollment:
             flash('You are not enrolled in this course.', 'danger')
             return redirect(url_for('student.dashboard'))
@@ -187,7 +202,7 @@ def course_detail(course_id):
         abort(403)
 
     from app.models import Module
-    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
+    modules = Module.query.filter_by(course_id=course.id).order_by(Module.order).all()
     
     # Gather all ordered sections across modules
     ordered_sections = []
@@ -195,7 +210,7 @@ def course_detail(course_id):
         m_secs = Section.query.filter_by(module_id=m.id).order_by(Section.order).all()
         ordered_sections.extend(m_secs)
     
-    unassigned = Section.query.filter_by(course_id=course_id, module_id=None).order_by(Section.order).all()
+    unassigned = Section.query.filter_by(course_id=course.id, module_id=None).order_by(Section.order).all()
     ordered_sections.extend(unassigned)
 
     sections = ordered_sections

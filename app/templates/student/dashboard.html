@@ -62,7 +62,7 @@
     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Continue Learning</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       {% for item in continue_learning[:2] %}
-      <a href="{{ url_for('student.course_detail', course_id=item.course.id, section_id=item.section.id) }}"
+      <a href="{{ url_for('student.course_detail', identifier=item.course.slug_or_id, section_id=item.section.id) }}"
         class="block bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-5 sm:p-6 text-white hover:shadow-lg transition group">
         <div class="flex items-start justify-between mb-3 gap-2">
           <div class="flex-1 min-w-0">
@@ -234,7 +234,7 @@
           <i class="fas fa-lock mr-2"></i> Access Restricted
         </button>
         {% else %}
-        <a href="{{ url_for('student.course_detail', course_id=course.id) }}"
+        <a href="{{ url_for('student.course_detail', identifier=course.slug_or_id) }}"
           class="mt-4 w-full inline-flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition">
           Continue Learning
           <i class="fas fa-arrow-right ml-2"></i>

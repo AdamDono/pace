@@ -16,6 +16,21 @@ logger = logging.getLogger(__name__)
 
 teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 
+def resolve_course_or_404(identifier):
+    """Resolves Course by numeric ID or SEO slug, aborting 404 if not found"""
+    from app.models import Course
+    course = None
+    if str(identifier).isdigit():
+        course = Course.query.get(int(identifier))
+    if not course:
+        course = Course.query.filter_by(slug=str(identifier)).first()
+    if not course:
+        if str(identifier).isdigit():
+            course = Course.query.get_or_404(int(identifier))
+        else:
+            abort(404)
+    return course
+
 @teacher_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -182,9 +197,11 @@ def calendar():
         pass
     return render_template('teacher/calendar.html', courses=courses, upcoming=upcoming)
 
+@teacher_bp.route('/courses/<identifier>/analytics')
+@teacher_bp.route('/course/<identifier>/analytics')
 @teacher_bp.route('/course/<int:course_id>/analytics')
 @teacher_required
-def course_analytics(course_id):
+def course_analytics(identifier=None, course_id=None):
     """Comprehensive analytics dashboard for a course"""
     from app.models import (Course, Enrollment, EnrollmentSection, Section, 
                            Quiz, QuizAttempt, QuizQuestion, QuizAnswer, 
@@ -192,15 +209,20 @@ def course_analytics(course_id):
                            VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse)
     from sqlalchemy import func
     
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
+    
+    # If accessed with numeric ID and has a slug, redirect to clean slug URL
+    if str(ident).isdigit() and course.slug:
+        return redirect(url_for('teacher.course_analytics', identifier=course.slug), code=301)
     
     # Verify teacher owns or co-teaches this course
     if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     # === BASIC STATS ===
-    total_enrollments = Enrollment.query.filter_by(course_id=course_id).count()
-    completed_enrollments = Enrollment.query.filter_by(course_id=course_id, completed=True).count()
+    total_enrollments = Enrollment.query.filter_by(course_id=course.id).count()
+    completed_enrollments = Enrollment.query.filter_by(course_id=course.id, completed=True).count()
     completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
     
     # === STUDENT PROGRESS DETAILS ===
@@ -807,12 +829,16 @@ def save_course_draft():
     """AJAX endpoint for saving course drafts"""
     return handle_autosave()
 
+@teacher_bp.route('/courses/<identifier>/edit', methods=['GET', 'POST'])
+@teacher_bp.route('/course/<identifier>/edit', methods=['GET', 'POST'])
+@teacher_bp.route('/edit-course/<identifier>', methods=['GET', 'POST'])
 @teacher_bp.route('/edit-course/<int:course_id>', methods=['GET', 'POST'])
 @teacher_required
-def edit_course(course_id):
+def edit_course(identifier=None, course_id=None):
     from app.models import Course, db  # Moved here
     from app.forms import CourseForm  # Moved here
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
     if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
@@ -1715,11 +1741,17 @@ def edit_section(course_id, section_id):
 
     return render_template('teacher/edit_section.html', course=course, module=module, section=section, quizzes=section.quizzes, assignments=section.assignments)
 
+@teacher_bp.route('/courses/<identifier>/preview')
+@teacher_bp.route('/course/<identifier>/preview')
 @teacher_bp.route('/course/<int:course_id>/preview')
-def preview_course(course_id):
+def preview_course(identifier=None, course_id=None):
     """Preview how the course will look to students - public access for published courses"""
     from app.models import Course, Section, Module
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
+    
+    if str(ident).isdigit() and course.slug:
+        return redirect(url_for('teacher.preview_course', identifier=course.slug), code=301)
 
     # Only allow preview if user is the teacher or a co-teacher OR the course is published
     if current_user.is_authenticated and current_user.is_teacher_for_course(course.id):
@@ -1730,25 +1762,32 @@ def preview_course(course_id):
         abort(404)
 
     # Get course structure for preview
-    modules = Module.query.filter_by(course_id=course_id).order_by(Module.order).all()
-    sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    modules = Module.query.filter_by(course_id=course.id).order_by(Module.order).all()
+    sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
 
     return render_template('teacher/course_preview.html', course=course, modules=modules, sections=sections)
 
+@teacher_bp.route('/courses/<identifier>/calendar')
+@teacher_bp.route('/course/<identifier>/calendar')
 @teacher_bp.route('/course/<int:course_id>/calendar')
 @teacher_required
-def course_calendar(course_id):
+def course_calendar(identifier=None, course_id=None):
     """Calendar view of all course deadlines"""
     from app.models import Course, Assignment, Section, Module
     from datetime import datetime, timedelta
     
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
+    
+    if str(ident).isdigit() and course.slug:
+        return redirect(url_for('teacher.course_calendar', identifier=course.slug), code=301)
+        
     if course.teacher_id != current_user.id:
         abort(403)
     
     # Get all assignments with due dates
     assignments = Assignment.query.join(Section).filter(
-        Section.course_id == course_id,
+        Section.course_id == course.id,
         Assignment.due_date.isnot(None)
     ).order_by(Assignment.due_date).all()
     
@@ -1852,22 +1891,29 @@ def gradebook():
     
     return render_template('teacher/gradebook.html', gradebook_data=gradebook_data)
 
+@teacher_bp.route('/courses/<identifier>/gradebook')
+@teacher_bp.route('/course/<identifier>/gradebook')
 @teacher_bp.route('/course/<int:course_id>/gradebook')
 @teacher_required
-def course_gradebook(course_id):
+def course_gradebook(identifier=None, course_id=None):
     """Detailed gradebook view for a specific course"""
     from app.models import Course, Enrollment, AssignmentSubmission, QuizAttempt, Assignment, Quiz, Section, User
     
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
+    
+    if str(ident).isdigit() and course.slug:
+        return redirect(url_for('teacher.course_gradebook', identifier=course.slug), code=301)
+
     if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
     # Get all enrollments for this course
-    enrollments = Enrollment.query.filter_by(course_id=course_id).all()
+    enrollments = Enrollment.query.filter_by(course_id=course.id).all()
     
     # Get all assignments and quizzes in this course
-    assignments = Assignment.query.join(Section).filter(Section.course_id == course_id).order_by(Assignment.due_date).all()
-    quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).order_by(Quiz.id).all()
+    assignments = Assignment.query.join(Section).filter(Section.course_id == course.id).order_by(Assignment.due_date).all()
+    quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).order_by(Quiz.id).all()
     
     # Build student grade data
     student_grades = []
@@ -2177,12 +2223,22 @@ def preview_submission(submission_id):
         'attempts': attempts_list
     })
     
+@teacher_bp.route('/courses/<identifier>/builder')
+@teacher_bp.route('/course/<identifier>/builder')
+@teacher_bp.route('/course-builder/<identifier>')
 @teacher_bp.route('/course/<int:course_id>/builder')
+@teacher_bp.route('/course-builder/<int:course_id>')
 @teacher_required
-def course_builder(course_id):
-    """Notion-style course content builder"""
+def course_builder(identifier=None, course_id=None):
+    """Notion-style course content builder with SEO slug and ID support"""
     from app.models import Course, Module, Section, db
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
+    
+    # If accessed with numeric ID and has a slug, redirect 301 to clean slug URL
+    if str(ident).isdigit() and course.slug:
+        return redirect(url_for('teacher.course_builder', identifier=course.slug), code=301)
+
     # Ensure teacher is authorized to manage this course
     if not current_user.is_teacher_for_course(course.id) and current_user.role != 'admin':
         abort(403)
@@ -2197,18 +2253,14 @@ def course_builder(course_id):
     
     return render_template('teacher/course_builder.html', course=course, modules=modules)
 
-@teacher_bp.route('/course-builder/<int:course_id>')
-@teacher_required
-def course_builder_alias(course_id):
-    """Alias redirect for course builder"""
-    return redirect(url_for('teacher.course_builder', course_id=course_id))
-
+@teacher_bp.route('/course/<identifier>/submit-review', methods=['POST'])
 @teacher_bp.route('/course/<int:course_id>/submit-review', methods=['POST'])
 @teacher_required
-def submit_course_for_review(course_id):
+def submit_course_for_review(identifier=None, course_id=None):
     """Change status from draft to pending for admin approval"""
     from app.models import Course, db
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
     if course.teacher_id != current_user.id:
         abort(403)
     
