@@ -163,6 +163,8 @@ def create_app():
             add_column_if_missing('courses', 'partner_signatory_name', 'VARCHAR(120)')
             add_column_if_missing('courses', 'partner_signatory_title', 'VARCHAR(120)')
             add_column_if_missing('courses', 'partner_signatory_signature', 'VARCHAR(255)')
+            add_column_if_missing('courses', 'price', 'FLOAT DEFAULT 250.0')
+            add_column_if_missing('courses', 'pricing_type', 'VARCHAR(30) DEFAULT \'monthly\'')
             
             # Check and add columns for multi-attempt limits (3 tries default)
             add_column_if_missing('assignments', 'max_attempts', 'INTEGER DEFAULT 3')

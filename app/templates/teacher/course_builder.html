@@ -174,6 +174,34 @@
                             </div>
                         </div>
 
+                        <!-- Course Pricing Section -->
+                        <div class="p-4 bg-gradient-to-r from-blue-50/70 to-indigo-50/70 rounded-xl border border-blue-100 space-y-3">
+                            <h4 class="text-xs font-bold text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
+                                <span>💳</span> Course Pricing & Tuition
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pricing Model</label>
+                                    <select name="pricing_type" id="settings-pricing-type" onchange="toggleSettingsPriceField()"
+                                        class="w-full p-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-800 focus:ring-2 focus:ring-blue-500">
+                                        <option value="monthly" {% if not course.pricing_type or course.pricing_type == 'monthly' %}selected{% endif %}>🔵 Monthly Tuition (per month)</option>
+                                        <option value="once_off" {% if course.pricing_type == 'once_off' %}selected{% endif %}>🟣 Once-Off Payment (Lifetime access)</option>
+                                        <option value="free" {% if course.pricing_type == 'free' %}selected{% endif %}>🟢 Free / Grant Sponsored (R0)</option>
+                                    </select>
+                                </div>
+                                <div id="settings-price-container" class="{% if course.pricing_type == 'free' %}hidden{% endif %}">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Price Amount (ZAR)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-xs">R</span>
+                                        <input type="number" step="1" min="0" name="price" id="settings-price-input"
+                                            value="{{ course.price|int if course.price is not none else 250 }}"
+                                            placeholder="250"
+                                            class="w-full pl-7 pr-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-900 focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="flex items-center space-x-3 bg-purple-50 p-3 rounded-lg border border-purple-100">
                             <input type="checkbox" id="is_coming_soon" name="is_coming_soon" value="true" {% if course.is_coming_soon %}checked{% endif %} class="w-4 h-4 text-purple-600 rounded">
                             <label for="is_coming_soon" class="text-sm font-semibold text-purple-900 cursor-pointer">
@@ -958,8 +986,25 @@
         setTimeout(() => form.remove(), 1000);
     }
 
+    function toggleSettingsPriceField() {
+        const pricingType = document.getElementById('settings-pricing-type');
+        const priceContainer = document.getElementById('settings-price-container');
+        const priceInput = document.getElementById('settings-price-input');
+        if (!pricingType || !priceContainer) return;
+        if (pricingType.value === 'free') {
+            priceContainer.classList.add('hidden');
+            if (priceInput) priceInput.value = '0';
+        } else {
+            priceContainer.classList.remove('hidden');
+            if (priceInput && (priceInput.value === '0' || !priceInput.value)) {
+                priceInput.value = '250';
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         initDualSignaturePads();
+        toggleSettingsPriceField();
     });
 </script>
 {% endblock %}

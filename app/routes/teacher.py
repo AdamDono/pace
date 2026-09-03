@@ -636,6 +636,16 @@ def create_course_wizard():
                 course.learning_objectives = request.form.get('learning_objectives')
                 course.prerequisites = request.form.get('prerequisites')
                 course.tags = request.form.get('tags')
+
+                # Pricing & Tuition settings
+                course.pricing_type = request.form.get('pricing_type', 'monthly')
+                price_raw = request.form.get('price', '').strip()
+                try:
+                    course.price = float(price_raw) if price_raw else (0.0 if course.pricing_type == 'free' else 250.0)
+                except (ValueError, TypeError):
+                    course.price = 250.0
+                if course.pricing_type == 'free':
+                    course.price = 0.0
                 
                 # Handle optional file uploads if provided immediately
                 banner_file = request.files.get('banner_image')
@@ -868,6 +878,18 @@ def edit_course(course_id):
             if 'max_seats' in request.form:
                 seats_val = request.form.get('max_seats', '').strip()
                 course.max_seats = int(seats_val) if seats_val.isdigit() else None
+
+            # Pricing & Tuition settings
+            if 'pricing_type' in request.form:
+                course.pricing_type = request.form.get('pricing_type', 'monthly')
+            if 'price' in request.form:
+                price_val = request.form.get('price', '').strip()
+                try:
+                    course.price = float(price_val) if price_val else (0.0 if course.pricing_type == 'free' else 250.0)
+                except (ValueError, TypeError):
+                    course.price = 250.0
+            if course.pricing_type == 'free':
+                course.price = 0.0
 
             # Certificate Customization & Partner Co-Branding
             if 'certificate_theme' in request.form:

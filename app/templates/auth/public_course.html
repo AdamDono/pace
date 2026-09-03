@@ -220,12 +220,31 @@
                                 🚀 Pre-Launch / Coming Soon
                             </span>
                             {% endif %}
-                            <span class="text-xs font-black uppercase tracking-widest text-gray-400">Monthly Tuition</span>
+
+                            {% if course.pricing_type == 'free' or (course.price is not none and course.price <= 0) %}
+                            <span class="text-xs font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full inline-block mb-1">100% Sponsored / Free</span>
                             <div class="flex items-baseline space-x-1.5 mt-1">
-                                <span class="text-3xl font-black text-gray-900">R250</span>
+                                <span class="text-3xl font-black text-gray-900">Free</span>
+                                <span class="text-sm font-semibold text-emerald-600">(R0)</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2 font-medium">Fully sponsored by Pace Academy partners & funders.</p>
+
+                            {% elif course.pricing_type == 'once_off' %}
+                            <span class="text-xs font-black uppercase tracking-widest text-purple-600 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full inline-block mb-1">Once-Off Access</span>
+                            <div class="flex items-baseline space-x-1.5 mt-1">
+                                <span class="text-3xl font-black text-gray-900">R{{ course.price|int if course.price == course.price|int else course.price }}</span>
+                                <span class="text-sm font-semibold text-gray-500">once-off</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2 font-medium">Lifetime access to all modules, projects, and certificate.</p>
+
+                            {% else %}
+                            <span class="text-xs font-black uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full inline-block mb-1">Monthly Tuition</span>
+                            <div class="flex items-baseline space-x-1.5 mt-1">
+                                <span class="text-3xl font-black text-gray-900">R{{ course.price|int if course.price is not none and course.price == course.price|int else (course.price or 250) }}</span>
                                 <span class="text-sm font-semibold text-gray-500">pm</span>
                             </div>
                             <p class="text-xs text-gray-400 mt-2 font-medium">Cancel anytime. Access all Skills and Vocational courses.</p>
+                            {% endif %}
 
                             {% if course.max_seats %}
                             <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">

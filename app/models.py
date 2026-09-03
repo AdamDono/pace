@@ -183,6 +183,10 @@ class Course(db.Model):
     visibility = db.Column(db.String(20), default='public', index=True)  # 'public', 'private'
     is_coming_soon = db.Column(db.Boolean, default=False, index=True)  # Waitlist / Pre-launch mode
     max_seats = db.Column(db.Integer, nullable=True)  # Optional student capacity cap
+
+    # Pricing & Tuition Options
+    price = db.Column(db.Float, default=250.0, nullable=True)  # Price amount in ZAR (e.g. 250.0, 0.0 for free)
+    pricing_type = db.Column(db.String(30), default='monthly', nullable=False)  # 'monthly', 'once_off', 'free'
     
     # Custom & Co-Branded Certificate Design Fields
     certificate_theme = db.Column(db.String(30), default='gold')  # 'gold', 'navy', 'emerald', 'dark', 'burgundy'
@@ -214,6 +218,17 @@ class Course(db.Model):
             return None
         enrolled_count = len(self.enrollments) if self.enrollments else 0
         return max(0, self.max_seats - enrolled_count)
+
+    @property
+    def formatted_price(self):
+        """Returns clean human-readable price with ZAR currency symbol"""
+        if self.pricing_type == 'free' or (self.price is not None and self.price <= 0):
+            return "Free"
+        val = self.price if self.price is not None else 250.0
+        val_str = f"{int(val)}" if val.is_integer() else f"{val:.2f}"
+        if self.pricing_type == 'once_off':
+            return f"R{val_str}"
+        return f"R{val_str} pm"
 
 class Module(db.Model):
     __tablename__ = 'modules'
