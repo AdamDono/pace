@@ -119,15 +119,23 @@ def create_app():
             db.create_all()
             
             from sqlalchemy import inspect, text
-            inspector = inspect(db.engine)
             
             def add_column_if_missing(table_name, column_name, column_type):
-                columns = [c['name'] for c in inspector.get_columns(table_name)]
-                if column_name not in columns:
-                    db_type = column_type
-                    if db.engine.name == 'sqlite':
-                        db_type = column_type.replace('VARCHAR', 'TEXT').replace('BOOLEAN', 'INTEGER')
-                    db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {db_type};"))
+                try:
+                    insp = inspect(db.engine)
+                    columns = [c['name'] for c in insp.get_columns(table_name)]
+                    if column_name not in columns:
+                        db_type = column_type
+                        if db.engine.name == 'sqlite':
+                            db_type = column_type.replace('VARCHAR', 'TEXT').replace('BOOLEAN', 'INTEGER')
+                        db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {db_type};"))
+                        db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    if 'already exists' in str(e).lower() or 'duplicate column' in str(e).lower():
+                        pass
+                    else:
+                        app.logger.warning(f"Note on {table_name}.{column_name}: {e}")
             
             # Check and add columns to users
             add_column_if_missing('users', 'id_number', 'VARCHAR(30)')
