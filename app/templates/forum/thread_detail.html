@@ -1,0 +1,74 @@
+{% extends "student/base_student.html" %}
+{% block title %}{{ thread.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+
+    <!-- Thread Container -->
+    <div id="forum-main-container">
+        {% include "forum/_thread_view.html" %}
+    </div>
+
+</div>
+
+<script>
+    let currentCourseId = {{ course.id }};
+
+    function forumBackToList() {
+        window.location.href = "{{ url_for('forum.course_forum', course_id=course.id) }}";
+    }
+
+    function toggleNestedReplyForm(formId) {
+        const el = document.getElementById(formId);
+        if (el) el.classList.toggle('hidden');
+    }
+
+    function forumToggleThreadUpvote(threadId, btn) {
+        fetch(`/course/${currentCourseId}/forum/thread/${threadId}/upvote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const countSpan = btn.querySelector('.upvote-count');
+                if (countSpan) countSpan.textContent = data.upvotes_count;
+                if (data.upvoted) {
+                    btn.classList.add('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.remove('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                } else {
+                    btn.classList.remove('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                }
+            }
+        });
+    }
+
+    function forumToggleReplyUpvote(replyId, btn) {
+        fetch(`/course/${currentCourseId}/forum/reply/${replyId}/upvote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const countSpan = btn.querySelector('.upvote-count');
+                if (countSpan) countSpan.textContent = data.upvotes_count;
+                if (data.upvoted) {
+                    btn.classList.add('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.remove('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                } else {
+                    btn.classList.remove('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                    btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-600');
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

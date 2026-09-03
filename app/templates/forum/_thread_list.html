@@ -1,0 +1,205 @@
+<!-- Thread List Component with Search, Tabs, and Question Cards -->
+<div id="forum-thread-list-container" class="space-y-4">
+
+    <!-- Search & Filter Controls -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs space-y-3">
+        <!-- Top row: Search and Ask Question -->
+        <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+            <div class="relative flex-1">
+                <input type="text" 
+                       id="forum-search-input" 
+                       placeholder="Search questions, topics, or code..." 
+                       value="{{ search_query or '' }}"
+                       class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-800 transition"
+                       onkeydown="if(event.key === 'Enter'){ forumApplyFilters(); }">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+            
+            <button type="button" 
+                    onclick="openAskQuestionModal()"
+                    class="inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-xl shadow-xs transition transform hover:scale-[1.02]">
+                <span>✏️</span> Ask a Question
+            </button>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-100 text-xs font-semibold">
+            <button type="button" 
+                    onclick="forumSetFilter('all')" 
+                    class="px-3 py-1.5 rounded-lg transition {% if filter_mode == 'all' and not section_id %}bg-indigo-50 text-indigo-700 font-bold border border-indigo-200{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                All Discussions
+            </button>
+
+            {% if active_section %}
+            <button type="button" 
+                    onclick="forumSetFilter('this_lesson')" 
+                    class="px-3 py-1.5 rounded-lg transition flex items-center gap-1 {% if section_id == active_section.id %}bg-blue-50 text-blue-700 font-bold border border-blue-200{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                <span>📌</span> This Lesson ({{ active_section.title|truncate(20) }})
+            </button>
+            {% endif %}
+
+            <button type="button" 
+                    onclick="forumSetFilter('unanswered')" 
+                    class="px-3 py-1.5 rounded-lg transition {% if filter_mode == 'unanswered' %}bg-amber-50 text-amber-800 font-bold border border-amber-200{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                Unanswered
+            </button>
+
+            <button type="button" 
+                    onclick="forumSetFilter('instructor')" 
+                    class="px-3 py-1.5 rounded-lg transition {% if filter_mode == 'instructor' %}bg-purple-50 text-purple-700 font-bold border border-purple-200{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                🎓 Instructor Answered
+            </button>
+
+            <button type="button" 
+                    onclick="forumSetFilter('popular')" 
+                    class="px-3 py-1.5 rounded-lg transition {% if filter_mode == 'popular' %}bg-emerald-50 text-emerald-700 font-bold border border-emerald-200{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                🔥 Most Upvoted
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Lesson Filter Banner (if filtering by a section) -->
+    {% if active_section and section_id == active_section.id %}
+    <div class="bg-blue-50 border border-blue-200 text-blue-900 px-4 py-2.5 rounded-xl flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2 font-medium">
+            <span>📌 Showing questions for: <strong>{{ active_section.title }}</strong></span>
+        </div>
+        <button type="button" onclick="forumClearLessonFilter()" class="text-blue-700 hover:text-blue-900 underline font-bold">
+            Show all course questions
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Thread Cards List -->
+    {% if threads %}
+        <div class="space-y-3">
+            {% for thread in threads %}
+            <div class="bg-white rounded-2xl border border-gray-200 hover:border-indigo-300 p-5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row items-start justify-between gap-4 cursor-pointer"
+                 onclick="forumLoadThread({{ thread.id }})">
+                
+                <div class="flex items-start space-x-3.5 flex-1 min-w-0">
+                    <!-- Author Avatar -->
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center flex-shrink-0 text-sm border border-indigo-200 overflow-hidden">
+                        {% if thread.author.profile_image %}
+                            <img src="{{ thread.author.profile_image|avatar_url }}" alt="{{ thread.author.username }}" class="w-full h-full object-cover">
+                        {% else %}
+                            {{ (thread.author.first_name or thread.author.username)[0]|upper }}
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <!-- Badges Row -->
+                        <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                            {% if thread.is_pinned %}
+                                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    📌 Pinned
+                                </span>
+                            {% endif %}
+
+                            {% if thread.is_resolved %}
+                                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    ✅ Solved
+                                </span>
+                            {% endif %}
+
+                            {% if thread.has_instructor_reply %}
+                                <span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    🎓 Instructor Answered
+                                </span>
+                            {% endif %}
+
+                            {% if thread.section %}
+                                <span class="bg-blue-50 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-blue-100 truncate max-w-[200px]" title="{{ thread.section.title }}">
+                                    📖 {{ thread.section.title }}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Thread Title -->
+                        <h3 class="font-bold text-gray-900 text-base leading-snug hover:text-indigo-600 transition truncate mb-1">
+                            {{ thread.title }}
+                        </h3>
+
+                        <!-- Content Snippet -->
+                        <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-2.5">
+                            {{ thread.content|striptags }}
+                        </p>
+
+                        <!-- Meta row -->
+                        <div class="flex items-center text-[11px] text-gray-400 gap-3">
+                            <span class="font-medium text-gray-600">
+                                {{ thread.author.first_name or thread.author.username }}
+                                {% if thread.author.role in ('teacher', 'admin') %}
+                                    <span class="text-purple-600 font-bold text-[10px]">(Instructor)</span>
+                                {% endif %}
+                            </span>
+                            <span>•</span>
+                            <span>{{ thread.created_at.strftime('%b %d, %Y') }}</span>
+                            <span>•</span>
+                            <span>👁️ {{ thread.views_count or 0 }} views</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side Stats / Actions -->
+                <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100" onclick="event.stopPropagation();">
+                    <!-- Upvote Counter -->
+                    <button type="button" 
+                            onclick="forumToggleThreadUpvote({{ thread.id }}, this)"
+                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition {% if thread.has_upvoted(current_user.id) %}bg-indigo-50 border-indigo-300 text-indigo-700{% else %}bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-600{% endif %}">
+                        <span>▲</span>
+                        <span class="upvote-count">{{ thread.upvotes_count }}</span>
+                    </button>
+
+                    <!-- Reply Count Badge -->
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg {% if thread.replies_count > 0 %}bg-indigo-50 text-indigo-700{% else %}bg-gray-100 text-gray-400{% endif %}">
+                        💬 {{ thread.replies_count }}
+                    </span>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200 text-xs text-gray-600">
+            <div>Page {{ pagination.page }} of {{ pagination.pages }}</div>
+            <div class="flex gap-1.5">
+                {% if pagination.has_prev %}
+                <button type="button" onclick="forumChangePage({{ pagination.prev_num }})" class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Previous
+                </button>
+                {% endif %}
+                {% if pagination.has_next %}
+                <button type="button" onclick="forumChangePage({{ pagination.next_num }})" class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Next
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-3">
+            <span class="text-4xl block mb-1">💬</span>
+            <h4 class="font-bold text-gray-800 text-base">No discussions found</h4>
+            <p class="text-xs text-gray-500 max-w-sm mx-auto">
+                {% if search_query %}
+                    No questions matching "{{ search_query }}". Try clearing your search or ask a new question!
+                {% else %}
+                    Be the first to start a conversation, share a project idea, or ask for help with this course.
+                {% endif %}
+            </p>
+            <button type="button" 
+                    onclick="openAskQuestionModal()"
+                    class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition">
+                <span>✏️</span> Ask the First Question
+            </button>
+        </div>
+    {% endif %}
+
+</div>

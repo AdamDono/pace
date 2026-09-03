@@ -659,3 +659,99 @@ class LiveQuestion(db.Model):
 
     session = db.relationship('LiveSession', backref=db.backref('questions', lazy=True, cascade='all, delete-orphan'))
     student = db.relationship('User', backref='live_questions')
+
+
+# ==============================================================================
+# COURSE DISCUSSION FORUM & Q&A COMMUNITY MODELS
+# ==============================================================================
+
+class ForumThread(db.Model):
+    """Discussion thread or question in a course"""
+    __tablename__ = 'forum_threads'
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=True)  # Null if general course question
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    title = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_pinned = db.Column(db.Boolean, default=False)
+    is_locked = db.Column(db.Boolean, default=False)
+    is_resolved = db.Column(db.Boolean, default=False)
+    views_count = db.Column(db.Integer, default=0)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    course = db.relationship('Course', backref=db.backref('forum_threads', lazy=True, cascade='all, delete-orphan'))
+    section = db.relationship('Section', backref=db.backref('forum_threads', lazy=True))
+    author = db.relationship('User', backref='forum_threads')
+    replies = db.relationship('ForumReply', backref='thread', lazy='dynamic', cascade='all, delete-orphan', order_by='ForumReply.created_at.asc()')
+    upvotes = db.relationship('ForumUpvote', backref='thread', lazy='dynamic', cascade='all, delete-orphan')
+
+    @property
+    def upvotes_count(self):
+        return self.upvotes.filter_by(reply_id=None).count()
+
+    @property
+    def replies_count(self):
+        return self.replies.count()
+
+    @property
+    def has_instructor_reply(self):
+        return self.replies.filter_by(is_instructor_reply=True).first() is not None
+
+    @property
+    def accepted_reply(self):
+        return self.replies.filter_by(is_accepted_solution=True).first()
+
+    def has_upvoted(self, user_id):
+        if not user_id:
+            return False
+        return self.upvotes.filter_by(user_id=user_id, reply_id=None).first() is not None
+
+
+class ForumReply(db.Model):
+    """Reply or comment on a forum thread"""
+    __tablename__ = 'forum_replies'
+
+    id = db.Column(db.Integer, primary_key=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey('forum_threads.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    parent_reply_id = db.Column(db.Integer, db.ForeignKey('forum_replies.id'), nullable=True)
+
+    content = db.Column(db.Text, nullable=False)
+    is_instructor_reply = db.Column(db.Boolean, default=False)
+    is_accepted_solution = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    author = db.relationship('User', backref='forum_replies')
+    parent = db.relationship('ForumReply', remote_side=[id], backref=db.backref('children', lazy=True, cascade='all, delete-orphan'))
+    upvotes = db.relationship('ForumUpvote', backref='reply', lazy='dynamic', cascade='all, delete-orphan')
+
+    @property
+    def upvotes_count(self):
+        return self.upvotes.filter_by(thread_id=None).count()
+
+    def has_upvoted(self, user_id):
+        if not user_id:
+            return False
+        return self.upvotes.filter_by(user_id=user_id, thread_id=None).first() is not None
+
+
+class ForumUpvote(db.Model):
+    """User upvotes for threads and replies"""
+    __tablename__ = 'forum_upvotes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    thread_id = db.Column(db.Integer, db.ForeignKey('forum_threads.id'), nullable=True)
+    reply_id = db.Column(db.Integer, db.ForeignKey('forum_replies.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='forum_upvotes')

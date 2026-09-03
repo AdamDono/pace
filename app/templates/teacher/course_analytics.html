@@ -11,10 +11,15 @@
             <div>
                 <h1 class="text-4xl font-bold mb-2">📊 Course Analytics</h1>
                 <p class="text-lg text-white/90">{{ course.title }}</p>
-                <div class="flex items-center gap-4 mt-3">
+                <div class="flex items-center gap-3 mt-3">
                     <a href="{{ url_for('teacher.manage_modules', course_id=course.id) }}" 
                        class="text-sm text-white/80 hover:text-white underline">
                         ← Back to Course Builder
+                    </a>
+                    <span class="text-white/40">•</span>
+                    <a href="{{ url_for('forum.course_forum', course_id=course.id) }}" 
+                       class="text-sm text-white/80 hover:text-white underline flex items-center gap-1">
+                        💬 Course Q&A Forum
                     </a>
                 </div>
             </div>
