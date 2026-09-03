@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import or_, desc, func
-from app import db
+from app import db, csrf
 from app.models import Course, Section, Enrollment, User, ForumThread, ForumReply, ForumUpvote, Notification
 from app.utils.email import send_email
 
@@ -286,6 +286,7 @@ def add_reply(course_id, thread_id):
 
 
 @forum_bp.route('/course/<int:course_id>/forum/thread/<int:thread_id>/upvote', methods=['POST'])
+@csrf.exempt
 @login_required
 def toggle_thread_upvote(course_id, thread_id):
     """Toggle upvote on a thread via AJAX"""
@@ -314,6 +315,7 @@ def toggle_thread_upvote(course_id, thread_id):
 
 
 @forum_bp.route('/course/<int:course_id>/forum/reply/<int:reply_id>/upvote', methods=['POST'])
+@csrf.exempt
 @login_required
 def toggle_reply_upvote(course_id, reply_id):
     """Toggle upvote on a reply via AJAX"""
