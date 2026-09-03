@@ -244,6 +244,37 @@
     </div>
     {% endfor %}
   </div>
+
+  <!-- Dynamic Empty Search & Filter State (Shown when 0 courses match filter) -->
+  <div id="emptySearchState" class="hidden bg-white rounded-3xl border border-gray-200/80 p-8 sm:p-14 text-center max-w-xl mx-auto my-6 shadow-xs">
+    <!-- Modern SVG Illustration -->
+    <div class="relative w-24 h-24 mx-auto mb-5 flex items-center justify-center">
+      <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-100 via-blue-50 to-purple-100"></div>
+      <div class="relative z-10 w-16 h-16 rounded-2xl bg-white shadow-md border border-indigo-100 flex items-center justify-center text-indigo-600">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+        </svg>
+      </div>
+      <span class="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+        0
+      </span>
+    </div>
+
+    <h3 class="text-xl font-bold text-gray-900 mb-2">No matching courses found</h3>
+    <p class="text-gray-500 text-xs sm:text-sm mb-6 max-w-md mx-auto leading-relaxed" id="emptyStateDetailText">
+      We couldn't find any courses matching your criteria. Try adjusting your search keywords, difficulty level, or category filter.
+    </p>
+
+    <!-- Reset Filter Button -->
+    <button type="button" 
+            onclick="resetCourseFilters()"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition transform hover:scale-105">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      <span>Reset All Filters</span>
+    </button>
+  </div>
   {% else %}
   <!-- Welcome Screen for New Users -->
   <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl shadow-lg border border-blue-500 p-8 sm:p-12 text-center text-white max-w-3xl mx-auto mt-8">
@@ -269,6 +300,9 @@
     const sortFilter = document.getElementById('sortFilter');
     const courseCards = document.querySelectorAll('.course-card');
     const courseCount = document.getElementById('courseCount');
+    const emptyState = document.getElementById('emptySearchState');
+    const emptyDetail = document.getElementById('emptyStateDetailText');
+    const coursesContainer = document.getElementById('coursesContainer');
 
     function filterAndSortCourses() {
       const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -296,9 +330,30 @@
         }
       });
 
+      // Show/Hide Empty State dynamically
+      if (visibleCount === 0 && cardsArray.length > 0) {
+        if (coursesContainer) coursesContainer.classList.add('hidden');
+        if (emptyState) {
+          emptyState.classList.remove('hidden');
+
+          let details = [];
+          if (searchTerm) details.push(`"${searchTerm}"`);
+          if (selectedCategory) details.push(`Category: ${selectedCategory.toUpperCase()}`);
+          if (selectedDifficulty) details.push(`Level: ${selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1)}`);
+
+          if (details.length > 0) {
+            emptyDetail.innerHTML = `No results found for <strong class="text-gray-800 font-bold">${details.join(' · ')}</strong>. Try adjusting your filters or search keywords.`;
+          } else {
+            emptyDetail.textContent = "We couldn't find any courses matching your criteria. Try adjusting your search keywords, difficulty level, or category filter.";
+          }
+        }
+      } else {
+        if (coursesContainer) coursesContainer.classList.remove('hidden');
+        if (emptyState) emptyState.classList.add('hidden');
+      }
+
       // Sort visible cards
-      const container = document.getElementById('coursesContainer');
-      if (container) {
+      if (coursesContainer) {
         const visibleCards = cardsArray.filter(card => card.style.display !== 'none');
 
         visibleCards.sort((a, b) => {
@@ -314,13 +369,22 @@
           return 0;
         });
 
-        visibleCards.forEach(card => container.appendChild(card));
+        visibleCards.forEach(card => coursesContainer.appendChild(card));
       }
 
       if (courseCount) {
         courseCount.textContent = visibleCount;
       }
     }
+
+    function resetCourseFilters() {
+      if (searchInput) searchInput.value = '';
+      if (categoryFilter) categoryFilter.value = '';
+      if (difficultyFilter) difficultyFilter.value = '';
+      if (sortFilter) sortFilter.value = 'recent';
+      filterAndSortCourses();
+    }
+    window.resetCourseFilters = resetCourseFilters;
 
     if (searchInput) searchInput.addEventListener('input', filterAndSortCourses);
     if (categoryFilter) categoryFilter.addEventListener('change', filterAndSortCourses);
@@ -330,17 +394,16 @@
     // View toggle functionality
     const gridView = document.getElementById('gridView');
     const listView = document.getElementById('listView');
-    const container = document.getElementById('coursesContainer');
 
-    if (gridView && listView && container) {
+    if (gridView && listView && coursesContainer) {
       gridView.addEventListener('click', function () {
-        container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+        coursesContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
         gridView.classList.add('bg-gray-50');
         listView.classList.remove('bg-gray-50');
       });
 
       listView.addEventListener('click', function () {
-        container.className = 'flex flex-col space-y-4';
+        coursesContainer.className = 'flex flex-col space-y-4';
         listView.classList.add('bg-gray-50');
         gridView.classList.remove('bg-gray-50');
       });
