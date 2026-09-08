@@ -190,6 +190,7 @@ class Course(db.Model):
     pricing_type = db.Column(db.String(30), default='monthly', nullable=False)  # 'monthly', 'once_off', 'free'
     
     # Custom & Co-Branded Certificate Design Fields
+    instructor_name = db.Column(db.String(150), nullable=True)  # Name of instructor, facilitator, or skills development programme / organization
     certificate_theme = db.Column(db.String(30), default='gold')  # 'gold', 'navy', 'emerald', 'dark', 'burgundy'
     custom_certificate_title = db.Column(db.String(120), nullable=True)  # e.g. "Certificate of Completion"
     instructor_signature = db.Column(db.String(255), nullable=True)  # Lead Instructor signature image path or Cloudinary URL
@@ -212,6 +213,19 @@ class Course(db.Model):
                              cascade='all, delete-orphan')
     enrollments = db.relationship('Enrollment', back_populates='course', cascade='all, delete-orphan')
     ratings = db.relationship('Rating', back_populates='course', cascade='all, delete-orphan')
+
+    @property
+    def display_instructor(self):
+        """Returns custom instructor / organization name if set, otherwise falls back to creator's full name/username"""
+        if self.instructor_name and self.instructor_name.strip():
+            return self.instructor_name.strip()
+        if self.partner_name and self.partner_name.strip():
+            return self.partner_name.strip()
+        if self.teacher:
+            if self.teacher.first_name or self.teacher.last_name:
+                return f"{self.teacher.first_name or ''} {self.teacher.last_name or ''}".strip()
+            return self.teacher.username or self.teacher.email.split('@')[0]
+        return "Pace Academy Faculty"
 
     @property
     def seats_remaining(self):

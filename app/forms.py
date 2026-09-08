@@ -29,6 +29,10 @@ class CourseForm(FlaskForm):
         DataRequired(),
         Length(min=5, max=100)
     ])
+    instructor_name = StringField('Instructor / Organization / Programme Name', validators=[
+        Optional(),
+        Length(max=150)
+    ])
     description = TextAreaField('Description', validators=[
         DataRequired(),
         Length(min=10)

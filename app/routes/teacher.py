@@ -658,6 +658,7 @@ def create_course_wizard():
                 course.learning_objectives = request.form.get('learning_objectives')
                 course.prerequisites = request.form.get('prerequisites')
                 course.tags = request.form.get('tags')
+                course.instructor_name = request.form.get('instructor_name', '').strip() or None
 
                 # Ensure slug
                 if not course.slug:
@@ -797,6 +798,8 @@ def handle_autosave():
             course.learning_objectives = request.form.get('learning_objectives') or course.learning_objectives
             course.prerequisites = request.form.get('prerequisites') or course.prerequisites
             course.tags = request.form.get('tags') or course.tags
+            if 'instructor_name' in request.form:
+                course.instructor_name = request.form.get('instructor_name', '').strip() or None
 
         # Handle banner image upload
         banner_file = request.files.get('banner_image')
@@ -907,7 +910,9 @@ def edit_course(identifier=None, course_id=None):
             else:
                 course.intro_video = None
 
-            # Update visibility, coming soon, and max seats
+            # Update visibility, coming soon, max seats, and custom instructor
+            if 'instructor_name' in request.form:
+                course.instructor_name = request.form.get('instructor_name', '').strip() or None
             if 'visibility' in request.form:
                 course.visibility = request.form.get('visibility', 'public')
             course.is_coming_soon = request.form.get('is_coming_soon') in ('true', 'on', '1', True)
@@ -1134,13 +1139,22 @@ def claim_course(course_id):
     flash(f'You are now assigned as the instructor for "{course.title}". You can edit all modules and sections!', 'success')
     return redirect(url_for('teacher.course_builder', course_id=course.id))
 
+@teacher_bp.route('/courses/<identifier>/enroll-students', methods=['GET', 'POST'])
+@teacher_bp.route('/course/<identifier>/enroll-students', methods=['GET', 'POST'])
+@teacher_bp.route('/courses/<identifier>/enroll', methods=['GET', 'POST'])
+@teacher_bp.route('/course/<identifier>/enroll', methods=['GET', 'POST'])
 @teacher_bp.route('/course/<int:course_id>/enroll-students', methods=['GET', 'POST'])
 @teacher_required
-def enroll_students(course_id):
+def enroll_students(identifier=None, course_id=None):
     from app.models import Course, User, Enrollment, db  # Moved here
-    course = Course.query.get_or_404(course_id)
+    ident = identifier if identifier is not None else course_id
+    course = resolve_course_or_404(ident)
     if not current_user.is_teacher_for_course(course.id):
         abort(403)
+
+    # 301 Canonical redirect if numeric ID is passed
+    if str(ident).isdigit() and course.slug:
+        return redirect(url_for('teacher.enroll_students', identifier=course.slug), code=301)
 
     if request.method == 'POST':
         student_email = request.form.get('student_email')
@@ -1148,12 +1162,12 @@ def enroll_students(course_id):
 
         if not student:
             flash('Student not found or invalid email.', 'danger')
-            return redirect(url_for('teacher.enroll_students', course_id=course_id))
+            return redirect(url_for('teacher.enroll_students', identifier=course.slug_or_id))
 
         existing_enrollment = Enrollment.query.filter_by(student_id=student.id, course_id=course.id).first()
         if existing_enrollment:
             flash('Student is already enrolled in this course.', 'warning')
-            return redirect(url_for('teacher.enroll_students', course_id=course_id))
+            return redirect(url_for('teacher.enroll_students', identifier=course.slug_or_id))
 
         enrollment = Enrollment(student_id=student.id, course_id=course.id)
         db.session.add(enrollment)
@@ -1166,7 +1180,7 @@ def enroll_students(course_id):
         except Exception as e:
             flash(f'Student {student.email} enrolled but email failed to send: {str(e)}', 'warning')
         
-        return redirect(url_for('teacher.enroll_students', course_id=course_id))
+        return redirect(url_for('teacher.enroll_students', identifier=course.slug_or_id))
 
     enrolled_students = User.query.join(Enrollment).filter(Enrollment.course_id == course.id).all()
     return render_template('teacher/enroll_students.html', course=course, enrolled_students=enrolled_students)

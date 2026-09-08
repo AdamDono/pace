@@ -174,6 +174,7 @@ def create_app():
             add_column_if_missing('courses', 'price', 'FLOAT DEFAULT 250.0')
             add_column_if_missing('courses', 'pricing_type', 'VARCHAR(30) DEFAULT \'monthly\'')
             add_column_if_missing('courses', 'slug', 'VARCHAR(140)')
+            add_column_if_missing('courses', 'instructor_name', 'VARCHAR(150)')
 
             # Auto-backfill slugs for existing courses missing a slug
             try:
