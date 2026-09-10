@@ -226,8 +226,8 @@ def course_analytics(identifier=None, course_id=None):
     completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
     
     # === STUDENT PROGRESS DETAILS ===
-    enrollments = Enrollment.query.filter_by(course_id=course_id).all()
-    total_sections = Section.query.filter_by(course_id=course_id).count()
+    enrollments = Enrollment.query.filter_by(course_id=course.id).all()
+    total_sections = Section.query.filter_by(course_id=course.id).count()
     
     student_progress = []
     for enrollment in enrollments:
@@ -261,10 +261,10 @@ def course_analytics(identifier=None, course_id=None):
         # Assignment submissions
         assignments_submitted = AssignmentSubmission.query.filter_by(student_id=student.id).join(
             Assignment
-        ).join(Section).filter(Section.course_id == course_id).count()
+        ).join(Section).filter(Section.course_id == course.id).count()
         
         total_assignments = Assignment.query.join(Section).filter(
-            Section.course_id == course_id
+            Section.course_id == course.id
         ).count()
         
         student_progress.append({
@@ -281,7 +281,7 @@ def course_analytics(identifier=None, course_id=None):
         })
     
     # === SECTION-WISE ANALYTICS ===
-    sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
     section_analytics = []
     
     for section in sections:
@@ -317,7 +317,7 @@ def course_analytics(identifier=None, course_id=None):
         })
     
     # === QUIZ PERFORMANCE ANALYTICS ===
-    quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).all()
+    quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
     quiz_analytics = []
     
     for quiz in quizzes:
@@ -371,14 +371,14 @@ def course_analytics(identifier=None, course_id=None):
     active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
         Enrollment
     ).filter(
-        Enrollment.course_id == course_id,
+        Enrollment.course_id == course.id,
         EnrollmentSection.last_accessed >= seven_days_ago
     ).scalar() or 0
     
     # Average session duration
     avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
         Enrollment
-    ).filter(Enrollment.course_id == course_id).scalar() or 0
+    ).filter(Enrollment.course_id == course.id).scalar() or 0
     
     engagement_metrics = {
         'active_students_7days': active_students,
@@ -388,7 +388,7 @@ def course_analytics(identifier=None, course_id=None):
     
     # === VIDEO ANALYTICS ===
     # Filter ONLY actual video sections (exclude quizzes, assignments, and text lessons without videos)
-    all_sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    all_sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
     video_sections = []
     for s in all_sections:
         # Exclude quizzes and assignments
