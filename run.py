@@ -16,11 +16,13 @@ def ensure_admin_exists():
         ).scalar()
 
         if not admin_exists:
+            admin_email = os.getenv('ADMIN_EMAIL', 'admin@example.com')
             admin = User(
-                email=os.getenv('ADMIN_EMAIL', 'admin@example.com'),
+                email=admin_email,
+                username=admin_email.split('@')[0],
+                password=os.getenv('ADMIN_PASSWORD', 'adminpassword'),
                 role='admin'
             )
-            admin.password = os.getenv('ADMIN_PASSWORD', 'adminpassword')
             db.session.add(admin)
             try:
                 db.session.commit()

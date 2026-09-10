@@ -118,10 +118,41 @@
             transform: rotate(1deg) scale(1.05);
         }
 
+        .hero-man-img {
+            filter: drop-shadow(0 25px 35px rgba(15, 68, 118, 0.28));
+            animation: manFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes manFloat {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-8px) rotate(0.4deg);
+            }
+        }
+
+        .glass-stats-bar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 20px 45px -15px rgba(15, 68, 118, 0.12);
+        }
+
         .cta-card-dark {
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.25);
+        }
+
+        .trusted-marquee {
+            animation: marquee 35s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
 
         .cta-blue-btn {
@@ -334,56 +365,59 @@
 
 <body class="modern-bg min-h-screen text-gray-800 selection:bg-blue-500/10 selection:text-blue-700 overflow-x-hidden">
 
-    <!-- Sticky Navigation Header -->
-    <header class="fixed top-0 left-0 right-0 z-50 glass-header">
+    <!-- Navigation Header -->
+    <header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-transparent">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <a href="/" class="flex items-center space-x-2">
-                <span class="text-2xl font-bold">
-                    <span class="text-blue-600">Pace</span>
-                    <span class="text-black">Academy</span>
+            <!-- Brand Logo -->
+            <a href="/" class="flex items-center group">
+                <span class="text-2xl font-black tracking-tight text-[#0d2a4a]">
+                    Pace<span class="font-bold text-[#1e4d75]">Academy</span>
                 </span>
             </a>
+
             <!-- Desktop Navigation Menu -->
-            <div class="hidden md:flex items-center space-x-8">
-                <a href="#story" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Why
-                    Us</a>
-                <a href="#features"
-                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Technology</a>
-                <a href="#enterprise"
-                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Enterprise</a>
-                <a href="#courses"
-                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors font-medium">Courses</a>
-                <a href="{{ url_for('auth.login') }}"
-                    class="cta-btn text-sm font-bold text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/10">
-                    Sign In
+            <div class="hidden md:flex items-center space-x-9">
+                <a href="#courses" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Courses</a>
+                <a href="#story" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Why Us</a>
+                <a href="#features" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Technology</a>
+                <a href="#enterprise" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Enterprise</a>
+            </div>
+
+            <!-- Desktop Auth Actions -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{{ url_for('auth.login') }}" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full border border-[#0d2a4a]/40 hover:border-[#0d2a4a] text-[#0d2a4a] font-bold text-sm transition-all duration-200 hover:bg-[#0d2a4a]/5 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Login</span>
                 </a>
             </div>
 
-            <!-- Hamburger Button Toggler on Mobile -->
+            <!-- Mobile Hamburger Button -->
             <button onclick="toggleMenu()"
-                class="block md:hidden p-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition focus:outline-none"
+                class="block md:hidden p-2 rounded-lg text-[#0d2a4a] hover:bg-white/40 transition focus:outline-none"
                 aria-label="Toggle Navigation">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h12M4 18h6">
-                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h12M4 18h6" />
                 </svg>
             </button>
         </div>
 
         <!-- Mobile Navigation Menu Panel -->
         <div id="mobile-menu"
-            class="hidden absolute top-20 left-0 right-0 bg-white bg-opacity-95 border-b border-gray-100 flex flex-col p-6 space-y-4 shadow-lg md:hidden backdrop-blur-md z-50">
-            <a href="#story" onclick="toggleMenu()"
-                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Why
-                Us</a>
-            <a href="#features" onclick="toggleMenu()"
-                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Technology</a>
-            <a href="#enterprise" onclick="toggleMenu()"
-                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Enterprise</a>
+            class="hidden absolute top-20 left-0 right-0 bg-white border-b border-gray-200 flex flex-col p-6 space-y-4 shadow-xl md:hidden z-50">
             <a href="#courses" onclick="toggleMenu()"
-                class="text-base font-semibold text-gray-700 hover:text-blue-600 py-2 border-b border-gray-100/50">Courses</a>
-            <a href="{{ url_for('auth.login') }}" onclick="toggleMenu()"
-                class="cta-btn text-base font-bold text-white py-3 rounded-xl text-center shadow-md">Sign In</a>
+                class="text-base font-bold text-gray-800 py-2 border-b border-gray-100">Courses</a>
+            <a href="#story" onclick="toggleMenu()"
+                class="text-base font-bold text-gray-800 py-2 border-b border-gray-100">Why Us</a>
+            <a href="#features" onclick="toggleMenu()"
+                class="text-base font-bold text-gray-800 py-2 border-b border-gray-100">Technology</a>
+            <a href="#enterprise" onclick="toggleMenu()"
+                class="text-base font-bold text-gray-800 py-2 border-b border-gray-100">Enterprise</a>
+            <div class="pt-2 flex flex-col gap-3">
+                <a href="{{ url_for('auth.login') }}" onclick="toggleMenu()"
+                    class="text-center font-bold text-white py-2.5 rounded-xl bg-[#0F4476] shadow">Login</a>
+            </div>
         </div>
     </header>
 
@@ -392,6 +426,18 @@
             const menu = document.getElementById('mobile-menu');
             menu.classList.toggle('hidden');
         }
+
+        window.addEventListener('scroll', function () {
+            const header = document.getElementById('main-header');
+            if (!header) return;
+            if (window.scrollY > 40) {
+                header.classList.add('bg-white/90', 'backdrop-blur-md', 'shadow-sm', 'border-b', 'border-gray-200/50');
+                header.classList.remove('bg-transparent');
+            } else {
+                header.classList.remove('bg-white/90', 'backdrop-blur-md', 'shadow-sm', 'border-b', 'border-gray-200/50');
+                header.classList.add('bg-transparent');
+            }
+        });
 
         let activeFilters = {
             accreditation: 'all',
@@ -543,36 +589,174 @@
         });
     </script>
 
-    <!-- Hero Section -->
-    <section class="relative min-h-screen pt-36 pb-24 px-6 flex items-center justify-center overflow-hidden"
-        style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.45)), url('{{ url_for('static', filename='images/new_background.png') }}'); background-size: cover; background-position: center center; background-repeat: no-repeat;">
+    <!-- Hero Section (Layered from User-Provided Assets) -->
+    <section id="hero" class="relative w-full overflow-hidden pt-28 sm:pt-32 lg:pt-36 pb-16 lg:pb-24" style="background-color: #AEDFFD;">
 
-        <!-- Center Floating Content Container -->
-        <div class="max-w-4xl mx-auto text-center relative z-10 space-y-8 my-auto">
+        <!-- Background Layer 1: Base Canvas (Soft Blue with Dark Navy Corner Shapes) -->
+        <img src="{{ url_for('static', filename='images/hero_bg_base.png') }}"
+             alt=""
+             class="absolute inset-0 w-full h-full object-cover object-top pointer-events-none select-none z-0">
 
-            <!-- Headline -->
-            <h1
-                class="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1] text-white drop-shadow-md">
-                Learn skills that actually<br class="hidden sm:inline"> move you forward.
-            </h1>
+        <!-- Main Hero Container -->
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end min-h-[500px] lg:min-h-[560px]">
 
-            <!-- Subtitle -->
-            <p class="text-base sm:text-xl text-gray-100 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow">
-                Explore new skills, follow clear learning paths, and grow at your own pace without pressure.
-            </p>
+                <!-- Left Column: Content -->
+                <div class="lg:col-span-6 xl:col-span-6 space-y-6 pb-8 lg:pb-16">
+                    <h1 class="text-4xl sm:text-5xl lg:text-[58px] font-extrabold text-gray-900 leading-tight tracking-tight">
+                        Learn skills that actually<br>move you forward.
+                    </h1>
 
-            <!-- Call to Action Button -->
-            <div class="pt-4 flex justify-center">
-                <a href="#courses"
-                    class="px-9 py-4 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-950 font-extrabold text-base rounded-full shadow-2xl hover:shadow-white/20 transition-all duration-300 transform hover:-translate-y-0.5 inline-flex items-center space-x-2">
-                    <span>Get Started Free</span>
-                </a>
+                    <p class="text-base sm:text-lg text-[#1e4d75] font-medium leading-relaxed max-w-lg">
+                        Explore new skills, follow clear learning paths, and grow at your own pace without pressure.
+                    </p>
+
+                    <!-- Actions: CTA Button + Real Learner Avatars -->
+                    <div class="pt-2 flex flex-wrap items-center gap-6">
+                        <a href="#courses"
+                           class="inline-flex items-center justify-center px-8 py-3.5 bg-gray-900 hover:bg-black text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
+                            Our Courses
+                        </a>
+
+                        <div class="flex items-center gap-3">
+                            {% if users_with_avatars %}
+                            <div class="flex -space-x-2.5 overflow-hidden">
+                                {% for u in users_with_avatars %}
+                                <img class="inline-block h-11 w-11 rounded-full ring-2 ring-white object-cover shadow-sm"
+                                     src="{{ u.profile_image }}"
+                                     alt="{{ u.username }}"
+                                     onerror="this.style.display='none'">
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <span class="text-xl sm:text-2xl font-black text-[#0d2a4a] tracking-tight">
+                                {{ learner_count }}{% if learner_count > 0 %}+{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Brush Splash behind man, then man on top -->
+                <div class="lg:col-span-6 xl:col-span-6 relative flex items-end justify-center lg:justify-end -mt-8 lg:mt-0" style="min-height: 400px;">
+                    <!-- Layer 2: Brush Splash positioned relative to this column -->
+                    <img src="{{ url_for('static', filename='images/hero_brush_splash.png') }}"
+                         alt=""
+                         class="absolute inset-0 w-full h-full object-contain object-center pointer-events-none select-none z-0">
+                    <!-- Layer 3: Graduate man on top of splash -->
+                    <img src="{{ url_for('static', filename='images/hero_graduate_man.png') }}"
+                         alt="Pace Academy Graduate"
+                         class="hero-man-img relative z-10 w-auto select-none pointer-events-none"
+                         style="max-height: 520px; max-width: 100%; object-fit: contain;">
+                </div>
+
+            </div>
+
+            <!-- Floating Frosted Glass Stats Bar -->
+            <div class="mt-10 lg:mt-12 glass-stats-bar rounded-2xl md:rounded-3xl p-6 sm:p-8">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+
+                    <!-- Stat 1: Happy Learner (from DB) -->
+                    <div class="flex flex-col items-center justify-center text-center space-y-2">
+                        <div class="w-12 h-12 rounded-full border-2 border-[#0d2a4a]/20 flex items-center justify-center text-[#0d2a4a]">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+                            </svg>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-black text-[#0d2a4a] leading-none">{{ learner_count }}{% if learner_count > 0 %}+{% endif %}</div>
+                        <div class="text-xs sm:text-sm font-bold text-[#486b8c]">Happy Learner</div>
+                    </div>
+
+                    <!-- Stat 2: Courses (from DB) -->
+                    <div class="flex flex-col items-center justify-center text-center space-y-2 sm:border-x border-[#0d2a4a]/10">
+                        <div class="w-12 h-12 rounded-full border-2 border-[#0d2a4a]/20 flex items-center justify-center text-[#0d2a4a]">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="2" y="5" width="15" height="14" rx="2" stroke-width="2"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 10l5-3v10l-5-3v-4z"/>
+                            </svg>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-black text-[#0d2a4a] leading-none">{{ course_count }}{% if course_count > 0 %}+{% endif %}</div>
+                        <div class="text-xs sm:text-sm font-bold text-[#486b8c]">Courses</div>
+                    </div>
+
+                    <!-- Stat 3: Live Support -->
+                    <div class="flex flex-col items-center justify-center text-center space-y-2">
+                        <div class="w-12 h-12 rounded-full border-2 border-[#0d2a4a]/20 flex items-center justify-center text-[#0d2a4a]">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 18v-6a9 9 0 0118 0v6M3 18a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3v5zm18 0a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3v5z"/>
+                            </svg>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-black text-[#0d2a4a] leading-none">24/7</div>
+                        <div class="text-xs sm:text-sm font-bold text-[#486b8c]">Live Support</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trusted By Section — white background with infinite marquee -->
+    <section class="w-full bg-white py-12 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Trusted By</h3>
+                <p class="text-xs sm:text-sm font-medium text-gray-500 max-w-lg">
+                    Accredited qualifications, enterprise partnerships, and trusted training curricula across Southern Africa.
+                </p>
             </div>
         </div>
 
-        <!-- Subtle Bottom Curve Overlay -->
-        <div
-            class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none">
+        <!-- Marquee wrapper: clips overflow so logos slide left and wrap right -->
+        <div class="relative w-full overflow-hidden">
+            <!-- Fade edges for a polished entrance/exit -->
+            <div class="absolute left-0 top-0 bottom-0 w-20 z-10 pointer-events-none" style="background: linear-gradient(to right, white, transparent);"></div>
+            <div class="absolute right-0 top-0 bottom-0 w-20 z-10 pointer-events-none" style="background: linear-gradient(to left, white, transparent);"></div>
+
+            <div class="trusted-marquee flex items-center gap-16 w-max">
+                <!-- Set 1 -->
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-gray-800 text-white flex items-center justify-center font-black text-xs">QC</div>
+                    <div class="font-extrabold text-xs tracking-wider leading-tight">POWER<br><span class="text-[10px] tracking-widest font-bold">MODULE</span></div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <div class="font-black text-xs tracking-tight">LogoIpsum<span class="text-[10px] font-bold block text-gray-400">Plus</span></div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <div class="border border-gray-500 px-1.5 py-0.5 rounded font-black text-[10px] tracking-widest">ULTRA</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider">Accredited<br>Partner</div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.7 4.03 4.38.38-3.32 2.88 1 4.28z"/></svg>
+                    <div class="text-[10px] font-black uppercase tracking-wider">SETA / QCTO<br><span class="font-semibold text-[9px]">Aligned Standard</span></div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" stroke="white" stroke-width="2"/></svg>
+                    <div class="font-black text-xs tracking-wider uppercase">FutureSkills</div>
+                </div>
+
+                <!-- Set 2 (duplicate for seamless loop) -->
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-gray-800 text-white flex items-center justify-center font-black text-xs">QC</div>
+                    <div class="font-extrabold text-xs tracking-wider leading-tight">POWER<br><span class="text-[10px] tracking-widest font-bold">MODULE</span></div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <div class="font-black text-xs tracking-tight">LogoIpsum<span class="text-[10px] font-bold block text-gray-400">Plus</span></div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <div class="border border-gray-500 px-1.5 py-0.5 rounded font-black text-[10px] tracking-widest">ULTRA</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider">Accredited<br>Partner</div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.7 4.03 4.38.38-3.32 2.88 1 4.28z"/></svg>
+                    <div class="text-[10px] font-black uppercase tracking-wider">SETA / QCTO<br><span class="font-semibold text-[9px]">Aligned Standard</span></div>
+                </div>
+                <div class="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" stroke="white" stroke-width="2"/></svg>
+                    <div class="font-black text-xs tracking-wider uppercase">FutureSkills</div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -591,42 +775,6 @@
             <p class="text-lg md:text-2xl text-gray-700 font-medium leading-relaxed max-w-3xl mx-auto">
                 We built Pace Academy because we watched what happens when people have the talent but not the certificate. Pace connects educators, accreditation standards, and job-readiness in one place — making recognized qualifications accessible to anyone with a phone and a data connection.
             </p>
-
-            <!-- Divider -->
-            <div class="my-10 flex items-center gap-4 max-w-xs mx-auto">
-                <div class="flex-1 h-px bg-gray-200"></div>
-                <span class="text-gray-300 text-xs font-bold uppercase tracking-widest">By the numbers</span>
-                <div class="flex-1 h-px bg-gray-200"></div>
-            </div>
-
-            <!-- Compact 2-stat card -->
-            <div class="grid grid-cols-2 gap-0 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden max-w-lg mx-auto">
-
-                <!-- Stat 1: Learners -->
-                <div class="flex flex-col items-center justify-center py-8 px-6 text-center border-r border-gray-100 group hover:bg-blue-50/30 transition-colors duration-300">
-                    <div class="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="#2563eb" stroke-width="2"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/></svg>
-                    </div>
-                    <div class="text-4xl font-black text-gray-900 leading-none mb-1">
-                        {{ learner_count if learner_count > 0 else '0' }}<span class="text-blue-600">+</span>
-                    </div>
-                    <p class="text-gray-600 text-xs font-semibold mt-1">Active Learners</p>
-                    <p class="text-gray-400 text-xs">Enrolled on Pace</p>
-                </div>
-
-                <!-- Stat 2: Courses -->
-                <div class="flex flex-col items-center justify-center py-8 px-6 text-center group hover:bg-indigo-50/30 transition-colors duration-300">
-                    <div class="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="#4f46e5" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="#4f46e5" stroke-width="2"/></svg>
-                    </div>
-                    <div class="text-4xl font-black text-gray-900 leading-none mb-1">
-                        {{ course_count if course_count > 0 else '0' }}<span class="text-indigo-600">+</span>
-                    </div>
-                    <p class="text-gray-600 text-xs font-semibold mt-1">Accredited Courses</p>
-                    <p class="text-gray-400 text-xs">SETA / QCTO aligned</p>
-                </div>
-
-            </div>
 
         </div>
     </section>

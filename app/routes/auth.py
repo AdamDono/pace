@@ -16,15 +16,22 @@ def home():
     # Get approved public courses for display on the landing page
     courses = Course.query.filter(Course.status == 'approved', Course.visibility != 'private').limit(6).all()
 
-    # Live stats for about section
+    # Live stats
     learner_count = User.query.filter_by(role='student').count()
     course_count  = Course.query.filter(Course.status == 'approved').count()
+
+    # Up to 5 users who have uploaded a profile picture (for avatar stack)
+    users_with_avatars = User.query.filter(
+        User.profile_image.isnot(None),
+        User.profile_image != ''
+    ).limit(5).all()
 
     return render_template(
         'auth/landing.html',
         courses=courses,
         learner_count=learner_count,
         course_count=course_count,
+        users_with_avatars=users_with_avatars,
     )
 
 @auth_bp.route('/courses/<identifier>')
