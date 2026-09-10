@@ -56,3 +56,9 @@ htmlcov/
 
 # Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
+docs/investors/injini_ai_venture_builder_application.md
+docs/investors/launch_africa_application.md
+docs/marketing/facebook_intro_posts_and_brand_launch.md
+docs/marketing/facebook_marketing_and_ads_strategy.md
+.gitignore
+docs/investors/master_venture_application_answers.md
