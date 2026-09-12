@@ -826,7 +826,47 @@
     </section>
 
     <!-- Who Pace Academy Is Built For (Audience Personas) Section -->
-    <section class="py-24 px-6 border-t border-gray-100 relative overflow-hidden" style="background-color: #faf9f7;">
+    <style>
+        .persona-card {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .persona-card.in-view {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Group hover styling for navy cards turning cream */
+        .hover-cream-card {
+            transition: background-color 0.15s ease-out, transform 0.15s ease-out, box-shadow 0.15s ease-out;
+        }
+        .hover-cream-card h4, .hover-cream-card p, .hover-cream-card span, .hover-cream-card .icon-bg, .hover-cream-card svg {
+            transition: all 0.15s ease-out;
+        }
+        .hover-cream-card:hover {
+            background-color: #f0ede8 !important;
+        }
+        .hover-cream-card:hover h4 {
+            color: #111827 !important; /* gray-900 */
+        }
+        .hover-cream-card:hover p {
+            color: #6b7280 !important; /* gray-500 */
+        }
+        /* Specific hover colors for labels */
+        .hover-cream-card:hover .label-blue { color: #2563eb !important; }   /* blue-600 */
+        .hover-cream-card:hover .label-indigo { color: #6366f1 !important; } /* indigo-500 */
+        .hover-cream-card:hover .label-emerald { color: #059669 !important; }/* emerald-600 */
+        .hover-cream-card:hover .label-amber { color: #d97706 !important; }  /* amber-600 */
+        
+        .hover-cream-card:hover svg {
+            stroke: #0d2a4a !important;
+        }
+        .hover-cream-card:hover .icon-bg {
+            background-color: #ffffff !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        }
+    </style>
+    <section class="py-24 px-6 border-t border-gray-100 relative overflow-hidden" style="background-color: #faf9f7;" id="ecosystem">
 
         <div class="max-w-6xl mx-auto">
             <!-- Section Header -->
@@ -840,17 +880,17 @@
             <!-- 4-Card Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
-                <!-- Card 1: For Learners — FEATURED (dark) -->
-                <div class="group relative rounded-3xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1.5 cursor-default" style="background-color: #0d2a4a;">
+                <!-- Card 1: For Learners -->
+                <div onmouseenter="updatePersonaDisplay('learners')" class="persona-card hover-cream-card group relative rounded-3xl p-8 flex flex-col items-center text-center hover:-translate-y-1.5 hover:shadow-lg cursor-default" style="background-color: #0d2a4a; transition-delay: 0.1s;">
                     <!-- Icon -->
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style="background: rgba(255,255,255,0.12);">
+                    <div class="icon-bg w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style="background: rgba(255,255,255,0.12);">
                         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
                             <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                         </svg>
                     </div>
                     <!-- Label -->
-                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300 mb-3">For Learners</span>
+                    <span class="label-blue text-[10px] font-extrabold uppercase tracking-widest text-blue-300 mb-3">For Learners</span>
                     <!-- Title -->
                     <h4 class="text-lg font-extrabold text-white mb-3 leading-snug">Young Job-Seekers &amp; Students</h4>
                     <!-- Description -->
@@ -860,71 +900,258 @@
                 </div>
 
                 <!-- Card 2: Schools -->
-                <div class="group relative rounded-3xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg cursor-default" style="background-color: #f0ede8;">
+                <div onmouseenter="updatePersonaDisplay('schools')" class="persona-card hover-cream-card group relative rounded-3xl p-8 flex flex-col items-center text-center hover:-translate-y-1.5 hover:shadow-lg cursor-default" style="background-color: #0d2a4a; transition-delay: 0.2s;">
                     <!-- Icon -->
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-white shadow-sm group-hover:shadow-md transition-shadow">
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0d2a4a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="icon-bg w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style="background: rgba(255,255,255,0.12);">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>
                         </svg>
                     </div>
                     <!-- Label -->
-                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-500 mb-3">Schools</span>
+                    <span class="label-indigo text-[10px] font-extrabold uppercase tracking-widest text-indigo-300 mb-3">Schools</span>
                     <!-- Title -->
-                    <h4 class="text-lg font-extrabold text-gray-900 mb-3 leading-snug group-hover:text-[#0d2a4a] transition-colors">High Schools &amp; Colleges</h4>
+                    <h4 class="text-lg font-extrabold text-white mb-3 leading-snug">High Schools &amp; Colleges</h4>
                     <!-- Description -->
-                    <p class="text-gray-500 text-sm leading-relaxed">
+                    <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.65);">
                         Instantly deploy a modern LMS for your students without building complex software infrastructure from scratch.
                     </p>
                 </div>
 
                 <!-- Card 3: Accredited -->
-                <div class="group relative rounded-3xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg cursor-default" style="background-color: #f0ede8;">
+                <div onmouseenter="updatePersonaDisplay('accredited')" class="persona-card hover-cream-card group relative rounded-3xl p-8 flex flex-col items-center text-center hover:-translate-y-1.5 hover:shadow-lg cursor-default" style="background-color: #0d2a4a; transition-delay: 0.3s;">
                     <!-- Icon -->
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-white shadow-sm group-hover:shadow-md transition-shadow">
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0d2a4a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="icon-bg w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style="background: rgba(255,255,255,0.12);">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                             <path d="m9 12 2 2 4-4"/>
                         </svg>
                     </div>
                     <!-- Label -->
-                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 mb-3">Accredited</span>
+                    <span class="label-emerald text-[10px] font-extrabold uppercase tracking-widest text-emerald-300 mb-3">Accredited</span>
                     <!-- Title -->
-                    <h4 class="text-lg font-extrabold text-gray-900 mb-3 leading-snug group-hover:text-[#0d2a4a] transition-colors">SETA &amp; QCTO Providers</h4>
+                    <h4 class="text-lg font-extrabold text-white mb-3 leading-snug">SETA &amp; QCTO Providers</h4>
                     <!-- Description -->
-                    <p class="text-gray-500 text-sm leading-relaxed">
+                    <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.65);">
                         Turnkey accredited training delivery platform fully structured to meet SAQA, SETA, and QCTO compliance audit standards.
                     </p>
                 </div>
 
                 <!-- Card 4: Enterprise -->
-                <div class="group relative rounded-3xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg cursor-default" style="background-color: #f0ede8;">
+                <div onmouseenter="updatePersonaDisplay('enterprise')" class="persona-card hover-cream-card group relative rounded-3xl p-8 flex flex-col items-center text-center hover:-translate-y-1.5 hover:shadow-lg cursor-default" style="background-color: #0d2a4a; transition-delay: 0.4s;">
                     <!-- Icon -->
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-white shadow-sm group-hover:shadow-md transition-shadow">
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0d2a4a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="icon-bg w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style="background: rgba(255,255,255,0.12);">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
                             <path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>
                         </svg>
                     </div>
                     <!-- Label -->
-                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-600 mb-3">Enterprise</span>
+                    <span class="label-amber text-[10px] font-extrabold uppercase tracking-widest text-amber-300 mb-3">Enterprise</span>
                     <!-- Title -->
-                    <h4 class="text-lg font-extrabold text-gray-900 mb-3 leading-snug group-hover:text-[#0d2a4a] transition-colors">Corporates &amp; Sponsors</h4>
+                    <h4 class="text-lg font-extrabold text-white mb-3 leading-snug">Corporates &amp; Sponsors</h4>
                     <!-- Description -->
-                    <p class="text-gray-500 text-sm leading-relaxed">
+                    <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.65);">
                         Upskill junior employees and manage corporate learnership cohorts at affordable flat-rate annual pricing.
                     </p>
                 </div>
 
             </div>
 
+            <!-- Dynamic Display Area (Defaults to Card 1: Learners) -->
+            <div id="persona-display-area" class="mt-24 mb-10 transition-opacity duration-500 opacity-0 transform translate-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                    
+                    <!-- Left: Image Wrapper -->
+                    <div class="relative w-full max-w-lg mx-auto lg:mx-0">
+                        <!-- Decorative Background Shape -->
+                        <div class="absolute inset-0 bg-[#0d2a4a] rounded-[2rem] transform rotate-3 scale-105 opacity-10"></div>
+                        <div class="absolute inset-0 bg-blue-500 rounded-[2rem] transform -rotate-2 scale-105 opacity-10"></div>
+                        
+                        <!-- Main Image Container -->
+                        <div class="relative bg-gradient-to-br from-blue-100 to-blue-50 rounded-[2rem] p-6 pt-12 overflow-hidden border border-white/50 shadow-2xl">
+                            <!-- SVG squiggles for decoration (similar to reference) -->
+                            <svg class="absolute top-4 left-4 w-20 h-20 text-[#0d2a4a] opacity-20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 50 Q 25 20 40 50 T 70 50" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/>
+                                <path d="M10 70 Q 25 40 40 70 T 70 70" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/>
+                            </svg>
+                            
+                            <img id="display-img" src="{{ url_for('static', filename='images/woman graduTE.png') }}" alt="Learner" class="relative z-10 w-full h-auto object-cover transform hover:scale-105 transition-all duration-300">
+                        </div>
+                    </div>
+
+                    <!-- Right: Content -->
+                    <div id="display-content-wrapper" class="flex flex-col justify-center transition-opacity duration-300">
+                        <!-- Tag -->
+                        <div class="flex items-center gap-2.5 mb-6">
+                            <span class="text-orange-500 text-xl leading-none">✷</span>
+                            <span id="display-tag-text" class="text-gray-500 font-extrabold text-xs uppercase tracking-widest">For Learners</span>
+                        </div>
+                        
+                        <!-- Main Heading -->
+                        <h2 id="display-heading" class="text-4xl lg:text-[42px] font-black text-gray-900 leading-[1.15] tracking-tight mb-6">
+                            Educate the populace to advance the nation
+                        </h2>
+                        
+                        <!-- Paragraphs -->
+                        <div class="space-y-4 text-gray-600 text-base leading-relaxed mb-10">
+                            <p id="display-desc-1">
+                                This can be accomplished by highlighting any awards or recognitions that the company has received, as well as any partnerships or collaborations that it has formed with other industry leaders.
+                            </p>
+                            <p id="display-desc-2">
+                                This information can help potential learners feel more confident in the platform and its ability to meet their career goals.
+                            </p>
+                        </div>
+                        
+                        <!-- Features Grid (2x2) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 border-t border-gray-200/60 pt-8">
+                            
+                            <!-- Feature 1 -->
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 shadow-sm">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                </div>
+                                <span class="text-sm font-bold text-gray-800">Unique Support System</span>
+                            </div>
+
+                            <!-- Feature 2 -->
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 shadow-sm">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                </div>
+                                <span class="text-sm font-bold text-gray-800">Life Time Access</span>
+                            </div>
+
+                            <!-- Feature 3 -->
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 shadow-sm">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                </div>
+                                <span class="text-sm font-bold text-gray-800">Get Certificate</span>
+                            </div>
+
+                            <!-- Feature 4 -->
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 shadow-sm">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                </div>
+                                <span class="text-sm font-bold text-gray-800">Amazing Instructors</span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
             <!-- Centralized Request Proposal CTA -->
-            <div class="mt-14 flex justify-center">
+            <div class="mt-8 flex justify-center">
                 <button onclick="openEnterpriseModal()" class="inline-flex items-center justify-center px-10 py-4 bg-gray-900 hover:bg-black text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
                     Request Proposal
                 </button>
             </div>
 
         </div>
+
+        <!-- Intersection Observer Script for Persona Cards -->
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const cards = document.querySelectorAll('.persona-card');
+                
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.1
+                };
+
+                const observer = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in-view');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+
+                cards.forEach(card => {
+                    observer.observe(card);
+                });
+
+                // Also animate the display area on scroll
+                const displayArea = document.getElementById('persona-display-area');
+                if (displayArea) {
+                    const displayObserver = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.remove('opacity-0', 'translate-y-8');
+                                entry.target.classList.add('opacity-100', 'translate-y-0');
+                                displayObserver.unobserve(entry.target);
+                            }
+                        });
+                    }, observerOptions);
+                    displayObserver.observe(displayArea);
+                }
+            });
+
+            // Dynamic Hover Content Data
+            const personaData = {
+                learners: {
+                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}",
+                    tag: "For Learners",
+                    heading: "Educate the populace to advance the nation",
+                    desc1: "This can be accomplished by highlighting any awards or recognitions that the company has received, as well as any partnerships or collaborations that it has formed with other industry leaders.",
+                    desc2: "This information can help potential learners feel more confident in the platform and its ability to meet their career goals."
+                },
+                schools: {
+                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}", // Re-using image as requested
+                    tag: "Schools",
+                    heading: "Empower your classrooms with digital tools",
+                    desc1: "Instantly deploy a modern LMS for your students without building complex software infrastructure from scratch. Pace Academy handles the heavy lifting.",
+                    desc2: "Monitor classroom progress, manage assignments, and automate quiz grading seamlessly in one unified platform built specifically for modern education."
+                },
+                accredited: {
+                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}", // Placeholder
+                    tag: "Accredited",
+                    heading: "Meet compliance standards effortlessly",
+                    desc1: "Turnkey accredited training delivery platform fully structured to meet SAQA, SETA, and QCTO compliance audit standards.",
+                    desc2: "Map unit standard modules, track logbooks, and generate audit-ready progress digests with ease, ensuring zero stress during accreditation reviews."
+                },
+                enterprise: {
+                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}", // Placeholder
+                    tag: "Enterprise",
+                    heading: "Scale corporate training efficiently",
+                    desc1: "Upskill junior employees and manage corporate learnership cohorts at affordable flat-rate annual pricing. We make corporate training simple.",
+                    desc2: "Onboard students in bulk, white-label your academy, and use dedicated lead dashboards to track performance and ROI across your workforce."
+                }
+            };
+
+            let currentPersona = 'learners';
+
+            function updatePersonaDisplay(personaKey) {
+                if (currentPersona === personaKey) return;
+                currentPersona = personaKey;
+                
+                const data = personaData[personaKey];
+                const wrapper = document.getElementById('display-content-wrapper');
+                const img = document.getElementById('display-img');
+                
+                // Fade out smoothly
+                wrapper.style.opacity = 0;
+                img.style.opacity = 0;
+                
+                setTimeout(() => {
+                    // Update content while invisible
+                    img.src = data.img;
+                    document.getElementById('display-tag-text').textContent = data.tag;
+                    document.getElementById('display-heading').textContent = data.heading;
+                    document.getElementById('display-desc-1').textContent = data.desc1;
+                    document.getElementById('display-desc-2').textContent = data.desc2;
+                    
+                    // Fade back in smoothly
+                    wrapper.style.opacity = 1;
+                    img.style.opacity = 1;
+                }, 200); // 200ms matches the fade-out duration
+            }
+        </script>
     </section>
 
     <!-- Moat / Technology Features Section -->
