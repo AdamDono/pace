@@ -760,21 +760,67 @@
         </div>
     </section>
 
-    <!-- About Us & Stats Section -->
-    <section id="story" class="py-16 px-6 border-t border-gray-100 relative overflow-hidden" style="background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);">
+    <!-- About Us Section -->
+    <style>
+        @keyframes aboutSlideIn {
+            from { opacity: 0; transform: translateX(-80px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes aboutFadeUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .about-img-wrap { animation: aboutSlideIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .about-text-wrap { animation: aboutFadeUp 0.9s 0.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    </style>
 
-        <!-- Subtle dot grid -->
-        <div class="absolute inset-0 pointer-events-none opacity-25" style="background-image: radial-gradient(circle, #dbeafe 1px, transparent 1px); background-size: 28px 28px;"></div>
+    <section id="story" class="relative w-full overflow-hidden" style="background-color: #AEDFFD;">
 
-        <div class="max-w-4xl mx-auto relative z-10 text-center">
+        <!-- Same bg base as hero -->
+        <img src="{{ url_for('static', filename='images/hero_bg_base.png') }}"
+             alt=""
+             class="absolute inset-0 w-full h-full object-cover object-top pointer-events-none select-none z-0 opacity-40">
 
-            <!-- About Us heading -->
-            <h2 class="text-3xl md:text-5xl font-black text-gray-900 tracking-tight mb-6">
-                About Us
-            </h2>
-            <p class="text-lg md:text-2xl text-gray-700 font-medium leading-relaxed max-w-3xl mx-auto">
-                We built Pace Academy because we watched what happens when people have the talent but not the certificate. Pace connects educators, accreditation standards, and job-readiness in one place — making recognized qualifications accessible to anyone with a phone and a data connection.
-            </p>
+        <div class="relative z-10 grid grid-cols-1 lg:grid-cols-2 min-h-[680px]">
+
+            <!-- LEFT: Full-bleed Image -->
+            <div class="about-img-wrap relative overflow-hidden" style="min-height: 500px;">
+                <img src="{{ url_for('static', filename='images/about us image.png') }}"
+                     alt="About Pace Academy"
+                     class="absolute inset-0 w-full h-full object-cover object-top">
+                <!-- Right edge fade into content side -->
+                <div class="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#AEDFFD] to-transparent"></div>
+            </div>
+
+            <!-- RIGHT: Text Content -->
+            <div class="about-text-wrap flex flex-col justify-center px-10 lg:px-16 xl:px-20 py-20 lg:py-28">
+
+                <!-- Eyebrow label matching hero style -->
+                <p class="text-sm font-bold text-[#0d2a4a] uppercase tracking-[0.2em] mb-4 opacity-70">Our Story</p>
+
+                <h2 class="text-4xl sm:text-5xl lg:text-[52px] font-extrabold text-gray-900 leading-tight tracking-tight mb-8">
+                    Built for talent.<br>
+                    <span class="text-[#0d2a4a]">Backed by purpose.</span>
+                </h2>
+
+                <div class="space-y-6 max-w-lg">
+                    <p class="text-base sm:text-lg text-[#1e4d75] font-medium leading-relaxed">
+                        We built Pace Academy because we watched what happens when people have the talent but not the certificate. Pace connects educators, accreditation standards, and job-readiness in one place, making recognized qualifications accessible to anyone with a phone and a data connection.
+                    </p>
+                    <p class="text-base sm:text-lg text-[#1e4d75] font-medium leading-relaxed">
+                        Our mission is simple: to break down every barrier between ambition and achievement. Whether you are a matriculant searching for your first qualification, a professional upskilling for a promotion, or an institution looking to scale training — Pace Academy exists to make sure your potential is never held back by access, cost, or geography.
+                    </p>
+                </div>
+
+                <!-- CTA matching hero button style -->
+                <div class="mt-10">
+                    <a href="#courses"
+                       class="inline-flex items-center justify-center px-8 py-3.5 bg-gray-900 hover:bg-black text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
+                        Explore Our Courses
+                    </a>
+                </div>
+
+            </div>
 
         </div>
     </section>
