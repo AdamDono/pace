@@ -34,6 +34,14 @@ def home():
         users_with_avatars=users_with_avatars,
     )
 
+@auth_bp.route('/privacy')
+def privacy_policy():
+    return render_template('auth/privacy.html')
+
+@auth_bp.route('/terms')
+def terms_of_service():
+    return render_template('auth/terms.html')
+
 @auth_bp.route('/courses/<identifier>')
 @auth_bp.route('/course/<identifier>')
 def public_course_detail(identifier):
