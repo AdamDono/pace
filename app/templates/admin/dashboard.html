@@ -159,6 +159,7 @@
                         </a>
                         
                         <form action="{{ url_for('admin.send_nudges') }}" method="POST" onsubmit="return confirm('Are you sure you want to trigger inactivity nudges now? This will send emails to all eligible inactive users.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <button type="submit" class="w-full flex items-center p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-colors duration-200 text-left">
                                 <div class="w-8 h-8 bg-[#0d2a4a] rounded-lg flex items-center justify-center mr-3">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
