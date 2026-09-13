@@ -23,12 +23,13 @@ def get_inactive_enrollments(days_inactive=7):
     rate_limit_cutoff = now - timedelta(days=7)
 
     # Active enrollments in approved courses with unbanned students
+    # Using .isnot(True) handles NULL values in the database for newer columns
     active_enrollments = Enrollment.query.join(User).join(Course) \
-        .filter(Enrollment.completed == False) \
-        .filter(Enrollment.is_blocked == False) \
+        .filter(Enrollment.completed.isnot(True)) \
+        .filter(Enrollment.is_blocked.isnot(True)) \
         .filter(Course.status == 'approved') \
-        .filter(User.is_suspended == False) \
-        .filter(User.is_banned == False) \
+        .filter(User.is_suspended.isnot(True)) \
+        .filter(User.is_banned.isnot(True)) \
         .all()
 
     inactive_candidates = []
@@ -43,7 +44,7 @@ def get_inactive_enrollments(days_inactive=7):
         if enrollment.last_nudge_sent_at and enrollment.last_nudge_sent_at > rate_limit_cutoff:
             continue
 
-        # Determine last activity timestamp across sections, enrollment date, and user login
+        # Determine last activity timestamp across sections, enrollment date, user login, and user creation
         es_list = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
         section_accessed_dates = [es.last_accessed for es in es_list if es.last_accessed]
         most_recent_section_access = max(section_accessed_dates) if section_accessed_dates else None
@@ -51,11 +52,13 @@ def get_inactive_enrollments(days_inactive=7):
         last_activity = max(filter(None, [
             most_recent_section_access,
             enrollment.enrolled_at,
-            student.last_login
+            student.last_login,
+            student.created_at  # Fallback if enrolled_at and last_login are NULL
         ]), default=None)
 
+        # If last_activity is somehow still None, or if it's recent (greater than cutoff), skip them.
         if not last_activity or last_activity > cutoff_date:
-            # Active recently, skip
+            # Active recently (or unable to determine date), skip
             continue
 
         # Calculate days since last activity
