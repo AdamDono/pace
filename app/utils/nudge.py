@@ -67,12 +67,10 @@ def get_inactive_enrollments(days_inactive=7):
         # Calculate progress
         all_sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
         total_sections = len(all_sections)
-        if total_sections == 0:
-            continue
 
         es_by_sec = {es.section_id: es for es in es_list}
         completed_sections = sum(1 for es in es_list if es.completed)
-        progress = round((completed_sections / total_sections) * 100)
+        progress = round((completed_sections / total_sections) * 100) if total_sections > 0 else 0
 
         # Find the next incomplete section
         next_section = None
