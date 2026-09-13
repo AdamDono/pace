@@ -22,20 +22,30 @@ def get_inactive_enrollments(days_inactive=7):
     cutoff_date = now - timedelta(days=days_inactive)
     rate_limit_cutoff = now - timedelta(days=7)
 
-    # Active enrollments in approved courses with unbanned students
-    # Using .isnot(True) handles NULL values in the database for newer columns
     query = Enrollment.query.join(User).join(Course)
-    logger.info(f"NUDGE DEBUG: Total Enrollments in DB: {query.count()}")
+    all_enrollments = query.all()
+    logger.info(f"NUDGE DEBUG: Total Enrollments in DB: {len(all_enrollments)}")
     
-    active_enrollments = query \
-        .filter(Enrollment.completed.isnot(True)) \
-        .filter(Enrollment.is_blocked.isnot(True)) \
-        .filter(Course.status == 'approved') \
-        .filter(User.is_suspended.isnot(True)) \
-        .filter(User.is_banned.isnot(True)) \
-        .all()
+    active_enrollments = []
+    for e in all_enrollments:
+        if e.completed:
+            logger.info(f"NUDGE DEBUG: Dropping {e.student.email} - Course Completed")
+            continue
+        if e.is_blocked:
+            logger.info(f"NUDGE DEBUG: Dropping {e.student.email} - Enrollment Blocked")
+            continue
+        if e.course.status != 'approved':
+            logger.info(f"NUDGE DEBUG: Dropping {e.student.email} - Course Status is {e.course.status}, not approved")
+            continue
+        if e.student.is_suspended:
+            logger.info(f"NUDGE DEBUG: Dropping {e.student.email} - User Suspended")
+            continue
+        if e.student.is_banned:
+            logger.info(f"NUDGE DEBUG: Dropping {e.student.email} - User Banned")
+            continue
+        active_enrollments.append(e)
         
-    logger.info(f"NUDGE DEBUG: Active Enrollments after SQL filters: {len(active_enrollments)}")
+    logger.info(f"NUDGE DEBUG: Active Enrollments after filters: {len(active_enrollments)}")
 
     inactive_candidates = []
 
