@@ -24,13 +24,18 @@ def get_inactive_enrollments(days_inactive=7):
 
     # Active enrollments in approved courses with unbanned students
     # Using .isnot(True) handles NULL values in the database for newer columns
-    active_enrollments = Enrollment.query.join(User).join(Course) \
+    query = Enrollment.query.join(User).join(Course)
+    logger.info(f"NUDGE DEBUG: Total Enrollments in DB: {query.count()}")
+    
+    active_enrollments = query \
         .filter(Enrollment.completed.isnot(True)) \
         .filter(Enrollment.is_blocked.isnot(True)) \
         .filter(Course.status == 'approved') \
         .filter(User.is_suspended.isnot(True)) \
         .filter(User.is_banned.isnot(True)) \
         .all()
+        
+    logger.info(f"NUDGE DEBUG: Active Enrollments after SQL filters: {len(active_enrollments)}")
 
     inactive_candidates = []
 
@@ -57,7 +62,12 @@ def get_inactive_enrollments(days_inactive=7):
         ]), default=None)
 
         # If last_activity is somehow still None, or if it's recent (greater than cutoff), skip them.
-        if not last_activity or last_activity > cutoff_date:
+        if not last_activity:
+            logger.info(f"NUDGE DEBUG: Skipping {student.email} - last_activity could not be determined.")
+            continue
+            
+        if last_activity > cutoff_date:
+            logger.info(f"NUDGE DEBUG: Skipping {student.email} - active recently ({last_activity} > {cutoff_date}).")
             # Active recently (or unable to determine date), skip
             continue
 
