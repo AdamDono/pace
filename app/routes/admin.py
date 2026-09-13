@@ -1146,3 +1146,16 @@ def wipe_all_non_admins():
         flash(f'Failed to wipe users: {str(e)}', 'danger')
         
     return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.route('/send-nudges', methods=['POST'])
+@admin_required
+def send_nudges():
+    from app.utils.nudge import send_inactivity_nudges
+    from flask import current_app
+    try:
+        res = send_inactivity_nudges(current_app._get_current_object())
+        flash(f"Successfully sent {res['nudges_sent']} inactivity nudges out of {res['total_candidates']} candidate(s).", "success")
+    except Exception as e:
+        flash(f"Failed to send nudges: {str(e)}", "danger")
+    return redirect(url_for('admin.dashboard'))

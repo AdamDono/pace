@@ -157,6 +157,21 @@
                                 <p class="text-sm text-gray-600">Create user account</p>
                             </div>
                         </a>
+                        
+                        <form action="{{ url_for('admin.send_nudges') }}" method="POST" onsubmit="return confirm('Are you sure you want to trigger inactivity nudges now? This will send emails to all eligible inactive users.');">
+                            <button type="submit" class="w-full flex items-center p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-colors duration-200 text-left">
+                                <div class="w-8 h-8 bg-[#0d2a4a] rounded-lg flex items-center justify-center mr-3">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">Send Nudge Emails</p>
+                                    <p class="text-sm text-gray-600">Re-engage inactive learners</p>
+                                </div>
+                            </button>
+                        </form>
+
 
                         <form method="POST" action="{{ url_for('admin.wipe_all_courses') }}" 
                               onsubmit="return confirm('WARNING: This will permanently delete ALL courses, modules, quizzes, and enrollments from the database. Are you absolutely sure?');"
