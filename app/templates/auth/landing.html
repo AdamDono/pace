@@ -718,7 +718,7 @@
         </div>
     </section>
 
-    <!-- Trusted By Section — white background with infinite marquee -->
+    <!-- Trusted By Section - white background with infinite marquee -->
     <section class="w-full bg-white py-12 overflow-hidden">
         <div class="max-w-7xl mx-auto px-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -729,21 +729,9 @@
             </div>
         </div>
 
-        <!-- Marquee wrapper: clips overflow so logos slide left and wrap right -->
-        <div class="relative w-full overflow-hidden">
-            <!-- Fade edges for a polished entrance/exit -->
-            <div class="absolute left-0 top-0 bottom-0 w-20 z-10 pointer-events-none" style="background: linear-gradient(to right, white, transparent);"></div>
-            <div class="absolute right-0 top-0 bottom-0 w-20 z-10 pointer-events-none" style="background: linear-gradient(to left, white, transparent);"></div>
-
-            <div class="trusted-marquee flex items-center gap-16 w-max" style="min-height: 32px;">
-                <!-- Repeat to fill the marquee and make it loop smoothly -->
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-            </div>
+        <!-- Centered Logo Row -->
+        <div class="w-full flex justify-center items-center py-4">
+            <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-28 md:h-32 w-auto object-contain mix-blend-multiply">
         </div>
     </section>
 
@@ -795,7 +783,7 @@
                         We built Pace Academy because we watched what happens when people have the talent but not the certificate. Pace connects educators, accreditation standards, and job-readiness in one place, making recognized qualifications accessible to anyone with a phone and a data connection.
                     </p>
                     <p class="text-base sm:text-lg text-[#1e4d75] font-medium leading-relaxed">
-                        Our mission is simple: to break down every barrier between ambition and achievement. Whether you are a matriculant searching for your first qualification, a professional upskilling for a promotion, or an institution looking to scale training — Pace Academy exists to make sure your potential is never held back by access, cost, or geography.
+                        Our mission is simple: to break down every barrier between ambition and achievement. Whether you are a matriculant searching for your first qualification, a professional upskilling for a promotion, or an institution looking to scale training, Pace Academy exists to make sure your potential is never held back by access, cost, or geography.
                     </p>
                 </div>
 
@@ -928,7 +916,7 @@
                         </svg>
                     </div>
                     <!-- Label -->
-                    <span class="label-emerald text-[10px] font-extrabold uppercase tracking-widest text-emerald-300 mb-3">Accredited</span>
+                    <span class="label-emerald text-[10px] font-extrabold uppercase tracking-widest mb-3" style="color: #6ee7b7;">Accredited</span>
                     <!-- Title -->
                     <h4 class="text-lg font-extrabold text-white mb-3 leading-snug">SETA &amp; QCTO Providers</h4>
                     <!-- Description -->
@@ -947,7 +935,7 @@
                         </svg>
                     </div>
                     <!-- Label -->
-                    <span class="label-amber text-[10px] font-extrabold uppercase tracking-widest text-amber-300 mb-3">Enterprise</span>
+                    <span class="label-amber text-[10px] font-extrabold uppercase tracking-widest mb-3" style="color: #fcd34d;">Enterprise</span>
                     <!-- Title -->
                     <h4 class="text-lg font-extrabold text-white mb-3 leading-snug">Corporates &amp; Sponsors</h4>
                     <!-- Description -->
@@ -963,20 +951,20 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                     
                     <!-- Left: Image Wrapper (Hidden on mobile) -->
-                    <div class="hidden lg:block relative w-full max-w-lg mx-auto lg:mx-0">
+                    <div class="hidden lg:block relative w-full max-w-2xl mx-auto lg:mx-0">
                         <!-- Decorative Background Shape -->
                         <div class="absolute inset-0 bg-[#0d2a4a] rounded-[2rem] transform rotate-3 scale-105 opacity-10"></div>
                         <div class="absolute inset-0 bg-blue-500 rounded-[2rem] transform -rotate-2 scale-105 opacity-10"></div>
                         
                         <!-- Main Image Container -->
-                        <div class="relative bg-gradient-to-br from-blue-100 to-blue-50 rounded-[2rem] p-6 pt-12 overflow-hidden border border-white/50 shadow-2xl">
+                        <div class="relative rounded-[2rem] overflow-hidden shadow-2xl p-0">
                             <!-- SVG squiggles for decoration (similar to reference) -->
-                            <svg class="absolute top-4 left-4 w-20 h-20 text-[#0d2a4a] opacity-20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg class="absolute top-4 left-4 w-20 h-20 text-[#0d2a4a] opacity-20 z-10 pointer-events-none" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10 50 Q 25 20 40 50 T 70 50" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/>
                                 <path d="M10 70 Q 25 40 40 70 T 70 70" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/>
                             </svg>
                             
-                            <img id="display-img" src="{{ url_for('static', filename='images/woman graduTE.png') }}" alt="Learner" class="relative z-10 w-full h-auto object-cover transform hover:scale-105 transition-all duration-300">
+                            <img id="display-img" src="{{ url_for('static', filename='images/woman graduTE.png') }}" alt="Learner" class="relative z-0 w-full h-auto object-cover transform hover:scale-105 transition-all duration-300">
                         </div>
                     </div>
 
@@ -1113,32 +1101,32 @@
             // Dynamic Hover Content Data
             const personaData = {
                 learners: {
-                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}",
+                    img: "{{ url_for('static', filename='images/for learners .png') }}",
                     tag: "For Learners",
-                    heading: "Educate the populace to advance the nation",
-                    desc1: "This can be accomplished by highlighting any awards or recognitions that the company has received, as well as any partnerships or collaborations that it has formed with other industry leaders.",
-                    desc2: "This information can help potential learners feel more confident in the platform and its ability to meet their career goals."
+                    heading: "Accelerate your career with verified, accredited skills",
+                    desc1: "Join a modern learning ecosystem designed to help you master high-demand digital and technical skills through interactive, bite-sized lessons and practical assessments.",
+                    desc2: "Whether you are looking to earn a SETA/QCTO accredited certificate or simply upskill for your next promotion, Pace Academy provides the flexible pathways to get you there."
                 },
                 schools: {
-                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}", // Re-using image as requested
+                    img: "{{ url_for('static', filename='images/school.png') }}",
                     tag: "Schools",
-                    heading: "Empower your classrooms with digital tools",
-                    desc1: "Instantly deploy a modern LMS for your students without building complex software infrastructure from scratch. Pace Academy handles the heavy lifting.",
-                    desc2: "Monitor classroom progress, manage assignments, and automate quiz grading seamlessly in one unified platform built specifically for modern education."
+                    heading: "Deploy a modern digital campus in minutes, not months",
+                    desc1: "Eliminate the friction of building complex IT infrastructure. Pace Academy provides high schools and colleges with an instant, modern Learning Management System.",
+                    desc2: "Empower your educators to track student progress, manage assignments, and automate quiz grading seamlessly in one unified platform built specifically for modern education."
                 },
                 accredited: {
-                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}", // Placeholder
+                    img: "{{ url_for('static', filename='images/seta qtco.png') }}",
                     tag: "Accredited",
-                    heading: "Meet compliance standards effortlessly",
-                    desc1: "Turnkey accredited training delivery platform fully structured to meet SAQA, SETA, and QCTO compliance audit standards.",
-                    desc2: "Map unit standard modules, track logbooks, and generate audit-ready progress digests with ease, ensuring zero stress during accreditation reviews."
+                    heading: "Deliver compliance-ready training with zero administrative stress",
+                    desc1: "Stop wrestling with messy spreadsheets and manual tracking. Our turnkey delivery platform is fully structured to meet rigorous SAQA, SETA, and QCTO audit standards.",
+                    desc2: "Map unit standard modules, track learner logbooks, and generate audit-ready progress digests with a single click, ensuring total peace of mind during accreditation reviews."
                 },
                 enterprise: {
-                    img: "{{ url_for('static', filename='images/woman graduTE.png') }}", // Placeholder
+                    img: "{{ url_for('static', filename='images/corporate.png') }}",
                     tag: "Enterprise",
-                    heading: "Scale corporate training efficiently",
-                    desc1: "Upskill junior employees and manage corporate learnership cohorts at affordable flat-rate annual pricing. We make corporate training simple.",
-                    desc2: "Onboard students in bulk, white-label your academy, and use dedicated lead dashboards to track performance and ROI across your workforce."
+                    heading: "Maximize B-BBEE points through impactful corporate training",
+                    desc1: "Streamline your corporate learnerships and employee upskilling initiatives. Pace Academy makes it effortless to manage sponsored cohorts and track skills development.",
+                    desc2: "Generate detailed, audit-ready performance reports to maximize your B-BBEE scorecard points while delivering real, measurable ROI across your workforce."
                 }
             };
 
@@ -1385,21 +1373,9 @@
             </p>
         </div>
 
-        <!-- Marquee Row -->
-        <div class="relative w-full overflow-hidden flex items-center">
-            <!-- Fade masks -->
-            <div class="absolute top-0 bottom-0 left-0 w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
-            <div class="absolute top-0 bottom-0 right-0 w-24 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
-            
-            <div class="flex items-center space-x-16 whitespace-nowrap trusted-marquee" style="width: 200%; min-height: 32px;">
-                <!-- Repeat to fill the marquee and make it loop smoothly -->
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-                <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-16 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 mix-blend-multiply">
-            </div>
+        <!-- Centered Logo Row -->
+        <div class="w-full flex justify-center items-center py-4">
+            <img src="{{ url_for('static', filename='images/bathopele sponsor .jpg') }}" alt="Batho Pele" class="h-28 md:h-32 w-auto object-contain mix-blend-multiply">
         </div>
     </section>
 
@@ -1588,7 +1564,7 @@
                     <div class="faq-answer expanded" id="faq-answer-1">
                         <p class="text-gray-500 text-sm leading-relaxed">Pace Academy is built for students, young
                             professionals, and lifelong learners who want to earn recognized qualifications and build
-                            practical skills at their own pace — without pressure or rigid schedules.</p>
+                            practical skills at their own pace, without pressure or rigid schedules.</p>
                     </div>
                 </div>
 
@@ -1703,7 +1679,7 @@
     </script>
 
     <!-- ══════════════════════════════════════════════════════════
-         FOOTER  —  Wave CTA + Blue Footer
+         FOOTER  -  Wave CTA + Blue Footer
     ══════════════════════════════════════════════════════════ -->
 
     <!-- Let's Build This Together CTA Section -->
