@@ -2142,6 +2142,10 @@ def serve_upload(filename):
     upload_dir = current_app.config['UPLOAD_FOLDER']
     clean_filename = filename.lstrip('/')
     is_download = request.args.get('download') == '1'
+    s_name = request.args.get('s', 'student')
+    a_title = request.args.get('a', 'submission')
+    import re
+    safe_filename = re.sub(r'[^a-zA-Z0-9_\-]', '_', f"{s_name}_{a_title}") + ".pdf"
     
     if clean_filename.startswith(('http://', 'https://', 'http:/', 'https:/')):
         # Fix collapsed slashes from Flask routing
@@ -2152,6 +2156,31 @@ def serve_upload(filename):
             
         target_url = clean_filename
         
+        # If it's a Cloudinary URL, sign it to bypass 401 Unauthorized for raw/authenticated files
+        if 'res.cloudinary.com' in target_url:
+            import os, re
+            import cloudinary
+            import cloudinary.utils
+            cloudinary_url_env = os.getenv('CLOUDINARY_URL')
+            if cloudinary_url_env:
+                if not cloudinary.config().cloud_name:
+                    cloudinary.config(cloudinary_url=cloudinary_url_env)
+                match = re.search(r'/upload/(?:v\d+/)?(.+)$', target_url)
+                if match:
+                    public_id = match.group(1)
+                    res_type = 'raw' if '/raw/upload/' in target_url else 'image'
+                    res_type = 'video' if '/video/upload/' in target_url else res_type
+                    try:
+                        signed_url, _ = cloudinary.utils.cloudinary_url(
+                            public_id,
+                            resource_type=res_type,
+                            sign_url=True
+                        )
+                        if signed_url:
+                            target_url = signed_url
+                    except Exception as e:
+                        pass
+        
         # Proxy the request to avoid cross-origin iframe blocking and forced downloads
         import requests
         from flask import Response
@@ -2161,9 +2190,9 @@ def serve_upload(filename):
                 headers = {}
                 # Set inline viewing or download depending on the request
                 if is_download:
-                    headers['Content-Disposition'] = 'attachment; filename="student_submission.pdf"'
+                    headers['Content-Disposition'] = f'attachment; filename="{safe_filename}"'
                 else:
-                    headers['Content-Disposition'] = 'inline; filename="student_submission.pdf"'
+                    headers['Content-Disposition'] = f'inline; filename="{safe_filename}"'
                 
                 # Forward the correct content type
                 if target_url.lower().endswith('.pdf'):
@@ -2183,13 +2212,13 @@ def serve_upload(filename):
 
     target_path = os.path.join(upload_dir, clean_filename)
     if os.path.exists(target_path):
-        return send_from_directory(upload_dir, clean_filename, as_attachment=is_download, mimetype=mimetype)
+        return send_from_directory(upload_dir, clean_filename, as_attachment=is_download, mimetype=mimetype, download_name=safe_filename)
 
     static_dir = os.path.join(current_app.root_path, 'static')
     if os.path.exists(os.path.join(static_dir, clean_filename)):
-        return send_from_directory(static_dir, clean_filename, as_attachment=is_download, mimetype=mimetype)
+        return send_from_directory(static_dir, clean_filename, as_attachment=is_download, mimetype=mimetype, download_name=safe_filename)
     elif os.path.exists(os.path.join(static_dir, 'uploads', clean_filename)):
-        return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename, as_attachment=is_download, mimetype=mimetype)
+        return send_from_directory(os.path.join(static_dir, 'uploads'), clean_filename, as_attachment=is_download, mimetype=mimetype, download_name=safe_filename)
 
     # Friendly fallback explaining ephemeral storage reset
     return render_template_string('''
@@ -2234,14 +2263,17 @@ def preview_submission(submission_id):
     attempts_list = []
     for sub in sibling_submissions:
         f_url = None
+        s_name = getattr(sub.student, 'first_name', '') + '_' + getattr(sub.student, 'last_name', '') if getattr(sub, 'student', None) else 'student'
+        a_title = getattr(sub.assignment, 'title', 'assignment') if getattr(sub, 'assignment', None) else 'assignment'
+        
         if sub.file_path:
             clean_fp = sub.file_path
             if clean_fp.startswith(('http://', 'https://')):
                 if clean_fp.lower().endswith('.pdf') and '/image/upload/' in clean_fp:
                     clean_fp = clean_fp.replace('/image/upload/', '/raw/upload/')
-                f_url = url_for('teacher.serve_upload', filename=clean_fp)
+                f_url = url_for('teacher.serve_upload', filename=clean_fp, s=s_name, a=a_title)
             else:
-                f_url = url_for('teacher.serve_upload', filename=clean_fp.lstrip('/'))
+                f_url = url_for('teacher.serve_upload', filename=clean_fp.lstrip('/'), s=s_name, a=a_title)
         
         attempts_list.append({
             'id': sub.id,
