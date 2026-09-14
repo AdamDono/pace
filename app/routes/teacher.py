@@ -2143,12 +2143,39 @@ def serve_upload(filename):
     clean_filename = filename.lstrip('/')
     is_download = request.args.get('download') == '1'
     
-    if clean_filename.startswith(('http://', 'https://')):
+    if clean_filename.startswith(('http://', 'https://', 'http:/', 'https:/')):
+        # Fix collapsed slashes from Flask routing
+        if clean_filename.startswith('http:/') and not clean_filename.startswith('http://'):
+            clean_filename = clean_filename.replace('http:/', 'http://')
+        if clean_filename.startswith('https:/') and not clean_filename.startswith('https://'):
+            clean_filename = clean_filename.replace('https:/', 'https://')
+            
         target_url = clean_filename
-        # Auto-fix Cloudinary URLs where PDFs were uploaded as image/upload instead of raw/upload
-        if clean_filename.lower().endswith('.pdf') and '/image/upload/' in clean_filename:
-            target_url = clean_filename.replace('/image/upload/', '/raw/upload/')
-        return redirect(target_url)
+        
+        # Proxy the request to avoid cross-origin iframe blocking and forced downloads
+        import requests
+        from flask import Response
+        try:
+            resp = requests.get(target_url, stream=True, timeout=10)
+            if resp.status_code == 200:
+                headers = {}
+                # Set inline viewing or download depending on the request
+                if is_download:
+                    headers['Content-Disposition'] = 'attachment; filename="student_submission.pdf"'
+                else:
+                    headers['Content-Disposition'] = 'inline; filename="student_submission.pdf"'
+                
+                # Forward the correct content type
+                if target_url.lower().endswith('.pdf'):
+                    headers['Content-Type'] = 'application/pdf'
+                else:
+                    headers['Content-Type'] = resp.headers.get('Content-Type', 'application/octet-stream')
+                
+                return Response(resp.iter_content(chunk_size=8192), headers=headers)
+            else:
+                return redirect(target_url)
+        except Exception:
+            return redirect(target_url)
 
     mimetype = None
     if clean_filename.lower().endswith('.pdf'):
