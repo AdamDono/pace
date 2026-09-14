@@ -18,7 +18,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
         .modern-bg {
-            background-color: #f8fafc;
+            background-color: #faf9f7;
         }
         .glass-header {
             background: rgba(255, 255, 255, 0.85);
@@ -59,11 +59,23 @@
                     <span class="text-gray-900">Pace</span><span class="text-blue-600 font-black">Academy</span>
                 </span>
             </a>
-            
-            <a href="{{ url_for('auth.login') }}" class="cta-btn text-sm font-bold text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/10">
-                Sign In
-            </a>
-        </div>
+            <!-- Desktop Navigation Menu -->
+            <div class="hidden md:flex items-center space-x-9">
+                <a href="/#courses" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Courses</a>
+                <a href="/#story" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Why Us</a>
+                <a href="/#features" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Technology</a>
+                <a href="/#enterprise" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Enterprise</a>
+            </div>
+
+            <!-- Desktop Auth Actions -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{{ url_for('auth.login') }}" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full border border-[#0d2a4a]/40 hover:border-[#0d2a4a] text-[#0d2a4a] font-bold text-sm transition-all duration-200 hover:bg-[#0d2a4a]/5 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Login</span>
+                </a>
+            </div>
     </header>
 
     <!-- Main Syllabus Body -->
@@ -84,9 +96,7 @@
             <div class="lg:col-span-8 space-y-10">
                 
                 <!-- Course Hero Block -->
-                <div class="glass-card rounded-3xl p-8 md:p-10 shadow-sm bg-white relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 to-indigo-600"></div>
-                    
+                <div class="glass-card rounded-3xl p-8 md:p-10 shadow-lg bg-white relative overflow-hidden border border-gray-100">
                     <div class="flex flex-wrap items-center gap-3 mb-6">
                         <span class="bg-blue-50 text-blue-600 border border-blue-100 font-extrabold text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-full shadow-sm">
                             {{ course.category or 'Skills Path' }}
