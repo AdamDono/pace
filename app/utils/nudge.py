@@ -23,8 +23,8 @@ def get_inactive_enrollments(days_inactive=7):
     rate_limit_cutoff = now - timedelta(days=7)
 
     # Active enrollments in approved courses with unbanned students
-    # Using .isnot(True) handles NULL values in the database for newer columns
-    active_enrollments = Enrollment.query.join(User).join(Course) \
+    # Using explicit relationship joins to prevent SQLAlchemy from accidentally joining Course to User
+    active_enrollments = Enrollment.query.join(Enrollment.student).join(Enrollment.course) \
         .filter(Enrollment.completed.isnot(True)) \
         .filter(Enrollment.is_blocked.isnot(True)) \
         .filter(Course.status == 'approved') \
