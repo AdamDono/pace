@@ -2138,73 +2138,120 @@ def student_detail_grades(course_id, student_id):
 @login_required
 def serve_upload(filename):
     """Serve uploaded student assignment files reliably with inline and download support."""
-    from flask import render_template_string, request, send_from_directory, redirect, current_app
+    from flask import render_template_string, request, send_from_directory, redirect, current_app, Response
+    import os, re, requests
+    
     upload_dir = current_app.config['UPLOAD_FOLDER']
     clean_filename = filename.lstrip('/')
     is_download = request.args.get('download') == '1'
-    s_name = request.args.get('s', 'student')
-    a_title = request.args.get('a', 'submission')
-    import re
+    s_name = request.args.get('s', 'student').strip() or 'student'
+    a_title = request.args.get('a', 'submission').strip() or 'submission'
     safe_filename = re.sub(r'[^a-zA-Z0-9_\-]', '_', f"{s_name}_{a_title}") + ".pdf"
     
     if clean_filename.startswith(('http://', 'https://', 'http:/', 'https:/')):
         # Fix collapsed slashes from Flask routing
         if clean_filename.startswith('http:/') and not clean_filename.startswith('http://'):
-            clean_filename = clean_filename.replace('http:/', 'http://')
+            clean_filename = clean_filename.replace('http:/', 'http://', 1)
         if clean_filename.startswith('https:/') and not clean_filename.startswith('https://'):
-            clean_filename = clean_filename.replace('https:/', 'https://')
+            clean_filename = clean_filename.replace('https:/', 'https://', 1)
             
         target_url = clean_filename
         
-        # If it's a Cloudinary URL, sign it to bypass 401 Unauthorized for raw/authenticated files
-        if 'res.cloudinary.com' in target_url:
-            import os, re
+        # Build candidate URLs to try for Cloudinary
+        candidate_urls = []
+        if 'res.cloudinary.com' in target_url or 'cloudinary.com' in target_url:
             import cloudinary
             import cloudinary.utils
             cloudinary_url_env = os.getenv('CLOUDINARY_URL')
             if cloudinary_url_env:
                 if not cloudinary.config().cloud_name:
                     cloudinary.config(cloudinary_url=cloudinary_url_env)
-                match = re.search(r'/upload/(?:v\d+/)?(.+)$', target_url)
+                
+                match = re.search(r'/(raw|image|video)/upload/(?:s--[^/]+--/)?(?:v(\d+)/)?(.+)$', target_url)
                 if match:
-                    public_id = match.group(1)
-                    res_type = 'raw' if '/raw/upload/' in target_url else 'image'
-                    res_type = 'video' if '/video/upload/' in target_url else res_type
+                    res_type = match.group(1)
+                    version = match.group(2)
+                    public_id = match.group(3)
+                    
+                    # Candidate 1: Signed raw/image URL with preserved version & HTTPS
                     try:
                         signed_url, _ = cloudinary.utils.cloudinary_url(
                             public_id,
                             resource_type=res_type,
-                            sign_url=True
+                            type='upload',
+                            version=version,
+                            sign_url=True,
+                            secure=True
                         )
                         if signed_url:
-                            target_url = signed_url
-                    except Exception as e:
+                            candidate_urls.append(signed_url)
+                    except Exception:
+                        pass
+                    
+                    # Candidate 2: Private authenticated download URL via Cloudinary API
+                    try:
+                        priv_url = cloudinary.utils.private_download_url(
+                            public_id,
+                            '',
+                            resource_type=res_type,
+                            type='upload',
+                            secure=True
+                        )
+                        if priv_url:
+                            candidate_urls.append(priv_url)
+                    except Exception:
+                        pass
+                    
+                    # Candidate 3: Alternative resource_type (image vs raw) signed URL
+                    alt_res_type = 'image' if res_type == 'raw' else 'raw'
+                    try:
+                        signed_alt, _ = cloudinary.utils.cloudinary_url(
+                            public_id,
+                            resource_type=alt_res_type,
+                            type='upload',
+                            version=version,
+                            sign_url=True,
+                            secure=True
+                        )
+                        if signed_alt:
+                            candidate_urls.append(signed_alt)
+                    except Exception:
                         pass
         
-        # Proxy the request to avoid cross-origin iframe blocking and forced downloads
-        import requests
-        from flask import Response
-        try:
-            resp = requests.get(target_url, stream=True, timeout=10)
-            if resp.status_code == 200:
-                headers = {}
-                # Set inline viewing or download depending on the request
-                if is_download:
-                    headers['Content-Disposition'] = f'attachment; filename="{safe_filename}"'
-                else:
-                    headers['Content-Disposition'] = f'inline; filename="{safe_filename}"'
+        # Candidate 4: Always try target_url (ensuring HTTPS)
+        if target_url not in candidate_urls:
+            candidate_urls.append(target_url)
+            
+        # Try fetching candidate URLs
+        req_headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+        for url in candidate_urls:
+            try:
+                resp = requests.get(url, headers=req_headers, stream=True, timeout=12)
+                if resp.status_code == 200:
+                    headers = {}
+                    if is_download:
+                        headers['Content-Disposition'] = f'attachment; filename="{safe_filename}"'
+                    else:
+                        headers['Content-Disposition'] = f'inline; filename="{safe_filename}"'
+                    
+                    if target_url.lower().endswith('.pdf') or 'pdf' in resp.headers.get('Content-Type', '').lower():
+                        headers['Content-Type'] = 'application/pdf'
+                    else:
+                        headers['Content-Type'] = resp.headers.get('Content-Type', 'application/octet-stream')
+                    
+                    if 'Content-Length' in resp.headers:
+                        headers['Content-Length'] = resp.headers['Content-Length']
+                    
+                    return Response(resp.iter_content(chunk_size=8192), headers=headers)
+            except Exception:
+                continue
                 
-                # Forward the correct content type
-                if target_url.lower().endswith('.pdf'):
-                    headers['Content-Type'] = 'application/pdf'
-                else:
-                    headers['Content-Type'] = resp.headers.get('Content-Type', 'application/octet-stream')
-                
-                return Response(resp.iter_content(chunk_size=8192), headers=headers)
-            else:
-                return redirect(target_url)
-        except Exception:
-            return redirect(target_url)
+        # If all proxy attempts failed, redirect to the best signed URL or target_url
+        fallback_url = candidate_urls[0] if candidate_urls else target_url
+        return redirect(fallback_url)
 
     mimetype = None
     if clean_filename.lower().endswith('.pdf'):
@@ -2263,8 +2310,20 @@ def preview_submission(submission_id):
     attempts_list = []
     for sub in sibling_submissions:
         f_url = None
-        s_name = getattr(sub.student, 'first_name', '') + '_' + getattr(sub.student, 'last_name', '') if getattr(sub, 'student', None) else 'student'
-        a_title = getattr(sub.assignment, 'title', 'assignment') if getattr(sub, 'assignment', None) else 'assignment'
+        s_user = getattr(sub, 'student', None)
+        if s_user:
+            if s_user.first_name and s_user.last_name:
+                s_name = f"{s_user.first_name}_{s_user.last_name}"
+            elif s_user.first_name:
+                s_name = f"{s_user.first_name}"
+            elif s_user.username:
+                s_name = f"{s_user.username}"
+            else:
+                s_name = "student"
+        else:
+            s_name = "student"
+            
+        a_title = getattr(getattr(sub, 'assignment', None), 'title', 'assignment') or 'assignment'
         
         if sub.file_path:
             clean_fp = sub.file_path

@@ -53,7 +53,8 @@ def upload_file_to_cloudinary(file_stream, filename=None, folder="pace_uploads",
         response = cloudinary.uploader.upload(
             file_stream,
             folder=folder,
-            resource_type=resource_type
+            resource_type=resource_type,
+            access_mode="public"
         )
         return response.get('secure_url')
     except Exception as e:
@@ -64,7 +65,8 @@ def upload_file_to_cloudinary(file_stream, filename=None, folder="pace_uploads",
             response = cloudinary.uploader.upload(
                 file_stream,
                 folder=folder,
-                resource_type="raw"
+                resource_type="raw",
+                access_mode="public"
             )
             return response.get('secure_url')
         except Exception as err2:
