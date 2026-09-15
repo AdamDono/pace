@@ -816,29 +816,63 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
             reader = None
             orig_w, orig_h = None, None
             
-            if src.startswith('data:image'):
+            if str(src).startswith('data:image'):
                 import base64
-                header, encoded = src.split(',', 1)
+                header, encoded = str(src).split(',', 1)
                 img_data = base64.b64decode(encoded)
                 pil_img = PILImage.open(io.BytesIO(img_data))
                 orig_w, orig_h = pil_img.size
                 stream = io.BytesIO(img_data)
                 reader = ImageReader(stream)
-            elif src.startswith(('http://', 'https://')):
-                res = requests.get(src, timeout=3)
+            elif str(src).startswith(('http://', 'https://')):
+                fetch_url = str(src)
+                if 'res.cloudinary.com' in fetch_url:
+                    import os, re
+                    import cloudinary.utils
+                    c_env = os.getenv('CLOUDINARY_URL')
+                    if c_env:
+                        try:
+                            if not cloudinary.config().cloud_name:
+                                cloudinary.config(cloudinary_url=c_env)
+                            m = re.search(r'/(raw|image|video)/upload/(?:s--[^/]+--/)?(?:v(\d+)/)?(.+)$', fetch_url)
+                            if m:
+                                r_type, ver, p_id = m.group(1), m.group(2), m.group(3)
+                                signed_u, _ = cloudinary.utils.cloudinary_url(
+                                    p_id, resource_type=r_type, type='upload', version=ver, sign_url=True, secure=True
+                                )
+                                if signed_u:
+                                    fetch_url = signed_u
+                        except Exception:
+                            pass
+
+                headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+                res = requests.get(fetch_url, headers=headers, timeout=8)
                 if res.status_code == 200:
                     pil_img = PILImage.open(io.BytesIO(res.content))
                     orig_w, orig_h = pil_img.size
                     stream = io.BytesIO(res.content)
                     reader = ImageReader(stream)
             else:
-                local_f = os.path.join(current_app.config['UPLOAD_FOLDER'], src)
-                if not os.path.exists(local_f):
-                    local_f = os.path.join(current_app.root_path, 'static', src)
-                if os.path.exists(local_f):
-                    pil_img = PILImage.open(local_f)
+                # Check all potential local paths
+                clean_src = str(src).lstrip('/')
+                possible_paths = [
+                    os.path.join(current_app.config.get('UPLOAD_FOLDER', ''), clean_src),
+                    os.path.join(current_app.root_path, 'static', 'uploads', clean_src),
+                    os.path.join(current_app.root_path, 'static', clean_src),
+                    os.path.join(current_app.root_path, 'static', 'images', clean_src),
+                    clean_src,
+                    str(src)
+                ]
+                found_path = None
+                for p in possible_paths:
+                    if os.path.exists(p) and os.path.isfile(p):
+                        found_path = p
+                        break
+                
+                if found_path:
+                    pil_img = PILImage.open(found_path)
                     orig_w, orig_h = pil_img.size
-                    reader = ImageReader(local_f)
+                    reader = ImageReader(found_path)
 
             if reader and orig_w and orig_h:
                 aspect = orig_w / orig_h
@@ -1006,47 +1040,58 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
     c.setFont("Helvetica-Oblique", 10)
     c.drawCentredString(width / 2, plaque_y - 62, "Demonstrating dedication to vocational mastery, practical skills, and academic excellence.")
 
-    # 7. Signatures & Certified Seal (Bottom Section)
-    # Left: Official Seal & Date
-    seal_x = 100
-    seal_y = 110
-    c.setStrokeColor(palette['seal_border'])
-    c.setFillColor(palette['seal_bg'])
-    c.setLineWidth(2)
-    c.circle(seal_x, seal_y, 34, stroke=1, fill=1)
+    # 7. Signatures & Accreditation Partner Logo / Seal (Bottom Section)
+    # Left: Partner / Institutional Co-Brand Logo (replaces seal) & Issuance Date
+    logo_drawn = False
+    partner_logo_src = getattr(course, 'partner_logo', None)
+    if partner_logo_src:
+        # Draw prominent partner logo in bottom-left area
+        logo_drawn = draw_image_safe(partner_logo_src, 55, 68, 125, 65)
 
-    c.setFillColor(HexColor('#FFFFFF'))
-    c.circle(seal_x, seal_y, 29, stroke=0, fill=1)
+    if not logo_drawn:
+        # Fallback badge only if no custom partner logo is set
+        seal_x = 100
+        seal_y = 105
+        c.setStrokeColor(palette['seal_border'])
+        c.setFillColor(palette['seal_bg'])
+        c.setLineWidth(2)
+        c.circle(seal_x, seal_y, 32, stroke=1, fill=1)
 
-    c.setFillColor(palette['primary'])
-    c.setFont("Helvetica-Bold", 8)
-    c.drawCentredString(seal_x, seal_y + 6, "★ PACE ★")
-    c.setFont("Helvetica-Bold", 7)
-    c.drawCentredString(seal_x, seal_y - 4, "VERIFIED")
-    c.setFont("Helvetica", 6)
-    c.drawCentredString(seal_x, seal_y - 13, "ACCREDITED")
+        c.setFillColor(HexColor('#FFFFFF'))
+        c.circle(seal_x, seal_y, 27, stroke=0, fill=1)
 
-    # Date
+        c.setFillColor(palette['primary'])
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawCentredString(seal_x, seal_y + 5, "★ PACE ★")
+        c.setFont("Helvetica-Bold", 6.5)
+        c.drawCentredString(seal_x, seal_y - 4, "VERIFIED")
+        c.setFont("Helvetica", 5.5)
+        c.drawCentredString(seal_x, seal_y - 12, "ACCREDITED")
+
+    # Date of Issuance (Bottom-Left)
     c.setFillColor(HexColor('#374151'))
-    c.setFont("Helvetica", 9)
-    c.drawString(60, 52, "Date of Issuance:")
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(60, 40, completion_date)
+    c.setFont("Helvetica", 8.5)
+    c.drawString(55, 46, "Date of Issuance:")
+    c.setFont("Helvetica-Bold", 9.5)
+    c.drawString(55, 34, completion_date)
 
     # Center: Primary Course Instructor Signatory
     if not instructor_name:
-        if course.teacher:
+        if getattr(course, 'instructor_name', None) and course.instructor_name.strip():
+            instructor_name = course.instructor_name.strip()
+        elif course.teacher:
             instructor_name = f"{course.teacher.first_name or ''} {course.teacher.last_name or ''}".strip() or course.teacher.username or course.teacher.email.split('@')[0]
         else:
             instructor_name = "Pace Academic Board"
 
+    instructor_title = getattr(course, 'instructor_title', None) or "Lead Instructor / Educator"
     instructor_sig = getattr(course, 'instructor_signature', None)
     draw_signature_block(
         center_x=width / 2,
         baseline_y=95,
         label="Course Instructor",
         signatory_name=instructor_name,
-        signatory_title="Lead Instructor / Educator",
+        signatory_title=instructor_title,
         sig_src=instructor_sig
     )
 

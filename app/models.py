@@ -191,6 +191,7 @@ class Course(db.Model):
     
     # Custom & Co-Branded Certificate Design Fields
     instructor_name = db.Column(db.String(150), nullable=True)  # Name of instructor, facilitator, or skills development programme / organization
+    instructor_title = db.Column(db.String(150), nullable=True)  # Title / Role of instructor (e.g. Lead Instructor / Senior Educator)
     certificate_theme = db.Column(db.String(30), default='gold')  # 'gold', 'navy', 'emerald', 'dark', 'burgundy'
     custom_certificate_title = db.Column(db.String(120), nullable=True)  # e.g. "Certificate of Completion"
     instructor_signature = db.Column(db.String(255), nullable=True)  # Lead Instructor signature image path or Cloudinary URL

@@ -943,6 +943,10 @@ def edit_course(identifier=None, course_id=None):
                 course.slug = unique_slug
 
             # Certificate Customization & Partner Co-Branding
+            if 'instructor_name' in request.form:
+                course.instructor_name = request.form.get('instructor_name', '').strip() or None
+            if 'instructor_title' in request.form:
+                course.instructor_title = request.form.get('instructor_title', '').strip() or None
             if 'certificate_theme' in request.form:
                 course.certificate_theme = request.form.get('certificate_theme', 'gold')
             if 'custom_certificate_title' in request.form:
@@ -1068,6 +1072,10 @@ def certificate_preview(course_id):
     preview_course = copy.copy(course)
     
     if request.method == 'POST':
+        if request.form.get('instructor_name') is not None:
+            preview_course.instructor_name = request.form.get('instructor_name').strip() or None
+        if request.form.get('instructor_title') is not None:
+            preview_course.instructor_title = request.form.get('instructor_title').strip() or None
         if request.form.get('certificate_theme'):
             preview_course.certificate_theme = request.form.get('certificate_theme')
         if request.form.get('custom_certificate_title') is not None:
@@ -1080,6 +1088,11 @@ def certificate_preview(course_id):
             preview_course.partner_signatory_name = request.form.get('partner_signatory_name').strip() or None
         if request.form.get('partner_signatory_title') is not None:
             preview_course.partner_signatory_title = request.form.get('partner_signatory_title').strip() or None
+
+        # Partner Logo Image preview data (Base64 from live modal or file upload)
+        partner_logo_data = request.form.get('partner_logo_data')
+        if partner_logo_data and partner_logo_data.startswith('data:image'):
+            preview_course.partner_logo = partner_logo_data
 
         # Drawn Instructor signature canvas data
         inst_sig_data = request.form.get('instructor_signature_data')
