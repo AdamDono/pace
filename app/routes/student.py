@@ -956,10 +956,6 @@ def generate_certificate_pdf(output_dest, course, student_name, completion_date=
 
     # 3. Header & Dual Branding
     has_partner = bool(course.partner_name or course.partner_logo)
-    
-    # Try drawing partner logo on top-right if available
-    if course.partner_logo:
-        draw_image_safe(course.partner_logo, width - 150, height - 85, 100, 45)
 
     # Institution Names
     c.setFillColor(palette['primary'])
