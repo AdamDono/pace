@@ -404,17 +404,6 @@ def create_app():
             return flask_url_for(endpoint, **values)
         return dict(url_for=custom_url_for)
 
-    # Serve favicon.ico from static/images/favicon.svg
-    @app.route('/favicon.ico')
-    def favicon():
-        from flask import send_from_directory
-        import os
-        return send_from_directory(
-            os.path.join(app.root_path, 'static', 'images'),
-            'favicon.svg',
-            mimetype='image/svg+xml'
-        )
-
     # CLI Commands
     @app.cli.command('send-inactivity-nudges')
     def cli_send_inactivity_nudges():
