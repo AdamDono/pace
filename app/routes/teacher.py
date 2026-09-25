@@ -2517,6 +2517,12 @@ def quick_create_section(course_id):
     if activity_type not in ACTIVITY_TYPES:
         activity_type = 'lesson'
 
+    # Map '3d' to '3d' for section_type
+    if activity_type == '3d':
+        section_type = '3d'
+    else:
+        section_type = activity_type
+
     module = Module.query.get(module_id)
     if not module or module.course_id != course_id:
         return jsonify({'success': False, 'message': 'Invalid topic'}), 400
@@ -2525,7 +2531,7 @@ def quick_create_section(course_id):
 
     section = Section(
         title=title,
-        section_type=activity_type,
+        section_type=section_type,
         course_id=course_id,
         module_id=module_id,
         order=max_order + 1,

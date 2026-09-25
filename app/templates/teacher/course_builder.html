@@ -600,7 +600,7 @@
         </div>
 
         <!-- Type picker grid -->
-        <div class="grid grid-cols-3 gap-3 mb-5" id="activity-type-grid">
+        <div class="grid grid-cols-4 gap-3 mb-5" id="activity-type-grid">
             <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer" data-type="lesson">
                 <span class="text-3xl mb-1">📖</span>
                 <span class="text-sm font-semibold text-gray-700">Lesson</span>
@@ -630,6 +630,11 @@
                 <span class="text-3xl mb-1">🔗</span>
                 <span class="text-sm font-semibold text-gray-700">Link</span>
                 <span class="text-xs text-gray-400">External URL</span>
+            </button>
+            <button class="activity-type-card flex flex-col items-center p-4 border-2 border-gray-200 rounded-xl hover:border-cyan-400 hover:bg-cyan-50 transition-all cursor-pointer" data-type="3d">
+                <span class="text-3xl mb-1">🧊</span>
+                <span class="text-sm font-semibold text-gray-700">3D Model</span>
+                <span class="text-xs text-gray-400">Interactive 3D</span>
             </button>
         </div>
 
@@ -720,6 +725,7 @@
         assignment: { icon: '📝', label: 'Assignment' },
         resource:   { icon: '📎', label: 'Resource' },
         url:        { icon: '🔗', label: 'Link' },
+        '3d':       { icon: '🧊', label: '3D Model' }
     };
 
     let _currentPickerModuleId = null;
@@ -771,6 +777,8 @@
                 window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-quiz`;
             } else if (data.activity_type === 'assignment') {
                 window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/add-assignment`;
+            } else if (data.activity_type === '3d') {
+                window.location.href = `/teacher/course/${courseId}/module/${_currentPickerModuleId}/section/${data.section_id}/edit`;
             } else {
                 window.location.href = `/teacher/course/${courseId}/section/${data.section_id}/edit-content`;
             }
