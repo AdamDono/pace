@@ -1,0 +1,253 @@
+{% extends "teacher/base_teacher.html" %}
+{% block page_title %}Edit 3D Content{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">3D Interactive Content</h1>
+            <p class="text-gray-600">Section: {{ section.title }}</p>
+        </div>
+        <a href="{{ url_for('teacher.edit_section', course_id=course.id, module_id=module.id, section_id=section.id) }}"
+           class="text-blue-600 hover:underline flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            Back to Section
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 3D Model Preview -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">🧊 3D Model Preview</h2>
+            {% if section.media_file %}
+            <div class="relative" style="aspect-ratio: 16/9; min-height: 300px;">
+                <iframe src="{{ url_for('student.get_section_content', section_id=section.id) }}"
+                        class="w-full h-full rounded-lg border border-gray-200"
+                        loading="lazy"></iframe>
+            </div>
+            {% else %}
+            <div class="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
+                <p>No 3D model uploaded for this section.</p>
+                <a href="{{ url_for('teacher.edit_section', course_id=course.id, module_id=module.id, section_id=section.id) }}"
+                   class="text-blue-600 hover:underline mt-2 inline-block">
+                    Upload a 3D model first
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Hotspots Management -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">📍 Clickable Hotspots</h2>
+            <p class="text-sm text-gray-600 mb-4">Add clickable points on the 3D model with information popups.</p>
+
+            <div class="space-y-3 mb-4">
+                {% for hotspot in section.hotspots %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                    <div>
+                        <p class="font-medium text-gray-800">{{ hotspot.title }}</p>
+                        <p class="text-xs text-gray-500">Position: ({{ hotspot.position_x }}, {{ hotspot.position_y }}, {{ hotspot.position_z }})</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
+                        <button class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 italic">No hotspots created yet.</p>
+                {% endfor %}
+            </div>
+
+            <button id="add-hotspot-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                + Add Hotspot
+            </button>
+        </div>
+
+        <!-- Labels Management -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">🏷️ Drag-and-Drop Labels</h2>
+            <p class="text-sm text-gray-600 mb-4">Create labeling exercises where students drag labels to correct 3D model parts.</p>
+
+            <div class="space-y-3 mb-4">
+                {% for label in section.labels %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                    <div>
+                        <p class="font-medium text-gray-800">{{ label.label_text }}</p>
+                        <p class="text-xs text-gray-500">Target: ({{ label.target_position_x }}, {{ label.target_position_y }}, {{ label.target_position_z }})</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
+                        <button class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 italic">No labels created yet.</p>
+                {% endfor %}
+            </div>
+
+            <button id="add-label-btn" class="w-full bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
+                + Add Label
+            </button>
+        </div>
+
+        <!-- Animations Management -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">🎬 Model Animations</h2>
+            <p class="text-sm text-gray-600 mb-4">Add animations to show moving parts or demonstrate functions.</p>
+
+            <div class="space-y-3 mb-4">
+                {% for animation in section.animations %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                    <div>
+                        <p class="font-medium text-gray-800">{{ animation.animation_name }}</p>
+                        <p class="text-xs text-gray-500">Type: {{ animation.animation_type }} | Duration: {{ animation.duration }}s</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
+                        <button class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 italic">No animations created yet.</p>
+                {% endfor %}
+            </div>
+
+            <button id="add-animation-btn" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                + Add Animation
+            </button>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h3 class="font-semibold text-blue-900 mb-2">💡 How to use 3D coordinates:</h3>
+        <ul class="text-sm text-blue-800 space-y-1">
+            <li>• Use the 3D preview to click on points and get their coordinates</li>
+            <li>• X = left/right, Y = up/down, Z = forward/backward</li>
+            <li>• Coordinates are relative to the model center</li>
+            <li>• Typical range: -2 to +2 for most models</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Hotspot Modal -->
+<div id="hotspot-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-bold mb-4">Add/Edit Hotspot</h3>
+        <form id="hotspot-form">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input type="text" name="title" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">X Position</label>
+                        <input type="number" step="0.1" name="position_x" value="0" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Y Position</label>
+                        <input type="number" step="0.1" name="position_y" value="0" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Z Position</label>
+                        <input type="number" step="0.1" name="position_z" value="0" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="description" rows="3" class="w-full px-3 py-2 border rounded-lg"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <input type="color" name="color" value="#ff6b6b" class="w-full h-10 border rounded-lg">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" id="close-hotspot-modal" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Label Modal -->
+<div id="label-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-bold mb-4">Add/Edit Label</h3>
+        <form id="label-form">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Label Text</label>
+                    <input type="text" name="label_text" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Target X</label>
+                        <input type="number" step="0.1" name="target_position_x" value="0" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Target Y</label>
+                        <input type="number" step="0.1" name="target_position_y" value="0" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Target Z</label>
+                        <input type="number" step="0.1" name="target_position_z" value="0" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tolerance Radius</label>
+                    <input type="number" step="0.1" name="tolerance_radius" value="0.5" class="w-full px-3 py-2 border rounded-lg">
+                    <p class="text-xs text-gray-500">How close to target (in 3D units) to count as correct</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" id="close-label-modal" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Modal management
+document.getElementById('add-hotspot-btn').addEventListener('click', function() {
+    document.getElementById('hotspot-modal').classList.remove('hidden');
+    document.getElementById('hotspot-modal').classList.add('flex');
+});
+
+document.getElementById('close-hotspot-modal').addEventListener('click', function() {
+    document.getElementById('hotspot-modal').classList.add('hidden');
+    document.getElementById('hotspot-modal').classList.remove('flex');
+});
+
+document.getElementById('add-label-btn').addEventListener('click', function() {
+    document.getElementById('label-modal').classList.remove('hidden');
+    document.getElementById('label-modal').classList.add('flex');
+});
+
+document.getElementById('close-label-modal').addEventListener('click', function() {
+    document.getElementById('label-modal').classList.add('hidden');
+    document.getElementById('label-modal').classList.remove('flex');
+});
+
+// Form submissions would be handled via AJAX to save to database
+document.getElementById('hotspot-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // AJAX call to save hotspot
+    alert('Hotspot saved! (Implement AJAX endpoint)');
+    document.getElementById('hotspot-modal').classList.add('hidden');
+    document.getElementById('hotspot-modal').classList.remove('flex');
+});
+
+document.getElementById('label-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // AJAX call to save label
+    alert('Label saved! (Implement AJAX endpoint)');
+    document.getElementById('label-modal').classList.add('hidden');
+    document.getElementById('label-modal').classList.remove('flex');
+});
+</script>
+{% endblock %}

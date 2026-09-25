@@ -16,6 +16,7 @@ ACTIVITY_TYPES = {
     'assignment': {'label': 'Assignment',  'icon': '📝', 'color': 'pink'},
     'resource':   {'label': 'Resource',    'icon': '📎', 'color': 'gray'},
     'url':        {'label': 'Link',        'icon': '🔗', 'color': 'green'},
+    '3d':         {'label': '3D Model',    'icon': '🧊', 'color': 'cyan'},
 }
 
 class User(db.Model, UserMixin):
@@ -435,6 +436,13 @@ class QuizQuestion(db.Model):
     option_c = db.Column(db.Text, nullable=True)
     option_d = db.Column(db.Text, nullable=True)
     correct_answer = db.Column(db.String(10), nullable=False)
+
+    # 3D Model Question Support
+    question_type = db.Column(db.String(20), default='multiple_choice')  # 'multiple_choice', '3d_model', '3d_label'
+    model_3d_file = db.Column(db.String(255), nullable=True)  # Path to 3D model for this question
+    model_3d_hotspots = db.Column(db.Text, nullable=True)  # JSON array of hotspot configurations
+    model_3d_labels = db.Column(db.Text, nullable=True)  # JSON array of label configurations for labeling exercises
+
     quiz = db.relationship('Quiz', back_populates='questions')
     answers = db.relationship('QuizAnswer', back_populates='question', cascade='all, delete-orphan')
 
@@ -802,3 +810,186 @@ class ForumUpvote(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref='forum_upvotes')
+
+
+# ==============================================================================
+# 3D INTERACTIVE LEARNING FEATURES
+# ==============================================================================
+
+class Model3DHotspot(db.Model):
+    """Clickable hotspots on 3D models with information popups"""
+    __tablename__ = 'model_3d_hotspots'
+
+    id = db.Column(db.Integer, primary_key=True)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
+
+    # Position in 3D space (x, y, z coordinates)
+    position_x = db.Column(db.Float, nullable=False)
+    position_y = db.Column(db.Float, nullable=False)
+    position_z = db.Column(db.Float, nullable=False)
+
+    # Hotspot content
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    popup_content = db.Column(db.Text, nullable=True)  # Rich HTML content for popup
+
+    # Visual settings
+    color = db.Column(db.String(20), default='#ff6b6b')  # Hex color for hotspot marker
+    size = db.Column(db.Float, default=0.1)  # Size of hotspot marker
+    icon = db.Column(db.String(50), default='info')  # Icon type: 'info', 'warning', 'success', etc.
+
+    # Display settings
+    show_on_load = db.Column(db.Boolean, default=True)  # Whether hotspot is visible initially
+    requires_interaction = db.Column(db.Boolean, default=False)  # Must be clicked to reveal
+
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    section = db.relationship('Section', backref='hotspots')
+
+
+class Model3DLabel(db.Model):
+    """Drag-and-drop labels for 3D model parts"""
+    __tablename__ = 'model_3d_labels'
+
+    id = db.Column(db.Integer, primary_key=True)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
+
+    # Label content
+    label_text = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    # Target position in 3D space (where label should be dropped)
+    target_position_x = db.Column(db.Float, nullable=False)
+    target_position_y = db.Column(db.Float, nullable=False)
+    target_position_z = db.Column(db.Float, nullable=False)
+
+    # Correct answer detection radius (how close to target to count as correct)
+    tolerance_radius = db.Column(db.Float, default=0.5)
+
+    # Label settings
+    color = db.Column(db.String(20), default='#4ecdc4')
+    is_mandatory = db.Column(db.Boolean, default=True)  # Must be completed to pass
+
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    section = db.relationship('Section', backref='labels')
+
+
+class Model3DLabelResponse(db.Model):
+    """Student responses to drag-and-drop labeling exercises"""
+    __tablename__ = 'model_3d_label_responses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    label_id = db.Column(db.Integer, db.ForeignKey('model_3d_labels.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Where student dropped the label
+    dropped_position_x = db.Column(db.Float, nullable=False)
+    dropped_position_y = db.Column(db.Float, nullable=False)
+    dropped_position_z = db.Column(db.Float, nullable=False)
+
+    # Result
+    is_correct = db.Column(db.Boolean, nullable=False)
+    distance_from_target = db.Column(db.Float, nullable=True)  # How far off they were
+    attempts = db.Column(db.Integer, default=1)
+
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    label = db.relationship('Model3DLabel', backref='responses')
+    student = db.relationship('User', backref='label_responses')
+
+
+class Model3DAnimation(db.Model):
+    """Animations for 3D model parts"""
+    __tablename__ = 'model_3d_animations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
+
+    # Animation details
+    animation_name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    # Target part (if specific part should animate)
+    target_part_name = db.Column(db.String(100), nullable=True)  # Name of 3D model part to animate
+
+    # Animation parameters
+    animation_type = db.Column(db.String(20), default='rotation')  # 'rotation', 'translation', 'scale', 'pulse'
+    duration = db.Column(db.Float, default=2.0)  # Duration in seconds
+    loop = db.Column(db.Boolean, default=False)  # Whether to loop animation
+
+    # Animation values (JSON arrays for keyframes)
+    start_values = db.Column(db.Text, nullable=True)  # JSON: [x, y, z] or [scale]
+    end_values = db.Column(db.Text, nullable=True)  # JSON: [x, y, z] or [scale]
+
+    # Trigger settings
+    auto_play = db.Column(db.Boolean, default=False)  # Play automatically on load
+    trigger_hotspot_id = db.Column(db.Integer, db.ForeignKey('model_3d_hotspots.id'), nullable=True)
+
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    section = db.relationship('Section', backref='animations')
+    trigger_hotspot = db.relationship('Model3DHotspot', backref='triggered_animations')
+
+
+class Model3DComparison(db.Model):
+    """Multiple model comparison configurations"""
+    __tablename__ = 'model_3d_comparisons'
+
+    id = db.Column(db.Integer, primary_key=True)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=False)
+
+    # Comparison details
+    comparison_title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    # Layout settings
+    layout_type = db.Column(db.String(20), default='side_by_side')  # 'side_by_side', 'grid', 'tabs'
+    model_count = db.Column(db.Integer, default=2)  # Number of models to compare
+
+    # Comparison questions/prompts
+    comparison_questions = db.Column(db.Text, nullable=True)  # JSON array of questions
+
+    # Sync settings
+    sync_rotation = db.Column(db.Boolean, default=True)  # Rotate all models together
+    sync_zoom = db.Column(db.Boolean, default=True)  # Zoom all models together
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    section = db.relationship('Section', backref='comparisons')
+
+
+class Model3DComparisonItem(db.Model):
+    """Individual models in a comparison set"""
+    __tablename__ = 'model_3d_comparison_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    comparison_id = db.Column(db.Integer, db.ForeignKey('model_3d_comparisons.id'), nullable=False)
+
+    # Model details
+    model_file = db.Column(db.String(255), nullable=False)  # Path to model file
+    model_label = db.Column(db.String(100), nullable=False)  # Display label for this model
+    model_description = db.Column(db.Text, nullable=True)
+
+    # Position in comparison layout
+    position = db.Column(db.Integer, default=0)  # 0, 1, 2, etc. for ordering
+
+    # Initial transform
+    initial_rotation_x = db.Column(db.Float, default=0)
+    initial_rotation_y = db.Column(db.Float, default=0)
+    initial_rotation_z = db.Column(db.Float, default=0)
+    initial_scale = db.Column(db.Float, default=1.0)
+
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    comparison = db.relationship('Model3DComparison', backref='items')

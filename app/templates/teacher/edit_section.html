@@ -36,6 +36,7 @@
                         <option value="image" {{ 'selected' if section.section_type == 'image' }}>🖼️ Image</option>
                         <option value="audio" {{ 'selected' if section.section_type == 'audio' }}>🎵 Audio</option>
                         <option value="presentation" {{ 'selected' if section.section_type == 'presentation' }}>📊 Presentation (PDF)</option>
+                        <option value="3d" {{ 'selected' if section.section_type == '3d' }}>🧊 3D Interactive Model</option>
                         <option value="quiz" {{ 'selected' if section.section_type == 'quiz' }}>❓ Quiz</option>
                         <option value="assignment" {{ 'selected' if section.section_type == 'assignment' }}>📝 Assignment</option>
                     </select>
@@ -152,6 +153,38 @@
                 </div>
             </div>
 
+            <!-- 3D Model Options (shown when 3d selected) -->
+            <div id="3d-options" class="hidden space-y-4 bg-cyan-50 p-4 rounded-lg border border-cyan-200 mt-6">
+                <h3 class="font-medium text-cyan-900">🧊 3D Interactive Model</h3>
+                <div>
+                    <label class="block text-sm font-medium text-cyan-700 mb-2">Upload 3D Model File</label>
+                    <input type="file" name="media_file" accept=".glb,.gltf,.obj"
+                           class="w-full px-4 py-3 border border-cyan-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                    {% if section.media_file %}
+                    <p class="text-sm text-cyan-600 mt-1">Current file: {{ section.media_file }}</p>
+                    {% endif %}
+                    <p class="text-sm text-cyan-600 mt-1">Upload a 3D model file (.glb, .gltf, or .obj) for interactive learning</p>
+                </div>
+                <div class="bg-cyan-100 p-3 rounded-lg border border-cyan-300">
+                    <p class="text-xs text-cyan-800 font-semibold mb-2">💡 Supported formats:</p>
+                    <ul class="text-xs text-cyan-700 space-y-1">
+                        <li>• <strong>.glb</strong> - Binary glTF (recommended, single file)</li>
+                        <li>• <strong>.gltf</strong> - JSON-based glTF format</li>
+                        <li>• <strong>.obj</strong> - Wavefront OBJ format</li>
+                    </ul>
+                    <p class="text-xs text-cyan-700 mt-2">Students will be able to rotate, zoom, and interact with the 3D model in their browser.</p>
+                </div>
+                {% if section.media_file %}
+                <a href="{{ url_for('teacher.edit_3d_content', course_id=course.id, module_id=module.id, section_id=section.id) }}"
+                   class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white text-sm rounded-lg hover:bg-cyan-700 mt-2">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                    Manage 3D Interactive Content
+                </a>
+                {% endif %}
+            </div>
+
             <div class="flex items-center space-x-4 mt-8">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
                     💾 Save Changes
@@ -172,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const quizOptions = document.getElementById('quiz-options');
     const assignmentOptions = document.getElementById('assignment-options');
     const presentationOptions = document.getElementById('presentation-options');
+    const threeDOptions = document.getElementById('3d-options');
 
     // Function to toggle options based on type
     function toggleOptions() {
@@ -182,6 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (quizOptions) quizOptions.classList.add('hidden');
         if (assignmentOptions) assignmentOptions.classList.add('hidden');
         if (presentationOptions) presentationOptions.classList.add('hidden');
+        if (threeDOptions) threeDOptions.classList.add('hidden');
 
         // Show relevant options with smooth animation
         if (selectedType === 'quiz' && quizOptions) {
@@ -193,6 +228,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (selectedType === 'presentation' && presentationOptions) {
             presentationOptions.classList.remove('hidden');
             presentationOptions.style.animation = 'slideDown 0.3s ease-out';
+        } else if (selectedType === '3d' && threeDOptions) {
+            threeDOptions.classList.remove('hidden');
+            threeDOptions.style.animation = 'slideDown 0.3s ease-out';
         }
     }
 

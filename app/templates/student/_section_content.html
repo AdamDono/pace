@@ -1,5 +1,5 @@
 <div id="section-content-{{ section.id }}">
-    {% set type_labels = {'lesson':'Lesson','video':'Video','quiz':'Quiz','assignment':'Assignment','resource':'Resource','url':'Link'} %}
+    {% set type_labels = {'lesson':'Lesson','video':'Video','quiz':'Quiz','assignment':'Assignment','resource':'Resource','url':'Link','3d':'3D Model'} %}
 
     <!-- Section Meta -->
     <div class="flex items-center gap-3 mb-5 text-sm text-gray-500">
@@ -10,6 +10,7 @@
             {% elif section.section_type == 'assignment' %} 📝
             {% elif section.section_type == 'resource' %} 📎
             {% elif section.section_type == 'url' %} 🔗
+            {% elif section.section_type == '3d' %} 🧊
             {% else %} 📄
             {% endif %}
             {{ type_labels.get(section.section_type, section.section_type.capitalize()) }}
@@ -56,6 +57,18 @@
                Open ↗
             </a>
         </div>
+
+    {% elif section.section_type == '3d' %}
+        <div class="relative">
+            {% if section.comparisons %}
+                {% include 'student/_3d_comparison.html' %}
+            {% else %}
+                {% include 'student/_3d_viewer.html' %}
+            {% endif %}
+        </div>
+        {% if section.content %}
+        <div class="ql-editor prose max-w-none mt-4">{{ section.content|safe }}</div>
+        {% endif %}
 
     {% elif section.section_type in ('video', 'lesson') or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
         {% if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}

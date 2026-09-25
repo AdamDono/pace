@@ -1,0 +1,307 @@
+<!-- 3D Model Comparison Viewer -->
+<div id="comparison-container-{{ section.id }}"
+     class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-900 mb-5 relative"
+     style="aspect-ratio: 16/9; min-height: 500px;"
+     data-section-id="{{ section.id }}"
+     data-comparison-data="{% if section.comparisons %}{{ section.comparisons | tojson | safe }}{% endif %}">
+    <div id="comparison-loading-{{ section.id }}" class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white z-10">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-sm">Loading 3D comparison...</p>
+        </div>
+    </div>
+
+    <!-- Comparison Layout -->
+    <div id="comparison-layout-{{ section.id }}" class="w-full h-full grid grid-cols-2 gap-2 p-2">
+        <!-- Model views will be dynamically inserted here -->
+    </div>
+
+    <!-- Comparison Controls -->
+    <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-black/50 backdrop-blur-sm rounded-lg p-3 z-10">
+        <div class="flex items-center gap-2 text-white text-xs">
+            <span class="bg-white/20 px-2 py-1 rounded">🔄 Sync: <span id="sync-status-{{ section.id }}">ON</span></span>
+            <button id="toggle-sync-{{ section.id }}" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition">
+                Toggle Sync
+            </button>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="layout-grid-{{ section.id }}" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-xs transition">
+                Grid
+            </button>
+            <button id="layout-tabs-{{ section.id }}" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-xs transition">
+                Tabs
+            </button>
+            <button id="reset-comparison-{{ section.id }}" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-xs transition">
+                Reset Views
+            </button>
+        </div>
+    </div>
+
+    <!-- Comparison Questions Panel -->
+    <div id="comparison-questions-{{ section.id }}" class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 max-w-sm z-20 hidden">
+        <h4 class="font-bold text-gray-800 text-sm mb-2">📝 Comparison Questions</h4>
+        <div id="questions-list-{{ section.id }}" class="space-y-2 text-sm text-gray-600"></div>
+    </div>
+</div>
+
+<!-- Three.js and Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+
+<script>
+(function() {
+    var container = document.querySelector('[data-section-id]');
+    if (!container) return;
+
+    var sectionId = container.getAttribute('data-section-id');
+    var comparisonData = container.getAttribute('data-comparison-data');
+
+    var layoutContainer = document.getElementById('comparison-layout-' + sectionId);
+    var loading = document.getElementById('comparison-loading-' + sectionId);
+    var syncStatus = document.getElementById('sync-status-' + sectionId);
+    var toggleSyncBtn = document.getElementById('toggle-sync-' + sectionId);
+    var layoutGridBtn = document.getElementById('layout-grid-' + sectionId);
+    var layoutTabsBtn = document.getElementById('layout-tabs-' + sectionId);
+    var resetBtn = document.getElementById('reset-comparison-' + sectionId);
+    var questionsPanel = document.getElementById('comparison-questions-' + sectionId);
+    var questionsList = document.getElementById('questions-list-' + sectionId);
+
+    var comparisons = comparisonData ? JSON.parse(comparisonData) : [];
+    var syncEnabled = true;
+    var currentLayout = 'grid';
+    var viewers = []; // Store multiple viewer instances
+
+    // Initialize comparison viewer
+    function initComparison() {
+        if (comparisons.length === 0) {
+            loading.innerHTML = '<p class="text-yellow-400">No comparison configured</p>';
+            return;
+        }
+
+        var comparison = comparisons[0]; // Use first comparison
+        var items = comparison.items || [];
+
+        if (items.length === 0) {
+            loading.innerHTML = '<p class="text-yellow-400">No models in comparison</p>';
+            return;
+        }
+
+        // Clear loading
+        loading.style.display = 'none';
+
+        // Set layout based on item count
+        if (items.length === 2) {
+            layoutContainer.className = 'w-full h-full grid grid-cols-2 gap-2 p-2';
+        } else if (items.length === 3) {
+            layoutContainer.className = 'w-full h-full grid grid-cols-3 gap-2 p-2';
+        } else if (items.length === 4) {
+            layoutContainer.className = 'w-full h-full grid grid-cols-2 grid-rows-2 gap-2 p-2';
+        } else {
+            layoutContainer.className = 'w-full h-full grid grid-cols-1 gap-2 p-2 overflow-y-auto';
+        }
+
+        // Create viewers for each model
+        items.forEach(function(item, index) {
+            createModelViewer(item, index);
+        });
+
+        // Show questions if available
+        if (comparison.comparison_questions) {
+            var questions = JSON.parse(comparison.comparison_questions);
+            if (questions.length > 0) {
+                questionsPanel.classList.remove('hidden');
+                questions.forEach(function(question) {
+                    var questionEl = document.createElement('div');
+                    questionEl.className = 'bg-gray-50 p-2 rounded';
+                    questionEl.textContent = question;
+                    questionsList.appendChild(questionEl);
+                });
+            }
+        }
+    }
+
+    function createModelViewer(item, index) {
+        var viewerContainer = document.createElement('div');
+        viewerContainer.className = 'relative bg-gray-800 rounded-lg overflow-hidden';
+        viewerContainer.id = 'model-viewer-' + sectionId + '-' + index;
+
+        var canvas = document.createElement('canvas');
+        canvas.id = 'canvas-' + sectionId + '-' + index;
+        canvas.className = 'w-full h-full';
+        viewerContainer.appendChild(canvas);
+
+        var label = document.createElement('div');
+        label.className = 'absolute top-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-xs';
+        label.textContent = item.model_label;
+        viewerContainer.appendChild(label);
+
+        layoutContainer.appendChild(viewerContainer);
+
+        // Create Three.js viewer
+        var scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+
+        var camera = new THREE.PerspectiveCamera(75, viewerContainer.clientWidth / viewerContainer.clientHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
+
+        var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Lighting
+        var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        scene.add(directionalLight);
+
+        var gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        // Load model
+        if (item.model_file) {
+            var fileExtension = item.model_file.split('.').pop().toLowerCase();
+            var loader;
+
+            if (fileExtension === 'glb' || fileExtension === 'gltf') {
+                loader = new THREE.GLTFLoader();
+                loader.load(item.model_file, function(gltf) {
+                    var model = gltf.scene;
+                    scene.add(model);
+
+                    // Auto-center and scale
+                    var box = new THREE.Box3().setFromObject(model);
+                    var center = box.getCenter(new THREE.Vector3());
+                    var size = box.getSize(new THREE.Vector3());
+
+                    model.position.sub(center);
+                    var maxDim = Math.max(size.x, size.y, size.z);
+                    var scale = 3 / maxDim;
+                    model.scale.set(scale, scale, scale);
+
+                    // Apply initial transform
+                    model.rotation.x = item.initial_rotation_x || 0;
+                    model.rotation.y = item.initial_rotation_y || 0;
+                    model.rotation.z = item.initial_rotation_z || 0;
+                });
+            } else if (fileExtension === 'obj') {
+                loader = new THREE.OBJLoader();
+                loader.load(item.model_file, function(obj) {
+                    var model = obj;
+                    scene.add(model);
+
+                    // Auto-center and scale
+                    var box = new THREE.Box3().setFromObject(model);
+                    var center = box.getCenter(new THREE.Vector3());
+                    var size = box.getSize(new THREE.Vector3());
+
+                    model.position.sub(center);
+                    var maxDim = Math.max(size.x, size.y, size.z);
+                    var scale = 3 / maxDim;
+                    model.scale.set(scale, scale, scale);
+
+                    // Apply initial transform
+                    model.rotation.x = item.initial_rotation_x || 0;
+                    model.rotation.y = item.initial_rotation_y || 0;
+                    model.rotation.z = item.initial_rotation_z || 0;
+                });
+            }
+        }
+
+        // Store viewer instance
+        viewers.push({
+            index: index,
+            scene: scene,
+            camera: camera,
+            renderer: renderer,
+            controls: controls,
+            container: viewerContainer
+        });
+
+        // Animation loop for this viewer
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    }
+
+    // Sync controls between viewers
+    function syncControls(sourceViewer) {
+        if (!syncEnabled) return;
+
+        viewers.forEach(function(viewer) {
+            if (viewer.index !== sourceViewer.index) {
+                viewer.camera.position.copy(sourceViewer.camera.position);
+                viewer.camera.rotation.copy(sourceViewer.camera.rotation);
+                viewer.controls.target.copy(sourceViewer.controls.target);
+            }
+        });
+    }
+
+    // Toggle sync
+    toggleSyncBtn.addEventListener('click', function() {
+        syncEnabled = !syncEnabled;
+        syncStatus.textContent = syncEnabled ? 'ON' : 'OFF';
+        toggleSyncBtn.classList.toggle('bg-green-500/30', syncEnabled);
+    });
+
+    // Layout controls
+    layoutGridBtn.addEventListener('click', function() {
+        currentLayout = 'grid';
+        var itemCount = viewers.length;
+        if (itemCount === 2) {
+            layoutContainer.className = 'w-full h-full grid grid-cols-2 gap-2 p-2';
+        } else if (itemCount === 3) {
+            layoutContainer.className = 'w-full h-full grid grid-cols-3 gap-2 p-2';
+        } else if (itemCount === 4) {
+            layoutContainer.className = 'w-full h-full grid grid-cols-2 grid-rows-2 gap-2 p-2';
+        }
+        layoutGridBtn.classList.add('bg-green-500/30');
+        layoutTabsBtn.classList.remove('bg-green-500/30');
+    });
+
+    layoutTabsBtn.addEventListener('click', function() {
+        currentLayout = 'tabs';
+        layoutContainer.className = 'w-full h-full flex flex-col';
+        // Implement tab switching logic
+        layoutTabsBtn.classList.add('bg-green-500/30');
+        layoutGridBtn.classList.remove('bg-green-500/30');
+    });
+
+    // Reset views
+    resetBtn.addEventListener('click', function() {
+        viewers.forEach(function(viewer) {
+            viewer.camera.position.set(0, 2, 5);
+            viewer.controls.reset();
+        });
+    });
+
+    // Add sync event listeners
+    viewers.forEach(function(viewer) {
+        viewer.controls.addEventListener('change', function() {
+            syncControls(viewer);
+        });
+    });
+
+    // Handle resize
+    window.addEventListener('resize', function() {
+        viewers.forEach(function(viewer) {
+            viewer.camera.aspect = viewer.container.clientWidth / viewer.container.clientHeight;
+            viewer.camera.updateProjectionMatrix();
+            viewer.renderer.setSize(viewer.container.clientWidth, viewer.container.clientHeight);
+        });
+    });
+
+    // Initialize
+    initComparison();
+})();
+</script>

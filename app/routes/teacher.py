@@ -1725,7 +1725,7 @@ def edit_section(course_id, section_id):
             file = request.files['media_file']
             if file and file.filename:
                 # Validate file type and size
-                allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3'}
+                allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3', 'glb', 'gltf', 'obj'}
                 if '.' in file.filename:
                     extension = file.filename.rsplit('.', 1)[1].lower()
                     if extension in allowed_extensions:
@@ -1748,7 +1748,7 @@ def edit_section(course_id, section_id):
                             file.save(file_path)
                             section.media_file = unique_filename
                     else:
-                        flash('Invalid file type. Allowed: PDF, JPG, PNG, GIF, MP4, MP3', 'danger')
+                        flash('Invalid file type. Allowed: PDF, JPG, PNG, GIF, MP4, MP3, GLB, GLTF, OBJ', 'danger')
                         return redirect(request.url)
                 else:
                     flash('Invalid file format.', 'danger')
@@ -1767,6 +1767,57 @@ def edit_section(course_id, section_id):
         return redirect(url_for('teacher.manage_module_sections', course_id=course_id, module_id=section.module_id))
 
     return render_template('teacher/edit_section.html', course=course, module=module, section=section, quizzes=section.quizzes, assignments=section.assignments)
+
+@teacher_bp.route('/course/<int:course_id>/module/<int:module_id>/section/<int:section_id>/3d-content', methods=['GET', 'POST'])
+@teacher_required
+def edit_3d_content(course_id, module_id, section_id):
+    """Edit 3D interactive content for a section"""
+    from app.models import Course, Section, Module
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    module = Module.query.get_or_404(module_id)
+
+    if course.teacher_id != current_user.id or section.course_id != course_id:
+        abort(403)
+
+    if request.method == 'POST':
+        # Handle hotspot creation/editing
+        if request.form.get('action') == 'add_hotspot':
+            from app.models import Model3DHotspot
+            hotspot = Model3DHotspot(
+                section_id=section_id,
+                position_x=float(request.form.get('position_x', 0)),
+                position_y=float(request.form.get('position_y', 0)),
+                position_z=float(request.form.get('position_z', 0)),
+                title=request.form.get('title'),
+                description=request.form.get('description'),
+                popup_content=request.form.get('popup_content'),
+                color=request.form.get('color', '#ff6b6b'),
+                size=float(request.form.get('size', 0.1))
+            )
+            db.session.add(hotspot)
+            db.session.commit()
+            flash('Hotspot added successfully!', 'success')
+            return jsonify({'success': True, 'hotspot_id': hotspot.id})
+
+        # Handle label creation/editing
+        elif request.form.get('action') == 'add_label':
+            from app.models import Model3DLabel
+            label = Model3DLabel(
+                section_id=section_id,
+                label_text=request.form.get('label_text'),
+                description=request.form.get('description'),
+                target_position_x=float(request.form.get('target_position_x', 0)),
+                target_position_y=float(request.form.get('target_position_y', 0)),
+                target_position_z=float(request.form.get('target_position_z', 0)),
+                tolerance_radius=float(request.form.get('tolerance_radius', 0.5))
+            )
+            db.session.add(label)
+            db.session.commit()
+            flash('Label added successfully!', 'success')
+            return jsonify({'success': True, 'label_id': label.id})
+
+    return render_template('teacher/edit_3d_content.html', course=course, module=module, section=section)
 
 @teacher_bp.route('/courses/<identifier>/preview')
 @teacher_bp.route('/course/<identifier>/preview')

@@ -1,0 +1,559 @@
+<!-- 3D Model Viewer with Three.js -->
+<div id="viewer-container-{{ section.id }}"
+     class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-900 mb-5 relative"
+     style="aspect-ratio: 16/9; min-height: 400px;"
+     data-section-id="{{ section.id }}"
+     data-media-file="{% if section.media_file %}{{ url_for('static', filename='uploads/' + section.media_file) }}{% endif %}"
+     data-hotspots="{% if section.hotspots %}{{ section.hotspots | tojson | safe }}{% endif %}"
+     data-labels="{% if section.labels %}{{ section.labels | tojson | safe }}{% endif %}"
+     data-animations="{% if section.animations %}{{ section.animations | tojson | safe }}{% endif %}">
+    <div id="loading-{{ section.id }}" class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white z-10">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-sm">Loading 3D model...</p>
+        </div>
+    </div>
+    <canvas id="canvas-{{ section.id }}"></canvas>
+
+    <!-- Hotspot Popup -->
+    <div id="hotspot-popup-{{ section.id }}" class="absolute hidden bg-white rounded-xl shadow-2xl p-4 max-w-sm z-20 border border-gray-200">
+        <div class="flex justify-between items-start mb-2">
+            <h4 id="hotspot-title-{{ section.id }}" class="font-bold text-gray-800"></h4>
+            <button id="close-popup-{{ section.id }}" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="hotspot-content-{{ section.id }}" class="text-sm text-gray-600"></div>
+    </div>
+
+    <!-- Label Dragging Interface -->
+    <div id="label-panel-{{ section.id }}" class="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 max-w-xs z-20 hidden">
+        <h4 class="font-bold text-gray-800 text-sm mb-2">🏷️ Drag labels to model parts</h4>
+        <div id="draggable-labels-{{ section.id }}" class="space-y-2"></div>
+        <div id="label-progress-{{ section.id }}" class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-black/50 backdrop-blur-sm rounded-lg p-3 z-10">
+        <div class="flex items-center gap-2 text-white text-xs">
+            <span class="bg-white/20 px-2 py-1 rounded">🖱️ Drag to rotate</span>
+            <span class="bg-white/20 px-2 py-1 rounded">🔍 Scroll to zoom</span>
+            <span class="bg-white/20 px-2 py-1 rounded">⌨️ Right-click to pan</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="toggle-hotspots-{{ section.id }}" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-xs transition">
+                📍 Hotspots
+            </button>
+            <button id="toggle-labels-{{ section.id }}" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-xs transition">
+                🏷️ Labels
+            </button>
+            <button id="reset-view-{{ section.id }}" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-xs transition">
+                Reset View
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Three.js and Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+
+<script>
+(function() {
+    // Find the container and read data attributes
+    var container = document.querySelector('[data-section-id]');
+    if (!container) return;
+
+    var sectionId = container.getAttribute('data-section-id');
+    var mediaFile = container.getAttribute('data-media-file');
+    var hotspotsData = container.getAttribute('data-hotspots');
+    var labelsData = container.getAttribute('data-labels');
+    var animationsData = container.getAttribute('data-animations');
+
+    var canvas = document.getElementById('canvas-' + sectionId);
+    var loading = document.getElementById('loading-' + sectionId);
+    var resetBtn = document.getElementById('reset-view-' + sectionId);
+    var toggleHotspotsBtn = document.getElementById('toggle-hotspots-' + sectionId);
+    var toggleLabelsBtn = document.getElementById('toggle-labels-' + sectionId);
+
+    var hotspotPopup = document.getElementById('hotspot-popup-' + sectionId);
+    var hotspotTitle = document.getElementById('hotspot-title-' + sectionId);
+    var hotspotContent = document.getElementById('hotspot-content-' + sectionId);
+    var closePopupBtn = document.getElementById('close-popup-' + sectionId);
+
+    var labelPanel = document.getElementById('label-panel-' + sectionId);
+    var draggableLabelsContainer = document.getElementById('draggable-labels-' + sectionId);
+    var labelProgress = document.getElementById('label-progress-' + sectionId);
+
+    // Parse JSON data
+    var hotspots = hotspotsData ? JSON.parse(hotspotsData) : [];
+    var labels = labelsData ? JSON.parse(labelsData) : [];
+    var animations = animationsData ? JSON.parse(animationsData) : [];
+
+    // Scene setup
+    var scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+
+    // Camera
+    var camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 2, 5);
+
+    // Renderer
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+
+    // Controls
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 2;
+    controls.maxDistance = 10;
+
+    // Lighting
+    var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 10, 7);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    var pointLight = new THREE.PointLight(0xffffff, 0.5);
+    pointLight.position.set(-5, 5, -5);
+    scene.add(pointLight);
+
+    // Grid helper
+    var gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    scene.add(gridHelper);
+
+    // Raycaster for click detection
+    var raycaster = new THREE.Raycaster();
+    var mouse = new THREE.Vector2();
+
+    // Store loaded model and hotspot meshes
+    var loadedModel = null;
+    var hotspotMeshes = [];
+    var hotspotsVisible = true;
+    var labelsVisible = false;
+    var completedLabels = [];
+    var activeAnimations = [];
+
+    // Create hotspot markers
+    function createHotspot(hotspot) {
+        var geometry = new THREE.SphereGeometry(hotspot.size || 0.1, 16, 16);
+        var material = new THREE.MeshBasicMaterial({ color: hotspot.color || '#ff6b6b' });
+        var sphere = new THREE.Mesh(geometry, material);
+
+        sphere.position.set(hotspot.position_x, hotspot.position_y, hotspot.position_z);
+        sphere.userData = { isHotspot: true, hotspotData: hotspot };
+
+        // Add pulsing effect
+        var pulseGeometry = new THREE.SphereGeometry((hotspot.size || 0.1) * 1.5, 16, 16);
+        var pulseMaterial = new THREE.MeshBasicMaterial({
+            color: hotspot.color || '#ff6b6b',
+            transparent: true,
+            opacity: 0.3
+        });
+        var pulseSphere = new THREE.Mesh(pulseGeometry, pulseMaterial);
+        sphere.add(pulseSphere);
+
+        scene.add(sphere);
+        hotspotMeshes.push(sphere);
+
+        return sphere;
+    }
+
+    // Initialize hotspots
+    function initHotspots() {
+        // Clear existing hotspots
+        hotspotMeshes.forEach(function(mesh) {
+            scene.remove(mesh);
+        });
+        hotspotMeshes = [];
+
+        // Create new hotspots
+        hotspots.forEach(function(hotspot) {
+            if (hotspot.show_on_load !== false) {
+                createHotspot(hotspot);
+            }
+        });
+    }
+
+    // Initialize drag-and-drop labels
+    function initLabels() {
+        draggableLabelsContainer.innerHTML = '';
+        completedLabels = [];
+
+        labels.forEach(function(label) {
+            var labelEl = document.createElement('div');
+            labelEl.className = 'bg-cyan-100 border border-cyan-300 rounded-lg px-3 py-2 text-sm font-medium text-cyan-800 cursor-move shadow-sm hover:shadow-md transition-shadow';
+            labelEl.textContent = label.label_text;
+            labelEl.draggable = true;
+            labelEl.dataset.labelId = label.id;
+            labelEl.dataset.targetX = label.target_position_x;
+            labelEl.dataset.targetY = label.target_position_y;
+            labelEl.dataset.targetZ = label.target_position_z;
+            labelEl.dataset.tolerance = label.tolerance_radius || 0.5;
+
+            labelEl.addEventListener('dragstart', handleLabelDragStart);
+            labelEl.addEventListener('dragend', handleLabelDragEnd);
+
+            draggableLabelsContainer.appendChild(labelEl);
+        });
+
+        updateLabelProgress();
+    }
+
+    function handleLabelDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.dataset.labelId);
+        e.target.classList.add('opacity-50');
+    }
+
+    function handleLabelDragEnd(e) {
+        e.target.classList.remove('opacity-50');
+    }
+
+    // Handle drop on canvas
+    canvas.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('drop', function(e) {
+        e.preventDefault();
+        var labelId = e.dataTransfer.getData('text/plain');
+        var labelEl = document.querySelector('[data-label-id="' + labelId + '"]');
+
+        if (!labelEl) return;
+
+        // Calculate 3D position from 2D drop
+        var rect = canvas.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        // Raycast to find point on model
+        var intersects = raycaster.intersectObjects(scene.children, true);
+
+        if (intersects.length > 0) {
+            var dropPoint = intersects[0].point;
+            var targetX = parseFloat(labelEl.dataset.targetX);
+            var targetY = parseFloat(labelEl.dataset.targetY);
+            var targetZ = parseFloat(labelEl.dataset.targetZ);
+            var tolerance = parseFloat(labelEl.dataset.tolerance);
+
+            // Calculate distance to target
+            var distance = Math.sqrt(
+                Math.pow(dropPoint.x - targetX, 2) +
+                Math.pow(dropPoint.y - targetY, 2) +
+                Math.pow(dropPoint.z - targetZ, 2)
+            );
+
+            if (distance <= tolerance) {
+                // Correct!
+                labelEl.classList.add('bg-green-100', 'border-green-300', 'text-green-800');
+                labelEl.classList.remove('bg-cyan-100', 'border-cyan-300', 'text-cyan-800');
+                labelEl.draggable = false;
+                labelEl.innerHTML += ' ✓';
+                completedLabels.push(labelId);
+
+                // Show success feedback
+                showFeedback('Correct! 🎉', 'success');
+            } else {
+                // Incorrect
+                showFeedback('Try again! Distance: ' + distance.toFixed(2), 'error');
+            }
+
+            updateLabelProgress();
+        }
+    });
+
+    function showFeedback(message, type) {
+        var feedback = document.createElement('div');
+        feedback.className = 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-4 py-2 rounded-lg text-white font-bold z-30 ' +
+            (type === 'success' ? 'bg-green-500' : 'bg-red-500');
+        feedback.textContent = message;
+        container.appendChild(feedback);
+
+        setTimeout(function() {
+            feedback.remove();
+        }, 1500);
+    }
+
+    function updateLabelProgress() {
+        var total = labels.length;
+        var completed = completedLabels.length;
+        labelProgress.textContent = completed + '/' + total + ' labels placed';
+
+        if (completed === total && total > 0) {
+            labelProgress.textContent += ' - Complete! 🎉';
+            labelProgress.classList.add('text-green-600', 'font-bold');
+        }
+    }
+
+    // Animation system
+    function initAnimations() {
+        animations.forEach(function(animation) {
+            if (animation.auto_play) {
+                playAnimation(animation);
+            }
+        });
+    }
+
+    function playAnimation(animation) {
+        if (!loadedModel) return;
+
+        var targetPart = null;
+        if (animation.target_part_name) {
+            // Find specific part in the model
+            loadedModel.traverse(function(child) {
+                if (child.name === animation.target_part_name) {
+                    targetPart = child;
+                }
+            });
+        } else {
+            targetPart = loadedModel;
+        }
+
+        if (!targetPart) return;
+
+        var startValues = animation.start_values ? JSON.parse(animation.start_values) : [0, 0, 0];
+        var endValues = animation.end_values ? JSON.parse(animation.end_values) : [1, 1, 1];
+        var duration = animation.duration * 1000; // Convert to milliseconds
+        var startTime = Date.now();
+
+        var animObj = {
+            target: targetPart,
+            type: animation.animation_type,
+            startValues: startValues,
+            endValues: endValues,
+            duration: duration,
+            startTime: startTime,
+            loop: animation.loop
+        };
+
+        activeAnimations.push(animObj);
+    }
+
+    function updateAnimations() {
+        var currentTime = Date.now();
+
+        activeAnimations = activeAnimations.filter(function(anim) {
+            var elapsed = currentTime - anim.startTime;
+            var progress = Math.min(elapsed / anim.duration, 1);
+
+            // Easing function (ease-in-out)
+            var easedProgress = progress < 0.5
+                ? 2 * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            if (anim.type === 'rotation') {
+                anim.target.rotation.x = anim.startValues[0] + (anim.endValues[0] - anim.startValues[0]) * easedProgress;
+                anim.target.rotation.y = anim.startValues[1] + (anim.endValues[1] - anim.startValues[1]) * easedProgress;
+                anim.target.rotation.z = anim.startValues[2] + (anim.endValues[2] - anim.startValues[2]) * easedProgress;
+            } else if (anim.type === 'translation') {
+                anim.target.position.x = anim.startValues[0] + (anim.endValues[0] - anim.startValues[0]) * easedProgress;
+                anim.target.position.y = anim.startValues[1] + (anim.endValues[1] - anim.startValues[1]) * easedProgress;
+                anim.target.position.z = anim.startValues[2] + (anim.endValues[2] - anim.startValues[2]) * easedProgress;
+            } else if (anim.type === 'scale') {
+                var scale = anim.startValues[0] + (anim.endValues[0] - anim.startValues[0]) * easedProgress;
+                anim.target.scale.set(scale, scale, scale);
+            } else if (anim.type === 'pulse') {
+                var pulseScale = anim.startValues[0] + (anim.endValues[0] - anim.startValues[0]) * Math.sin(elapsed / 1000 * Math.PI * 2);
+                anim.target.scale.set(pulseScale, pulseScale, pulseScale);
+            }
+
+            // Handle looping
+            if (anim.loop && progress >= 1) {
+                anim.startTime = currentTime;
+                return true; // Keep animation
+            }
+
+            return progress < 1; // Remove if complete
+        });
+    }
+
+    // Handle click on hotspots
+    canvas.addEventListener('click', function(e) {
+        if (!hotspotsVisible) return;
+
+        var rect = canvas.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        var intersects = raycaster.intersectObjects(hotspotMeshes);
+
+        if (intersects.length > 0) {
+            var hotspot = intersects[0].object.userData.hotspotData;
+            showHotspotPopup(hotspot, e.clientX, e.clientY);
+        }
+    });
+
+    function showHotspotPopup(hotspot, x, y) {
+        hotspotTitle.textContent = hotspot.title;
+        hotspotContent.innerHTML = hotspot.popup_content || hotspot.description || '';
+
+        var containerRect = container.getBoundingClientRect();
+        var popupX = x - containerRect.left;
+        var popupY = y - containerRect.top;
+
+        hotspotPopup.style.left = popupX + 'px';
+        hotspotPopup.style.top = popupY + 'px';
+        hotspotPopup.classList.remove('hidden');
+    }
+
+    // Close popup
+    closePopupBtn.addEventListener('click', function() {
+        hotspotPopup.classList.add('hidden');
+    });
+
+    // Toggle hotspots
+    toggleHotspotsBtn.addEventListener('click', function() {
+        hotspotsVisible = !hotspotsVisible;
+        hotspotMeshes.forEach(function(mesh) {
+            mesh.visible = hotspotsVisible;
+        });
+        toggleHotspotsBtn.classList.toggle('bg-green-500/30', hotspotsVisible);
+    });
+
+    // Toggle labels
+    toggleLabelsBtn.addEventListener('click', function() {
+        labelsVisible = !labelsVisible;
+        labelPanel.classList.toggle('hidden', !labelsVisible);
+        toggleLabelsBtn.classList.toggle('bg-green-500/30', labelsVisible);
+
+        if (labelsVisible && draggableLabelsContainer.children.length === 0) {
+            initLabels();
+        }
+    });
+
+    // Load 3D model or show demo
+    if (mediaFile) {
+        var modelPath = mediaFile;
+        var fileExtension = modelPath.split('.').pop().toLowerCase();
+
+        var loader;
+        if (fileExtension === 'glb' || fileExtension === 'gltf') {
+            loader = new THREE.GLTFLoader();
+            loader.load(modelPath, function(gltf) {
+                loadedModel = gltf.scene;
+                loadedModel.position.set(0, 0, 0);
+                loadedModel.scale.set(1, 1, 1);
+                scene.add(loadedModel);
+
+                // Auto-center and scale
+                var box = new THREE.Box3().setFromObject(loadedModel);
+                var center = box.getCenter(new THREE.Vector3());
+                var size = box.getSize(new THREE.Vector3());
+
+                loadedModel.position.sub(center);
+                var maxDim = Math.max(size.x, size.y, size.z);
+                var scale = 3 / maxDim;
+                loadedModel.scale.set(scale, scale, scale);
+
+                // Initialize hotspots after model loads
+                initHotspots();
+
+                // Initialize animations
+                initAnimations();
+
+                loading.style.display = 'none';
+            }, undefined, function(error) {
+                console.error('Error loading 3D model:', error);
+                loading.innerHTML = '<p class="text-red-400">Error loading 3D model</p>';
+            });
+        } else if (fileExtension === 'obj') {
+            loader = new THREE.OBJLoader();
+            loader.load(modelPath, function(obj) {
+                loadedModel = obj;
+                loadedModel.position.set(0, 0, 0);
+                scene.add(loadedModel);
+
+                // Auto-center and scale
+                var box = new THREE.Box3().setFromObject(loadedModel);
+                var center = box.getCenter(new THREE.Vector3());
+                var size = box.getSize(new THREE.Vector3());
+
+                loadedModel.position.sub(center);
+                var maxDim = Math.max(size.x, size.y, size.z);
+                var scale = 3 / maxDim;
+                loadedModel.scale.set(scale, scale, scale);
+
+                // Initialize hotspots after model loads
+                initHotspots();
+
+                // Initialize animations
+                initAnimations();
+
+                loading.style.display = 'none';
+            }, undefined, function(error) {
+                console.error('Error loading 3D model:', error);
+                loading.innerHTML = '<p class="text-red-400">Error loading 3D model</p>';
+            });
+        }
+    } else {
+        // Demo cube if no model
+        var geometry = new THREE.BoxGeometry(2, 2, 2);
+        var material = new THREE.MeshPhongMaterial({
+            color: 0x6366f1,
+            shininess: 100
+        });
+        var cube = new THREE.Mesh(geometry, material);
+        cube.position.y = 1;
+        cube.castShadow = true;
+        loadedModel = cube;
+        scene.add(cube);
+        loading.style.display = 'none';
+
+        // Initialize hotspots for demo
+        initHotspots();
+    }
+
+    // Reset view button
+    resetBtn.addEventListener('click', function() {
+        camera.position.set(0, 2, 5);
+        controls.reset();
+    });
+
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+
+        // Animate hotspot pulses
+        var time = Date.now() * 0.001;
+        hotspotMeshes.forEach(function(mesh) {
+            if (mesh.children.length > 0) {
+                mesh.children[0].scale.setScalar(1 + Math.sin(time * 2) * 0.2);
+            }
+        });
+
+        // Update model animations
+        updateAnimations();
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Handle resize
+    window.addEventListener('resize', function() {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // Initial resize
+    setTimeout(function() {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    }, 100);
+})();
+</script>
