@@ -63,6 +63,17 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
 
 <script>
+// Wait for Three.js to load before running the viewer
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof THREE === 'undefined') {
+        console.error('THREE.js not loaded. Check your internet connection or CDN availability.');
+        var loadingEl = document.getElementById('loading-{{ section.id }}');
+        if (loadingEl) {
+            loadingEl.innerHTML = '<p class="text-red-400">Error: 3D library failed to load. Please refresh the page.</p>';
+        }
+        return;
+    }
+
 (function() {
     // Find the container and read data attributes
     var container = document.querySelector('[data-section-id]');
@@ -439,6 +450,8 @@
         var modelPath = mediaFile;
         var fileExtension = modelPath.split('.').pop().toLowerCase();
 
+        console.log('Loading 3D model:', modelPath, 'Extension:', fileExtension);
+
         var loader;
         if (fileExtension === 'glb' || fileExtension === 'gltf') {
             loader = new THREE.GLTFLoader();
@@ -467,7 +480,7 @@
                 loading.style.display = 'none';
             }, undefined, function(error) {
                 console.error('Error loading 3D model:', error);
-                loading.innerHTML = '<p class="text-red-400">Error loading 3D model</p>';
+                loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p>';
             });
         } else if (fileExtension === 'obj') {
             loader = new THREE.OBJLoader();
@@ -495,7 +508,7 @@
                 loading.style.display = 'none';
             }, undefined, function(error) {
                 console.error('Error loading 3D model:', error);
-                loading.innerHTML = '<p class="text-red-400">Error loading 3D model</p>';
+                loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p>';
             });
         }
     } else {
@@ -556,4 +569,5 @@
         renderer.setSize(container.clientWidth, container.clientHeight);
     }, 100);
 })();
+}); // End of DOMContentLoaded
 </script>
