@@ -450,12 +450,19 @@ document.addEventListener('DOMContentLoaded', function() {
         var modelPath = mediaFile;
         var fileExtension = modelPath.split('.').pop().toLowerCase();
 
-        console.log('Loading 3D model:', modelPath, 'Extension:', fileExtension);
+        console.log('=== 3D Model Debug ===');
+        console.log('Model path:', modelPath);
+        console.log('File extension:', fileExtension);
+        console.log('Media file from data:', mediaFile);
+        console.log('Container found:', !!container);
+        console.log('Canvas found:', !!canvas);
 
         var loader;
         if (fileExtension === 'glb' || fileExtension === 'gltf') {
+            console.log('Using GLTFLoader for:', modelPath);
             loader = new THREE.GLTFLoader();
             loader.load(modelPath, function(gltf) {
+                console.log('GLTF model loaded successfully:', gltf);
                 loadedModel = gltf.scene;
                 loadedModel.position.set(0, 0, 0);
                 loadedModel.scale.set(1, 1, 1);
@@ -471,6 +478,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 var scale = 3 / maxDim;
                 loadedModel.scale.set(scale, scale, scale);
 
+                console.log('Model positioned and scaled. Initializing interactions...');
+
                 // Initialize hotspots after model loads
                 initHotspots();
 
@@ -478,13 +487,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 initAnimations();
 
                 loading.style.display = 'none';
-            }, undefined, function(error) {
+                console.log('3D viewer initialization complete!');
+            }, function(xhr) {
+                console.log('GLTF loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            }, function(error) {
                 console.error('Error loading 3D model:', error);
-                loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p>';
+                console.error('Error details:', error.message, error.stack);
+                loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p><p class="text-xs text-gray-400 mt-1">Path: ' + modelPath + '</p>';
             });
         } else if (fileExtension === 'obj') {
+            console.log('Using OBJLoader for:', modelPath);
             loader = new THREE.OBJLoader();
             loader.load(modelPath, function(obj) {
+                console.log('OBJ model loaded successfully:', obj);
                 loadedModel = obj;
                 loadedModel.position.set(0, 0, 0);
                 scene.add(loadedModel);
@@ -499,6 +514,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 var scale = 3 / maxDim;
                 loadedModel.scale.set(scale, scale, scale);
 
+                console.log('Model positioned and scaled. Initializing interactions...');
+
                 // Initialize hotspots after model loads
                 initHotspots();
 
@@ -506,9 +523,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 initAnimations();
 
                 loading.style.display = 'none';
-            }, undefined, function(error) {
+                console.log('3D viewer initialization complete!');
+            }, function(xhr) {
+                console.log('OBJ loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            }, function(error) {
                 console.error('Error loading 3D model:', error);
-                loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p>';
+                console.error('Error details:', error.message, error.stack);
+                loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p><p class="text-xs text-gray-400 mt-1">Path: ' + modelPath + '</p>';
             });
         }
     } else {
