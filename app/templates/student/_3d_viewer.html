@@ -29,7 +29,7 @@
     </div>
 
     <!-- Label Dragging Interface -->
-    <div id="label-panel-{{ section.id }}" class="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 max-w-xs z-20 hidden">
+    <div id="label-panel-{{ section.id }}" class="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 max-w-xs z-20 hidden">
         <h4 class="font-bold text-gray-800 text-sm mb-2">🏷️ Drag labels to model parts</h4>
         <div id="draggable-labels-{{ section.id }}" class="space-y-2"></div>
         <div id="label-progress-{{ section.id }}" class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600"></div>
@@ -57,14 +57,22 @@
 </div>
 
 <!-- Three.js and Dependencies -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<script>
+// Prevent duplicate Three.js loading
+if (!window.THREE_LOADED) {
+    window.THREE_LOADED = true;
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>');
+    document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>');
+    document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"><\/script>');
+} else {
+    console.log('Three.js already loaded, skipping duplicate');
+}
+</script>
 
 <script>
-// Wait for Three.js to load before running the viewer
-document.addEventListener('DOMContentLoaded', function() {
+// Wait for page to be ready and Three.js to be available
+function init3DViewer() {
     if (typeof THREE === 'undefined') {
         console.error('THREE.js not loaded. Check your internet connection or CDN availability.');
         var loadingEl = document.getElementById('loading-{{ section.id }}');
@@ -534,6 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } else {
         // Demo cube if no model
+        console.log('No model file, showing demo cube');
         var geometry = new THREE.BoxGeometry(2, 2, 2);
         var material = new THREE.MeshPhongMaterial({
             color: 0x6366f1,
@@ -589,6 +598,12 @@ document.addEventListener('DOMContentLoaded', function() {
         camera.updateProjectionMatrix();
         renderer.setSize(container.clientWidth, container.clientHeight);
     }, 100);
-})();
-}); // End of DOMContentLoaded
+})(); // End of IIFE
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init3DViewer);
+} else {
+    init3DViewer();
+}
 </script>
