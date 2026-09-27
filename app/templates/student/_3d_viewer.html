@@ -59,8 +59,8 @@
 <!-- Three.js and Dependencies are now loaded in base.html globally -->
 
 <script>
-// Wait for page to be ready and Three.js to be available
-function init3DViewer() {
+// Simple initialization that runs immediately when content is loaded
+(function() {
     if (typeof THREE === 'undefined') {
         console.error('THREE.js not loaded. Check your internet connection or CDN availability.');
         var loadingEl = document.getElementById('loading-{{ section.id }}');
@@ -586,12 +586,5 @@ function init3DViewer() {
         camera.updateProjectionMatrix();
         renderer.setSize(container.clientWidth, container.clientHeight);
     }, 100);
-})(); // End of IIFE
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init3DViewer);
-} else {
-    init3DViewer();
-}
+})();
 </script>
