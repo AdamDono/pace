@@ -209,22 +209,22 @@ def course_analytics(identifier=None, course_id=None):
                                Assignment, AssignmentSubmission, User,
                                VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse)
         from sqlalchemy import func
-    
-    ident = identifier if identifier is not None else course_id
-    course = resolve_course_or_404(ident)
-    
-    # If accessed with numeric ID and has a slug, redirect to clean slug URL
-    if str(ident).isdigit() and course.slug:
-        return redirect(url_for('teacher.course_analytics', identifier=course.slug), code=301)
-    
-    # Verify teacher owns or co-teaches this course
-    if not current_user.is_teacher_for_course(course.id):
-        abort(403)
-    
-    # === BASIC STATS ===
-    total_enrollments = Enrollment.query.filter_by(course_id=course.id).count()
-    completed_enrollments = Enrollment.query.filter_by(course_id=course.id, completed=True).count()
-    completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
+        
+        ident = identifier if identifier is not None else course_id
+        course = resolve_course_or_404(ident)
+        
+        # If accessed with numeric ID and has a slug, redirect to clean slug URL
+        if str(ident).isdigit() and course.slug:
+            return redirect(url_for('teacher.course_analytics', identifier=course.slug), code=301)
+        
+        # Verify teacher owns or co-teaches this course
+        if not current_user.is_teacher_for_course(course.id):
+            abort(403)
+        
+        # === BASIC STATS ===
+        total_enrollments = Enrollment.query.filter_by(course_id=course.id).count()
+        completed_enrollments = Enrollment.query.filter_by(course_id=course.id, completed=True).count()
+        completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
     
     # === STUDENT PROGRESS DETAILS ===
     enrollments = Enrollment.query.filter_by(course_id=course.id).all()
@@ -233,6 +233,9 @@ def course_analytics(identifier=None, course_id=None):
     student_progress = []
     for enrollment in enrollments:
         student = User.query.get(enrollment.student_id)
+        if not student:
+            continue
+            
         completed_sections = EnrollmentSection.query.filter_by(
             enrollment_id=enrollment.id, 
             completed=True
@@ -281,9 +284,9 @@ def course_analytics(identifier=None, course_id=None):
             'total_assignments': total_assignments
         })
     
-    # === SECTION-WISE ANALYTICS ===
-    sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
-    section_analytics = []
+        # === SECTION-WISE ANALYTICS ===
+        sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
+        section_analytics = []
     
     for section in sections:
         # Completion rate for this section
@@ -317,9 +320,9 @@ def course_analytics(identifier=None, course_id=None):
             'is_bottleneck': dropout_rate > 50  # Flag sections where >50% drop out
         })
     
-    # === QUIZ PERFORMANCE ANALYTICS ===
-    quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
-    quiz_analytics = []
+        # === QUIZ PERFORMANCE ANALYTICS ===
+        quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
+        quiz_analytics = []
     
     for quiz in quizzes:
         attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
@@ -364,26 +367,26 @@ def course_analytics(identifier=None, course_id=None):
             'has_attempts': len(attempts) > 0  # Flag for template
         })
     
-    # === ENGAGEMENT METRICS ===
-    # Active students (accessed in last 7 days)
-    from datetime import datetime, timedelta
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
-    
-    active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
-        Enrollment
-    ).filter(
-        Enrollment.course_id == course.id,
-        EnrollmentSection.last_accessed >= seven_days_ago
-    ).scalar() or 0
-    
-    # Average session duration
-    avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
-        Enrollment
-    ).filter(Enrollment.course_id == course.id).scalar() or 0
-    
-    engagement_metrics = {
-        'active_students_7days': active_students,
-        'avg_session_minutes': round(avg_session_duration / 60, 1),
+        # === ENGAGEMENT METRICS ===
+        # Active students (accessed in last 7 days)
+        from datetime import datetime, timedelta
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        
+        active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
+            Enrollment
+        ).filter(
+            Enrollment.course_id == course.id,
+            EnrollmentSection.last_accessed >= seven_days_ago
+        ).scalar() or 0
+        
+        # Average session duration
+        avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
+            Enrollment
+        ).filter(Enrollment.course_id == course.id).scalar() or 0
+        
+        engagement_metrics = {
+            'active_students_7days': active_students,
+            'avg_session_minutes': round(avg_session_duration / 60, 1),
         'engagement_rate': round((active_students / total_enrollments * 100), 1) if total_enrollments > 0 else 0
     }
     
@@ -412,7 +415,7 @@ def course_analytics(identifier=None, course_id=None):
         if s.media_file and s.media_file.strip().lower().endswith(('.mp4', '.webm', '.ogg', '.m4v')):
             video_sections.append(s)
             continue
-
+    
         # Or has an embedded video inside the rich-text content body
         if s.content and any(k in s.content.lower() for k in ('youtube.com/embed', 'youtu.be', 'vimeo.com', '<video', '<iframe')):
             video_sections.append(s)
@@ -477,7 +480,7 @@ def course_analytics(identifier=None, course_id=None):
             'question_stats': question_stats
         })
     
-    return render_template('teacher/course_analytics.html',
+        return render_template('teacher/course_analytics.html',
                          course=course,
                          total_enrollments=total_enrollments,
                          completed_enrollments=completed_enrollments,
