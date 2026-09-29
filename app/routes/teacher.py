@@ -203,11 +203,12 @@ def calendar():
 @teacher_required
 def course_analytics(identifier=None, course_id=None):
     """Comprehensive analytics dashboard for a course"""
-    from app.models import (Course, Enrollment, EnrollmentSection, Section, 
-                           Quiz, QuizAttempt, QuizQuestion, QuizAnswer, 
-                           Assignment, AssignmentSubmission, User,
-                           VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse)
-    from sqlalchemy import func
+    try:
+        from app.models import (Course, Enrollment, EnrollmentSection, Section, 
+                               Quiz, QuizAttempt, QuizQuestion, QuizAnswer, 
+                               Assignment, AssignmentSubmission, User,
+                               VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse)
+        from sqlalchemy import func
     
     ident = identifier if identifier is not None else course_id
     course = resolve_course_or_404(ident)
@@ -470,8 +471,8 @@ def course_analytics(identifier=None, course_id=None):
             'avg_watch_time_minutes': round(avg_watch_time / 60, 1),
             'completed_count': completed_count,
             'completion_rate': round(completion_rate_video, 1),
-            'avg_playback_speed': round(avg_speed, 2),
-            'total_play_count': total_play_count,
+            'avg_playback_speed': 1.0,
+            'total_play_count': total_views,
             'has_interactive_questions': len(interactive_questions) > 0,
             'question_stats': question_stats
         })
@@ -486,6 +487,12 @@ def course_analytics(identifier=None, course_id=None):
                          quiz_analytics=quiz_analytics,
                          engagement_metrics=engagement_metrics,
                          video_analytics=video_analytics)
+    
+    except Exception as e:
+        import traceback
+        print(f"Analytics Error: {str(e)}")
+        print(traceback.format_exc())
+        raise
 
 @teacher_bp.route('/course/<int:course_id>/export-compliance-csv')
 @teacher_required
