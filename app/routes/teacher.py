@@ -1737,39 +1737,46 @@ def edit_section(course_id, section_id):
         section.duration = int(request.form.get('duration', 0)) if request.form.get('duration') else None
         section.video_url = request.form.get('video_url') or None
 
-        # Handle file upload for media_file (especially for presentations)
-        if 'media_file' in request.files:
-            file = request.files['media_file']
-            if file and file.filename:
-                # Validate file type and size
-                allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3', 'glb', 'gltf', 'obj'}
-                if '.' in file.filename:
-                    extension = file.filename.rsplit('.', 1)[1].lower()
-                    if extension in allowed_extensions:
-                        # Generate unique filename
-                        import uuid
-                        unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
-                        
-                        # Try Cloudinary first for persistent storage
-                        from app.utils.cloudinary_helper import upload_file_to_cloudinary
-                        resource = "raw" if extension in ('pdf', 'mp3') else ("video" if extension == 'mp4' else "image")
-                        cloudinary_url = upload_file_to_cloudinary(file, folder="pace_media", resource_type=resource)
-                        if cloudinary_url:
-                            section.media_file = cloudinary_url
-                        else:
-                            # Fallback to local disk
-                            import os
-                            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
-                            os.makedirs(upload_dir, exist_ok=True)
-                            file_path = os.path.join(upload_dir, unique_filename)
-                            file.save(file_path)
-                            section.media_file = unique_filename
+        # Handle file upload for media_file (presentation PDF, 3D model, etc.)
+        uploaded_file = None
+        for key in ('media_file', 'presentation_file', 'model_3d_file'):
+            for f in request.files.getlist(key):
+                if f and f.filename and f.filename.strip():
+                    uploaded_file = f
+                    break
+            if uploaded_file:
+                break
+
+        if uploaded_file:
+            file = uploaded_file
+            # Validate file type and size
+            allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3', 'glb', 'gltf', 'obj'}
+            if '.' in file.filename:
+                extension = file.filename.rsplit('.', 1)[1].lower()
+                if extension in allowed_extensions:
+                    import uuid
+                    unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
+                    
+                    # Try Cloudinary first for persistent storage (GLB/GLTF/OBJ must be 'raw')
+                    from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                    resource = "raw" if extension in ('pdf', 'mp3', 'glb', 'gltf', 'obj') else ("video" if extension in ('mp4', 'webm', 'ogg', 'm4v') else "image")
+                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_media", resource_type=resource)
+                    if cloudinary_url:
+                        section.media_file = cloudinary_url
                     else:
-                        flash('Invalid file type. Allowed: PDF, JPG, PNG, GIF, MP4, MP3, GLB, GLTF, OBJ', 'danger')
-                        return redirect(request.url)
+                        # Fallback to local disk
+                        import os
+                        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_dir, exist_ok=True)
+                        file_path = os.path.join(upload_dir, unique_filename)
+                        file.save(file_path)
+                        section.media_file = unique_filename
                 else:
-                    flash('Invalid file format.', 'danger')
+                    flash('Invalid file type. Allowed: PDF, JPG, PNG, GIF, MP4, MP3, GLB, GLTF, OBJ', 'danger')
                     return redirect(request.url)
+            else:
+                flash('Invalid file format.', 'danger')
+                return redirect(request.url)
 
         # Handle quiz/assignment specific fields if applicable
         if section.section_type == 'quiz':
@@ -1798,6 +1805,35 @@ def edit_3d_content(course_id, module_id, section_id):
         abort(403)
 
     if request.method == 'POST':
+        # Handle 3D model file upload
+        if 'media_file' in request.files or request.form.get('action') == 'upload_model':
+            files = request.files.getlist('media_file')
+            file = None
+            for f in files:
+                if f and f.filename and f.filename.strip():
+                    file = f
+                    break
+            if file:
+                ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                if ext in ('glb', 'gltf', 'obj'):
+                    import uuid
+                    from app.utils.cloudinary_helper import upload_file_to_cloudinary
+                    cloudinary_url = upload_file_to_cloudinary(file, folder="pace_media", resource_type="raw")
+                    if cloudinary_url:
+                        section.media_file = cloudinary_url
+                    else:
+                        import os
+                        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_dir, exist_ok=True)
+                        fname = f"{uuid.uuid4().hex}_{file.filename}"
+                        file.save(os.path.join(upload_dir, fname))
+                        section.media_file = fname
+                    db.session.commit()
+                    flash('3D model uploaded successfully!', 'success')
+                    return redirect(request.url)
+                else:
+                    flash('Invalid file format. Please upload .glb, .gltf, or .obj', 'danger')
+
         # Handle hotspot creation/editing
         if request.form.get('action') == 'add_hotspot':
             from app.models import Model3DHotspot

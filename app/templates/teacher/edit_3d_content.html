@@ -18,22 +18,41 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- 3D Model Preview -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-xl font-semibold mb-4">🧊 3D Model Preview</h2>
+        <!-- 3D Model Preview & Upload -->
+        <div class="bg-white p-6 rounded-lg shadow space-y-4">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-xl font-semibold">🧊 3D Model File & Preview</h2>
+                {% if section.media_file %}
+                <span class="text-xs bg-green-100 text-green-800 font-semibold px-2.5 py-1 rounded-full">Model Attached</span>
+                {% else %}
+                <span class="text-xs bg-amber-100 text-amber-800 font-semibold px-2.5 py-1 rounded-full">Using Demo Knot</span>
+                {% endif %}
+            </div>
+
+            <!-- Direct Upload Form -->
+            <form method="POST" enctype="multipart/form-data" class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="upload_model">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    {% if section.media_file %}Replace 3D Model (.glb, .gltf, .obj){% else %}Upload 3D Model (.glb, .gltf, .obj){% endif %}
+                </label>
+                <div class="flex items-center gap-2">
+                    <input type="file" name="media_file" accept=".glb,.gltf,.obj" required
+                           class="flex-1 text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-700 cursor-pointer">
+                    <button type="submit" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">
+                        Upload Model
+                    </button>
+                </div>
+                {% if section.media_file %}
+                <p class="text-[11px] text-slate-500 mt-2 truncate">Current: <span class="font-mono text-cyan-700">{{ section.media_file }}</span></p>
+                {% endif %}
+            </form>
+
             {% if section.media_file %}
             <div class="relative" style="aspect-ratio: 16/9; min-height: 300px;">
                 <iframe src="{{ url_for('student.get_section_content', section_id=section.id) }}"
                         class="w-full h-full rounded-lg border border-gray-200"
                         loading="lazy"></iframe>
-            </div>
-            {% else %}
-            <div class="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
-                <p>No 3D model uploaded for this section.</p>
-                <a href="{{ url_for('teacher.edit_section', course_id=course.id, module_id=module.id, section_id=section.id) }}"
-                   class="text-blue-600 hover:underline mt-2 inline-block">
-                    Upload a 3D model first
-                </a>
             </div>
             {% endif %}
         </div>

@@ -3,7 +3,7 @@
      class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-900 mb-5 relative 3d-viewer three-d-viewer"
      style="aspect-ratio: 16/9; min-height: 400px;"
      data-section-id="{{ section.id }}"
-     data-media-file="{% if section.media_file %}{{ url_for('static', filename='uploads/' + section.media_file) }}{% endif %}"
+     data-media-file="{% if section.media_file %}{{ section.media_file|media_url }}{% endif %}"
      data-hotspots="{% if section.hotspots %}{{ section.hotspots | tojson | safe }}{% endif %}"
      data-labels="{% if section.labels %}{{ section.labels | tojson | safe }}{% endif %}"
      data-animations="{% if section.animations %}{{ section.animations | tojson | safe }}{% endif %}">
