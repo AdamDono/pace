@@ -55,3 +55,53 @@
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    function loadScript(src, cb) {
+        var existing = document.querySelector('script[src="' + src + '"]');
+        if (existing) {
+            if (existing.dataset && existing.dataset.loaded === 'true') {
+                cb && cb();
+            } else {
+                existing.addEventListener('load', function() { cb && cb(); });
+            }
+            return;
+        }
+        var s = document.createElement('script');
+        s.src = src;
+        s.async = false;
+        s.onload = function() {
+            s.dataset.loaded = 'true';
+            cb && cb();
+        };
+        document.head.appendChild(s);
+    }
+
+    function initSectionViewer() {
+        var container = document.getElementById('viewer-container-{{ section.id }}');
+        if (!container) return;
+        if (window.init3DViewerGlobal) {
+            window.init3DViewerGlobal(container);
+        } else if (typeof initAll3DViewers === 'function') {
+            initAll3DViewers();
+        }
+    }
+
+    if (typeof THREE === 'undefined' || typeof THREE.OrbitControls === 'undefined' || typeof THREE.GLTFLoader === 'undefined') {
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', function() {
+            loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js', function() {
+                loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', function() {
+                    loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js', function() {
+                        loadScript("{{ url_for('static', filename='js/3d-viewer.js') }}", function() {
+                            initSectionViewer();
+                        });
+                    });
+                });
+            });
+        });
+    } else {
+        initSectionViewer();
+    }
+})();
+</script>

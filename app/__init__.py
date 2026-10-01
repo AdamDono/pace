@@ -200,8 +200,18 @@ def create_app():
             add_column_if_missing('quizzes', 'max_attempts', 'INTEGER DEFAULT 3')
             add_column_if_missing('assignment_submissions', 'attempt_number', 'INTEGER DEFAULT 1')
             
-            # Check and add columns to sections
+            # Check and add columns to quiz_questions (3D model & question types)
+            add_column_if_missing('quiz_questions', 'question_type', 'VARCHAR(20) DEFAULT \'multiple_choice\'')
+            add_column_if_missing('quiz_questions', 'model_3d_file', 'VARCHAR(255)')
+            add_column_if_missing('quiz_questions', 'model_3d_hotspots', 'TEXT')
+            add_column_if_missing('quiz_questions', 'model_3d_labels', 'TEXT')
+
+            # Check and add columns to sections (3D model, hotspots, animations, comparisons)
             add_column_if_missing('sections', 'module_id', 'INTEGER')
+            add_column_if_missing('sections', 'hotspots', 'TEXT')
+            add_column_if_missing('sections', 'labels', 'TEXT')
+            add_column_if_missing('sections', 'animations', 'TEXT')
+            add_column_if_missing('sections', 'comparisons', 'TEXT')
             
             # Check and add columns to users
             add_column_if_missing('users', 'profile_image', 'VARCHAR(255)')

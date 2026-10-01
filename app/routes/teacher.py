@@ -338,23 +338,30 @@ def course_analytics(identifier=None, course_id=None):
                 min_score = 0
             
             # Question-level analysis
-            questions = QuizQuestion.query.filter_by(quiz_id=quiz.id).all()
             question_analysis = []
-            
-            for question in questions:
-                # Count correct vs incorrect answers
-                answers = QuizAnswer.query.filter_by(question_id=question.id).all()
-                correct_count = sum([1 for a in answers if a.selected_answer == question.correct_answer])
-                total_answers = len(answers)
-                
-                success_rate = (correct_count / total_answers * 100) if total_answers > 0 else 0
-                
-                question_analysis.append({
-                    'question': question,
-                    'success_rate': round(success_rate, 1),
-                    'total_attempts': total_answers,
-                    'is_difficult': success_rate < 50  # Flag questions with <50% success
-                })
+            try:
+                questions = QuizQuestion.query.filter_by(quiz_id=quiz.id).all()
+                for question in questions:
+                    # Count correct vs incorrect answers
+                    try:
+                        answers = QuizAnswer.query.filter_by(question_id=question.id).all()
+                        correct_count = sum([1 for a in answers if a.selected_answer == question.correct_answer])
+                        total_answers = len(answers)
+                    except Exception:
+                        answers = []
+                        correct_count = 0
+                        total_answers = 0
+                    
+                    success_rate = (correct_count / total_answers * 100) if total_answers > 0 else 0
+                    
+                    question_analysis.append({
+                        'question': question,
+                        'success_rate': round(success_rate, 1),
+                        'total_attempts': total_answers,
+                        'is_difficult': success_rate < 50  # Flag questions with <50% success
+                    })
+            except Exception as q_err:
+                print(f"Warning: could not load question analytics for quiz {quiz.id}: {q_err}")
             
             quiz_analytics.append({
                 'quiz': quiz,

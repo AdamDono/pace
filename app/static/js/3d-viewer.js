@@ -539,13 +539,34 @@
         }, 100);
     }
 
+    // Find viewer elements safely using valid selectors
+    function findViewerElements(root) {
+        if (!root) return [];
+        var selector = '[data-section-id].three-d-viewer, [id^="viewer-container-"]';
+        var list = [];
+        if (root.matches && (root.matches(selector) || (root.classList && root.classList.contains('three-d-viewer')))) {
+            list.push(root);
+        }
+        if (root.querySelectorAll) {
+            var found = root.querySelectorAll(selector);
+            for (var i = 0; i < found.length; i++) {
+                list.push(found[i]);
+            }
+        }
+        return list;
+    }
+
     // Initialize all 3D viewers on the page
     function initAll3DViewers() {
-        var viewers = document.querySelectorAll('.3d-viewer');
+        var viewers = findViewerElements(document);
         viewers.forEach(function(viewer) {
             init3DViewer(viewer);
         });
     }
+
+    // Expose functions globally for HTMX and dynamic loads
+    window.init3DViewerGlobal = init3DViewer;
+    window.initAll3DViewers = initAll3DViewers;
 
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
@@ -567,7 +588,7 @@
             if (mutation.addedNodes) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === 1) { // Element node
-                        var viewers = node.querySelectorAll ? node.querySelectorAll('.3d-viewer') : [];
+                        var viewers = findViewerElements(node);
                         viewers.forEach(function(viewer) {
                             init3DViewer(viewer);
                         });
