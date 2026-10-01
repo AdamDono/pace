@@ -232,57 +232,57 @@ def course_analytics(identifier=None, course_id=None):
         
         student_progress = []
         for enrollment in enrollments:
-        student = User.query.get(enrollment.student_id)
-        if not student:
-            continue
+            student = User.query.get(enrollment.student_id)
+            if not student:
+                continue
             
-        completed_sections = EnrollmentSection.query.filter_by(
-            enrollment_id=enrollment.id, 
-            completed=True
-        ).count()
+            completed_sections = EnrollmentSection.query.filter_by(
+                enrollment_id=enrollment.id, 
+                completed=True
+            ).count()
+            
+            progress_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
+            
+            # Total time spent
+            total_time = db.session.query(func.sum(EnrollmentSection.time_spent)).filter_by(
+                enrollment_id=enrollment.id
+            ).scalar() or 0
         
-        progress_percentage = (completed_sections / total_sections * 100) if total_sections > 0 else 0
-        
-        # Total time spent
-        total_time = db.session.query(func.sum(EnrollmentSection.time_spent)).filter_by(
-            enrollment_id=enrollment.id
-        ).scalar() or 0
-        
-        # Last activity
-        last_activity = db.session.query(func.max(EnrollmentSection.last_accessed)).filter_by(
-            enrollment_id=enrollment.id
-        ).scalar()
-        
-        # Quiz scores
-        quiz_attempts = QuizAttempt.query.filter_by(student_id=student.id).join(
-            Quiz
-        ).filter(Quiz.section_id.in_(
-            [s.id for s in course.sections]
-        )).all()
-        
-        avg_quiz_score = sum([attempt.score for attempt in quiz_attempts]) / len(quiz_attempts) if quiz_attempts else 0
-        
-        # Assignment submissions
-        assignments_submitted = AssignmentSubmission.query.filter_by(student_id=student.id).join(
-            Assignment
-        ).join(Section).filter(Section.course_id == course.id).count()
-        
-        total_assignments = Assignment.query.join(Section).filter(
-            Section.course_id == course.id
-        ).count()
-        
-        student_progress.append({
-            'student': student,
-            'enrollment': enrollment,
-            'completed_sections': completed_sections,
-            'total_sections': total_sections,
-            'progress_percentage': round(progress_percentage, 1),
-            'total_time_minutes': round(total_time / 60, 1),
-            'last_activity': last_activity,
-            'avg_quiz_score': round(avg_quiz_score, 1),
-            'assignments_submitted': assignments_submitted,
-            'total_assignments': total_assignments
-        })
+            # Last activity
+            last_activity = db.session.query(func.max(EnrollmentSection.last_accessed)).filter_by(
+                enrollment_id=enrollment.id
+            ).scalar()
+            
+            # Quiz scores
+            quiz_attempts = QuizAttempt.query.filter_by(student_id=student.id).join(
+                Quiz
+            ).filter(Quiz.section_id.in_(
+                [s.id for s in course.sections]
+            )).all()
+            
+            avg_quiz_score = sum([attempt.score for attempt in quiz_attempts]) / len(quiz_attempts) if quiz_attempts else 0
+            
+            # Assignment submissions
+            assignments_submitted = AssignmentSubmission.query.filter_by(student_id=student.id).join(
+                Assignment
+            ).join(Section).filter(Section.course_id == course.id).count()
+            
+            total_assignments = Assignment.query.join(Section).filter(
+                Section.course_id == course.id
+            ).count()
+            
+            student_progress.append({
+                'student': student,
+                'enrollment': enrollment,
+                'completed_sections': completed_sections,
+                'total_sections': total_sections,
+                'progress_percentage': round(progress_percentage, 1),
+                'total_time_minutes': round(total_time / 60, 1),
+                'last_activity': last_activity,
+                'avg_quiz_score': round(avg_quiz_score, 1),
+                'assignments_submitted': assignments_submitted,
+                'total_assignments': total_assignments
+            })
         
         # === SECTION-WISE ANALYTICS ===
         sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
@@ -317,8 +317,8 @@ def course_analytics(identifier=None, course_id=None):
                 'avg_time_minutes': round(avg_time / 60, 1),
                 'total_views': total_views,
                 'dropout_rate': round(dropout_rate, 1),
-            'is_bottleneck': dropout_rate > 50  # Flag sections where >50% drop out
-        })
+                'is_bottleneck': dropout_rate > 50  # Flag sections where >50% drop out
+            })
         
         # === QUIZ PERFORMANCE ANALYTICS ===
         quizzes = Quiz.query.join(Section).filter(Section.course_id == course.id).all()
@@ -367,118 +367,118 @@ def course_analytics(identifier=None, course_id=None):
                 'has_attempts': len(attempts) > 0  # Flag for template
             })
             
-            # === ENGAGEMENT METRICS ===
-            # Active students (accessed in last 7 days)
-            from datetime import datetime, timedelta
-            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        # === ENGAGEMENT METRICS ===
+        # Active students (accessed in last 7 days)
+        from datetime import datetime, timedelta
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        
+        active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
+            Enrollment
+        ).filter(
+            Enrollment.course_id == course.id,
+            EnrollmentSection.last_accessed >= seven_days_ago
+        ).scalar() or 0
+        
+        # Average session duration
+        avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
+            Enrollment
+        ).filter(Enrollment.course_id == course.id).scalar() or 0
+        
+        engagement_metrics = {
+            'active_students_7days': active_students,
+            'avg_session_minutes': round(avg_session_duration / 60, 1),
+            'engagement_rate': round((active_students / total_enrollments * 100), 1) if total_enrollments > 0 else 0
+        }
+        
+        # === VIDEO ANALYTICS ===
+        # Filter ONLY actual video sections (exclude quizzes, assignments, and text lessons without videos)
+        all_sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
+        video_sections = []
+        for s in all_sections:
+            # Exclude quizzes and assignments
+            if s.section_type in ('quiz', 'assignment'):
+                continue
             
-            active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
-                Enrollment
-            ).filter(
-                Enrollment.course_id == course.id,
-                EnrollmentSection.last_accessed >= seven_days_ago
-            ).scalar() or 0
-            
-            # Average session duration
-            avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
-                Enrollment
-            ).filter(Enrollment.course_id == course.id).scalar() or 0
-            
-            engagement_metrics = {
-                'active_students_7days': active_students,
-                'avg_session_minutes': round(avg_session_duration / 60, 1),
-                'engagement_rate': round((active_students / total_enrollments * 100), 1) if total_enrollments > 0 else 0
-            }
-            
-            # === VIDEO ANALYTICS ===
-            # Filter ONLY actual video sections (exclude quizzes, assignments, and text lessons without videos)
-            all_sections = Section.query.filter_by(course_id=course.id).order_by(Section.order).all()
-            video_sections = []
-            for s in all_sections:
-                # Exclude quizzes and assignments
-                if s.section_type in ('quiz', 'assignment'):
-                    continue
+            # Explicit video section type
+            if s.section_type in ('video', 'interactive_video'):
+                video_sections.append(s)
+                continue
                 
-                # Explicit video section type
-                if s.section_type in ('video', 'interactive_video'):
+            # Or has a real, non-empty video URL (YouTube, Vimeo, or MP4/WebM)
+            if s.video_url and s.video_url.strip():
+                v_url = s.video_url.strip().lower()
+                if any(k in v_url for k in ('youtube.com', 'youtu.be', 'vimeo.com')) or v_url.endswith(('.mp4', '.webm', '.ogg', '.m4v')):
                     video_sections.append(s)
                     continue
                     
-                # Or has a real, non-empty video URL (YouTube, Vimeo, or MP4/WebM)
-                if s.video_url and s.video_url.strip():
-                    v_url = s.video_url.strip().lower()
-                    if any(k in v_url for k in ('youtube.com', 'youtu.be', 'vimeo.com')) or v_url.endswith(('.mp4', '.webm', '.ogg', '.m4v')):
-                        video_sections.append(s)
-                        continue
-                        
-                # Or has an uploaded video media file
-                if s.media_file and s.media_file.strip().lower().endswith(('.mp4', '.webm', '.ogg', '.m4v')):
-                    video_sections.append(s)
-                    continue
-                
-                # Or has an embedded video inside the rich-text content body
-                if s.content and any(k in s.content.lower() for k in ('youtube.com/embed', 'youtu.be', 'vimeo.com', '<video', '<iframe')):
-                    video_sections.append(s)
-                    continue
+            # Or has an uploaded video media file
+            if s.media_file and s.media_file.strip().lower().endswith(('.mp4', '.webm', '.ogg', '.m4v')):
+                video_sections.append(s)
+                continue
             
-            video_analytics = []
-            for video_section in video_sections:
-                # Get all watch progress records for this video
-                watch_data = VideoWatchProgress.query.filter_by(section_id=video_section.id).all()
-                # Filter to records where student actually interacted (viewed or watched > 0)
-                active_watch_data = [w for w in watch_data if (w.total_watch_time and w.total_watch_time > 0) or (w.watch_percentage and w.watch_percentage > 0) or (w.video_current_time and w.video_current_time > 0)]
-                
-                if active_watch_data:
-                    total_views = len(active_watch_data)
-                    avg_watch_pct = sum([w.watch_percentage or 0 for w in active_watch_data]) / total_views if total_views > 0 else 0
-                    # Calculate total watch time in seconds, fallback to video_current_time if total_watch_time was not accumulated
-                    avg_watch_time = sum([w.total_watch_time if (w.total_watch_time and w.total_watch_time > 0) else (w.video_current_time or 0) for w in active_watch_data]) / total_views if total_views > 0 else 0
-                    completed_count = sum([1 for w in active_watch_data if w.completed or (w.watch_percentage and w.watch_percentage >= 85)])
-                    completion_rate_video = (completed_count / total_views * 100) if total_views > 0 else 0
-                    avg_speed = sum([w.playback_speed or 1.0 for w in active_watch_data]) / total_views if total_views > 0 else 1.0
-                    total_play_count = sum([w.play_count or 1 for w in active_watch_data])
+            # Or has an embedded video inside the rich-text content body
+            if s.content and any(k in s.content.lower() for k in ('youtube.com/embed', 'youtu.be', 'vimeo.com', '<video', '<iframe')):
+                video_sections.append(s)
+                continue
+        
+        video_analytics = []
+        for video_section in video_sections:
+            # Get all watch progress records for this video
+            watch_data = VideoWatchProgress.query.filter_by(section_id=video_section.id).all()
+            # Filter to records where student actually interacted (viewed or watched > 0)
+            active_watch_data = [w for w in watch_data if (w.total_watch_time and w.total_watch_time > 0) or (w.watch_percentage and w.watch_percentage > 0) or (w.video_current_time and w.video_current_time > 0)]
+            
+            if active_watch_data:
+                total_views = len(active_watch_data)
+                avg_watch_pct = sum([w.watch_percentage or 0 for w in active_watch_data]) / total_views if total_views > 0 else 0
+                # Calculate total watch time in seconds, fallback to video_current_time if total_watch_time was not accumulated
+                avg_watch_time = sum([w.total_watch_time if (w.total_watch_time and w.total_watch_time > 0) else (w.video_current_time or 0) for w in active_watch_data]) / total_views if total_views > 0 else 0
+                completed_count = sum([1 for w in active_watch_data if w.completed or (w.watch_percentage and w.watch_percentage >= 85)])
+                completion_rate_video = (completed_count / total_views * 100) if total_views > 0 else 0
+                avg_speed = sum([w.playback_speed or 1.0 for w in active_watch_data]) / total_views if total_views > 0 else 1.0
+                total_play_count = sum([w.play_count or 1 for w in active_watch_data])
+            else:
+                total_views = len(watch_data)
+                avg_watch_pct = 0
+                avg_watch_time = 0
+                completed_count = 0
+                completion_rate_video = 0
+                avg_speed = 1.0
+                total_play_count = 0
+            
+            # Get interactive question stats for this video
+            interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=video_section.id).all()
+            question_stats = []
+            
+            for question in interactive_questions:
+                responses = VideoQuestionResponse.query.filter_by(question_id=question.id).all()
+                if responses:
+                    correct_count = sum([1 for r in responses if r.is_correct])
+                    success_rate = (correct_count / len(responses) * 100) if len(responses) > 0 else 0
+                    avg_time_taken = sum([r.time_taken for r in responses]) / len(responses) if len(responses) > 0 else 0
                 else:
-                    total_views = len(watch_data)
-                    avg_watch_pct = 0
-                    avg_watch_time = 0
-                    completed_count = 0
-                    completion_rate_video = 0
-                    avg_speed = 1.0
-                    total_play_count = 0
+                    success_rate = 0
+                    avg_time_taken = 0
                 
-                # Get interactive question stats for this video
-                interactive_questions = VideoInteractiveQuestion.query.filter_by(section_id=video_section.id).all()
-                question_stats = []
-                
-                for question in interactive_questions:
-                    responses = VideoQuestionResponse.query.filter_by(question_id=question.id).all()
-                    if responses:
-                        correct_count = sum([1 for r in responses if r.is_correct])
-                        success_rate = (correct_count / len(responses) * 100) if len(responses) > 0 else 0
-                        avg_time_taken = sum([r.time_taken for r in responses]) / len(responses) if len(responses) > 0 else 0
-                    else:
-                        success_rate = 0
-                        avg_time_taken = 0
-                    
-                    question_stats.append({
-                        'question': question,
-                        'total_responses': len(responses),
-                        'success_rate': round(success_rate, 1),
-                        'avg_time_taken': round(avg_time_taken, 1)
-                    })
-                
-                video_analytics.append({
-                    'section': video_section,
-                    'total_views': total_views,
-                    'avg_watch_percentage': round(avg_watch_pct, 1),
-                    'avg_watch_time_minutes': round(avg_watch_time / 60, 1),
-                    'completed_count': completed_count,
-                    'completion_rate': round(completion_rate_video, 1),
-                    'avg_playback_speed': 1.0,
-                    'total_play_count': total_views,
-                    'has_interactive_questions': len(interactive_questions) > 0,
-                    'question_stats': question_stats
+                question_stats.append({
+                    'question': question,
+                    'total_responses': len(responses),
+                    'success_rate': round(success_rate, 1),
+                    'avg_time_taken': round(avg_time_taken, 1)
                 })
+            
+            video_analytics.append({
+                'section': video_section,
+                'total_views': total_views,
+                'avg_watch_percentage': round(avg_watch_pct, 1),
+                'avg_watch_time_minutes': round(avg_watch_time / 60, 1),
+                'completed_count': completed_count,
+                'completion_rate': round(completion_rate_video, 1),
+                'avg_playback_speed': 1.0,
+                'total_play_count': total_views,
+                'has_interactive_questions': len(interactive_questions) > 0,
+                'question_stats': question_stats
+            })
         
         return render_template('teacher/course_analytics.html',
                              course=course,

@@ -1,6 +1,6 @@
 <!-- 3D Model Viewer with Three.js -->
 <div id="viewer-container-{{ section.id }}"
-     class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-900 mb-5 relative 3d-viewer"
+     class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-900 mb-5 relative 3d-viewer three-d-viewer"
      style="aspect-ratio: 16/9; min-height: 400px;"
      data-section-id="{{ section.id }}"
      data-media-file="{% if section.media_file %}{{ url_for('static', filename='uploads/' + section.media_file) }}{% endif %}"

@@ -376,27 +376,39 @@
             labelPanel.classList.toggle('hidden', !labelsVisible);
             toggleLabelsBtn.classList.toggle('bg-green-500/30', labelsVisible);
 
-            if (labelsVisible && draggableLabelsContainer.children.length === 0) {
+            if (labelsVisible && draggableLabelsContainer && draggableLabelsContainer.children.length === 0) {
                 initLabels();
             }
         });
 
-        // Load 3D model or show demo
-        if (mediaFile) {
-            var modelPath = mediaFile;
-            var fileExtension = modelPath.split('.').pop().toLowerCase();
+        if (typeof THREE === 'undefined') {
+            console.warn('Three.js library is still loading, retrying in 150ms...');
+            setTimeout(function() {
+                delete container.dataset.threeInitialized;
+                init3DViewer(container);
+            }, 150);
+            return;
+        }
 
-            console.log('=== 3D Model Debug ===');
-            console.log('Model path:', modelPath);
-            console.log('File extension:', fileExtension);
-            console.log('Section ID:', sectionId);
+        // Load 3D model or show interactive demo
+        var cleanPath = (mediaFile || '').trim();
+        if (cleanPath) {
+            var modelPath = cleanPath;
+            var fileExtension = cleanPath.split('?')[0].split('.').pop().toLowerCase();
 
-            var loader;
+            console.log('=== 3D Model Load ===', { modelPath: modelPath, fileExtension: fileExtension, sectionId: sectionId });
+
             if (fileExtension === 'glb' || fileExtension === 'gltf') {
-                console.log('Using GLTFLoader for:', modelPath);
-                loader = new THREE.GLTFLoader();
-                loader.load(modelPath, function(gltf) {
-                    console.log('GLTF model loaded successfully:', gltf);
+                if (typeof THREE.GLTFLoader === 'undefined') {
+                    console.warn('GLTFLoader not ready, retrying in 150ms...');
+                    setTimeout(function() {
+                        delete container.dataset.threeInitialized;
+                        init3DViewer(container);
+                    }, 150);
+                    return;
+                }
+                var gltfLoader = new THREE.GLTFLoader();
+                gltfLoader.load(modelPath, function(gltf) {
                     loadedModel = gltf.scene;
                     loadedModel.position.set(0, 0, 0);
                     loadedModel.scale.set(1, 1, 1);
@@ -408,31 +420,35 @@
                     var size = box.getSize(new THREE.Vector3());
 
                     loadedModel.position.sub(center);
-                    var maxDim = Math.max(size.x, size.y, size.z);
+                    var maxDim = Math.max(size.x, size.y, size.z) || 1;
                     var scale = 3 / maxDim;
                     loadedModel.scale.set(scale, scale, scale);
 
-                    console.log('Model positioned and scaled. Initializing interactions...');
-
-                    // Initialize hotspots after model loads
                     initHotspots();
-
-                    // Initialize animations
                     initAnimations();
 
                     loading.style.display = 'none';
-                    console.log('3D viewer initialization complete!');
                 }, function(xhr) {
-                    console.log('GLTF loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+                    if (xhr.total && xhr.total > 0) {
+                        var pct = Math.round((xhr.loaded / xhr.total) * 100);
+                        var pText = loading.querySelector('p');
+                        if (pText) pText.textContent = 'Loading 3D model (' + pct + '%)...';
+                    }
                 }, function(error) {
                     console.error('Error loading 3D model:', error);
-                    loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p><p class="text-xs text-gray-400 mt-1">Path: ' + modelPath + '</p>';
+                    loading.innerHTML = '<div class="p-4 text-center"><p class="text-red-400 font-semibold">Could not load 3D model file.</p><p class="text-xs text-gray-400 mt-1">Path: ' + modelPath + '</p><button class="mt-3 px-3 py-1 bg-indigo-600 text-white rounded text-xs" onclick="this.closest(\'.3d-viewer, .three-d-viewer\').querySelector(\'#loading-' + sectionId + '\').style.display=\'none\'">Dismiss</button></div>';
                 });
             } else if (fileExtension === 'obj') {
-                console.log('Using OBJLoader for:', modelPath);
-                loader = new THREE.OBJLoader();
-                loader.load(modelPath, function(obj) {
-                    console.log('OBJ model loaded successfully:', obj);
+                if (typeof THREE.OBJLoader === 'undefined') {
+                    console.warn('OBJLoader not ready, retrying in 150ms...');
+                    setTimeout(function() {
+                        delete container.dataset.threeInitialized;
+                        init3DViewer(container);
+                    }, 150);
+                    return;
+                }
+                var objLoader = new THREE.OBJLoader();
+                objLoader.load(modelPath, function(obj) {
                     loadedModel = obj;
                     loadedModel.position.set(0, 0, 0);
                     scene.add(loadedModel);
@@ -443,43 +459,42 @@
                     var size = box.getSize(new THREE.Vector3());
 
                     loadedModel.position.sub(center);
-                    var maxDim = Math.max(size.x, size.y, size.z);
+                    var maxDim = Math.max(size.x, size.y, size.z) || 1;
                     var scale = 3 / maxDim;
                     loadedModel.scale.set(scale, scale, scale);
 
-                    console.log('Model positioned and scaled. Initializing interactions...');
-
-                    // Initialize hotspots after model loads
                     initHotspots();
-
-                    // Initialize animations
                     initAnimations();
 
                     loading.style.display = 'none';
-                    console.log('3D viewer initialization complete!');
                 }, function(xhr) {
-                    console.log('OBJ loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+                    if (xhr.total && xhr.total > 0) {
+                        var pct = Math.round((xhr.loaded / xhr.total) * 100);
+                        var pText = loading.querySelector('p');
+                        if (pText) pText.textContent = 'Loading 3D model (' + pct + '%)...';
+                    }
                 }, function(error) {
-                    console.error('Error loading 3D model:', error);
-                    loading.innerHTML = '<p class="text-red-400">Error loading 3D model: ' + (error.message || error) + '</p><p class="text-xs text-red-300 mt-2">Check that the file exists and is in .glb, .gltf, or .obj format</p><p class="text-xs text-gray-400 mt-1">Path: ' + modelPath + '</p>';
+                    console.error('Error loading OBJ model:', error);
+                    loading.innerHTML = '<div class="p-4 text-center"><p class="text-red-400 font-semibold">Could not load 3D model file.</p><p class="text-xs text-gray-400 mt-1">Path: ' + modelPath + '</p><button class="mt-3 px-3 py-1 bg-indigo-600 text-white rounded text-xs" onclick="this.closest(\'.3d-viewer, .three-d-viewer\').querySelector(\'#loading-' + sectionId + '\').style.display=\'none\'">Dismiss</button></div>';
                 });
+            } else {
+                // Unsupported extension
+                loading.innerHTML = '<div class="p-4 text-center"><p class="text-yellow-400 font-semibold">Unsupported 3D file format (.' + fileExtension + ').</p><p class="text-xs text-gray-300 mt-1">Please use .glb, .gltf, or .obj 3D models.</p></div>';
             }
         } else {
-            // Demo cube if no model
-            console.log('No model file, showing demo cube');
-            var geometry = new THREE.BoxGeometry(2, 2, 2);
-            var material = new THREE.MeshPhongMaterial({
+            // Interactive 3D Demo Object if no media file uploaded
+            var geometry = new THREE.TorusKnotGeometry(1.2, 0.4, 64, 16);
+            var material = new THREE.MeshStandardMaterial({
                 color: 0x6366f1,
-                shininess: 100
+                roughness: 0.3,
+                metalness: 0.7
             });
-            var cube = new THREE.Mesh(geometry, material);
-            cube.position.y = 1;
-            cube.castShadow = true;
-            loadedModel = cube;
-            scene.add(cube);
+            var demoMesh = new THREE.Mesh(geometry, material);
+            demoMesh.castShadow = true;
+            loadedModel = demoMesh;
+            scene.add(demoMesh);
             loading.style.display = 'none';
 
-            // Initialize hotspots for demo
             initHotspots();
         }
 

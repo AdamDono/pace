@@ -534,7 +534,7 @@
                 </div>
                 <div>
                     <p class="text-gray-600 text-sm">Avg Completion</p>
-                    {% set avg_completion = (video_analytics|sum(attribute='avg_watch_percentage') / video_analytics|length)|round(1) %}
+                    {% set avg_completion = ((video_analytics|sum(attribute='avg_watch_percentage') / (video_analytics|length if video_analytics|length > 0 else 1)))|round(1) %}
                     <p class="text-3xl font-bold 
                         {% if avg_completion >= 80 %}text-green-600
                         {% elif avg_completion >= 50 %}text-yellow-600
