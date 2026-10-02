@@ -39,22 +39,28 @@ def upload_file_to_cloudinary(file_stream, filename=None, folder="pace_uploads",
         if not resource_type:
             if filename:
                 ext = filename.lower().split('.')[-1]
-                if ext in ['pdf', 'docx', 'doc', 'zip', 'rar', '7z', 'txt', 'csv', 'py', 'js', 'html']:
+                if ext in ['pdf', 'docx', 'doc', 'zip', 'rar', '7z', 'txt', 'csv', 'py', 'js', 'html', 'glb', 'gltf', 'obj']:
                     resource_type = 'raw'
                 elif ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']:
                     resource_type = 'image'
-                elif ext in ['mp4', 'webm', 'ogg', 'mov']:
+                elif ext in ['mp4', 'webm', 'ogg', 'mov', 'm4v']:
                     resource_type = 'video'
                 else:
                     resource_type = 'auto'
             else:
                 resource_type = 'auto'
 
+        upload_options = {
+            'folder': folder,
+            'resource_type': resource_type,
+            'access_mode': 'public',
+            'use_filename': True,
+            'unique_filename': True
+        }
+
         response = cloudinary.uploader.upload(
             file_stream,
-            folder=folder,
-            resource_type=resource_type,
-            access_mode="public"
+            **upload_options
         )
         return response.get('secure_url')
     except Exception as e:
@@ -66,7 +72,9 @@ def upload_file_to_cloudinary(file_stream, filename=None, folder="pace_uploads",
                 file_stream,
                 folder=folder,
                 resource_type="raw",
-                access_mode="public"
+                access_mode="public",
+                use_filename=True,
+                unique_filename=True
             )
             return response.get('secure_url')
         except Exception as err2:
