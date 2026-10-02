@@ -21,6 +21,16 @@
     font-family: monospace;
 }
 
+.ql-model3d::before {
+    content: '🧊';
+    font-size: 16px;
+}
+
+.ql-embed::before {
+    content: '🔗';
+    font-size: 16px;
+}
+
 /* Raw HTML blocks in editor */
 .raw-html-block {
     margin: 10px 0;
