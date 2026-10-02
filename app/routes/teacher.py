@@ -1792,6 +1792,41 @@ def edit_section(course_id, section_id):
 
     return render_template('teacher/edit_section.html', course=course, module=module, section=section, quizzes=section.quizzes, assignments=section.assignments)
 
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quill-upload-3d', methods=['POST'])
+@teacher_required
+def quill_upload_3d(course_id, section_id):
+    """AJAX endpoint: upload a 3D model file for inline embedding in Quill lesson content.
+    Returns JSON: {success, url, filename}
+    """
+    import json as _json
+    from app.models import Course, Section
+    from app.utils.cloudinary_helper import upload_file_to_cloudinary
+
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    if course.teacher_id != current_user.id or section.course_id != course_id:
+        return _json.dumps({'success': False, 'message': 'Forbidden'}), 403, {'Content-Type': 'application/json'}
+
+    f = request.files.get('file')
+    if not f or not f.filename:
+        return _json.dumps({'success': False, 'message': 'No file provided'}), 400, {'Content-Type': 'application/json'}
+
+    ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+    if ext not in ('glb', 'gltf', 'obj'):
+        return _json.dumps({'success': False, 'message': f'Invalid file type .{ext}. Only .glb, .gltf, .obj allowed.'}), 400, {'Content-Type': 'application/json'}
+
+    cloudinary_url = upload_file_to_cloudinary(f, folder="pace_3d_inline", resource_type="raw")
+    if cloudinary_url:
+        return _json.dumps({'success': True, 'url': cloudinary_url, 'filename': f.filename}), 200, {'Content-Type': 'application/json'}
+
+    # Fallback: save locally
+    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    fname = f"{uuid.uuid4().hex}_{f.filename}"
+    f.save(os.path.join(upload_dir, fname))
+    local_url = url_for('static', filename=f'uploads/{fname}', _external=True)
+    return _json.dumps({'success': True, 'url': local_url, 'filename': f.filename}), 200, {'Content-Type': 'application/json'}
+
 @teacher_bp.route('/course/<int:course_id>/module/<int:module_id>/section/<int:section_id>/3d-content', methods=['GET', 'POST'])
 @teacher_required
 def edit_3d_content(course_id, module_id, section_id):

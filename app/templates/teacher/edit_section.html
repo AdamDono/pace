@@ -335,6 +335,9 @@ function initQuillWithMonaco() {
     // Make monaco globally available
     window.monaco = monaco;
     
+    // Pass the 3D upload URL to the Quill 3D handler
+    window._quill3dUploadUrl = "{{ url_for('teacher.quill_upload_3d', course_id=course.id, section_id=section.id) }}";
+
     // Load enhanced Quill script
     const script = document.createElement('script');
     script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}";
@@ -344,10 +347,10 @@ function initQuillWithMonaco() {
         var quill = initQuillEnhanced(
             'editor-container',
             'content-editor',
-            '✨ Create content with tables, emojis, H5P, and source code editor!'
+            '✨ Create content with tables, emojis, H5P, 3D models, and source code editor!'
         );
         window.quill = quill;
-        console.log('✅ Enhanced Quill loaded: Tables, Emojis, H5P, Source Code!');
+        console.log('✅ Enhanced Quill loaded: Tables, Emojis, H5P, 3D, Source Code!');
         console.log('✅ Monaco available:', typeof monaco !== 'undefined');
     };
     document.head.appendChild(script);

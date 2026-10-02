@@ -1,4 +1,4 @@
-// Enhanced Quill Editor - Tables, Emojis, Embed, Source Code
+// Enhanced Quill Editor - Tables, Emojis, Embed, Source Code, 3D Models
 // Usage: initQuillEnhanced('editor-id', 'textarea-id', 'placeholder')
 
 function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...') {
@@ -66,6 +66,87 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
         document.body.appendChild(modal);
     }
 
+    // ── 3D Model Modal ────────────────────────────────────────────────────────
+    if (!document.getElementById('model3d-modal')) {
+        const modal = document.createElement('div');
+        modal.id = 'model3d-modal';
+        modal.style.cssText = 'display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);z-index:10000;width:520px;max-width:95vw;font-family:system-ui,sans-serif;';
+        modal.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 style="margin:0;font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px;">
+                    🧊 Insert 3D Model
+                </h3>
+                <button onclick="closeModel3DModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">&times;</button>
+            </div>
+
+            <!-- Tab switcher -->
+            <div style="display:flex;gap:4px;background:#f3f4f6;border-radius:10px;padding:4px;margin-bottom:20px;">
+                <button id="model3d-tab-upload" onclick="switchModel3DTab('upload')"
+                    style="flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:white;color:#1d4ed8;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                    📁 Upload File
+                </button>
+                <button id="model3d-tab-url" onclick="switchModel3DTab('url')"
+                    style="flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:#6b7280;">
+                    🔗 Paste URL
+                </button>
+            </div>
+
+            <!-- Upload tab -->
+            <div id="model3d-panel-upload">
+                <div id="model3d-dropzone"
+                    style="border:2px dashed #c7d2fe;border-radius:12px;padding:32px;text-align:center;background:#f5f3ff;cursor:pointer;transition:all 0.2s;"
+                    onclick="document.getElementById('model3d-file-input').click()"
+                    ondragover="event.preventDefault();this.style.borderColor='#6366f1';this.style.background='#ede9fe';"
+                    ondragleave="this.style.borderColor='#c7d2fe';this.style.background='#f5f3ff';"
+                    ondrop="handleModel3DDrop(event)">
+                    <div style="font-size:36px;margin-bottom:8px;">🧊</div>
+                    <p style="margin:0;font-weight:600;color:#4f46e5;font-size:14px;">Click to upload or drag & drop</p>
+                    <p style="margin:4px 0 0;color:#9ca3af;font-size:12px;">Supports: .glb, .gltf, .obj</p>
+                </div>
+                <input type="file" id="model3d-file-input" accept=".glb,.gltf,.obj" style="display:none;" onchange="handleModel3DFile(this.files[0])">
+                <div id="model3d-upload-status" style="margin-top:12px;display:none;"></div>
+            </div>
+
+            <!-- URL tab -->
+            <div id="model3d-panel-url" style="display:none;">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">3D Model URL</label>
+                <input id="model3d-url-input" type="url" placeholder="https://... (.glb, .gltf, or .obj URL)"
+                    style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e5e7eb'">
+                <p style="color:#9ca3af;font-size:12px;margin:6px 0 0;">Tip: Use a Cloudinary or direct file URL ending in .glb / .gltf / .obj</p>
+            </div>
+
+            <!-- Caption -->
+            <div style="margin-top:16px;">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Caption (optional)</label>
+                <input id="model3d-caption-input" type="text" placeholder="E.g. Heart anatomy – rotate to explore"
+                    style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e5e7eb'">
+            </div>
+
+            <!-- Height -->
+            <div style="margin-top:12px;">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Viewer Height</label>
+                <select id="model3d-height-select" style="padding:10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none;background:white;">
+                    <option value="400">Small (400px)</option>
+                    <option value="520" selected>Medium (520px)</option>
+                    <option value="650">Large (650px)</option>
+                    <option value="800">Full (800px)</option>
+                </select>
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
+                <button onclick="closeModel3DModal()" style="padding:10px 22px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">Cancel</button>
+                <button id="model3d-insert-btn" onclick="insertModel3D()"
+                    style="padding:10px 22px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px;">
+                    🧊 Insert 3D Viewer
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    // ── End 3D Modal ──────────────────────────────────────────────────────────
+
     // Create HTML Source Code modal if it doesn't exist
     if (!document.getElementById('source-code-modal')) {
         const modal = document.createElement('div');
@@ -96,13 +177,14 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
                 [{ 'color': [] }, { 'background': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                 ['link', 'image'],
-                ['emoji', 'table', 'embed', 'source'],
+                ['emoji', 'table', 'embed', 'model3d', 'source'],
                 ['clean']
             ],
             handlers: {
                 'emoji': () => showEmojiModal(quill),
                 'table': () => insertTable(quill),
                 'embed': () => showEmbedModal(quill),
+                'model3d': () => showModel3DModal(quill),
                 'source': () => showSourceCodeModal(quill)
             }
         }
@@ -168,10 +250,28 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
     // Store current quill instance
     window.currentQuill = quill;
 
+    // Style the model3d toolbar button
+    _styleModel3DButton();
+
     return quill;
 }
 
-// Helper functions
+// Helper: style the 🧊 button in the Quill toolbar
+function _styleModel3DButton() {
+    setTimeout(() => {
+        const btns = document.querySelectorAll('.ql-model3d');
+        btns.forEach(btn => {
+            if (!btn.dataset.styled) {
+                btn.dataset.styled = '1';
+                btn.innerHTML = '🧊';
+                btn.title = 'Insert 3D Model';
+                btn.style.cssText = 'font-size:14px;line-height:1;padding:2px 4px;cursor:pointer;';
+            }
+        });
+    }, 200);
+}
+
+// ─── Emoji helpers ────────────────────────────────────────────────────────────
 function showEmojiModal(quill) {
     window.currentQuill = quill;
     document.getElementById('emoji-modal').style.display = 'block';
@@ -192,6 +292,7 @@ function insertEmoji(emoji) {
     closeEmojiModal();
 }
 
+// ─── Table ────────────────────────────────────────────────────────────────────
 function insertTable(quill) {
     if (typeof QuillBetterTable !== 'undefined') {
         const tableModule = quill.getModule('better-table');
@@ -203,6 +304,7 @@ function insertTable(quill) {
     }
 }
 
+// ─── Embed helpers ────────────────────────────────────────────────────────────
 function showEmbedModal(quill) {
     window.currentQuill = quill;
     document.getElementById('embed-modal').style.display = 'block';
@@ -248,7 +350,176 @@ function insertEmbed() {
     closeEmbedModal();
 }
 
-// Source Code Editor
+// ─── 3D Model helpers ─────────────────────────────────────────────────────────
+let _model3dActiveTab = 'upload';
+let _model3dUploadedUrl = null; // set after file upload
+
+function showModel3DModal(quill) {
+    window.currentQuill = quill;
+    _model3dUploadedUrl = null;
+    // Reset UI
+    document.getElementById('model3d-url-input').value = '';
+    document.getElementById('model3d-caption-input').value = '';
+    document.getElementById('model3d-height-select').value = '520';
+    document.getElementById('model3d-upload-status').style.display = 'none';
+    document.getElementById('model3d-upload-status').innerHTML = '';
+    document.getElementById('model3d-file-input').value = '';
+    switchModel3DTab('upload');
+    document.getElementById('model3d-modal').style.display = 'block';
+    document.getElementById('emoji-overlay').style.display = 'block';
+}
+
+function closeModel3DModal() {
+    document.getElementById('model3d-modal').style.display = 'none';
+    document.getElementById('emoji-overlay').style.display = 'none';
+}
+
+function switchModel3DTab(tab) {
+    _model3dActiveTab = tab;
+    const uploadPanel = document.getElementById('model3d-panel-upload');
+    const urlPanel = document.getElementById('model3d-panel-url');
+    const tabUpload = document.getElementById('model3d-tab-upload');
+    const tabUrl = document.getElementById('model3d-tab-url');
+
+    if (tab === 'upload') {
+        uploadPanel.style.display = 'block';
+        urlPanel.style.display = 'none';
+        tabUpload.style.cssText = 'flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:white;color:#1d4ed8;box-shadow:0 1px 3px rgba(0,0,0,0.1);';
+        tabUrl.style.cssText = 'flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:#6b7280;';
+    } else {
+        uploadPanel.style.display = 'none';
+        urlPanel.style.display = 'block';
+        tabUpload.style.cssText = 'flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:#6b7280;';
+        tabUrl.style.cssText = 'flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:white;color:#1d4ed8;box-shadow:0 1px 3px rgba(0,0,0,0.1);';
+    }
+}
+
+function handleModel3DDrop(event) {
+    event.preventDefault();
+    const dz = document.getElementById('model3d-dropzone');
+    dz.style.borderColor = '#c7d2fe';
+    dz.style.background = '#f5f3ff';
+    const file = event.dataTransfer.files[0];
+    if (file) handleModel3DFile(file);
+}
+
+function handleModel3DFile(file) {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['glb','gltf','obj'].includes(ext)) {
+        alert('Only .glb, .gltf, or .obj files are supported.');
+        return;
+    }
+    // Show uploading state
+    const status = document.getElementById('model3d-upload-status');
+    status.style.display = 'block';
+    status.innerHTML = `<div style="display:flex;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px;font-size:13px;color:#0369a1;">
+        <span style="animation:spin 1s linear infinite;display:inline-block;">⏳</span>
+        Uploading <strong>${file.name}</strong>...
+    </div>`;
+    document.getElementById('model3d-insert-btn').disabled = true;
+
+    // Figure out the upload URL from the page context
+    const uploadUrl = window._quill3dUploadUrl || null;
+    if (!uploadUrl) {
+        // Fallback: use local object URL (won't persist, but shows something)
+        _model3dUploadedUrl = URL.createObjectURL(file);
+        status.innerHTML = `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:13px;color:#92400e;">
+            ⚠️ No upload endpoint configured — using local preview URL (save to persist).
+        </div>`;
+        document.getElementById('model3d-insert-btn').disabled = false;
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    // Try to get CSRF token from the page
+    const csrfToken = document.querySelector('input[name="csrf_token"]') ?
+        document.querySelector('input[name="csrf_token"]').value : '';
+
+    fetch(uploadUrl, {
+        method: 'POST',
+        headers: csrfToken ? {'X-CSRFToken': csrfToken} : {},
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            _model3dUploadedUrl = data.url;
+            status.innerHTML = `<div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;font-size:13px;color:#166534;">
+                ✅ <strong>${file.name}</strong> uploaded successfully!
+            </div>`;
+        } else {
+            status.innerHTML = `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px;font-size:13px;color:#991b1b;">
+                ❌ Upload failed: ${data.message}
+            </div>`;
+        }
+        document.getElementById('model3d-insert-btn').disabled = false;
+    })
+    .catch(err => {
+        status.innerHTML = `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px;font-size:13px;color:#991b1b;">
+            ❌ Upload error: ${err.message}
+        </div>`;
+        document.getElementById('model3d-insert-btn').disabled = false;
+    });
+}
+
+function insertModel3D() {
+    if (!window.currentQuill) return;
+
+    let modelUrl = '';
+    if (_model3dActiveTab === 'upload') {
+        modelUrl = _model3dUploadedUrl || '';
+    } else {
+        modelUrl = (document.getElementById('model3d-url-input').value || '').trim();
+    }
+
+    if (!modelUrl) {
+        alert(_model3dActiveTab === 'upload'
+            ? 'Please upload a 3D file first.'
+            : 'Please paste a 3D model URL.');
+        return;
+    }
+
+    const caption = (document.getElementById('model3d-caption-input').value || '').trim();
+    const height = document.getElementById('model3d-height-select').value || '520';
+
+    // Build the inline 3D viewer placeholder HTML
+    // We use a special data attribute so the student renderer can find it
+    const viewerId = 'ql3d_' + Math.random().toString(36).slice(2, 9);
+    const captionHtml = caption
+        ? `<p style="text-align:center;font-size:13px;color:#6b7280;margin:6px 0 0;font-style:italic;">${caption}</p>`
+        : '';
+
+    const html = `<div class="ql-3d-viewer-block" data-ql-3d="1" data-src="${modelUrl}" data-height="${height}" data-viewer-id="${viewerId}" contenteditable="false"
+        style="margin:20px 0;border-radius:12px;overflow:hidden;border:2px solid #e0e7ff;background:#0f0f1a;">
+        <div style="background:linear-gradient(135deg,#0f0f1a,#1a1a3e);min-height:${height}px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+            <div style="text-align:center;color:#a5b4fc;">
+                <div style="font-size:48px;margin-bottom:12px;">🧊</div>
+                <p style="font-size:14px;font-weight:600;margin:0;">3D Model: ${caption || modelUrl.split('/').pop()}</p>
+                <p style="font-size:12px;opacity:0.6;margin:4px 0 0;">Interactive viewer will appear for students</p>
+            </div>
+            <div style="position:absolute;top:8px;right:8px;background:rgba(99,102,241,0.8);color:white;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">🧊 3D</div>
+        </div>
+        ${captionHtml}
+    </div><p><br></p>`;
+
+    const range = window.currentQuill.getSelection(true) || {index: 0};
+    window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, html);
+    window.currentQuill.root.setAttribute('data-custom-html', 'true');
+
+    // Update textarea
+    const textarea = document.getElementById('content-editor') ||
+                     document.getElementById('announcement-content');
+    if (textarea) {
+        textarea.value = window.currentQuill.root.innerHTML;
+    }
+
+    closeModel3DModal();
+    console.log('✅ 3D model inserted:', modelUrl);
+}
+
+// ─── Source Code Editor ───────────────────────────────────────────────────────
 let htmlEditor = null;
 
 function showSourceCodeModal(quill) {

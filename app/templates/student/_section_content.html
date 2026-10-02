@@ -97,9 +97,156 @@
             {% endif %}
         {% endif %}
         {% if section.content %}
-        <div class="ql-editor prose max-w-none mt-4">{{ section.content|safe }}</div>
+        <div id="ql-content-{{ section.id }}" class="ql-editor prose max-w-none mt-4">{{ section.content|safe }}</div>
+        <script>
+        (function() {
+            // ── Activate inline 3D viewers embedded via Quill ─────────────────
+            function activateInline3DViewers() {
+                var contentEl = document.getElementById('ql-content-{{ section.id }}');
+                if (!contentEl) return;
+                var blocks = contentEl.querySelectorAll('[data-ql-3d="1"]');
+                if (!blocks.length) return;
+
+                function loadScriptOnce(src, cb) {
+                    if (document.querySelector('script[data-src="' + src + '"]')) { cb && cb(); return; }
+                    var s = document.createElement('script');
+                    s.setAttribute('data-src', src);
+                    s.src = src; s.async = false;
+                    s.onload = function() { cb && cb(); };
+                    document.head.appendChild(s);
+                }
+
+                function initInlineViewer(block) {
+                    var modelUrl = block.getAttribute('data-src');
+                    var height = parseInt(block.getAttribute('data-height') || '520', 10);
+                    var vid = block.getAttribute('data-viewer-id') || ('v3d_' + Math.random().toString(36).slice(2,7));
+                    if (!modelUrl) return;
+                    if (block.dataset.initialized === '1') return;
+                    block.dataset.initialized = '1';
+
+                    // Replace placeholder content with actual canvas
+                    block.style.cssText = 'margin:20px 0;border-radius:12px;overflow:hidden;border:2px solid #e0e7ff;background:#0f0f1a;position:relative;';
+                    block.innerHTML = `
+                        <div id="ql3d-loading-${vid}" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f0f1a;color:#a5b4fc;z-index:5;">
+                            <div style="font-size:36px;margin-bottom:8px;animation:ql3dspin 1.2s linear infinite;">🧊</div>
+                            <p style="font-size:13px;margin:0;">Loading 3D model...</p>
+                        </div>
+                        <canvas id="ql3d-canvas-${vid}" style="width:100%;height:${height}px;display:block;"></canvas>
+                        <div style="position:absolute;bottom:10px;left:10px;right:10px;display:flex;align-items:center;justify-between;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);border-radius:8px;padding:8px 12px;z-index:10;">
+                            <div style="display:flex;gap:8px;font-size:11px;color:rgba(255,255,255,0.8);">
+                                <span style="background:rgba(255,255,255,0.15);padding:3px 8px;border-radius:4px;">🖱️ Drag to rotate</span>
+                                <span style="background:rgba(255,255,255,0.15);padding:3px 8px;border-radius:4px;">🔍 Scroll to zoom</span>
+                            </div>
+                            <button onclick="document.getElementById('ql3d-canvas-${vid}').dispatchEvent(new Event('resetView'))"
+                                style="background:rgba(255,255,255,0.15);color:white;border:none;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Reset</button>
+                        </div>
+                    `;
+                    // Add spin keyframes once
+                    if (!document.getElementById('ql3d-keyframes')) {
+                        var style = document.createElement('style');
+                        style.id = 'ql3d-keyframes';
+                        style.textContent = '@keyframes ql3dspin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }';
+                        document.head.appendChild(style);
+                    }
+
+                    // Build Three.js scene
+                    var canvas = document.getElementById('ql3d-canvas-' + vid);
+                    var loading = document.getElementById('ql3d-loading-' + vid);
+
+                    var scene = new THREE.Scene();
+                    scene.background = new THREE.Color(0x0f0f1a);
+
+                    var camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / height, 0.1, 1000);
+                    camera.position.set(0, 1.5, 4);
+
+                    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                    renderer.setSize(canvas.clientWidth, height);
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                    renderer.shadowMap.enabled = true;
+
+                    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+                    controls.enableDamping = true;
+                    controls.dampingFactor = 0.07;
+                    controls.minDistance = 1;
+                    controls.maxDistance = 20;
+
+                    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+                    var dl = new THREE.DirectionalLight(0xffffff, 0.9);
+                    dl.position.set(5, 10, 7);
+                    dl.castShadow = true;
+                    scene.add(dl);
+                    scene.add(new THREE.PointLight(0x6366f1, 0.5, 20));
+                    scene.add(new THREE.GridHelper(10, 10, 0x2d2d5e, 0x1a1a3e));
+
+                    var ext = modelUrl.split('?')[0].split('.').pop().toLowerCase();
+                    function afterLoad(object) {
+                        // Center and scale model
+                        var box = new THREE.Box3().setFromObject(object);
+                        var center = box.getCenter(new THREE.Vector3());
+                        var size = box.getSize(new THREE.Vector3());
+                        var maxDim = Math.max(size.x, size.y, size.z);
+                        var scale = 3 / maxDim;
+                        object.scale.setScalar(scale);
+                        object.position.sub(center.multiplyScalar(scale));
+                        scene.add(object);
+                        if (loading) loading.style.display = 'none';
+                    }
+
+                    if (ext === 'glb' || ext === 'gltf') {
+                        var loader = new THREE.GLTFLoader();
+                        loader.load(modelUrl, function(gltf) { afterLoad(gltf.scene); },
+                            null, function(e) { if(loading) loading.innerHTML = '<p style="color:#f87171;font-size:13px;">Failed to load model</p>'; });
+                    } else if (ext === 'obj') {
+                        var loader = new THREE.OBJLoader();
+                        loader.load(modelUrl, function(obj) { afterLoad(obj); },
+                            null, function(e) { if(loading) loading.innerHTML = '<p style="color:#f87171;font-size:13px;">Failed to load model</p>'; });
+                    } else {
+                        if (loading) loading.innerHTML = '<p style="color:#f87171;font-size:13px;">Unsupported format</p>';
+                        return;
+                    }
+
+                    var animId;
+                    function animate() { animId = requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+                    animate();
+
+                    // Reset view on event
+                    canvas.addEventListener('resetView', function() {
+                        camera.position.set(0, 1.5, 4);
+                        controls.reset();
+                    });
+
+                    // Resize handler
+                    var ro = new ResizeObserver(function() {
+                        var w = canvas.clientWidth;
+                        camera.aspect = w / height;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(w, height);
+                    });
+                    ro.observe(canvas.parentElement);
+                }
+
+                // Load Three.js stack then init all viewers
+                loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', function() {
+                    loadScriptOnce('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js', function() {
+                        loadScriptOnce('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', function() {
+                            loadScriptOnce('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js', function() {
+                                blocks.forEach(function(block) { initInlineViewer(block); });
+                            });
+                        });
+                    });
+                });
+            }
+            // Run after DOM settles (HTMX may load content async)
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', activateInline3DViewers);
+            } else {
+                activateInline3DViewers();
+            }
+            document.addEventListener('htmx:afterSettle', activateInline3DViewers);
+        })();
+        </script>
         {% endif %}
-    {% endif %}
+
 
     <!-- ─── Assignments (only if any exist) ──────────────────── -->
     {% if section.assignments %}
