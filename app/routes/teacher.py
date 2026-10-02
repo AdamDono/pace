@@ -1737,6 +1737,11 @@ def edit_section(course_id, section_id):
         section.duration = int(request.form.get('duration', 0)) if request.form.get('duration') else None
         section.video_url = request.form.get('video_url') or None
 
+        # Handle rich_lesson content_blocks (JSON array of ordered content blocks)
+        if section.section_type == 'rich_lesson':
+            content_blocks_json = request.form.get('content_blocks', '')
+            section.content_blocks = content_blocks_json if content_blocks_json else None
+
         # Handle file upload for media_file (presentation PDF, 3D model, etc.)
         uploaded_file = None
         for key in ('media_file', 'presentation_file', 'model_3d_file'):
@@ -1750,7 +1755,7 @@ def edit_section(course_id, section_id):
         if uploaded_file:
             file = uploaded_file
             # Validate file type and size
-            allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3', 'glb', 'gltf', 'obj'}
+            allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3', 'glb', 'gltf', 'obj', 'webm'}
             if '.' in file.filename:
                 extension = file.filename.rsplit('.', 1)[1].lower()
                 if extension in allowed_extensions:
@@ -1780,10 +1785,8 @@ def edit_section(course_id, section_id):
 
         # Handle quiz/assignment specific fields if applicable
         if section.section_type == 'quiz':
-            # Quiz-specific fields can be added here later
             pass
         elif section.section_type == 'assignment':
-            # Assignment-specific fields can be added here later
             pass
 
         db.session.commit()
@@ -1792,9 +1795,45 @@ def edit_section(course_id, section_id):
 
     return render_template('teacher/edit_section.html', course=course, module=module, section=section, quizzes=section.quizzes, assignments=section.assignments)
 
+@teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/upload-block-file', methods=['POST'])
+@teacher_required
+def upload_block_file(course_id, section_id):
+    """AJAX endpoint: upload a file for a rich_lesson content block; returns {url, filename}."""
+    import uuid, os, json
+    from app.models import Course, Section
+    from app.utils.cloudinary_helper import upload_file_to_cloudinary
+
+    course = Course.query.get_or_404(course_id)
+    section = Section.query.get_or_404(section_id)
+    if course.teacher_id != current_user.id or section.course_id != course_id:
+        return json.dumps({'success': False, 'message': 'Forbidden'}), 403, {'Content-Type': 'application/json'}
+
+    f = request.files.get('file')
+    if not f or not f.filename:
+        return json.dumps({'success': False, 'message': 'No file'}), 400, {'Content-Type': 'application/json'}
+
+    ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+    allowed = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'ogg', 'mp3', 'glb', 'gltf', 'obj'}
+    if ext not in allowed:
+        return json.dumps({'success': False, 'message': f'File type .{ext} not allowed'}), 400, {'Content-Type': 'application/json'}
+
+    unique_filename = f"{uuid.uuid4().hex}_{f.filename}"
+    resource = "raw" if ext in ('mp3', 'glb', 'gltf', 'obj') else ("video" if ext in ('mp4', 'webm', 'ogg', 'm4v') else "image")
+    url = upload_file_to_cloudinary(f, folder="pace_media", resource_type=resource)
+    if not url:
+        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        f.seek(0)
+        f.save(os.path.join(upload_dir, unique_filename))
+        from flask import url_for as _url_for
+        url = _url_for('static', filename=f'uploads/{unique_filename}', _external=True)
+
+    return json.dumps({'success': True, 'url': url, 'filename': f.filename, 'ext': ext}), 200, {'Content-Type': 'application/json'}
+
 @teacher_bp.route('/course/<int:course_id>/module/<int:module_id>/section/<int:section_id>/3d-content', methods=['GET', 'POST'])
 @teacher_required
 def edit_3d_content(course_id, module_id, section_id):
+
     """Edit 3D interactive content for a section"""
     from app.models import Course, Section, Module
     course = Course.query.get_or_404(course_id)
