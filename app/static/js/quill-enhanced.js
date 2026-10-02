@@ -258,17 +258,18 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
 
 // Helper: style the 🧊 button in the Quill toolbar
 function _styleModel3DButton() {
-    setTimeout(() => {
+    const apply = () => {
         const btns = document.querySelectorAll('.ql-model3d');
         btns.forEach(btn => {
-            if (!btn.dataset.styled) {
-                btn.dataset.styled = '1';
+            btn.title = 'Insert 3D Model (.glb, .gltf, .obj)';
+            const style = window.getComputedStyle(btn, '::before');
+            if (!style || !style.content || style.content === 'none' || style.content === '""' || style.content === 'normal') {
                 btn.innerHTML = '🧊';
-                btn.title = 'Insert 3D Model';
-                btn.style.cssText = 'font-size:14px;line-height:1;padding:2px 4px;cursor:pointer;';
             }
         });
-    }, 200);
+    };
+    setTimeout(apply, 100);
+    setTimeout(apply, 400);
 }
 
 // ─── Emoji helpers ────────────────────────────────────────────────────────────

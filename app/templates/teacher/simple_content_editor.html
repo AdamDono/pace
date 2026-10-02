@@ -57,9 +57,32 @@
                             <span>AI Draft / Expand Lesson</span>
                         </button>
                     </div>
-                    {% with field_id='content', field_name='content', initial_value=(section.content or ''), height='350px' %}
-                        {% include 'components/quill_editor.html' %}
-                    {% endwith %}
+                    <!-- Quick Callout Color Toolbar -->
+                    <div class="flex items-center space-x-2 mb-2 flex-wrap gap-y-1">
+                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Side Callout Boxes:</span>
+                        <button type="button" onclick="insertCallout('blue')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition-colors shadow-sm">
+                            🔷 Blue Tip
+                        </button>
+                        <button type="button" onclick="insertCallout('green')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-green-50 text-green-700 border-l-4 border-green-600 rounded-r hover:bg-green-100 transition-colors shadow-sm">
+                            🟢 Green Takeaway
+                        </button>
+                        <button type="button" onclick="insertCallout('red')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-red-50 text-red-700 border-l-4 border-red-600 rounded-r hover:bg-red-100 transition-colors shadow-sm">
+                            🔴 Red Warning
+                        </button>
+                        <button type="button" onclick="insertCallout('yellow')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-amber-50 text-amber-800 border-l-4 border-amber-500 rounded-r hover:bg-amber-100 transition-colors shadow-sm">
+                            🟡 Yellow Note
+                        </button>
+                    </div>
+
+                    <!-- Enhanced Quill Editor -->
+                    <div class="quill-editor-container">
+                        <div id="editor-container" style="min-height: 400px;"></div>
+                        <textarea id="content-editor" name="content" class="hidden">{% if section.content and section.content != 'None' %}{{ section.content }}{% endif %}</textarea>
+                    </div>
                 </div>
 
                 <div class="pt-6 border-t border-gray-200 flex justify-end space-x-3">
@@ -68,7 +91,7 @@
                         Cancel
                     </a>
                     <button type="submit"
-                        class="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                        class="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm hover:shadow">
                         Save Content
                     </button>
                 </div>
@@ -77,7 +100,113 @@
     </div>
 </div>
 
+<!-- Load Quill CSS -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=5" rel="stylesheet">
+<style>
+.ql-editor { font-size: 15px; line-height: 1.6; min-height: 350px; }
+.ql-toolbar.ql-snow { border-radius: 8px 8px 0 0; background: #f9fafb; padding: 12px; }
+.ql-container.ql-snow { border-radius: 0 0 8px 8px; }
+
+/* Callout Box Styles */
+blockquote[data-color="green"], blockquote.callout-green, blockquote[style*="#16a34a"], blockquote[style*="rgb(22, 163, 74)"] {
+    border-left: 5px solid #16a34a !important;
+    background-color: #f0fdf4 !important;
+    color: #14532d !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+blockquote[data-color="red"], blockquote.callout-red, blockquote[style*="#dc2626"], blockquote[style*="rgb(220, 38, 38)"] {
+    border-left: 5px solid #dc2626 !important;
+    background-color: #fef2f2 !important;
+    color: #7f1d1d !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+blockquote[data-color="yellow"], blockquote.callout-yellow, blockquote[style*="#d97706"], blockquote[style*="rgb(217, 119, 6)"] {
+    border-left: 5px solid #d97706 !important;
+    background-color: #fffbeb !important;
+    color: #78350f !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+blockquote[data-color="blue"], blockquote.callout-blue, blockquote[style*="#2563eb"], blockquote[style*="rgb(37, 99, 235)"],
+blockquote:not([data-color]):not([class*="callout"]):not([style*="border-left"]) {
+    border-left: 5px solid #2563eb !important;
+    background-color: #eff6ff !important;
+    color: #1e3a8a !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+</style>
+
+<!-- Load JS Modules -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.js"></script>
 <script>
+    window._quill3dUploadUrl = "{{ url_for('teacher.quill_upload_3d', course_id=course.id, section_id=section.id) }}";
+</script>
+<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}?v=5"></script>
+<script src="{{ url_for('static', filename='js/3d-hotspot-editor.js') }}?v=2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+<script>
+// Initialize Enhanced Quill Editor
+(function() {
+    window.quill = initQuillEnhanced(
+        'editor-container',
+        'content-editor',
+        '✨ Create content with 3D models, tables, emojis, callouts, and interactive lessons!'
+    );
+
+    // Initial content population if needed
+    const textarea = document.getElementById('content-editor');
+    if (textarea && textarea.value && window.quill) {
+        window.quill.root.innerHTML = textarea.value;
+    }
+
+    // Load Monaco editor in background for Source Code view
+    if (typeof require !== 'undefined') {
+        try {
+            require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+            require(['vs/editor/editor.main'], function() {
+                window.monaco = monaco;
+            });
+        } catch(e) {
+            console.warn('Monaco background load:', e);
+        }
+    }
+})();
+
+// Insert Callout Box
+window.insertCallout = function(color) {
+    if (!window.quill) return;
+    var range = window.quill.getSelection(true);
+    var index = range ? range.index : window.quill.getLength();
+    
+    var styleMap = {
+        'blue': 'border-left: 5px solid #2563eb !important; background: #eff6ff !important; color: #1e3a8a !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;',
+        'green': 'border-left: 5px solid #16a34a !important; background: #f0fdf4 !important; color: #14532d !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;',
+        'red': 'border-left: 5px solid #dc2626 !important; background: #fef2f2 !important; color: #7f1d1d !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;',
+        'yellow': 'border-left: 5px solid #d97706 !important; background: #fffbeb !important; color: #78350f !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;'
+    };
+    
+    var selectedStyle = styleMap[color] || styleMap['blue'];
+    var calloutHtml = '<blockquote data-color="' + color + '" class="callout-' + color + '" style="' + selectedStyle + '"><p>Type your ' + color + ' callout message here...</p></blockquote><p><br></p>';
+    
+    window.quill.clipboard.dangerouslyPasteHTML(index, calloutHtml);
+};
+
+// AI Lesson Content Generator
 function promptAIGenerateSimpleLesson() {
     const topic = prompt("Enter specific concepts, instructions, or code topics to draft for this lesson:", "{{ section.title }}");
     if (!topic) return;
@@ -116,11 +245,10 @@ function promptAIGenerateSimpleLesson() {
             btn.innerHTML = origHtml;
         }
         if (data.html_content) {
-            const quill = (window.quillEditors && window.quillEditors['content']) || (window.quillInstances && window.quillInstances['quill-content']);
-            if (quill) {
-                quill.root.innerHTML = data.html_content;
+            if (window.quill) {
+                window.quill.root.innerHTML = data.html_content;
             }
-            const hiddenInput = document.getElementById('content');
+            const hiddenInput = document.getElementById('content-editor');
             if (hiddenInput) {
                 hiddenInput.value = data.html_content;
             }
