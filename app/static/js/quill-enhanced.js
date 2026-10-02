@@ -484,39 +484,13 @@ function insertModel3D() {
     const caption = (document.getElementById('model3d-caption-input').value || '').trim();
     const height = document.getElementById('model3d-height-select').value || '520';
 
-    // Build the inline 3D viewer placeholder HTML
-    // We use a special data attribute so the student renderer can find it
-    const viewerId = 'ql3d_' + Math.random().toString(36).slice(2, 9);
-    const captionHtml = caption
-        ? `<p style="text-align:center;font-size:13px;color:#6b7280;margin:6px 0 0;font-style:italic;">${caption}</p>`
-        : '';
-
-    const html = `<div class="ql-3d-viewer-block" data-ql-3d="1" data-src="${modelUrl}" data-height="${height}" data-viewer-id="${viewerId}" contenteditable="false"
-        style="margin:20px 0;border-radius:12px;overflow:hidden;border:2px solid #e0e7ff;background:#0f0f1a;">
-        <div style="background:linear-gradient(135deg,#0f0f1a,#1a1a3e);min-height:${height}px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
-            <div style="text-align:center;color:#a5b4fc;">
-                <div style="font-size:48px;margin-bottom:12px;">🧊</div>
-                <p style="font-size:14px;font-weight:600;margin:0;">3D Model: ${caption || modelUrl.split('/').pop()}</p>
-                <p style="font-size:12px;opacity:0.6;margin:4px 0 0;">Interactive viewer will appear for students</p>
-            </div>
-            <div style="position:absolute;top:8px;right:8px;background:rgba(99,102,241,0.8);color:white;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">🧊 3D</div>
-        </div>
-        ${captionHtml}
-    </div><p><br></p>`;
-
-    const range = window.currentQuill.getSelection(true) || {index: 0};
-    window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, html);
-    window.currentQuill.root.setAttribute('data-custom-html', 'true');
-
-    // Update textarea
-    const textarea = document.getElementById('content-editor') ||
-                     document.getElementById('announcement-content');
-    if (textarea) {
-        textarea.value = window.currentQuill.root.innerHTML;
+    // Hide the initial modal and open the Hotspot Editor
+    document.getElementById('model3d-modal').style.display = 'none';
+    if (typeof openHotspotEditor === 'function') {
+        openHotspotEditor(modelUrl, caption, height);
+    } else {
+        alert("Hotspot editor script is not loaded properly.");
     }
-
-    closeModel3DModal();
-    console.log('✅ 3D model inserted:', modelUrl);
 }
 
 // ─── Source Code Editor ───────────────────────────────────────────────────────

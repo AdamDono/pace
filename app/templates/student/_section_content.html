@@ -179,7 +179,11 @@
                     scene.add(new THREE.GridHelper(10, 10, 0x2d2d5e, 0x1a1a3e));
 
                     var ext = modelUrl.split('?')[0].split('.').pop().toLowerCase();
+                    var loadedModel = null;
+                    var hotspotMeshes = [];
+                    
                     function afterLoad(object) {
+                        loadedModel = object;
                         // Center and scale model
                         var box = new THREE.Box3().setFromObject(object);
                         var center = box.getCenter(new THREE.Vector3());
@@ -190,6 +194,24 @@
                         object.position.sub(center.multiplyScalar(scale));
                         scene.add(object);
                         if (loading) loading.style.display = 'none';
+                        
+                        // Render hotspots
+                        var hotspotsData = block.getAttribute('data-hotspots');
+                        if (hotspotsData) {
+                            try {
+                                var hotspots = JSON.parse(hotspotsData);
+                                var hsGeo = new THREE.SphereGeometry(0.05, 16, 16);
+                                var hsMat = new THREE.MeshBasicMaterial({ color: 0xff3b30 });
+                                hotspots.forEach(function(hs) {
+                                    var mesh = new THREE.Mesh(hsGeo, hsMat);
+                                    mesh.position.set(hs.x, hs.y, hs.z);
+                                    mesh.scale.setScalar(1 / scale); // keep spheres same visual size
+                                    mesh.userData = hs;
+                                    object.add(mesh);
+                                    hotspotMeshes.push(mesh);
+                                });
+                            } catch(e) { console.error("Error parsing hotspots", e); }
+                        }
                     }
 
                     if (ext === 'glb' || ext === 'gltf') {
@@ -206,8 +228,59 @@
                     }
 
                     var animId;
-                    function animate() { animId = requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+                    function animate() { 
+                        animId = requestAnimationFrame(animate); 
+                        controls.update(); 
+                        
+                        // Animate hotspots
+                        var time = Date.now() * 0.003;
+                        hotspotMeshes.forEach(function(mesh) {
+                            var sc = (1 / loadedModel.scale.x) * (1 + Math.sin(time) * 0.2);
+                            mesh.scale.setScalar(sc);
+                        });
+                        
+                        renderer.render(scene, camera); 
+                    }
                     animate();
+                    
+                    // Hotspot click logic
+                    var raycaster = new THREE.Raycaster();
+                    var mouse = new THREE.Vector2();
+                    var popup = document.createElement('div');
+                    popup.style.cssText = 'position:absolute; display:none; background:white; color:#1f2937; padding:12px; border-radius:8px; z-index:20; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); max-width:220px; font-family:system-ui,sans-serif; border:1px solid #e5e7eb; pointer-events:none;';
+                    block.appendChild(popup);
+                    
+                    canvas.addEventListener('mousemove', function(e) {
+                        var rect = canvas.getBoundingClientRect();
+                        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                        raycaster.setFromCamera(mouse, camera);
+                        if (!hotspotMeshes.length) return;
+                        var intersects = raycaster.intersectObjects(hotspotMeshes);
+                        if (intersects.length > 0) {
+                            canvas.style.cursor = 'pointer';
+                        } else {
+                            canvas.style.cursor = 'grab';
+                        }
+                    });
+                    
+                    canvas.addEventListener('click', function(e) {
+                        var rect = canvas.getBoundingClientRect();
+                        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                        raycaster.setFromCamera(mouse, camera);
+                        if (!hotspotMeshes.length) return;
+                        var intersects = raycaster.intersectObjects(hotspotMeshes);
+                        if (intersects.length > 0) {
+                            var hs = intersects[0].object.userData;
+                            popup.innerHTML = '<strong style="display:block;font-size:14px;margin-bottom:4px;color:#111827;">' + hs.title + '</strong><p style="font-size:12px;margin:0;color:#4b5563;line-height:1.4;">' + hs.description + '</p>';
+                            popup.style.left = Math.min((e.clientX - rect.left) + 15, rect.width - 240) + 'px';
+                            popup.style.top = Math.max((e.clientY - rect.top) - 15, 10) + 'px';
+                            popup.style.display = 'block';
+                        } else {
+                            popup.style.display = 'none';
+                        }
+                    });
 
                     // Reset view on event
                     canvas.addEventListener('resetView', function() {

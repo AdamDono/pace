@@ -340,9 +340,14 @@ function initQuillWithMonaco() {
 
     // Load enhanced Quill script
     const script = document.createElement('script');
-    script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}?v=3";
+    script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}?v=4";
     script.onload = function() {
         console.log('✅ Quill script loaded');
+        // Load hotspot editor
+        const hsScript = document.createElement('script');
+        hsScript.src = "{{ url_for('static', filename='js/3d-hotspot-editor.js') }}?v=1";
+        document.head.appendChild(hsScript);
+
         // Initialize enhanced Quill
         var quill = initQuillEnhanced(
             'editor-container',
