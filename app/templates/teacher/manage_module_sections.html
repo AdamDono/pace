@@ -79,8 +79,6 @@
                         <option value="image">🖼️ Image</option>
                         <option value="audio">🎵 Audio</option>
                         <option value="presentation">📊 Presentation (PDF)</option>
-                        <option value="3d">🧊 3D Interactive Model</option>
-                        <option value="rich_lesson">✨ Rich Lesson (Blocks)</option>
                         <option value="quiz">❓ Quiz</option>
                         <option value="assignment">📝 Assignment</option>
                     </select>
@@ -203,10 +201,6 @@
                                         🎵 Audio
                                     {% elif section.section_type == 'presentation' %}
                                         📊 Presentation
-                                    {% elif section.section_type == '3d' %}
-                                        🧊 3D Model
-                                    {% elif section.section_type == 'rich_lesson' %}
-                                        ✨ Rich Lesson
                                     {% else %}
                                         📄 Text
                                     {% endif %}

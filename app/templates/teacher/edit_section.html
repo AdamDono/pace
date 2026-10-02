@@ -32,14 +32,13 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Section Type *</label>
                     <select name="section_type" id="section-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="text" {{ 'selected' if section.section_type == 'text' }}>📄 Text Content</option>
-                         <option value="video" {{ 'selected' if section.section_type == 'video' }}>🎥 Video (YouTube URL)</option>
-                         <option value="image" {{ 'selected' if section.section_type == 'image' }}>🖼️ Image</option>
-                         <option value="audio" {{ 'selected' if section.section_type == 'audio' }}>🎵 Audio</option>
-                         <option value="presentation" {{ 'selected' if section.section_type == 'presentation' }}>📊 Presentation (PDF)</option>
-                         <option value="3d" {{ 'selected' if section.section_type == '3d' }}>🧊 3D Interactive Model</option>
-                         <option value="rich_lesson" {{ 'selected' if section.section_type == 'rich_lesson' }}>✨ Rich Lesson (Blocks)</option>
-                         <option value="quiz" {{ 'selected' if section.section_type == 'quiz' }}>❓ Quiz</option>
-                         <option value="assignment" {{ 'selected' if section.section_type == 'assignment' }}>📝 Assignment</option>
+                        <option value="video" {{ 'selected' if section.section_type == 'video' }}>🎥 Video (YouTube URL)</option>
+                        <option value="image" {{ 'selected' if section.section_type == 'image' }}>🖼️ Image</option>
+                        <option value="audio" {{ 'selected' if section.section_type == 'audio' }}>🎵 Audio</option>
+                        <option value="presentation" {{ 'selected' if section.section_type == 'presentation' }}>📊 Presentation (PDF)</option>
+                        <option value="3d" {{ 'selected' if section.section_type == '3d' }}>🧊 3D Interactive Model</option>
+                        <option value="quiz" {{ 'selected' if section.section_type == 'quiz' }}>❓ Quiz</option>
+                        <option value="assignment" {{ 'selected' if section.section_type == 'assignment' }}>📝 Assignment</option>
                     </select>
                 </div>
             </div>
@@ -186,34 +185,6 @@
                 {% endif %}
             </div>
 
-            <!-- ✨ Rich Lesson Block Editor -->
-            <div id="rich-lesson-options" class="hidden mt-6">
-                <!-- Hidden field that stores the serialized blocks JSON -->
-                <input type="hidden" name="content_blocks" id="content_blocks_input" value="{{ section.content_blocks or '' }}">
-
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-gray-800 text-base flex items-center gap-2">✨ Rich Lesson Blocks</h3>
-                    <p class="text-xs text-gray-500">Drag blocks to reorder. Each block renders sequentially for students.</p>
-                </div>
-
-                <!-- Block type toolbar -->
-                <div class="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                    <span class="text-xs font-semibold text-gray-500 self-center mr-1">Add block:</span>
-                    <button type="button" onclick="rlAddBlock('text')" class="rl-add-btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">📄 Text</button>
-                    <button type="button" onclick="rlAddBlock('image')" class="rl-add-btn bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">🖼️ Image</button>
-                    <button type="button" onclick="rlAddBlock('video')" class="rl-add-btn bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">🎥 Video</button>
-                    <button type="button" onclick="rlAddBlock('model3d')" class="rl-add-btn bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">🧊 3D Model</button>
-                    <button type="button" onclick="rlAddBlock('divider')" class="rl-add-btn bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">— Divider</button>
-                </div>
-
-                <!-- Blocks container (drag-to-reorder) -->
-                <div id="rl-blocks-container" class="space-y-3 min-h-16">
-                    <!-- blocks rendered by JS -->
-                </div>
-
-                <p class="text-xs text-gray-400 mt-3 text-center" id="rl-empty-hint">👆 Add your first block above to start building your rich lesson</p>
-            </div>
-
             <div class="flex items-center space-x-4 mt-8">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
                     💾 Save Changes
@@ -235,9 +206,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const assignmentOptions = document.getElementById('assignment-options');
     const presentationOptions = document.getElementById('presentation-options');
     const threeDOptions = document.getElementById('3d-options');
-    const richLessonOptions = document.getElementById('rich-lesson-options');
-    // The standard Quill editor wrapper (we'll hide it for rich_lesson)
-    const standardEditorSection = document.getElementById('editor-container') ? document.getElementById('editor-container').closest('.mt-6') : null;
 
     // Function to toggle options based on type
     function toggleOptions() {
@@ -249,16 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (assignmentOptions) assignmentOptions.classList.add('hidden');
         if (presentationOptions) presentationOptions.classList.add('hidden');
         if (threeDOptions) threeDOptions.classList.add('hidden');
-        if (richLessonOptions) richLessonOptions.classList.add('hidden');
-
-        // Show/hide standard Quill editor depending on type
-        if (standardEditorSection) {
-            if (selectedType === 'rich_lesson') {
-                standardEditorSection.classList.add('hidden');
-            } else {
-                standardEditorSection.classList.remove('hidden');
-            }
-        }
 
         // Show relevant options with smooth animation
         if (selectedType === 'quiz' && quizOptions) {
@@ -273,9 +231,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (selectedType === '3d' && threeDOptions) {
             threeDOptions.classList.remove('hidden');
             threeDOptions.style.animation = 'slideDown 0.3s ease-out';
-        } else if (selectedType === 'rich_lesson' && richLessonOptions) {
-            richLessonOptions.classList.remove('hidden');
-            richLessonOptions.style.animation = 'slideDown 0.3s ease-out';
         }
     }
 
@@ -288,281 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sectionTypeSelect) {
         sectionTypeSelect.addEventListener('change', toggleOptions);
     }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// ✨ RICH LESSON BLOCK EDITOR
-// ═══════════════════════════════════════════════════════════════
-const UPLOAD_URL = "{{ url_for('teacher.upload_block_file', course_id=course.id, section_id=section.id) }}";
-const CSRF_TOKEN = "{{ csrf_token() }}";
-
-// Block state: array of {id, type, ...typeSpecificData}
-let rlBlocks = [];
-let rlDragSrc = null;
-let rlQuillInstances = {}; // blockId -> Quill instance
-
-function rlGenId() {
-    return 'blk_' + Math.random().toString(36).slice(2, 9);
-}
-
-function rlLoad() {
-    const raw = document.getElementById('content_blocks_input').value;
-    if (!raw) { rlBlocks = []; rlRender(); return; }
-    try { rlBlocks = JSON.parse(raw); } catch(e) { rlBlocks = []; }
-    rlRender();
-}
-
-function rlSave() {
-    // Flush all quill instances into their block data
-    rlBlocks.forEach(b => {
-        if (b.type === 'text' && rlQuillInstances[b.id]) {
-            b.html = rlQuillInstances[b.id].root.innerHTML;
-        }
-    });
-    document.getElementById('content_blocks_input').value = JSON.stringify(rlBlocks);
-}
-
-function rlAddBlock(type) {
-    const id = rlGenId();
-    let block = { id, type };
-    if (type === 'text')    block.html = '<p></p>';
-    if (type === 'image')   { block.url = ''; block.caption = ''; }
-    if (type === 'video')   { block.url = ''; block.caption = ''; block.source = 'upload'; }
-    if (type === 'model3d') { block.url = ''; block.caption = ''; }
-    if (type === 'divider') {}
-    rlBlocks.push(block);
-    rlRender();
-    // Scroll the new block into view
-    setTimeout(() => {
-        const el = document.getElementById('rl-block-' + id);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-}
-
-function rlRemoveBlock(id) {
-    if (!confirm('Remove this block?')) return;
-    rlBlocks = rlBlocks.filter(b => b.id !== id);
-    delete rlQuillInstances[id];
-    rlRender();
-}
-
-function rlMoveBlock(id, dir) {
-    const idx = rlBlocks.findIndex(b => b.id === id);
-    if (idx === -1) return;
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= rlBlocks.length) return;
-    // Flush quill before reorder
-    rlBlocks.forEach(b => { if (b.type==='text'&& rlQuillInstances[b.id]) b.html = rlQuillInstances[b.id].root.innerHTML; });
-    const tmp = rlBlocks[idx];
-    rlBlocks[idx] = rlBlocks[newIdx];
-    rlBlocks[newIdx] = tmp;
-    rlRender();
-}
-
-function rlRender() {
-    const container = document.getElementById('rl-blocks-container');
-    const hint = document.getElementById('rl-empty-hint');
-    if (!container) return;
-    // Flush quill data before re-render
-    Object.keys(rlQuillInstances).forEach(id => {
-        const b = rlBlocks.find(x => x.id === id);
-        if (b) b.html = rlQuillInstances[id].root.innerHTML;
-    });
-    rlQuillInstances = {};
-    container.innerHTML = '';
-    if (rlBlocks.length === 0) { if(hint) hint.classList.remove('hidden'); return; }
-    if(hint) hint.classList.add('hidden');
-
-    rlBlocks.forEach((block, idx) => {
-        const wrapper = document.createElement('div');
-        wrapper.id = 'rl-block-' + block.id;
-        wrapper.className = 'rl-block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm';
-        wrapper.draggable = true;
-        wrapper.dataset.id = block.id;
-
-        // Header
-        const typeIcons = { text: '📄 Text', image: '🖼️ Image', video: '🎥 Video', model3d: '🧊 3D Model', divider: '— Divider' };
-        const headerColors = { text: 'bg-indigo-50 border-b-indigo-200', image: 'bg-green-50 border-b-green-200', video: 'bg-red-50 border-b-red-200', model3d: 'bg-cyan-50 border-b-cyan-200', divider: 'bg-gray-50 border-b-gray-200' };
-        const hdr = document.createElement('div');
-        hdr.className = `flex items-center justify-between px-4 py-2 border-b ${headerColors[block.type] || 'bg-gray-50'}`;
-        hdr.innerHTML = `
-            <div class="flex items-center gap-2">
-                <span class="cursor-grab text-gray-400 hover:text-gray-600 rl-drag-handle" title="Drag to reorder">⠿</span>
-                <span class="text-xs font-bold text-gray-600">${typeIcons[block.type] || block.type}</span>
-                <span class="text-xs text-gray-400">#${idx+1}</span>
-            </div>
-            <div class="flex items-center gap-1">
-                <button type="button" onclick="rlMoveBlock('${block.id}', -1)" title="Move up" class="p-1 rounded hover:bg-white/80 text-gray-500 hover:text-gray-800 transition text-xs" ${idx===0?'disabled style="opacity:0.3"':''}>↑</button>
-                <button type="button" onclick="rlMoveBlock('${block.id}', 1)" title="Move down" class="p-1 rounded hover:bg-white/80 text-gray-500 hover:text-gray-800 transition text-xs" ${idx===rlBlocks.length-1?'disabled style="opacity:0.3"':''}>↓</button>
-                <button type="button" onclick="rlRemoveBlock('${block.id}')" title="Remove block" class="p-1.5 rounded hover:bg-red-100 text-red-500 hover:text-red-700 transition text-xs">🗑</button>
-            </div>`;
-        wrapper.appendChild(hdr);
-
-        // Body
-        const body = document.createElement('div');
-        body.className = 'p-4';
-        body.innerHTML = rlBlockBody(block);
-        wrapper.appendChild(body);
-
-        // Drag events
-        wrapper.addEventListener('dragstart', e => { rlDragSrc = block.id; e.dataTransfer.effectAllowed = 'move'; wrapper.classList.add('opacity-50'); });
-        wrapper.addEventListener('dragend', e => { wrapper.classList.remove('opacity-50'); });
-        wrapper.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; wrapper.classList.add('ring-2','ring-indigo-400'); });
-        wrapper.addEventListener('dragleave', e => { wrapper.classList.remove('ring-2','ring-indigo-400'); });
-        wrapper.addEventListener('drop', e => {
-            e.preventDefault(); wrapper.classList.remove('ring-2','ring-indigo-400');
-            if (rlDragSrc && rlDragSrc !== block.id) {
-                // Flush quill before swap
-                Object.keys(rlQuillInstances).forEach(qid => { const b2 = rlBlocks.find(x=>x.id===qid); if(b2) b2.html=rlQuillInstances[qid].root.innerHTML; });
-                const fromIdx = rlBlocks.findIndex(b2 => b2.id === rlDragSrc);
-                const toIdx = rlBlocks.findIndex(b2 => b2.id === block.id);
-                const moved = rlBlocks.splice(fromIdx, 1)[0];
-                rlBlocks.splice(toIdx, 0, moved);
-                rlRender();
-            }
-        });
-
-        container.appendChild(wrapper);
-    });
-
-    // Init Quill for text blocks
-    rlBlocks.forEach(block => {
-        if (block.type === 'text') {
-            const editorEl = document.getElementById('rl-quill-' + block.id);
-            if (editorEl && typeof Quill !== 'undefined') {
-                const q = new Quill(editorEl, {
-                    theme: 'snow',
-                    modules: { toolbar: [[{header:[1,2,3,false]}],'bold','italic','underline',{list:'ordered'},{list:'bullet'},'blockquote','code-block','link','image'] }
-                });
-                q.root.innerHTML = block.html || '';
-                rlQuillInstances[block.id] = q;
-            }
-        }
-    });
-}
-
-function rlBlockBody(block) {
-    if (block.type === 'text') {
-        return `<div id="rl-quill-${block.id}" style="min-height:120px;">${block.html||''}</div>`;
-    }
-    if (block.type === 'image') {
-        const preview = block.url ? `<img src="${block.url}" class="max-h-48 rounded-lg mb-2 object-cover" alt="preview">` : '';
-        return `
-            ${preview}
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Image file</label>
-            <input type="file" accept="image/*" class="rl-file-input w-full text-sm border border-gray-200 rounded-lg p-2" data-block-id="${block.id}" data-block-type="image" onchange="rlUploadFile(this, '${block.id}')">
-            ${block.url ? `<p class="text-xs text-green-600 mt-1">✅ Uploaded: ${block.url.split('/').pop().slice(0,40)}</p>` : '<p class="text-xs text-gray-400 mt-1">No image uploaded yet</p>'}
-            <label class="block text-xs font-semibold text-gray-600 mt-2 mb-1">Caption (optional)</label>
-            <input type="text" placeholder="Image caption..." value="${(block.caption||'').replace(/"/g,'&quot;')}" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5" oninput="rlUpdateField('${block.id}','caption',this.value)">`;
-    }
-    if (block.type === 'video') {
-        const preview = block.url ? `<video src="${block.url}" class="w-full max-h-48 rounded-lg mb-2 object-cover" controls></video>` : '';
-        const ytPreview = block.ytId ? `<div class="aspect-video mb-2"><iframe class="w-full h-full rounded-lg" src="https://www.youtube.com/embed/${block.ytId}" allowfullscreen></iframe></div>` : '';
-        return `
-            ${preview}${ytPreview}
-            <div class="flex gap-2 mb-2">
-                <button type="button" onclick="rlSetVideoSource('${block.id}','upload')" class="text-xs px-3 py-1 rounded-lg border ${(!block.source||block.source==='upload')?'bg-blue-600 text-white border-blue-600':'border-gray-300 text-gray-600'} transition">📁 Upload file</button>
-                <button type="button" onclick="rlSetVideoSource('${block.id}','youtube')" class="text-xs px-3 py-1 rounded-lg border ${block.source==='youtube'?'bg-red-600 text-white border-red-600':'border-gray-300 text-gray-600'} transition">▶️ YouTube</button>
-            </div>
-            ${(!block.source || block.source === 'upload') ? `
-                <input type="file" accept="video/*" class="w-full text-sm border border-gray-200 rounded-lg p-2" onchange="rlUploadFile(this, '${block.id}')">
-                ${block.url ? `<p class="text-xs text-green-600 mt-1">✅ ${block.url.split('/').pop().slice(0,40)}</p>` : ''}
-            ` : `
-                <input type="url" placeholder="https://youtube.com/watch?v=..." value="${(block.ytUrl||'').replace(/"/g,'&quot;')}" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5" oninput="rlSetYtUrl('${block.id}', this.value)">
-            `}
-            <label class="block text-xs font-semibold text-gray-600 mt-2 mb-1">Caption (optional)</label>
-            <input type="text" placeholder="Video caption..." value="${(block.caption||'').replace(/"/g,'&quot;')}" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5" oninput="rlUpdateField('${block.id}','caption',this.value)">`;
-    }
-    if (block.type === 'model3d') {
-        const hasFile = !!block.url;
-        return `
-            <div class="flex items-center gap-3 p-3 bg-cyan-50 border border-cyan-200 rounded-lg mb-3">
-                <span class="text-2xl">🧊</span>
-                <div class="flex-1">
-                    <p class="text-xs font-bold text-cyan-800">${hasFile ? '3D Model ready' : 'No 3D model uploaded yet'}</p>
-                    ${hasFile ? `<p class="text-xs text-cyan-600 truncate">${block.url.split('/').pop().slice(0,50)}</p>` : '<p class="text-xs text-cyan-500">Upload a .glb, .gltf, or .obj file</p>'}
-                </div>
-                ${hasFile ? '<span class="text-green-500 text-lg">✅</span>' : ''}
-            </div>
-            <input type="file" accept=".glb,.gltf,.obj" class="w-full text-sm border border-gray-200 rounded-lg p-2" onchange="rlUploadFile(this, '${block.id}')">
-            <label class="block text-xs font-semibold text-gray-600 mt-2 mb-1">Caption (optional)</label>
-            <input type="text" placeholder="3D model caption..." value="${(block.caption||'').replace(/"/g,'&quot;')}" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5" oninput="rlUpdateField('${block.id}','caption',this.value)">`;
-    }
-    if (block.type === 'divider') {
-        return `<div class="flex items-center gap-3"><hr class="flex-1 border-gray-300"><span class="text-xs text-gray-400">Section Break</span><hr class="flex-1 border-gray-300"></div>`;
-    }
-    return '<p class="text-xs text-red-500">Unknown block type</p>';
-}
-
-function rlUpdateField(blockId, field, value) {
-    const b = rlBlocks.find(x => x.id === blockId);
-    if (b) b[field] = value;
-}
-
-function rlSetVideoSource(blockId, source) {
-    const b = rlBlocks.find(x => x.id === blockId);
-    if (b) { b.source = source; }
-    // Flush quill before re-render
-    Object.keys(rlQuillInstances).forEach(qid => { const bq = rlBlocks.find(x=>x.id===qid); if(bq) bq.html=rlQuillInstances[qid].root.innerHTML; });
-    rlRender();
-}
-
-function rlSetYtUrl(blockId, url) {
-    const b = rlBlocks.find(x => x.id === blockId);
-    if (!b) return;
-    b.ytUrl = url;
-    // Extract YouTube ID
-    let ytId = '';
-    try {
-        if (url.includes('v=')) ytId = url.split('v=')[1].split('&')[0];
-        else if (url.includes('youtu.be/')) ytId = url.split('youtu.be/')[1].split('?')[0];
-    } catch(e) {}
-    b.ytId = ytId;
-}
-
-async function rlUploadFile(input, blockId) {
-    const file = input.files[0];
-    if (!file) return;
-    const btn = input;
-    btn.disabled = true;
-    const label = btn.parentElement.querySelector('p') || btn.nextElementSibling;
-    if (label) label.textContent = '⏳ Uploading...';
-
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('csrf_token', CSRF_TOKEN);
-
-    try {
-        const res = await fetch(UPLOAD_URL, { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.success) {
-            const b = rlBlocks.find(x => x.id === blockId);
-            if (b) b.url = data.url;
-            // Flush before re-render
-            Object.keys(rlQuillInstances).forEach(qid => { const bq = rlBlocks.find(x=>x.id===qid); if(bq) bq.html=rlQuillInstances[qid].root.innerHTML; });
-            rlRender();
-        } else {
-            alert('Upload failed: ' + data.message);
-            btn.disabled = false;
-        }
-    } catch(e) {
-        alert('Upload error: ' + e.message);
-        btn.disabled = false;
-    }
-}
-
-// Hook into form submit to serialize blocks
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', () => {
-            if (document.getElementById('section-type').value === 'rich_lesson') {
-                rlSave();
-            }
-        });
-    }
-    // Load existing block data once page is ready
-    rlLoad();
 });
 
 // Debug form submission

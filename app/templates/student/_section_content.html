@@ -1,5 +1,5 @@
 <div id="section-content-{{ section.id }}">
-    {% set type_labels = {'lesson':'Lesson','video':'Video','quiz':'Quiz','assignment':'Assignment','resource':'Resource','url':'Link','3d':'3D Model','rich_lesson':'Rich Lesson'} %}
+    {% set type_labels = {'lesson':'Lesson','video':'Video','quiz':'Quiz','assignment':'Assignment','resource':'Resource','url':'Link','3d':'3D Model'} %}
 
     <!-- Section Meta -->
     <div class="flex items-center gap-3 mb-5 text-sm text-gray-500">
@@ -11,7 +11,6 @@
             {% elif section.section_type == 'resource' %} 📎
             {% elif section.section_type == 'url' %} 🔗
             {% elif section.section_type == '3d' %} 🧊
-            {% elif section.section_type == 'rich_lesson' %} ✨
             {% else %} 📄
             {% endif %}
             {{ type_labels.get(section.section_type, section.section_type.capitalize()) }}
@@ -22,12 +21,11 @@
     </div>
 
     <!-- ─── Content Rendering ─────────────────────────────────── -->
-    {% if not section.content and not section.video_url and not section.media_file and not section.assignments and not section.quizzes and not (section.section_type == 'rich_lesson' and section.content_blocks) %}
+    {% if not section.content and not section.video_url and not section.media_file and not section.assignments and not section.quizzes %}
         <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
             <span class="text-xl">⚠️</span>
             No content available for this section yet.
         </div>
-
 
     {% elif section.section_type == 'resource' %}
         {% if section.media_file %}
@@ -70,124 +68,6 @@
         </div>
         {% if section.content %}
         <div class="ql-editor prose max-w-none mt-4">{{ section.content|safe }}</div>
-        {% endif %}
-
-    {% elif section.section_type == 'rich_lesson' %}
-        {# ── Rich Lesson: render ordered content blocks from JSON ── #}
-        {% if section.content_blocks %}
-            {% set blocks = section.content_blocks | from_json %}
-            {% if blocks %}
-                <div class="rich-lesson-blocks space-y-6">
-                {% for block in blocks %}
-                    {% set blk_id = 'rl_' ~ section.id ~ '_' ~ loop.index %}
-                    {% if block.type == 'text' %}
-                        <div class="ql-editor prose max-w-none">{{ block.html | safe }}</div>
-
-                    {% elif block.type == 'image' and block.url %}
-                        <figure class="w-full">
-                            <img src="{{ block.url }}" alt="{{ block.caption or '' }}"
-                                 class="w-full rounded-2xl border border-gray-200 shadow-sm object-cover max-h-[480px]">
-                            {% if block.caption %}
-                            <figcaption class="text-center text-xs text-gray-500 mt-2 italic">{{ block.caption }}</figcaption>
-                            {% endif %}
-                        </figure>
-
-                    {% elif block.type == 'video' %}
-                        {% if block.source == 'youtube' and block.ytId %}
-                        <figure class="w-full">
-                            <div class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm" style="aspect-ratio:16/9;">
-                                <iframe class="w-full h-full"
-                                        src="https://www.youtube.com/embed/{{ block.ytId }}?enablejsapi=1"
-                                        frameborder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowfullscreen></iframe>
-                            </div>
-                            {% if block.caption %}<figcaption class="text-center text-xs text-gray-500 mt-2 italic">{{ block.caption }}</figcaption>{% endif %}
-                        </figure>
-                        {% elif block.url %}
-                        <figure class="w-full">
-                            <div class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-black">
-                                <video class="w-full max-h-[480px]" controls preload="metadata">
-                                    <source src="{{ block.url }}">
-                                    Your browser does not support video playback.
-                                </video>
-                            </div>
-                            {% if block.caption %}<figcaption class="text-center text-xs text-gray-500 mt-2 italic">{{ block.caption }}</figcaption>{% endif %}
-                        </figure>
-                        {% endif %}
-
-                    {% elif block.type == 'model3d' and block.url %}
-                        <figure class="w-full">
-                            <div id="viewer-container-{{ blk_id }}"
-                                 class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-900 relative 3d-viewer three-d-viewer"
-                                 style="aspect-ratio:16/9; min-height:350px;"
-                                 data-section-id="{{ blk_id }}"
-                                 data-media-file="{{ block.url }}"
-                                 data-hotspots="" data-labels="" data-animations="">
-                                <div id="loading-{{ blk_id }}" class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white z-10">
-                                    <div class="text-center">
-                                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                                        <p class="text-sm">Loading 3D model...</p>
-                                    </div>
-                                </div>
-                                <canvas id="canvas-{{ blk_id }}"></canvas>
-                                <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-black/50 backdrop-blur-sm rounded-lg p-3 z-10">
-                                    <div class="flex items-center gap-2 text-white text-xs">
-                                        <span class="bg-white/20 px-2 py-1 rounded">🖱️ Drag to rotate</span>
-                                        <span class="bg-white/20 px-2 py-1 rounded">🔍 Scroll to zoom</span>
-                                        <span class="bg-white/20 px-2 py-1 rounded">⌨️ Right-click to pan</span>
-                                    </div>
-                                    <button id="reset-view-{{ blk_id }}" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-xs transition">Reset View</button>
-                                </div>
-                            </div>
-                            {% if block.caption %}<figcaption class="text-center text-xs text-gray-500 mt-2 italic">{{ block.caption }}</figcaption>{% endif %}
-                        </figure>
-                        <script>
-                        (function() {
-                            var blkId = '{{ blk_id }}';
-                            function initRlViewer() {
-                                var c = document.getElementById('viewer-container-' + blkId);
-                                if (!c) return;
-                                if (window.init3DViewerGlobal) window.init3DViewerGlobal(c);
-                                else if (typeof initAll3DViewers === 'function') initAll3DViewers();
-                            }
-                            function ls(src, cb) {
-                                var e = document.querySelector('script[src="'+src+'"]');
-                                if (e) { if (e.dataset&&e.dataset.loaded==='true'){cb&&cb();}else{e.addEventListener('load',function(){cb&&cb();});} return; }
-                                var s=document.createElement('script');s.src=src;s.async=false;s.onload=function(){s.dataset.loaded='true';cb&&cb();};document.head.appendChild(s);
-                            }
-                            if (typeof THREE==='undefined'||typeof THREE.OrbitControls==='undefined'||typeof THREE.GLTFLoader==='undefined') {
-                                ls('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',function(){
-                                    ls('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js',function(){
-                                        ls('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js',function(){
-                                            ls('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js',function(){
-                                                ls("{{ url_for('static', filename='js/3d-viewer.js') }}",function(){initRlViewer();});
-                                            });
-                                        });
-                                    });
-                                });
-                            } else { initRlViewer(); }
-                        })();
-                        </script>
-
-                    {% elif block.type == 'divider' %}
-                        <div class="flex items-center gap-4 py-2">
-                            <hr class="flex-1 border-gray-200">
-                            <span class="text-gray-300 text-xs">✦</span>
-                            <hr class="flex-1 border-gray-200">
-                        </div>
-                    {% endif %}
-                {% endfor %}
-                </div>
-            {% else %}
-                <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-                    <span class="text-xl">⚠️</span> This rich lesson has no content blocks yet.
-                </div>
-            {% endif %}
-        {% else %}
-            <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-                <span class="text-xl">⚠️</span> No content available for this section yet.
-            </div>
         {% endif %}
 
     {% elif section.section_type in ('video', 'lesson') or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}

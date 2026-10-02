@@ -58,20 +58,7 @@ def create_app():
 
     app.jinja_env.filters['avatar_url'] = avatar_url_filter
     app.jinja_env.filters['media_url'] = avatar_url_filter
-
-    import json as _json
-    def from_json_filter(s):
-        """Parse a JSON string to a Python object for use in templates."""
-        if not s:
-            return []
-        try:
-            return _json.loads(s)
-        except Exception:
-            return []
-    app.jinja_env.filters['from_json'] = from_json_filter
-
     app.jinja_env.globals.update(min=min, max=max)
-
 
     # Configure database
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
@@ -225,7 +212,6 @@ def create_app():
             add_column_if_missing('sections', 'labels', 'TEXT')
             add_column_if_missing('sections', 'animations', 'TEXT')
             add_column_if_missing('sections', 'comparisons', 'TEXT')
-            add_column_if_missing('sections', 'content_blocks', 'TEXT')  # JSON array for rich_lesson block content
             
             # Check and add columns to users
             add_column_if_missing('users', 'profile_image', 'VARCHAR(255)')
