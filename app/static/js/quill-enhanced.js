@@ -213,6 +213,16 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
         quill.root.innerHTML = textarea.value;
     }
 
+    // Automatically relocate toolbar to designated sticky container if present
+    const stickySlot = document.querySelector(`[data-quill-toolbar-for="${editorId}"]`) ||
+                       document.getElementById('sticky-quill-toolbar-slot');
+    if (stickySlot) {
+        const toolbarModule = quill.getModule('toolbar');
+        if (toolbarModule && toolbarModule.container) {
+            stickySlot.appendChild(toolbarModule.container);
+        }
+    }
+
     // Sync Quill content to textarea on change
     quill.on('text-change', function(delta, oldDelta, source) {
         if (!textarea) return;

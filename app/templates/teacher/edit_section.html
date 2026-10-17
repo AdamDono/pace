@@ -43,18 +43,53 @@
                 </div>
             </div>
 
-            <div class="mt-6">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="block text-sm font-bold text-gray-700">Lesson Content</label>
-                    <button type="button" onclick="promptAIGenerateLesson()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg text-xs font-black shadow-sm transition-all transform hover:scale-105 cursor-pointer">
-                        <span>✨</span>
-                        <span>AI Draft Lesson</span>
-                    </button>
+            <div class="mt-6 relative">
+                <!-- Sticky Header Bar for Controls & Quill Toolbar -->
+                <div id="editor-sticky-header" class="sticky top-0 z-30 bg-white -mx-6 px-6 pt-3 pb-2.5 border-b border-gray-200 shadow-sm transition-all duration-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-bold text-gray-700 flex items-center gap-2">
+                            <span>Lesson Content</span>
+                            <span class="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1">
+                                📌 Fixed Toolbar
+                            </span>
+                        </label>
+                        <button type="button" onclick="promptAIGenerateLesson()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg text-xs font-black shadow-sm transition-all transform hover:scale-105 cursor-pointer">
+                            <span>✨</span>
+                            <span>AI Draft Lesson</span>
+                        </button>
+                    </div>
+
+                    <!-- Quick Callout Color Toolbar -->
+                    <div class="flex items-center space-x-2 mb-2.5 flex-wrap gap-y-1">
+                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Side Callout Boxes:</span>
+                        <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('blue')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition-colors shadow-sm cursor-pointer">
+                            🔷 Blue Tip
+                        </button>
+                        <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('green')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-green-50 text-green-700 border-l-4 border-green-600 rounded-r hover:bg-green-100 transition-colors shadow-sm cursor-pointer">
+                            🟢 Green Takeaway
+                        </button>
+                        <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('red')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-red-50 text-red-700 border-l-4 border-red-600 rounded-r hover:bg-red-100 transition-colors shadow-sm cursor-pointer">
+                            🔴 Red Warning
+                        </button>
+                        <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('yellow')"
+                            class="px-2.5 py-1 text-xs font-semibold bg-amber-50 text-amber-800 border-l-4 border-amber-500 rounded-r hover:bg-amber-100 transition-colors shadow-sm cursor-pointer">
+                            🟡 Yellow Note
+                        </button>
+                    </div>
+
+                    <!-- Slot for Quill's Toolbar -->
+                    <div id="sticky-quill-toolbar-slot"></div>
                 </div>
+
                 <!-- Quill Editor Container -->
-                <div id="editor-container"></div>
-                <!-- Hidden textarea to store content -->
-                <textarea id="content-editor" name="content" class="hidden">{{ section.content or '' }}</textarea>
+                <div class="mt-3">
+                    <div id="editor-container"></div>
+                    <!-- Hidden textarea to store content -->
+                    <textarea id="content-editor" name="content" class="hidden">{{ section.content or '' }}</textarea>
+                </div>
                 <p class="text-sm text-gray-500 mt-2">
                     💡 <strong>Pro tip:</strong> Click "AI Draft Lesson" to auto-write structured notes, code examples, and callout boxes directly into Quill!
                 </p>
@@ -298,7 +333,7 @@ document.head.appendChild(style);
 <!-- Quill Rich Text Editor with Tables, Emojis, H5P -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=5" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=6" rel="stylesheet">
 <style>
 #editor-container {
     min-height: 450px;
@@ -309,12 +344,53 @@ document.head.appendChild(style);
     line-height: 1.6;
 }
 .ql-toolbar.ql-snow {
-    border-radius: 8px 8px 0 0;
+    border-radius: 8px;
     background: #f9fafb;
-    padding: 12px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
 }
 .ql-container.ql-snow {
-    border-radius: 0 0 8px 8px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Callout Box Styles */
+blockquote[data-color="green"], blockquote.callout-green, blockquote[style*="#16a34a"], blockquote[style*="rgb(22, 163, 74)"] {
+    border-left: 5px solid #16a34a !important;
+    background-color: #f0fdf4 !important;
+    color: #14532d !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+blockquote[data-color="red"], blockquote.callout-red, blockquote[style*="#dc2626"], blockquote[style*="rgb(220, 38, 38)"] {
+    border-left: 5px solid #dc2626 !important;
+    background-color: #fef2f2 !important;
+    color: #7f1d1d !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+blockquote[data-color="yellow"], blockquote.callout-yellow, blockquote[style*="#d97706"], blockquote[style*="rgb(217, 119, 6)"] {
+    border-left: 5px solid #d97706 !important;
+    background-color: #fffbeb !important;
+    color: #78350f !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
+}
+blockquote[data-color="blue"], blockquote.callout-blue, blockquote[style*="#2563eb"], blockquote[style*="rgb(37, 99, 235)"],
+blockquote:not([data-color]):not([class*="callout"]):not([style*="border-left"]) {
+    border-left: 5px solid #2563eb !important;
+    background-color: #eff6ff !important;
+    color: #1e3a8a !important;
+    padding: 14px 18px !important;
+    margin: 16px 0 !important;
+    border-radius: 0 10px 10px 0 !important;
+    display: block !important;
 }
 </style>
 
@@ -340,7 +416,7 @@ function initQuillWithMonaco() {
 
     // Load enhanced Quill script
     const script = document.createElement('script');
-    script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}?v=5";
+    script.src = "{{ url_for('static', filename='js/quill-enhanced.js') }}?v=6";
     script.onload = function() {
         console.log('✅ Quill script loaded');
         // Load hotspot editor
@@ -355,11 +431,40 @@ function initQuillWithMonaco() {
             '✨ Create content with tables, emojis, H5P, 3D models, and source code editor!'
         );
         window.quill = quill;
+
+        // Ensure Quill toolbar is docked inside the sticky header slot
+        const toolbarSlot = document.getElementById('sticky-quill-toolbar-slot');
+        if (toolbarSlot && window.quill) {
+            const tb = window.quill.getModule('toolbar');
+            if (tb && tb.container) {
+                toolbarSlot.appendChild(tb.container);
+            }
+        }
+
         console.log('✅ Enhanced Quill loaded: Tables, Emojis, H5P, 3D, Source Code!');
         console.log('✅ Monaco available:', typeof monaco !== 'undefined');
     };
     document.head.appendChild(script);
 }
+
+// Insert Callout Box
+window.insertCallout = function(color) {
+    if (!window.quill) return;
+    var range = window.quill.getSelection(true);
+    var index = range ? range.index : window.quill.getLength();
+    
+    var styleMap = {
+        'blue': 'border-left: 5px solid #2563eb !important; background: #eff6ff !important; color: #1e3a8a !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;',
+        'green': 'border-left: 5px solid #16a34a !important; background: #f0fdf4 !important; color: #14532d !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;',
+        'red': 'border-left: 5px solid #dc2626 !important; background: #fef2f2 !important; color: #7f1d1d !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;',
+        'yellow': 'border-left: 5px solid #d97706 !important; background: #fffbeb !important; color: #78350f !important; padding: 14px 18px !important; margin: 16px 0 !important; border-radius: 0 10px 10px 0 !important;'
+    };
+    
+    var selectedStyle = styleMap[color] || styleMap['blue'];
+    var calloutHtml = '<blockquote data-color="' + color + '" class="callout-' + color + '" style="' + selectedStyle + '"><p>Type your ' + color + ' callout message here...</p></blockquote><p><br></p>';
+    
+    window.quill.clipboard.dangerouslyPasteHTML(index, calloutHtml);
+};
 
 function promptAIGenerateLesson() {
     const topic = prompt("Enter specific instructions or concepts to cover in this lesson:", "{{ section.title }}");

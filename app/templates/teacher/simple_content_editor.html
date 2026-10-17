@@ -49,37 +49,48 @@
                 </div>
 
                 <!-- Content Editor -->
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-bold text-gray-700">Content / Description</label>
-                        <button type="button" onclick="promptAIGenerateSimpleLesson()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg text-xs font-black shadow-sm transition-all transform hover:scale-105 cursor-pointer">
-                            <span>✨</span>
-                            <span>AI Draft / Expand Lesson</span>
-                        </button>
-                    </div>
-                    <!-- Quick Callout Color Toolbar -->
-                    <div class="flex items-center space-x-2 mb-2 flex-wrap gap-y-1">
-                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Side Callout Boxes:</span>
-                        <button type="button" onclick="insertCallout('blue')"
-                            class="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition-colors shadow-sm">
-                            🔷 Blue Tip
-                        </button>
-                        <button type="button" onclick="insertCallout('green')"
-                            class="px-2.5 py-1 text-xs font-semibold bg-green-50 text-green-700 border-l-4 border-green-600 rounded-r hover:bg-green-100 transition-colors shadow-sm">
-                            🟢 Green Takeaway
-                        </button>
-                        <button type="button" onclick="insertCallout('red')"
-                            class="px-2.5 py-1 text-xs font-semibold bg-red-50 text-red-700 border-l-4 border-red-600 rounded-r hover:bg-red-100 transition-colors shadow-sm">
-                            🔴 Red Warning
-                        </button>
-                        <button type="button" onclick="insertCallout('yellow')"
-                            class="px-2.5 py-1 text-xs font-semibold bg-amber-50 text-amber-800 border-l-4 border-amber-500 rounded-r hover:bg-amber-100 transition-colors shadow-sm">
-                            🟡 Yellow Note
-                        </button>
+                <div class="relative">
+                    <!-- Sticky Header Bar for Controls & Quill Toolbar -->
+                    <div id="editor-sticky-header" class="sticky top-0 z-30 bg-white -mx-6 px-6 pt-3 pb-2.5 border-b border-gray-200 shadow-sm transition-all duration-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-bold text-gray-700 flex items-center gap-2">
+                                <span>Content / Description</span>
+                                <span class="text-xs font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1">
+                                    📌 Fixed Toolbar
+                                </span>
+                            </label>
+                            <button type="button" onclick="promptAIGenerateSimpleLesson()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg text-xs font-black shadow-sm transition-all transform hover:scale-105 cursor-pointer">
+                                <span>✨</span>
+                                <span>AI Draft / Expand Lesson</span>
+                            </button>
+                        </div>
+                        <!-- Quick Callout Color Toolbar -->
+                        <div class="flex items-center space-x-2 mb-2.5 flex-wrap gap-y-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Side Callout Boxes:</span>
+                            <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('blue')"
+                                class="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition-colors shadow-sm cursor-pointer">
+                                🔷 Blue Tip
+                            </button>
+                            <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('green')"
+                                class="px-2.5 py-1 text-xs font-semibold bg-green-50 text-green-700 border-l-4 border-green-600 rounded-r hover:bg-green-100 transition-colors shadow-sm cursor-pointer">
+                                🟢 Green Takeaway
+                            </button>
+                            <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('red')"
+                                class="px-2.5 py-1 text-xs font-semibold bg-red-50 text-red-700 border-l-4 border-red-600 rounded-r hover:bg-red-100 transition-colors shadow-sm cursor-pointer">
+                                🔴 Red Warning
+                            </button>
+                            <button type="button" onmousedown="event.preventDefault()" onclick="insertCallout('yellow')"
+                                class="px-2.5 py-1 text-xs font-semibold bg-amber-50 text-amber-800 border-l-4 border-amber-500 rounded-r hover:bg-amber-100 transition-colors shadow-sm cursor-pointer">
+                                🟡 Yellow Note
+                            </button>
+                        </div>
+
+                        <!-- Slot for Quill's Toolbar -->
+                        <div id="sticky-quill-toolbar-slot"></div>
                     </div>
 
                     <!-- Enhanced Quill Editor -->
-                    <div class="quill-editor-container">
+                    <div class="quill-editor-container mt-3">
                         <div id="editor-container" style="min-height: 400px;"></div>
                         <textarea id="content-editor" name="content" class="hidden">{% if section.content and section.content != 'None' %}{{ section.content }}{% endif %}</textarea>
                     </div>
@@ -103,11 +114,11 @@
 <!-- Load Quill CSS -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=5" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=6" rel="stylesheet">
 <style>
-.ql-editor { font-size: 15px; line-height: 1.6; min-height: 350px; }
-.ql-toolbar.ql-snow { border-radius: 8px 8px 0 0; background: #f9fafb; padding: 12px; }
-.ql-container.ql-snow { border-radius: 0 0 8px 8px; }
+.ql-editor { font-size: 15px; line-height: 1.6; min-height: 380px; }
+.ql-toolbar.ql-snow { border-radius: 8px; background: #f9fafb; padding: 10px 12px; border: 1px solid #e5e7eb; }
+.ql-container.ql-snow { border-radius: 8px; border: 1px solid #e5e7eb; }
 
 /* Callout Box Styles */
 blockquote[data-color="green"], blockquote.callout-green, blockquote[style*="#16a34a"], blockquote[style*="rgb(22, 163, 74)"] {
@@ -155,7 +166,7 @@ blockquote:not([data-color]):not([class*="callout"]):not([style*="border-left"])
 <script>
     window._quill3dUploadUrl = "{{ url_for('teacher.quill_upload_3d', course_id=course.id, section_id=section.id) }}";
 </script>
-<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}?v=5"></script>
+<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}?v=6"></script>
 <script src="{{ url_for('static', filename='js/3d-hotspot-editor.js') }}?v=2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
@@ -172,6 +183,15 @@ blockquote:not([data-color]):not([class*="callout"]):not([style*="border-left"])
     const textarea = document.getElementById('content-editor');
     if (textarea && textarea.value && window.quill) {
         window.quill.root.innerHTML = textarea.value;
+    }
+
+    // Ensure Quill toolbar is docked inside the sticky header slot
+    const toolbarSlot = document.getElementById('sticky-quill-toolbar-slot');
+    if (toolbarSlot && window.quill) {
+        const tb = window.quill.getModule('toolbar');
+        if (tb && tb.container) {
+            toolbarSlot.appendChild(tb.container);
+        }
     }
 
     // Load Monaco editor in background for Source Code view
