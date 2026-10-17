@@ -645,28 +645,20 @@ function finishHotspotEditor() {
 
     const vid = 'v3d_' + Math.random().toString(36).slice(2, 7);
     const hsAttr = _currentHotspots.length ? ` data-hotspots='${JSON.stringify(_currentHotspots).replace(/'/g, "&apos;")}'` : '';
+    const safeUrl = escapeHtml(_pendingModelUrl);
     
     const captionHtml = _pendingCaption
-        ? `<p style="text-align:center;font-size:13px;color:#6b7280;margin:6px 0 0;font-style:italic;">${escapeHtml(_pendingCaption)}</p>`
+        ? `<p class="ql-align-center" style="text-align: center; margin: 8px 0 18px 0; font-size: 15px; color: #111827; font-weight: 500;">${escapeHtml(_pendingCaption)}</p>`
         : '';
 
-    const hotspotBadge = _currentHotspots.length
-        ? `<p style="font-size:11px;color:#34d399;margin-top:4px;font-weight:600;">📍 ${_currentHotspots.length} interactive hotspots added</p>`
-        : '';
-
-    const html = `<div class="ql-3d-viewer-block" data-ql-3d="1" data-src="${_pendingModelUrl}" data-height="${_pendingHeight}" data-viewer-id="${vid}"${hsAttr} contenteditable="false"
-        style="margin:20px 0;border-radius:12px;overflow:hidden;border:2px solid #e0e7ff;background:#0f0f1a;">
-        <div style="background:linear-gradient(135deg,#0f0f1a,#1a1a3e);min-height:${_pendingHeight}px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
-            <div style="text-align:center;color:#a5b4fc;padding:24px;">
-                <div style="font-size:48px;margin-bottom:12px;">🧊</div>
-                <p style="font-size:15px;font-weight:600;margin:0;color:white;">3D Model: ${escapeHtml(_pendingCaption || _pendingModelUrl.split('/').pop().split('?')[0])}</p>
-                <p style="font-size:12px;opacity:0.75;margin:4px 0 0;">Interactive 3D viewer will load for students</p>
-                ${hotspotBadge}
-            </div>
-            <div style="position:absolute;top:10px;right:10px;background:rgba(99,102,241,0.85);color:white;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;">🧊 3D MODEL</div>
+    const html = `<div class="ql-3d-viewer-block" data-ql-3d="1" data-src="${safeUrl}" data-height="${_pendingHeight}" data-viewer-id="${vid}"${hsAttr} contenteditable="false"
+        style="width: 100%; max-width: 800px; margin: 18px auto 10px auto; border-radius: 12px; overflow: hidden; background: #0f0f1a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; height: ${_pendingHeight}px;">
+        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #1e1e38 0%, #0f0f1a 100%);">
+            <span style="font-size: 48px; opacity: 0.9;">🧊</span>
         </div>
-        ${captionHtml}
-    </div><p><br></p>`;
+    </div>
+    ${captionHtml}
+    <p><br></p>`;
 
     if (window.currentQuill) {
         const range = window.currentQuill.getSelection(true) || { index: 0 };
@@ -674,7 +666,10 @@ function finishHotspotEditor() {
         window.currentQuill.root.setAttribute('data-custom-html', 'true');
 
         // Update textarea
-        const textarea = document.getElementById('content-editor') || document.getElementById('announcement-content');
+        const textarea = document.getElementById('content-editor') || 
+                         document.getElementById('content') ||
+                         document.getElementById('announcement-content') ||
+                         document.getElementById('course-description');
         if (textarea) {
             textarea.value = window.currentQuill.root.innerHTML;
         }
