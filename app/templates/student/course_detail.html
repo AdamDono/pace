@@ -335,12 +335,9 @@
             }
 
             if (videoId) {
-                // Ensure link is always clickable
+                // Ensure link opens in new tab
                 a.target = '_blank';
                 a.rel = 'noopener noreferrer';
-                if (!a.querySelector('.yt-icon') && !a.textContent.includes('↗')) {
-                    a.innerHTML += ' <span style="font-size:11px;">↗</span>';
-                }
 
                 // If already has an iframe embedded nearby, don't duplicate
                 const parentBlock = a.closest('p, div, li') || a;

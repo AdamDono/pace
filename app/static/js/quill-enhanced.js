@@ -431,20 +431,11 @@ function insertVideoFromModal() {
     const range = window.currentQuill.getSelection(true);
     const index = range ? range.index : window.currentQuill.getLength();
 
-    let titleText = desc || 'Watch Video Lesson';
-    let videoHtml = `
-<div class="video-embed-card" style="margin: 24px 0; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px;">
-    <p style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600; color: #1e293b; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-        <span>🎥 <strong>Watch:</strong> <em><a href="${rawUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">${titleText}</a></em></span>
-        <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-size: 13px; font-weight: 500;">Open in YouTube ↗</a>
-    </p>
-    <div style="position: relative; width: 100%; aspect-ratio: 16/9; min-height: 360px; background: #000; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-        <iframe src="${embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" title="${titleText}"></iframe>
-    </div>
-    <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">
-        Direct link: <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">${rawUrl}</a>
-    </p>
-</div><p><br></p>`;
+    let captionHtml = desc 
+        ? `<p class="ql-align-center" style="text-align: center; margin: 18px 0 8px 0; font-size: 15px; color: #111827;">🎥 <strong>Watch:</strong> <span style="color: #111827; font-style: italic;">${desc}</span></p>`
+        : '';
+
+    let videoHtml = `${captionHtml}<div class="ql-video-wrapper" style="width: 100%; max-width: 800px; margin: 0 auto 18px auto; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #000;"><iframe src="${embedUrl}" class="ql-video" style="width: 100%; height: 100%; border: 0;" frameborder="0" allowfullscreen="true" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div><p><br></p>`;
 
     window.currentQuill.clipboard.dangerouslyPasteHTML(index, videoHtml);
     window.currentQuill.root.setAttribute('data-custom-html', 'true');
