@@ -146,11 +146,11 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
 
             <!-- URL tab -->
             <div id="model3d-panel-url" style="display:none;">
-                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">3D Model URL</label>
-                <input id="model3d-url-input" type="url" placeholder="https://... (.glb, .gltf, or .obj URL)"
-                    style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none;box-sizing:border-box;"
-                    onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e5e7eb'">
-                <p style="color:#9ca3af;font-size:12px;margin:6px 0 0;">Tip: Use a Cloudinary or direct file URL ending in .glb / .gltf / .obj</p>
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">3D Model URL or Embed Code</label>
+                <textarea id="model3d-url-input" rows="4" placeholder="Paste a .glb/.gltf/.obj URL, a Sketchfab URL, or full &lt;iframe&gt; embed code here..."
+                    style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;box-sizing:border-box;font-family:monospace;resize:vertical;"
+                    onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+                <p style="color:#9ca3af;font-size:12px;margin:6px 0 0;">Supports: .glb, .gltf, .obj direct links — <em>or</em> paste a full Sketchfab/iframe embed snippet for direct insertion.</p>
             </div>
 
             <!-- Caption -->
@@ -518,7 +518,8 @@ function showModel3DModal(quill) {
     window.currentQuill = quill;
     _model3dUploadedUrl = null;
     // Reset UI
-    document.getElementById('model3d-url-input').value = '';
+    const urlInput = document.getElementById('model3d-url-input');
+    if (urlInput) urlInput.value = '';
     document.getElementById('model3d-caption-input').value = '';
     document.getElementById('model3d-height-select').value = '520';
     document.getElementById('model3d-upload-status').style.display = 'none';
@@ -627,29 +628,64 @@ function handleModel3DFile(file) {
 function insertModel3D() {
     if (!window.currentQuill) return;
 
-    let modelUrl = '';
+    let rawInput = '';
     if (_model3dActiveTab === 'upload') {
-        modelUrl = _model3dUploadedUrl || '';
+        rawInput = _model3dUploadedUrl || '';
     } else {
-        modelUrl = (document.getElementById('model3d-url-input').value || '').trim();
+        rawInput = (document.getElementById('model3d-url-input').value || '').trim();
     }
 
-    if (!modelUrl) {
+    if (!rawInput) {
         alert(_model3dActiveTab === 'upload'
             ? 'Please upload a 3D file first.'
-            : 'Please paste a 3D model URL.');
+            : 'Please paste a 3D model URL or embed code.');
         return;
     }
 
     const caption = (document.getElementById('model3d-caption-input').value || '').trim();
     const height = document.getElementById('model3d-height-select').value || '520';
 
-    // Hide the initial modal and open the Hotspot Editor
+    // ── Detect if input is iframe HTML or an embed URL ───────────────────────
+    const isIframeHtml = rawInput.trimStart().startsWith('<');
+    const isEmbedUrl = /sketchfab\.com|lumi\.education|h5p\.org|marmoset\.co|p3d\.in|vectary\.com/i.test(rawInput);
+
+    if (isIframeHtml || isEmbedUrl) {
+        // Paste raw HTML directly into Quill — no hotspot editor needed
+        closeModel3DModal();
+
+        let embedHtml = '';
+        if (isIframeHtml) {
+            // User pasted full <iframe> or <div class="sketchfab-embed-wrapper"> etc.
+            embedHtml = rawInput;
+        } else {
+            // Build a simple responsive iframe from the URL
+            embedHtml = `<div style="width:100%;max-width:800px;margin:18px auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);"><iframe src="${rawInput}" width="100%" height="${height}" frameborder="0" allowfullscreen allow="autoplay; fullscreen; xr-spatial-tracking"></iframe></div>`;
+        }
+
+        const captionHtml = caption
+            ? `<p class="ql-align-center" style="text-align:center;margin:6px 0 18px;font-size:15px;color:#111827;font-weight:500;">${caption}</p>`
+            : '';
+
+        const fullHtml = `${embedHtml}${captionHtml}<p><br></p>`;
+
+        const range = window.currentQuill.getSelection(true) || { index: 0 };
+        window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, fullHtml);
+        window.currentQuill.root.setAttribute('data-custom-html', 'true');
+
+        const textarea = document.getElementById('content-editor') ||
+                         document.getElementById('content') ||
+                         document.getElementById('announcement-content') ||
+                         document.getElementById('course-description');
+        if (textarea) textarea.value = window.currentQuill.root.innerHTML;
+        return;
+    }
+
+    // ── Normal .glb / .gltf / .obj URL — open the Hotspot Editor ────────────
     document.getElementById('model3d-modal').style.display = 'none';
     if (typeof openHotspotEditor === 'function') {
-        openHotspotEditor(modelUrl, caption, height);
+        openHotspotEditor(rawInput, caption, height);
     } else {
-        alert("Hotspot editor script is not loaded properly.");
+        alert('Hotspot editor script is not loaded properly.');
     }
 }
 
