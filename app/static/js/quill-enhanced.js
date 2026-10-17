@@ -650,23 +650,48 @@ function insertModel3D() {
     const isEmbedUrl = /sketchfab\.com|lumi\.education|h5p\.org|marmoset\.co|p3d\.in|vectary\.com/i.test(rawInput);
 
     if (isIframeHtml || isEmbedUrl) {
-        // Paste raw HTML directly into Quill — no hotspot editor needed
         closeModel3DModal();
 
-        let embedHtml = '';
+        let iframeEl = '';
+
         if (isIframeHtml) {
-            // User pasted full <iframe> or <div class="sketchfab-embed-wrapper"> etc.
-            embedHtml = rawInput;
+            // Extract ONLY the <iframe> element and discard any <p> or <a> attribution blocks
+            const tmp = document.createElement('div');
+            tmp.innerHTML = rawInput;
+            const iframe = tmp.querySelector('iframe');
+            if (iframe) {
+                iframe.setAttribute('width', '100%');
+                iframe.setAttribute('height', height);
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allowfullscreen', 'true');
+                iframe.setAttribute('allow', 'autoplay; fullscreen; xr-spatial-tracking');
+                iframe.style.width = '100%';
+                iframe.style.height = height + 'px';
+                iframe.style.display = 'block';
+                iframe.style.border = 'none';
+                iframeEl = iframe.outerHTML;
+            } else {
+                iframeEl = rawInput;
+            }
         } else {
-            // Build a simple responsive iframe from the URL
-            embedHtml = `<div style="width:100%;max-width:800px;margin:18px auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);"><iframe src="${rawInput}" width="100%" height="${height}" frameborder="0" allowfullscreen allow="autoplay; fullscreen; xr-spatial-tracking"></iframe></div>`;
+            // Check if it's a Sketchfab link and ensure /embed is present
+            let src = rawInput;
+            const sfMatch = src.match(/sketchfab\.com\/(?:3d-models\/[^/]+-|models\/)?([a-f0-9]{32})/i);
+            if (sfMatch && sfMatch[1] && !src.includes('/embed')) {
+                src = `https://sketchfab.com/models/${sfMatch[1]}/embed`;
+            }
+            iframeEl = `<iframe src="${src}" width="100%" height="${height}" frameborder="0" allowfullscreen allow="autoplay; fullscreen; xr-spatial-tracking" style="width:100%;height:${height}px;display:block;border:none;"></iframe>`;
         }
 
+        // Description / caption centered at the TOP
         const captionHtml = caption
-            ? `<p class="ql-align-center" style="text-align:center;margin:6px 0 18px;font-size:15px;color:#111827;font-weight:500;">${caption}</p>`
+            ? `<p class="ql-align-center" style="text-align:center;margin:0 0 10px 0;font-size:15px;color:#111827;font-weight:600;">${caption}</p>`
             : '';
 
-        const fullHtml = `${embedHtml}${captionHtml}<p><br></p>`;
+        // Clean responsive container without any sketchfab author attribution text
+        const wrapperHtml = `<div style="width:100%;max-width:800px;margin:4px auto 18px auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">${iframeEl}</div>`;
+
+        const fullHtml = `${captionHtml}${wrapperHtml}<p><br></p>`;
 
         const range = window.currentQuill.getSelection(true) || { index: 0 };
         window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, fullHtml);

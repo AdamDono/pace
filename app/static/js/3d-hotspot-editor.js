@@ -648,16 +648,16 @@ function finishHotspotEditor() {
     const safeUrl = escapeHtml(_pendingModelUrl);
     
     const captionHtml = _pendingCaption
-        ? `<p class="ql-align-center" style="text-align: center; margin: 8px 0 18px 0; font-size: 15px; color: #111827; font-weight: 500;">${escapeHtml(_pendingCaption)}</p>`
+        ? `<p class="ql-align-center" style="text-align: center; margin: 0 0 10px 0; font-size: 15px; color: #111827; font-weight: 600;">${escapeHtml(_pendingCaption)}</p>`
         : '';
 
-    const html = `<div class="ql-3d-viewer-block" data-ql-3d="1" data-src="${safeUrl}" data-height="${_pendingHeight}" data-viewer-id="${vid}"${hsAttr} contenteditable="false"
-        style="width: 100%; max-width: 800px; margin: 18px auto 10px auto; border-radius: 12px; overflow: hidden; background: #0f0f1a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; height: ${_pendingHeight}px;">
+    const html = `${captionHtml}
+    <div class="ql-3d-viewer-block" data-ql-3d="1" data-src="${safeUrl}" data-height="${_pendingHeight}" data-viewer-id="${vid}"${hsAttr} contenteditable="false"
+        style="width: 100%; max-width: 800px; margin: 4px auto 18px auto; border-radius: 12px; overflow: hidden; background: #0f0f1a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; height: ${_pendingHeight}px;">
         <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #1e1e38 0%, #0f0f1a 100%);">
             <span style="font-size: 48px; opacity: 0.9;">🧊</span>
         </div>
     </div>
-    ${captionHtml}
     <p><br></p>`;
 
     if (window.currentQuill) {
