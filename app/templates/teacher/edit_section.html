@@ -429,7 +429,7 @@ function initQuillWithMonaco() {
         console.log('✅ Quill script loaded');
         // Load hotspot editor
         const hsScript = document.createElement('script');
-        hsScript.src = "{{ url_for('static', filename='js/3d-hotspot-editor.js') }}?v=4";
+        hsScript.src = "{{ url_for('static', filename='js/3d-hotspot-editor.js') }}?v=5";
         document.head.appendChild(hsScript);
 
         // Initialize enhanced Quill

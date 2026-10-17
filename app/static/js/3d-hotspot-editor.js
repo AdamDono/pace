@@ -643,22 +643,20 @@ function closeHotspotEditor() {
 function finishHotspotEditor() {
     closeHotspotEditor();
 
-    const vid = 'v3d_' + Math.random().toString(36).slice(2, 7);
-    const hsAttr = _currentHotspots.length ? ` data-hotspots='${JSON.stringify(_currentHotspots).replace(/'/g, "&apos;")}'` : '';
-    const safeUrl = escapeHtml(_pendingModelUrl);
-    
+    let embedSrc = `/static/3d-viewer-embed.html?model=${encodeURIComponent(_pendingModelUrl)}`;
+    if (_currentHotspots && _currentHotspots.length > 0) {
+        embedSrc += `#hotspots=${encodeURIComponent(JSON.stringify(_currentHotspots))}`;
+    }
+
     const captionHtml = _pendingCaption
         ? `<p class="ql-align-center" style="text-align: center; margin: 0 0 10px 0; font-size: 15px; color: #111827; font-weight: 600;">${escapeHtml(_pendingCaption)}</p>`
         : '';
 
-    const html = `${captionHtml}
-    <div class="ql-3d-viewer-block" data-ql-3d="1" data-src="${safeUrl}" data-height="${_pendingHeight}" data-viewer-id="${vid}"${hsAttr} contenteditable="false"
-        style="width: 100%; max-width: 800px; margin: 4px auto 18px auto; border-radius: 12px; overflow: hidden; background: #0f0f1a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; height: ${_pendingHeight}px;">
-        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #1e1e38 0%, #0f0f1a 100%);">
-            <span style="font-size: 48px; opacity: 0.9;">🧊</span>
-        </div>
-    </div>
-    <p><br></p>`;
+    const iframeHtml = `<div class="ql-3d-embed-wrapper" style="width: 100%; max-width: 800px; margin: 4px auto 18px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #0f0f1a;">
+        <iframe src="${embedSrc}" width="100%" height="${_pendingHeight}" frameborder="0" allowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" style="width: 100%; height: ${_pendingHeight}px; display: block; border: none;"></iframe>
+    </div>`;
+
+    const html = `${captionHtml}${iframeHtml}<p><br></p>`;
 
     if (window.currentQuill) {
         const range = window.currentQuill.getSelection(true) || { index: 0 };

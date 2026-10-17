@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Interactive Viewer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0f0f1a;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #fff;
+            user-select: none;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: radial-gradient(circle at 50% 40%, #1e1e38 0%, #0f0f1a 100%);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            outline: none;
+            cursor: grab;
+        }
+        canvas:active { cursor: grabbing; }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f0f1a;
+            z-index: 50;
+            transition: opacity 0.3s ease;
+        }
+        .spinner-icon {
+            font-size: 44px;
+            animation: spin 1.4s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg) scale(0.9); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(0.9); }
+        }
+        #loading-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+        }
+        #loading-subtext {
+            font-size: 12px;
+            color: #818cf8;
+        }
+
+        /* Bottom Controls Bar */
+        #toolbar {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 15, 26, 0.82);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 8px 14px;
+            z-index: 20;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            pointer-events: auto;
+        }
+        .hints {
+            display: flex;
+            gap: 8px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .hint-badge {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .action-btns {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn:hover {
+            background: rgba(99, 102, 241, 0.4);
+            border-color: #6366f1;
+            color: #fff;
+        }
+        .btn-active {
+            background: #4f46e5 !important;
+            border-color: #6366f1 !important;
+        }
+
+        /* Hotspot Popup Card */
+        #hs-popup {
+            position: absolute;
+            display: none;
+            background: rgba(30, 30, 56, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1px solid #4f46e5;
+            border-radius: 12px;
+            padding: 14px 16px;
+            max-width: 280px;
+            min-width: 200px;
+            color: #fff;
+            z-index: 30;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.3);
+            pointer-events: auto;
+            transform: translate(-50%, -100%);
+            margin-top: -14px;
+            animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #hs-popup::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 12px;
+            height: 12px;
+            background: #1e1e38;
+            border-right: 1px solid #4f46e5;
+            border-bottom: 1px solid #4f46e5;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: translate(-50%, -90%) scale(0.95); }
+            to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+        }
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .popup-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: #4f46e5;
+            color: #e0e7ff;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+        .popup-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .popup-close:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .popup-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f8fafc;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+        .popup-desc {
+            font-size: 12px;
+            color: #cbd5e1;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        /* Hotspot Drawer / List */
+        #hs-drawer {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            max-width: 260px;
+            max-height: calc(100% - 90px);
+            overflow-y: auto;
+            background: rgba(15, 15, 26, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 12px;
+            z-index: 25;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        .drawer-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #c7d2fe;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .drawer-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .drawer-item:hover {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: #6366f1;
+        }
+        .drawer-item-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        .drawer-item-desc {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+    </style>
+
+    <!-- Three.js + Loaders -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="viewer-canvas"></canvas>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay">
+            <div class="spinner-icon">🧊</div>
+            <div id="loading-title">Loading 3D Model...</div>
+            <div id="loading-subtext">Preparing interactive scene</div>
+        </div>
+
+        <!-- Hotspot Popup -->
+        <div id="hs-popup">
+            <div class="popup-header">
+                <span id="popup-badge" class="popup-badge">#1 Hotspot</span>
+                <button class="popup-close" onclick="closePopup()">&times;</button>
+            </div>
+            <div id="popup-title" class="popup-title"></div>
+            <div id="popup-desc" class="popup-desc"></div>
+        </div>
+
+        <!-- Hotspot Drawer -->
+        <div id="hs-drawer">
+            <div class="drawer-title">
+                <span>📍 Hotspots List</span>
+                <button onclick="toggleDrawer()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;">&times;</button>
+            </div>
+            <div id="drawer-items"></div>
+        </div>
+
+        <!-- Bottom Toolbar -->
+        <div id="toolbar">
+            <div class="hints">
+                <span class="hint-badge">🖱️ Drag to rotate</span>
+                <span class="hint-badge">🔍 Scroll to zoom</span>
+            </div>
+            <div class="action-btns">
+                <button id="toggle-hs-btn" class="btn" onclick="toggleDrawer()" style="display:none;">
+                    <span>📍</span>
+                    <span id="hs-btn-text">Hotspots</span>
+                </button>
+                <button class="btn" onclick="resetCamera()">
+                    <span>🔄</span> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Parse Model URL & Hotspots from URL ──────────────────────────────
+        const params = new URLSearchParams(window.location.search);
+        const modelUrl = params.get('model') || '';
+
+        let hotspots = [];
+        // Check hash first (handles arbitrarily large hotspot payloads)
+        if (window.location.hash) {
+            try {
+                const hashStr = window.location.hash.replace(/^#/, '');
+                const hashParams = new URLSearchParams(hashStr);
+                const rawHs = hashParams.get('hotspots');
+                if (rawHs) {
+                    hotspots = JSON.parse(decodeURIComponent(rawHs));
+                }
+            } catch(e) {
+                console.warn('Error reading hotspots from hash:', e);
+            }
+        }
+        // Fallback to query parameter
+        if (!hotspots.length && params.get('hotspots')) {
+            try {
+                hotspots = JSON.parse(decodeURIComponent(params.get('hotspots')));
+            } catch(e) {}
+        }
+
+        // ── Scene, Camera, Renderer ─────────────────────────────────────────
+        const container = document.getElementById('canvas-container');
+        const canvas = document.getElementById('viewer-canvas');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f0f1a);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.2, 3.8);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.shadowMap.enabled = true;
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 0.5;
+        controls.maxDistance = 50;
+
+        // Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444466, 0.6);
+        scene.add(hemiLight);
+
+        const dl1 = new THREE.DirectionalLight(0xffffff, 1.0);
+        dl1.position.set(5, 10, 7);
+        dl1.castShadow = true;
+        scene.add(dl1);
+
+        const dl2 = new THREE.DirectionalLight(0xa5b4fc, 0.5);
+        dl2.position.set(-5, -6, -6);
+        scene.add(dl2);
+
+        // Grid helper
+        const grid = new THREE.GridHelper(10, 10, 0x312e81, 0x1e1e38);
+        grid.position.y = -1.5;
+        scene.add(grid);
+
+        let currentModel = null;
+        let hotspotMeshes = [];
+        let initialCamPos = new THREE.Vector3(0, 1.2, 3.8);
+        let initialControlsTarget = new THREE.Vector3(0, 0, 0);
+
+        function resetCamera() {
+            camera.position.copy(initialCamPos);
+            controls.target.copy(initialControlsTarget);
+            controls.update();
+            closePopup();
+        }
+
+        // ── Hotspot Drawer & Sidebar ─────────────────────────────────────────
+        function setupHotspotUI() {
+            if (!hotspots || hotspots.length === 0) return;
+
+            const btn = document.getElementById('toggle-hs-btn');
+            const btnText = document.getElementById('hs-btn-text');
+            btn.style.display = 'flex';
+            btnText.textContent = `Hotspots (${hotspots.length})`;
+
+            const itemsContainer = document.getElementById('drawer-items');
+            itemsContainer.innerHTML = '';
+
+            hotspots.forEach((hs, idx) => {
+                const item = document.createElement('div');
+                item.className = 'drawer-item';
+                item.innerHTML = `
+                    <div class="drawer-item-title">
+                        <span style="color:#818cf8;margin-right:4px;">#${idx + 1}</span>
+                        ${escapeHtml(hs.title)}
+                    </div>
+                    ${hs.description ? `<div class="drawer-item-desc">${escapeHtml(hs.description)}</div>` : ''}
+                `;
+                item.onclick = () => {
+                    selectHotspot(idx);
+                };
+                itemsContainer.appendChild(item);
+            });
+        }
+
+        function toggleDrawer() {
+            const drawer = document.getElementById('hs-drawer');
+            const btn = document.getElementById('toggle-hs-btn');
+            const isVisible = drawer.style.display === 'block';
+            drawer.style.display = isVisible ? 'none' : 'block';
+            btn.classList.toggle('btn-active', !isVisible);
+        }
+
+        function closePopup() {
+            document.getElementById('hs-popup').style.display = 'none';
+        }
+
+        function showPopup(hs, screenX, screenY, idx) {
+            const popup = document.getElementById('hs-popup');
+            document.getElementById('popup-badge').textContent = `#${idx + 1} Hotspot`;
+            document.getElementById('popup-title').textContent = hs.title;
+            document.getElementById('popup-desc').textContent = hs.description || '';
+            document.getElementById('popup-desc').style.display = hs.description ? 'block' : 'none';
+
+            popup.style.left = `${screenX}px`;
+            popup.style.top = `${screenY}px`;
+            popup.style.display = 'block';
+        }
+
+        function selectHotspot(idx) {
+            const hs = hotspots[idx];
+            const mesh = hotspotMeshes[idx];
+            if (!hs || !mesh || !currentModel) return;
+
+            // Get world position of hotspot
+            const worldPos = new THREE.Vector3();
+            mesh.getWorldPosition(worldPos);
+
+            // Project to screen coords for popup
+            const screenPos = worldPos.clone().project(camera);
+            const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-(screenPos.y * 0.5) + 0.5) * window.innerHeight;
+
+            showPopup(hs, x, y, idx);
+        }
+
+        // ── Load 3D Model ───────────────────────────────────────────────────
+        function loadModel() {
+            if (!modelUrl) {
+                document.getElementById('loading-title').textContent = '⚠️ No Model URL provided';
+                document.getElementById('loading-subtext').textContent = 'Please check the model link.';
+                return;
+            }
+
+            const cleanUrl = modelUrl.split('?')[0];
+            const ext = cleanUrl.includes('.') ? cleanUrl.split('.').pop().toLowerCase() : '';
+
+            const afterLoad = (obj) => {
+                currentModel = obj;
+
+                // Materials & Shadows
+                obj.traverse(child => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => { m.side = THREE.DoubleSide; });
+                            } else {
+                                child.material.side = THREE.DoubleSide;
+                            }
+                        }
+                    }
+                });
+
+                // Auto center & scale
+                const box = new THREE.Box3().setFromObject(obj);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z) || 1;
+                const scale = 3.2 / maxDim;
+
+                obj.scale.setScalar(scale);
+                obj.position.sub(center.multiplyScalar(scale));
+
+                scene.add(obj);
+
+                // Add Hotspots to the model
+                hotspotMeshes = [];
+                if (hotspots && hotspots.length > 0) {
+                    const geo = new THREE.SphereGeometry(0.07, 24, 24);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+
+                    hotspots.forEach((hs, idx) => {
+                        const mesh = new THREE.Mesh(geo, mat.clone());
+                        mesh.position.set(hs.x, hs.y, hs.z);
+                        mesh.scale.setScalar(1 / scale);
+                        mesh.userData = { isHotspot: true, hsData: hs, index: idx };
+                        obj.add(mesh);
+                        hotspotMeshes.push(mesh);
+                    });
+
+                    setupHotspotUI();
+                }
+
+                // Hide loading overlay
+                const loadingEl = document.getElementById('loading-overlay');
+                loadingEl.style.opacity = '0';
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
+            };
+
+            const onProgress = (xhr) => {
+                if (xhr.lengthComputable && xhr.total > 0) {
+                    const pct = Math.round((xhr.loaded / xhr.total) * 100);
+                    document.getElementById('loading-title').textContent = `Loading 3D Model (${pct}%)...`;
+                }
+            };
+
+            const onError = (err) => {
+                console.error("3D model load error:", err);
+                document.getElementById('loading-title').innerHTML = '<span style="color:#f87171;">⚠️ Failed to load 3D model</span>';
+                document.getElementById('loading-subtext').textContent = 'Please check the file format or link.';
+            };
+
+            if (ext === 'glb' || ext === 'gltf' || !ext) {
+                const loader = new THREE.GLTFLoader();
+                if (window.THREE.DRACOLoader) {
+                    try {
+                        const draco = new THREE.DRACOLoader();
+                        draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+                        loader.setDRACOLoader(draco);
+                    } catch(e) {}
+                }
+                loader.load(modelUrl, gltf => afterLoad(gltf.scene || gltf.scenes[0]), onProgress, onError);
+            } else if (ext === 'obj') {
+                const loader = new THREE.OBJLoader();
+                loader.load(modelUrl, obj => afterLoad(obj), onProgress, onError);
+            } else {
+                onError(new Error("Unsupported extension: " + ext));
+            }
+        }
+
+        // ── Raycasting & Interaction ────────────────────────────────────────
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let pointerDownTime = 0;
+        let pointerDownPos = { x: 0, y: 0 };
+
+        canvas.addEventListener('pointerdown', e => {
+            pointerDownTime = Date.now();
+            pointerDownPos = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas.addEventListener('pointerup', e => {
+            // Only trigger click if user didn't drag to rotate
+            const dt = Date.now() - pointerDownTime;
+            const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+            if (dt > 300 || dist > 6) return;
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            // Check intersection with hotspot meshes
+            const hits = raycaster.intersectObjects(hotspotMeshes, false);
+            if (hits.length > 0) {
+                const hit = hits[0];
+                const hs = hit.object.userData.hsData;
+                const idx = hit.object.userData.index;
+                showPopup(hs, e.clientX, e.clientY, idx);
+            } else {
+                closePopup();
+            }
+        });
+
+        // ── Animation Loop ──────────────────────────────────────────────────
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            // Pulsate hotspot markers
+            if (hotspotMeshes.length > 0 && currentModel) {
+                const time = Date.now() * 0.005;
+                const baseScale = 1 / (currentModel.scale.x || 1);
+                hotspotMeshes.forEach(mesh => {
+                    const idx = mesh.userData.index || 0;
+                    const pulse = 1 + Math.sin(time + idx * 1.5) * 0.22;
+                    mesh.scale.setScalar(baseScale * pulse);
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ── Window Resize ───────────────────────────────────────────────────
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Start
+        loadModel();
+        animate();
+    </script>
+</body>
+</html>
