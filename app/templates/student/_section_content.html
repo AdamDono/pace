@@ -72,13 +72,30 @@
 
     {% elif section.section_type in ('video', 'lesson') or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
         {% if section.section_type == 'video' or section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
-            {% if section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
+            {% if section.video_url and ('youtube.com' in section.video_url or 'youtu.be' in section.video_url) %}
+                {% set yt_id = section.video_url.split('v=')[1].split('&')[0] if 'v=' in section.video_url else section.video_url.split('/')[-1].split('?')[0] %}
+                <div class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm mb-2 bg-black" style="aspect-ratio:16/9;">
+                    <iframe id="youtube-player-{{ section.id }}"
+                            class="w-full h-full"
+                            src="https://www.youtube.com/embed/{{ yt_id }}?enablejsapi=1"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="mb-5 flex items-center justify-between px-1">
+                    <span class="text-xs text-gray-500">YouTube Video</span>
+                    <a href="{{ section.video_url }}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:text-blue-800 underline font-semibold inline-flex items-center gap-1">
+                        ▶️ Open in YouTube ↗
+                    </a>
+                </div>
+            {% elif section.video_url or (section.media_file and section.media_file.endswith(('.mp4', '.webm', '.ogg'))) %}
                 <!-- Video Player wrapper — full width with rounded corners -->
                 <div class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-black mb-5">
                     {% include 'student/_video_player.html' %}
                 </div>
-            {% else %}
-                {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1] %}
+            {% elif section.content and ('youtube.com' in section.content or 'youtu.be' in section.content) and not ('<' in section.content) %}
+                {% set youtube_id = section.content.split('v=')[1].split('&')[0] if 'v=' in section.content else section.content.split('/')[-1].split('?')[0] %}
                 {% if youtube_id and youtube_id|length == 11 %}
                 <div class="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm mb-5" style="aspect-ratio:16/9;">
                     <iframe id="youtube-player-{{ section.id }}"
@@ -88,10 +105,6 @@
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowfullscreen>
                     </iframe>
-                </div>
-                {% else %}
-                <div class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-                    <span>⚠️</span> Invalid video content. Please check the URL.
                 </div>
                 {% endif %}
             {% endif %}

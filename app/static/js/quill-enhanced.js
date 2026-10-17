@@ -45,6 +45,43 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
         });
     }
 
+    // ── Video Modal ───────────────────────────────────────────────────────────
+    if (!document.getElementById('video-modal')) {
+        const modal = document.createElement('div');
+        modal.id = 'video-modal';
+        modal.style.cssText = 'display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:26px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);z-index:10001;width:520px;max-width:95vw;font-family:system-ui,sans-serif;';
+        modal.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="margin:0;font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px;color:#111827;">
+                    🎥 Insert YouTube Video
+                </h3>
+                <button onclick="closeVideoModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;">&times;</button>
+            </div>
+            
+            <div style="margin-bottom:14px;">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">YouTube Video Link *</label>
+                <input id="video-modal-url" type="url" placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..." 
+                    style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;"
+                    oninput="handleVideoUrlChange(this.value)">
+                <p id="video-modal-status" style="font-size:12px;margin:4px 0 0;color:#6b7280;">Paste any YouTube URL or video link</p>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Video Title / Description (Displays alongside video)</label>
+                <input id="video-modal-desc" type="text" placeholder="e.g. Master loops and conditionals in this short video" 
+                    style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button onclick="closeVideoModal()" style="padding:9px 18px;background:#e5e7eb;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;color:#374151;">Cancel</button>
+                <button onclick="insertVideoFromModal()" style="padding:9px 20px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px;">
+                    ▶️ Insert Video & Link
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
     // Create Embed modal if it doesn't exist
     if (!document.getElementById('embed-modal')) {
         const modal = document.createElement('div');
@@ -176,11 +213,12 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
                 ['bold', 'italic', 'underline'],
                 [{ 'color': [] }, { 'background': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['link', 'image'],
+                ['link', 'image', 'video'],
                 ['emoji', 'table', 'embed', 'model3d', 'source'],
                 ['clean']
             ],
             handlers: {
+                'video': () => showVideoModal(quill),
                 'emoji': () => showEmojiModal(quill),
                 'table': () => insertTable(quill),
                 'embed': () => showEmbedModal(quill),
@@ -315,6 +353,114 @@ function insertTable(quill) {
     }
 }
 
+// ─── Video helpers ────────────────────────────────────────────────────────────
+function showVideoModal(quill) {
+    window.currentQuill = quill;
+    const urlInput = document.getElementById('video-modal-url');
+    const descInput = document.getElementById('video-modal-desc');
+    const status = document.getElementById('video-modal-status');
+    if (urlInput) urlInput.value = '';
+    if (descInput) descInput.value = '';
+    if (status) {
+        status.innerHTML = 'Paste any YouTube URL or video link';
+        status.style.color = '#6b7280';
+    }
+    const modal = document.getElementById('video-modal');
+    if (modal) modal.style.display = 'block';
+    const overlay = document.getElementById('emoji-overlay');
+    if (overlay) overlay.style.display = 'block';
+    if (urlInput) setTimeout(() => urlInput.focus(), 60);
+}
+
+function closeVideoModal() {
+    const modal = document.getElementById('video-modal');
+    if (modal) modal.style.display = 'none';
+    const overlay = document.getElementById('emoji-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function handleVideoUrlChange(val) {
+    const status = document.getElementById('video-modal-status');
+    if (!status) return;
+    val = (val || '').trim();
+    if (!val) {
+        status.innerHTML = 'Paste any YouTube URL or video link';
+        status.style.color = '#6b7280';
+        return;
+    }
+    let vId = null;
+    if (val.includes('youtube.com/watch?v=')) {
+        vId = val.split('watch?v=')[1].split('&')[0];
+    } else if (val.includes('youtu.be/')) {
+        vId = val.split('youtu.be/')[1].split('?')[0].split('&')[0];
+    } else if (val.includes('youtube.com/embed/')) {
+        vId = val.split('embed/')[1].split('?')[0].split('&')[0];
+    }
+    if (vId) {
+        status.innerHTML = `✅ YouTube video detected (ID: <code>${vId}</code>). Player & clickable link will display with text!`;
+        status.style.color = '#16a34a';
+    } else if (val.startsWith('http')) {
+        status.innerHTML = 'ℹ️ Video link ready to embed.';
+        status.style.color = '#2563eb';
+    }
+}
+
+function insertVideoFromModal() {
+    const rawUrl = (document.getElementById('video-modal-url').value || '').trim();
+    const desc = (document.getElementById('video-modal-desc').value || '').trim();
+    if (!rawUrl || !window.currentQuill) return;
+
+    let embedUrl = rawUrl;
+    let isYouTube = false;
+
+    if (rawUrl.includes('youtube.com/watch?v=')) {
+        const vId = rawUrl.split('watch?v=')[1].split('&')[0];
+        embedUrl = `https://www.youtube.com/embed/${vId}`;
+        isYouTube = true;
+    } else if (rawUrl.includes('youtu.be/')) {
+        let vId = rawUrl.split('youtu.be/')[1];
+        if (vId.includes('?')) vId = vId.split('?')[0];
+        if (vId.includes('&')) vId = vId.split('&')[0];
+        embedUrl = `https://www.youtube.com/embed/${vId}`;
+        isYouTube = true;
+    } else if (rawUrl.includes('youtube.com/embed/')) {
+        embedUrl = rawUrl;
+        isYouTube = true;
+    }
+
+    const range = window.currentQuill.getSelection(true);
+    const index = range ? range.index : window.currentQuill.getLength();
+
+    let titleText = desc || 'Watch Video Lesson';
+    let videoHtml = `
+<div class="video-embed-card" style="margin: 24px 0; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px;">
+    <p style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600; color: #1e293b; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span>🎥 <strong>Watch:</strong> <em><a href="${rawUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">${titleText}</a></em></span>
+        <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-size: 13px; font-weight: 500;">Open in YouTube ↗</a>
+    </p>
+    <div style="position: relative; width: 100%; aspect-ratio: 16/9; min-height: 360px; background: #000; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+        <iframe src="${embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" title="${titleText}"></iframe>
+    </div>
+    <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">
+        Direct link: <a href="${rawUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">${rawUrl}</a>
+    </p>
+</div><p><br></p>`;
+
+    window.currentQuill.clipboard.dangerouslyPasteHTML(index, videoHtml);
+    window.currentQuill.root.setAttribute('data-custom-html', 'true');
+
+    // Sync to textarea
+    const textarea = document.getElementById('content-editor') ||
+                     document.getElementById('content') ||
+                     document.getElementById('announcement-content') ||
+                     document.getElementById('course-description');
+    if (textarea) {
+        textarea.value = window.currentQuill.root.innerHTML;
+    }
+
+    closeVideoModal();
+}
+
 // ─── Embed helpers ────────────────────────────────────────────────────────────
 function showEmbedModal(quill) {
     window.currentQuill = quill;
@@ -339,8 +485,19 @@ function insertEmbed() {
         if (match) url = match[1];
     }
 
+    // Auto-convert YouTube links to embed format
+    if (url.includes('youtube.com/watch?v=')) {
+        const vId = url.split('watch?v=')[1].split('&')[0];
+        url = `https://www.youtube.com/embed/${vId}`;
+    } else if (url.includes('youtu.be/')) {
+        let vId = url.split('youtu.be/')[1];
+        if (vId.includes('?')) vId = vId.split('?')[0];
+        if (vId.includes('&')) vId = vId.split('&')[0];
+        url = `https://www.youtube.com/embed/${vId}`;
+    }
+
     const range = window.currentQuill.getSelection(true);
-    const embedCode = `<div class="h5p-embed-container" style="position:relative;width:100%;padding-bottom:75%;height:0;overflow:hidden;margin:20px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="Embedded Interactive Content"></iframe></div>`;
+    const embedCode = `<div class="h5p-embed-container" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;margin:20px 0;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="Embedded Interactive Content"></iframe></div><p><br></p>`;
 
     // Insert the HTML
     window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, embedCode);
@@ -350,6 +507,7 @@ function insertEmbed() {
 
     // Update the hidden textarea immediately
     const textarea = document.getElementById('content-editor') ||
+                     document.getElementById('content') ||
                      document.getElementById('announcement-content') ||
                      document.getElementById('course-description');
     if (textarea) {

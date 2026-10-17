@@ -30,9 +30,18 @@
                             🎥 Video URL (YouTube)
                             <span class="text-xs text-gray-500 font-normal ml-1">Optional</span>
                         </label>
-                        <input type="url" name="video_url" value="{{ section.video_url or '' }}"
+                        <input type="url" name="video_url" id="simple-video-url" value="{{ section.video_url or '' }}"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="https://www.youtube.com/watch?v=...">
+                        <div id="simple-video-preview-row" class="mt-2 {% if not section.video_url %}hidden{% endif %} flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+                            <span class="text-xs text-blue-900 truncate flex items-center gap-1.5">
+                                <span>▶️</span>
+                                <span id="simple-video-label" class="truncate">{{ section.video_url }}</span>
+                            </span>
+                            <a id="simple-video-link" href="{{ section.video_url or '#' }}" target="_blank" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline ml-2 flex-shrink-0">
+                                Open in YouTube ↗
+                            </a>
+                        </div>
                     </div>
 
                     <div>
@@ -280,6 +289,24 @@ function promptAIGenerateSimpleLesson() {
             btn.innerHTML = origHtml;
         }
         alert('AI Service: ' + err.message);
+    });
+}
+
+// Live update for YouTube link preview
+const simpleVideoInput = document.getElementById('simple-video-url');
+if (simpleVideoInput) {
+    simpleVideoInput.addEventListener('input', function() {
+        const val = this.value.trim();
+        const previewRow = document.getElementById('simple-video-preview-row');
+        const link = document.getElementById('simple-video-link');
+        const label = document.getElementById('simple-video-label');
+        if (val && (val.startsWith('http://') || val.startsWith('https://'))) {
+            if (previewRow) previewRow.classList.remove('hidden');
+            if (link) link.href = val;
+            if (label) label.textContent = val;
+        } else {
+            if (previewRow) previewRow.classList.add('hidden');
+        }
     });
 }
 </script>
