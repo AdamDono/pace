@@ -1794,11 +1794,13 @@ def edit_section(course_id, section_id):
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quill-upload-3d', methods=['POST'])
 @teacher_required
+@csrf.exempt
 def quill_upload_3d(course_id, section_id):
     """AJAX endpoint: upload a 3D model file for inline embedding in Quill lesson content.
     Returns JSON: {success, url, filename}
     """
     import json as _json
+    from werkzeug.utils import secure_filename
     from app.models import Course, Section
     from app.utils.cloudinary_helper import upload_file_to_cloudinary
 
@@ -1822,9 +1824,10 @@ def quill_upload_3d(course_id, section_id):
     # Fallback: save locally
     upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
     os.makedirs(upload_dir, exist_ok=True)
-    fname = f"{uuid.uuid4().hex}_{f.filename}"
+    clean_name = secure_filename(f.filename) or f"model.{ext}"
+    fname = f"{uuid.uuid4().hex}_{clean_name}"
     f.save(os.path.join(upload_dir, fname))
-    local_url = url_for('static', filename=f'uploads/{fname}', _external=True)
+    local_url = url_for('static', filename=f'uploads/{fname}')
     return _json.dumps({'success': True, 'url': local_url, 'filename': f.filename}), 200, {'Content-Type': 'application/json'}
 
 @teacher_bp.route('/course/<int:course_id>/module/<int:module_id>/section/<int:section_id>/3d-content', methods=['GET', 'POST'])

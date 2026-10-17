@@ -458,6 +458,7 @@
         }
 
         // ── Load 3D Model ───────────────────────────────────────────────────
+        // ── Load 3D Model ───────────────────────────────────────────────────
         function loadModel() {
             if (!modelUrl) {
                 document.getElementById('loading-title').textContent = '⚠️ No Model URL provided';
@@ -465,8 +466,15 @@
                 return;
             }
 
-            const cleanUrl = modelUrl.split('?')[0];
-            const ext = cleanUrl.includes('.') ? cleanUrl.split('.').pop().toLowerCase() : '';
+            let targetUrl = (modelUrl || '').trim();
+            // Automatically upgrade http to https if current page is secure
+            if (window.location.protocol === 'https:' && targetUrl.startsWith('http://')) {
+                targetUrl = 'https://' + targetUrl.slice(7);
+            }
+            // Normalize relative path if needed
+            if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && !targetUrl.startsWith('/') && !targetUrl.startsWith('blob:') && !targetUrl.startsWith('data:')) {
+                targetUrl = '/static/uploads/' + targetUrl;
+            }
 
             const afterLoad = (obj) => {
                 currentModel = obj;
@@ -531,25 +539,91 @@
 
             const onError = (err) => {
                 console.error("3D model load error:", err);
+                const errMsg = (err && (err.message || (err.target && err.target.statusText))) || 'Could not load or parse 3D file.';
                 document.getElementById('loading-title').innerHTML = '<span style="color:#f87171;">⚠️ Failed to load 3D model</span>';
-                document.getElementById('loading-subtext').textContent = 'Please check the file format or link.';
+                document.getElementById('loading-subtext').innerHTML = `
+                    <div style="margin-top:6px;font-size:12px;color:#fca5a5;">${escapeHtml(errMsg)}</div>
+                    <div style="margin-top:4px;font-size:10px;color:#94a3b8;word-break:break-all;">URL: ${escapeHtml(targetUrl)}</div>
+                `;
             };
 
-            if (ext === 'glb' || ext === 'gltf' || !ext) {
-                const loader = new THREE.GLTFLoader();
-                if (window.THREE.DRACOLoader) {
-                    try {
-                        const draco = new THREE.DRACOLoader();
-                        draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-                        loader.setDRACOLoader(draco);
-                    } catch(e) {}
+            // Check if model file is cached directly in parent window (instant, bypasses any network/blob issues)
+            let localFile = null;
+            try {
+                if (window.parent && window.parent !== window) {
+                    if (window.parent._quill3dBlobs) {
+                        localFile = window.parent._quill3dBlobs[modelUrl] || window.parent._quill3dBlobs[targetUrl];
+                    }
+                    if (!localFile && window.parent._lastUploaded3DFile) {
+                        localFile = window.parent._lastUploaded3DFile;
+                    }
                 }
-                loader.load(modelUrl, gltf => afterLoad(gltf.scene || gltf.scenes[0]), onProgress, onError);
-            } else if (ext === 'obj') {
-                const loader = new THREE.OBJLoader();
-                loader.load(modelUrl, obj => afterLoad(obj), onProgress, onError);
-            } else {
-                onError(new Error("Unsupported extension: " + ext));
+            } catch(e) {}
+
+            if (localFile) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const arrayBuffer = evt.target.result;
+                    const loader = new THREE.GLTFLoader();
+                    if (window.THREE.DRACOLoader) {
+                        try {
+                            const draco = new THREE.DRACOLoader();
+                            draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+                            loader.setDRACOLoader(draco);
+                        } catch(e) {}
+                    }
+                    loader.parse(
+                        arrayBuffer,
+                        '',
+                        gltf => afterLoad(gltf.scene || gltf.scenes[0]),
+                        parseErr => {
+                            console.warn("Local parse error, trying network load:", parseErr);
+                            loadViaNetwork(targetUrl);
+                        }
+                    );
+                };
+                reader.onerror = function() { loadViaNetwork(targetUrl); };
+                reader.readAsArrayBuffer(localFile);
+                return;
+            }
+
+            loadViaNetwork(targetUrl);
+
+            function loadViaNetwork(url) {
+                const cleanUrl = url.split('?')[0];
+                const ext = cleanUrl.includes('.') ? cleanUrl.split('.').pop().toLowerCase() : '';
+
+                function tryGLTF(onFail) {
+                    if (!window.THREE.GLTFLoader) {
+                        return onFail && onFail(new Error("GLTFLoader not loaded"));
+                    }
+                    const loader = new THREE.GLTFLoader();
+                    if (window.THREE.DRACOLoader) {
+                        try {
+                            const draco = new THREE.DRACOLoader();
+                            draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+                            loader.setDRACOLoader(draco);
+                        } catch(e) {}
+                    }
+                    loader.load(url, gltf => afterLoad(gltf.scene || gltf.scenes[0]), onProgress, onFail);
+                }
+
+                function tryOBJ(onFail) {
+                    if (!window.THREE.OBJLoader) {
+                        return onFail && onFail(new Error("OBJLoader not loaded"));
+                    }
+                    const loader = new THREE.OBJLoader();
+                    loader.load(url, obj => afterLoad(obj), onProgress, onFail);
+                }
+
+                if (ext === 'obj') {
+                    tryOBJ(err => tryGLTF(() => onError(err)));
+                } else {
+                    tryGLTF(gltfErr => {
+                        console.warn("GLTF load failed, trying OBJ loader...", gltfErr);
+                        tryOBJ(objErr => onError(gltfErr));
+                    });
+                }
             }
         }
 

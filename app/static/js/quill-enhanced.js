@@ -580,13 +580,25 @@ function handleModel3DFile(file) {
     </div>`;
     document.getElementById('model3d-insert-btn').disabled = true;
 
+    // Cache local blob/file in memory on parent window
+    window._quill3dBlobs = window._quill3dBlobs || {};
+    const localBlobUrl = URL.createObjectURL(file);
+    window._quill3dBlobs[localBlobUrl] = file;
+    window._lastUploaded3DFile = file;
+
     // Figure out the upload URL from the page context
-    const uploadUrl = window._quill3dUploadUrl || null;
+    let uploadUrl = window._quill3dUploadUrl || null;
     if (!uploadUrl) {
-        // Fallback: use local object URL (won't persist, but shows something)
-        _model3dUploadedUrl = URL.createObjectURL(file);
+        const match = window.location.pathname.match(/\/course\/(\d+)(?:\/module\/\d+)?\/section\/(\d+)/);
+        if (match) {
+            uploadUrl = `/teacher/course/${match[1]}/section/${match[2]}/quill-upload-3d`;
+        }
+    }
+
+    if (!uploadUrl) {
+        _model3dUploadedUrl = localBlobUrl;
         status.innerHTML = `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:13px;color:#92400e;">
-            ⚠️ No upload endpoint configured — using local preview URL (save to persist).
+            ⚠️ Using local file preview.
         </div>`;
         document.getElementById('model3d-insert-btn').disabled = false;
         return;
@@ -594,9 +606,9 @@ function handleModel3DFile(file) {
 
     const formData = new FormData();
     formData.append('file', file);
-    // Try to get CSRF token from the page
     const csrfToken = document.querySelector('input[name="csrf_token"]') ?
         document.querySelector('input[name="csrf_token"]').value : '';
+    if (csrfToken) formData.append('csrf_token', csrfToken);
 
     fetch(uploadUrl, {
         method: 'POST',
@@ -607,19 +619,22 @@ function handleModel3DFile(file) {
     .then(data => {
         if (data.success) {
             _model3dUploadedUrl = data.url;
+            window._quill3dBlobs[data.url] = file;
             status.innerHTML = `<div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;font-size:13px;color:#166534;">
                 ✅ <strong>${file.name}</strong> uploaded successfully!
             </div>`;
         } else {
+            _model3dUploadedUrl = localBlobUrl;
             status.innerHTML = `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px;font-size:13px;color:#991b1b;">
-                ❌ Upload failed: ${data.message}
+                ⚠️ Upload failed (${data.message}), using local file.
             </div>`;
         }
         document.getElementById('model3d-insert-btn').disabled = false;
     })
     .catch(err => {
+        _model3dUploadedUrl = localBlobUrl;
         status.innerHTML = `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px;font-size:13px;color:#991b1b;">
-            ❌ Upload error: ${err.message}
+            ⚠️ Upload error (${err.message}), using local file.
         </div>`;
         document.getElementById('model3d-insert-btn').disabled = false;
     });

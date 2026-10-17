@@ -643,7 +643,15 @@ function closeHotspotEditor() {
 function finishHotspotEditor() {
     closeHotspotEditor();
 
-    let embedSrc = `/static/3d-viewer-embed.html?model=${encodeURIComponent(_pendingModelUrl)}`;
+    let targetUrl = (_pendingModelUrl || '').trim();
+    if (window.location.protocol === 'https:' && targetUrl.startsWith('http://')) {
+        targetUrl = 'https://' + targetUrl.slice(7);
+    }
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && !targetUrl.startsWith('/') && !targetUrl.startsWith('blob:') && !targetUrl.startsWith('data:')) {
+        targetUrl = '/static/uploads/' + targetUrl;
+    }
+
+    let embedSrc = `/static/3d-viewer-embed.html?model=${encodeURIComponent(targetUrl)}`;
     if (_currentHotspots && _currentHotspots.length > 0) {
         embedSrc += `#hotspots=${encodeURIComponent(JSON.stringify(_currentHotspots))}`;
     }
