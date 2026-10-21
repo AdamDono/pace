@@ -61,16 +61,29 @@ def create_app():
     app.jinja_env.globals.update(min=min, max=max)
 
     # Configure database
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
+    db_url = os.getenv('DATABASE_URL', 'sqlite:///default.db')
+    if db_url.startswith('sqlite:///') and not db_url.startswith('sqlite:////'):
+        rel_path = db_url[len('sqlite:///'):]
+        abs_db_path = os.path.abspath(os.path.join(app.root_path, '..', rel_path))
+        os.makedirs(os.path.dirname(abs_db_path), exist_ok=True)
+        db_url = f"sqlite:///{abs_db_path}"
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
     app.config['BASE_URL'] = os.getenv('BASE_URL', 'http://localhost:5000')
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-        'pool_timeout': 30,
-    }
+    
+    if db_url.startswith('sqlite:'):
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_pre_ping': True,
+        }
+    else:
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_pre_ping': True,
+            'pool_recycle': 300,
+            'pool_timeout': 30,
+        }
 
     # Configure uploads & form payload limits (Prevent 413 Content Too Large on rich text & images)
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
