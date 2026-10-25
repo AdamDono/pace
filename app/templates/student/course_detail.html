@@ -1608,5 +1608,29 @@
 
 <!-- Confetti Library -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+<script>
+    window.COURSE_ID = '{{ course.id }}';
+    window.CURRENT_SECTION_ID = '{{ first_section.id if first_section else "" }}';
+
+    document.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target && evt.detail.target.id === 'main-reader-content') {
+            const activeLink = document.querySelector('.sidebar-section-link.border-blue-600, .sidebar-section-link.active');
+            if (activeLink && activeLink.dataset.sectionId) {
+                window.CURRENT_SECTION_ID = activeLink.dataset.sectionId;
+            }
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('.sidebar-section-link');
+        if (link && link.dataset.sectionId) {
+            window.CURRENT_SECTION_ID = link.dataset.sectionId;
+        }
+    });
+</script>
+
+<!-- Bookworm Socratic AI Mascot Component -->
+{% include "components/bookworm_mascot.html" %}
 </div>
 {% endblock %}

@@ -1,0 +1,927 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Career Guidance & Pathways | Pace Academy{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 pb-16">
+
+    <!-- Header Banner -->
+    <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-indigo-950 text-white p-8 rounded-3xl border border-purple-800/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div class="space-y-3 relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 text-purple-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full border border-purple-500/30">
+                <span>🧭 Career Pathways & Study Plan</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>South Africa 2026/2027</span>
+            </div>
+            <h1 class="text-3xl font-black text-white tracking-tight">Career Guidance & Adaptive Timetable</h1>
+            <p class="text-xs sm:text-sm text-gray-300 max-w-2xl font-normal leading-relaxed">
+                Upload your official school report card to unlock your verified APS admission score, discover degree requirements for your dream career, and follow an adaptive study timetable targeting your struggle subjects.
+            </p>
+        </div>
+        <div class="w-16 h-16 bg-purple-600/20 text-purple-300 rounded-3xl flex items-center justify-center text-3xl shrink-0 border border-purple-500/30 shadow-inner relative z-10">
+            🧭
+        </div>
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    </div>
+
+    <!-- =========================================================================
+         1. REPORT CARD VERIFICATION SECTION
+         ========================================================================= -->
+    {% if report_card %}
+    <!-- Verified Report Card Display Card -->
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-sm space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100">
+            <div class="space-y-1.5">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span>🔒</span>
+                        <span>Verified Official Report Card — Locked</span>
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        Grade {{ report_card.grade }} • Term {{ report_card.term }} ({{ report_card.academic_year }})
+                    </span>
+                </div>
+                <h2 class="text-xl font-black text-gray-900 tracking-tight">
+                    {{ report_card.school_name or 'Official High School Academic Record' }}
+                </h2>
+                <p class="text-xs text-gray-500">
+                    Uploaded on {{ report_card.created_at.strftime('%d %B %Y') }}. Marks are locked to guarantee academic integrity.
+                </p>
+            </div>
+
+            <!-- APS Widget & New Upload Button -->
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Official University APS</p>
+                    <div class="flex items-baseline justify-end gap-1">
+                        <span class="text-3xl font-black text-purple-900">{{ report_card.aps_score }}</span>
+                        <span class="text-sm font-bold text-gray-400">/ 42</span>
+                    </div>
+                </div>
+                <button type="button" onclick="toggleUploadModal()"
+                        class="px-4 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold border border-gray-300 transition flex items-center gap-1.5 shrink-0">
+                    <span>📤</span>
+                    <span>Upload New Term Report</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Verified Subjects Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                    <tr class="text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-100">
+                        <th class="pb-3 font-black">Subject</th>
+                        <th class="pb-3 font-black">Official Percentage</th>
+                        <th class="pb-3 font-black">CAPS Level</th>
+                        <th class="pb-3 font-black">Status / Focus Level</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 font-medium">
+                    {% for s in subjects %}
+                    <tr class="hover:bg-slate-50/60 transition">
+                        <td class="py-3 font-bold text-gray-900 flex items-center gap-2">
+                            <span>📚</span>
+                            <span>{{ s.subject }}</span>
+                        </td>
+                        <td class="py-3">
+                            <span class="font-black {% if s.mark >= 70 %}text-emerald-700{% elif s.mark >= 50 %}text-indigo-700{% else %}text-rose-600 font-extrabold{% endif %}">
+                                {{ s.mark }}%
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold 
+                                  {% if s.level >= 6 %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                  {% elif s.level >= 4 %}bg-indigo-50 text-indigo-700 border border-indigo-200
+                                  {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                                Level {{ s.level }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            {% if s.mark < 50 %}
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                                <span>🚨</span> Critical Struggle Area
+                            </span>
+                            {% elif s.mark < 65 %}
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                                <span>⚠️</span> Moderate Improvement
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                <span>✨</span> Strong Foundation
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No Report Card Uploaded: Intake Hero Card -->
+    <div class="bg-white rounded-3xl p-8 border-2 border-dashed border-purple-200 shadow-sm text-center max-w-3xl mx-auto space-y-6">
+        <div class="w-16 h-16 rounded-3xl bg-purple-100 text-purple-700 flex items-center justify-center text-3xl mx-auto shadow-inner">
+            📋
+        </div>
+        <div class="space-y-2">
+            <h2 class="text-2xl font-black text-gray-900 tracking-tight">Upload Your Official School Report Card</h2>
+            <p class="text-xs sm:text-sm text-gray-500 max-w-lg mx-auto leading-relaxed">
+                To guarantee academic honesty, marks are extracted directly from your report card photo or PDF via AI and locked. No manual fake marks are allowed.
+            </p>
+        </div>
+
+        <form id="report-upload-form" onsubmit="handleReportUpload(event)" class="space-y-4 max-w-md mx-auto text-left">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">What is your dream career?</label>
+                <select id="target-career-select" class="w-full bg-gray-50 border border-gray-300 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-600 transition">
+                    <option value="Software Engineer">💻 Software Engineer / Web Developer (APS 34–36)</option>
+                    <option value="Doctor (Medicine MBChB)">🧬 Doctor / Medical Specialist (APS 38–42)</option>
+                    <option value="Chartered Accountant (CA)">📊 Chartered Accountant / Finance (APS 34–36)</option>
+                    <option value="Mechanical Engineer">⚙️ Mechanical / Electrical Engineer (APS 36–38)</option>
+                    <option value="Lawyer (LLB)">⚖️ Lawyer / Advocate (APS 33–36)</option>
+                    <option value="Data Scientist / AI Specialist">🤖 Data Scientist / AI Specialist (APS 35–38)</option>
+                    <option value="Pharmacist">💊 Pharmacist / Life Sciences (APS 34–36)</option>
+                    <option value="Architect">🏛️ Architect / Urban Planner (APS 32–35)</option>
+                    <option value="Cybersecurity Analyst">🛡️ Cybersecurity Analyst (APS 32–34)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">Upload Official Report Card Photo or PDF</label>
+                <input type="file" id="report-file-input" accept="image/*,application/pdf" required
+                       class="w-full text-xs text-gray-600 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer border border-gray-200 rounded-2xl p-2 bg-gray-50 transition">
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" id="report-upload-btn"
+                        class="w-full py-3 px-4 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                    <span id="report-upload-btn-icon">⚡</span>
+                    <span id="report-upload-btn-text">Scan & Verify Report Card</span>
+                </button>
+            </div>
+            
+            <p class="text-[11px] text-gray-400 text-center">
+                🔒 Protected by AI Document Verification. Supports Term 1, 2, 3 and Prelim report cards.
+            </p>
+        </form>
+    </div>
+    {% endif %}
+
+
+    <!-- =========================================================================
+         2. DREAM CAREER & REALITY GAP ANALYZER
+         ========================================================================= -->
+    {% if report_card %}
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-sm space-y-6">
+        <!-- Section Header with Search Bar -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🎯</span>
+                    <h2 class="text-lg font-black text-gray-900 tracking-tight">Dream Career Target & Reality Gap</h2>
+                </div>
+                <p class="text-xs text-gray-500">Type any career or pick a suggestion. Our AI checks university criteria, your math choice, and recommends pathways.</p>
+            </div>
+
+            <!-- Custom Career Search & Input Box -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+                <div class="relative flex-1 min-w-[260px] sm:min-w-[320px]">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-purple-400">
+                        <i class="fas fa-search text-xs"></i>
+                    </div>
+                    <input type="text" id="custom-career-input" 
+                           value="{{ report_card.target_career or 'Software Engineer' }}" 
+                           placeholder="Type ANY career (e.g. Pilot, Graphic Designer, Nurse...)" 
+                           onkeydown="if(event.key==='Enter') submitCustomCareer()"
+                           class="w-full bg-purple-50/70 border border-purple-200 text-purple-950 font-bold text-xs rounded-xl pl-9 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-400 placeholder-purple-400/80 shadow-2xs transition">
+                </div>
+                <button type="button" onclick="submitCustomCareer()" id="analyze-career-btn"
+                        class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 shrink-0">
+                    <span id="analyze-career-icon">⚡</span>
+                    <span id="analyze-career-text">Analyze Career</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Suggestion Chips -->
+        <div class="flex items-center gap-1.5 flex-wrap text-xs">
+            <span class="text-[11px] font-bold text-gray-400 mr-1">Popular Targets:</span>
+            <button type="button" onclick="setCareerTarget('Software Engineer')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-900 font-semibold text-[11px] transition">💻 Software Engineer</button>
+            <button type="button" onclick="setCareerTarget('Graphic Designer')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">🎨 Graphic Designer (Maths Lit ✅)</button>
+            <button type="button" onclick="setCareerTarget('Lawyer (LLB)')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">⚖️ Lawyer (Maths Lit ✅)</button>
+            <button type="button" onclick="setCareerTarget('Professional Nurse')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">🩺 Nurse (Maths Lit ✅)</button>
+            <button type="button" onclick="setCareerTarget('Mechanical Engineer')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-900 font-semibold text-[11px] transition">⚙️ Mechanical Engineer</button>
+            <button type="button" onclick="setCareerTarget('Chartered Accountant (CA)')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-900 font-semibold text-[11px] transition">📊 Accountant (CA)</button>
+            <button type="button" onclick="setCareerTarget('Commercial Pilot')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-900 font-semibold text-[11px] transition">✈️ Commercial Pilot</button>
+            <button type="button" onclick="setCareerTarget('Digital Marketing Specialist')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">📱 Digital Marketer (Maths Lit ✅)</button>
+            <button type="button" onclick="setCareerTarget('Data Scientist / AI Specialist')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-900 font-semibold text-[11px] transition">🤖 Data Scientist</button>
+        </div>
+
+        <!-- Reality Gap Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <!-- APS Comparison Card -->
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-purple-50/70 to-white border border-purple-100 space-y-2 flex flex-col justify-between">
+                <div class="space-y-1">
+                    <p class="text-xs font-bold text-purple-800 uppercase tracking-wide">APS Benchmark</p>
+                    <div class="flex items-baseline justify-between pt-1">
+                        <div>
+                            <span class="text-3xl font-black text-purple-950">{{ report_card.aps_score }}</span>
+                            <span class="text-xs text-gray-400 ml-1">Current</span>
+                        </div>
+                        <span class="text-gray-300 font-light">vs</span>
+                        <div>
+                            <span class="text-3xl font-black text-indigo-700">{{ career_analysis.typical_aps_required or 34 }}</span>
+                            <span class="text-xs text-gray-400 ml-1">Required</span>
+                        </div>
+                    </div>
+                </div>
+                {% set target_aps = career_analysis.typical_aps_required or 34 %}
+                {% set aps_diff = target_aps - report_card.aps_score %}
+                {% if aps_diff <= 0 %}
+                <p class="text-xs font-bold text-emerald-600 flex items-center gap-1 pt-2 border-t border-purple-100/50">
+                    <span>✅</span> Qualified for standard admission cutoff!
+                </p>
+                {% else %}
+                <p class="text-xs font-bold text-rose-600 flex items-center gap-1 pt-2 border-t border-purple-100/50">
+                    <span>📈</span> Need +{{ aps_diff }} APS points across remaining terms
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Crucial Mathematics Prerequisite Check (Smart Pure vs Maths Lit Handling) -->
+            <div class="p-5 rounded-2xl {% if math_info.is_lit and career_analysis.requires_pure_maths %}bg-gradient-to-br from-amber-50/90 to-white border border-amber-200{% elif math_info.is_lit %}bg-gradient-to-br from-emerald-50/80 to-white border border-emerald-200{% else %}bg-gradient-to-br from-blue-50/70 to-white border border-blue-100{% endif %} space-y-2 flex flex-col justify-between">
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-bold {% if math_info.is_lit and career_analysis.requires_pure_maths %}text-amber-800{% elif math_info.is_lit %}text-emerald-800{% else %}text-blue-800{% endif %} uppercase tracking-wide">
+                            Math Prerequisite Check
+                        </p>
+                        {% if math_info.is_lit and career_analysis.requires_pure_maths %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900">Alternative Route</span>
+                        {% elif math_info.is_lit %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-200 text-emerald-900">Accepted ✅</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-200 text-blue-900">Pure Maths</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-baseline justify-between pt-1">
+                        <div>
+                            <span class="text-2xl font-black text-gray-900">{{ math_info.mark or '--' }}%</span>
+                            <span class="text-xs text-gray-500 block text-[11px] font-semibold">{{ math_info.name }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-gray-400 block">Degree Standard</span>
+                            <span class="text-sm font-bold text-gray-700">{% if career_analysis.requires_pure_maths %}Pure Maths 60%+{% else %}Maths Lit 50%+{% endif %}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Intelligent Guidance Message -->
+                <div class="pt-2 border-t {% if math_info.is_lit and career_analysis.requires_pure_maths %}border-amber-200 text-amber-950{% elif math_info.is_lit %}border-emerald-200 text-emerald-950{% else %}border-blue-100 text-gray-700{% endif %} text-xs leading-relaxed">
+                    <p class="font-medium text-[11.5px]">{{ career_analysis.maths_guidance or 'Prerequisite evaluated against South African university and technical diploma criteria.' }}</p>
+                </div>
+            </div>
+
+            <!-- South African University & Alternative Institutions -->
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 space-y-2 flex flex-col justify-between">
+                <div class="space-y-1.5">
+                    <p class="text-xs font-bold text-slate-800 uppercase tracking-wide">Recommended SA Institutions</p>
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        {% set institutions = career_analysis.recommended_institutions or ['Wits University', 'University of Pretoria', 'TUT / TVET Diploma', 'University of Johannesburg'] %}
+                        {% for inst in institutions %}
+                        <span class="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-bold text-slate-800 shadow-2xs">
+                            {{ inst }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Alternative Diploma Pathways if Maths Lit -->
+                {% if career_analysis.alternative_pathways %}
+                <div class="pt-2 border-t border-slate-200 text-[11px] text-slate-600 space-y-1">
+                    <span class="font-bold text-slate-800 block text-[10px] uppercase tracking-wider">Viable Pathways:</span>
+                    <ul class="space-y-0.5 list-disc list-inside">
+                        {% for path in career_analysis.alternative_pathways[:2] %}
+                        <li class="truncate" title="{{ path }}">{{ path }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% else %}
+                <p class="text-[11px] text-gray-500 pt-2 border-t border-slate-200">Degree & diploma pathways aligned to your subject choice.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- =========================================================================
+             ALIGNED PACE UPSKILLING TRACKS (Only shown if genuinely aligned!)
+             ========================================================================= -->
+        {% if career_analysis and career_analysis.aligned_pace_courses and career_analysis.aligned_pace_courses|length > 0 %}
+        <div class="mt-4 pt-5 border-t border-purple-100 bg-gradient-to-r from-purple-50/40 via-indigo-50/20 to-transparent p-5 rounded-2xl border">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🚀</span>
+                    <div>
+                        <h3 class="text-sm font-black text-gray-900 tracking-tight">Aligned Pace Tech Upskilling Tracks</h3>
+                        <p class="text-[11px] text-gray-500">Pace courses specifically teaching real-world skills required for {{ report_card.target_career }}</p>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-700 uppercase tracking-wider w-fit">
+                    Direct Skills Match
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {% for ac in career_analysis.aligned_pace_courses %}
+                <div class="bg-white rounded-xl p-4 border border-indigo-100 shadow-2xs hover:shadow-md transition flex flex-col justify-between space-y-3">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 uppercase">
+                                {{ ac.category or 'Skills Track' }}
+                            </span>
+                            <span class="text-xs font-black text-emerald-600">
+                                {% if ac.pricing_type == 'free' or not ac.price %}Free{% else %}R{{ ac.price }}{% endif %}
+                            </span>
+                        </div>
+                        <h4 class="text-xs font-black text-gray-900 leading-snug">{{ ac.title }}</h4>
+                        <p class="text-[11px] text-gray-600 leading-relaxed">{{ ac.why_aligned }}</p>
+                    </div>
+
+                    <a href="{{ url_for('student.dashboard') }}" 
+                       class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-xs">
+                        <span>Start Learning</span>
+                        <span>→</span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+            <span>ℹ️ Note: No vocational short-course on Pace matches {{ report_card.target_career }} directly. Follow the higher education university/diploma pathway above.</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+
+    <!-- =========================================================================
+         3. ADAPTIVE WEEKLY STUDY TIMETABLE (BASED ON STRUGGLES)
+         ========================================================================= -->
+    {% if timetable %}
+    <div id="timetable-section" class="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-sm space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📅</span>
+                    <h2 class="text-lg font-black text-gray-900 tracking-tight">Adaptive Weekly Study Timetable</h2>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                        Week {{ current_week_code }}
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500">
+                    {{ timetable.summary or 'Automated study schedule targeting your lowest percentage subjects with high-yield revision blocks.' }}
+                </p>
+            </div>
+
+            <!-- Weekly Confirmation Action Button -->
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" onclick="confirmWeeklyTimetable()" id="confirm-timetable-btn"
+                        class="px-4 py-2.5 rounded-2xl {% if timetable_obj and timetable_obj.is_weekly_confirmed %}bg-emerald-600 text-white{% else %}bg-purple-600 hover:bg-purple-700 text-white{% endif %} text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                    <span id="confirm-timetable-icon">{% if timetable_obj and timetable_obj.is_weekly_confirmed %}✅{% else %}✍️{% endif %}</span>
+                    <span id="confirm-timetable-label">
+                        {% if timetable_obj and timetable_obj.is_weekly_confirmed %}Confirmed for Week {{ current_week_code }}{% else %}Confirm This Week's Timetable{% endif %}
+                    </span>
+                </button>
+                <button type="button" onclick="window.print()"
+                        class="p-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold border border-gray-200 transition"
+                        title="Print Weekly Timetable">
+                    🖨️
+                </button>
+            </div>
+        </div>
+
+        <!-- Struggle Subjects Priority Chips -->
+        {% if timetable.struggle_subjects %}
+        <div class="flex items-center gap-2 flex-wrap text-xs bg-rose-50/80 p-3 rounded-2xl border border-rose-100">
+            <span class="font-black text-rose-800 flex items-center gap-1">
+                <span>🚨</span> High Priority Revision Areas:
+            </span>
+            {% for sub in timetable.struggle_subjects %}
+            <span class="px-2.5 py-1 bg-white text-rose-700 font-bold rounded-xl border border-rose-200 shadow-2xs">
+                {{ sub }}
+            </span>
+            {% endfor %}
+            <span class="text-gray-500 text-[11px] ml-auto">Allocated prime evening & weekend revision blocks</span>
+        </div>
+        {% endif %}
+
+        <!-- Days Schedule Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for day, slots in timetable.days.items() %}
+            <div class="bg-slate-50/80 rounded-2xl p-4 border border-gray-200/80 space-y-3">
+                <div class="flex items-center justify-between border-b border-gray-200/60 pb-2">
+                    <h3 class="font-black text-xs text-gray-800 tracking-tight uppercase">{{ day }}</h3>
+                    <span class="text-[10px] font-bold text-gray-400">{{ slots|length }} Session{{ 's' if slots|length != 1 else '' }}</span>
+                </div>
+
+                <div class="space-y-2.5">
+                    {% for slot in slots %}
+                    {% set is_done = slot.slot_id in completed_slots %}
+                    <div id="card-{{ slot.slot_id }}" 
+                         class="p-3 rounded-xl border transition {% if is_done %}bg-emerald-50/90 border-emerald-200 opacity-80{% elif slot.type == 'critical_focus' %}bg-white border-rose-200 shadow-2xs{% else %}bg-white border-gray-200 shadow-2xs{% endif %} space-y-1.5">
+                        
+                        <div class="flex items-start justify-between gap-1">
+                            <span class="text-[10px] font-bold text-gray-500">{{ slot.time }}</span>
+                            <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer select-none">
+                                <input type="checkbox" onchange="toggleSlotCompleted('{{ slot.slot_id }}')" 
+                                       {% if is_done %}checked{% endif %}
+                                       class="rounded text-emerald-600 focus:ring-emerald-400 w-3.5 h-3.5 cursor-pointer">
+                                <span class="text-gray-400 {% if is_done %}text-emerald-700 font-black{% endif %}">Done</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <span class="text-xs font-black text-gray-900 block">{{ slot.subject }}</span>
+                            <span class="text-[11px] text-purple-700 font-bold block">{{ slot.topic }}</span>
+                        </div>
+
+                        {% if slot.goal %}
+                        <p class="text-[10px] text-gray-500 italic pt-0.5 border-t border-gray-100">
+                            🎯 {{ slot.goal }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- =========================================================================
+         4. SOUTH AFRICAN CAREER DIRECTORY & APS BENCHMARKS
+         ========================================================================= -->
+    <div class="space-y-4 pt-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-black text-gray-900 tracking-tight">Explore South African Career Clusters</h2>
+                <p class="text-xs text-gray-500">Filter careers by faculty cluster to view minimum admission APS and CAPS subject prerequisites</p>
+            </div>
+        </div>
+
+        <!-- Career Cluster Filters -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
+            <button type="button" onclick="filterCluster('all')" id="btn-cluster-all"
+                    class="cluster-tab px-4 py-2 rounded-xl bg-purple-600 text-white shadow-sm transition">
+                🌟 All Clusters
+            </button>
+            <button type="button" onclick="filterCluster('tech')" id="btn-cluster-tech"
+                    class="cluster-tab px-4 py-2 rounded-xl bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 transition">
+                💻 Software & Tech
+            </button>
+            <button type="button" onclick="filterCluster('health')" id="btn-cluster-health"
+                    class="cluster-tab px-4 py-2 rounded-xl bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 transition">
+                🧬 Health & Life Sciences
+            </button>
+            <button type="button" onclick="filterCluster('business')" id="btn-cluster-business"
+                    class="cluster-tab px-4 py-2 rounded-xl bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 transition">
+                📊 Business & Finance
+            </button>
+            <button type="button" onclick="filterCluster('engineering')" id="btn-cluster-engineering"
+                    class="cluster-tab px-4 py-2 rounded-xl bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 transition">
+                ⚙️ Engineering & Trades
+            </button>
+        </div>
+
+        <!-- Career Cards Grid -->
+        <div id="career-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Card: Software Engineer -->
+            <div class="career-card bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4" data-cluster="tech">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">💻</span>
+                        <span class="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-black rounded-full uppercase">APS 34–36</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-gray-900">Software Engineer / Web Developer</h3>
+                        <p class="text-xs text-gray-500">Information Technology & Software Services</p>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Key High School Subjects:</p>
+                            <p class="text-gray-600">Pure Mathematics (Level 5+), Information Technology or CAT, English (Level 5+).</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Higher Education Pathways:</p>
+                            <p class="text-gray-600">BSc Computer Science, BCom Information Systems, or National Diploma in IT.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span class="text-gray-500">Starting Salary:</span>
+                    <span class="font-bold text-emerald-600">R25,000 – R45,000 / mo</span>
+                </div>
+            </div>
+
+            <!-- Card: Data Analyst / Scientist -->
+            <div class="career-card bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4" data-cluster="tech">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">📊</span>
+                        <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-full uppercase">APS 34–38</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-gray-900">Data Analyst / AI Specialist</h3>
+                        <p class="text-xs text-gray-500">FinTech, Banking, Retail & Logistics</p>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Key High School Subjects:</p>
+                            <p class="text-gray-600">Mathematics (Level 6+), Accounting or IT, English.</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Higher Education Pathways:</p>
+                            <p class="text-gray-600">BSc Data Science, Mathematical Statistics, or Actuarial Science.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span class="text-gray-500">Starting Salary:</span>
+                    <span class="font-bold text-emerald-600">R28,000 – R50,000 / mo</span>
+                </div>
+            </div>
+
+            <!-- Card: Doctor / Medicine -->
+            <div class="career-card bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4" data-cluster="health">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">🧬</span>
+                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-full uppercase">APS 38–42</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-gray-900">Medical Doctor (MBChB)</h3>
+                        <p class="text-xs text-gray-500">Healthcare, Hospitals & Clinical Research</p>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Key High School Subjects:</p>
+                            <p class="text-gray-600">Pure Mathematics (Level 6+), Physical Sciences (Level 6+), Life Sciences (Level 6+).</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Higher Education Pathways:</p>
+                            <p class="text-gray-600">MBChB at Wits, UCT, UP, Stellenbosch, UKZN, UFS, SMU.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span class="text-gray-500">Starting Salary (Intern):</span>
+                    <span class="font-bold text-emerald-600">R40,000 – R52,000 / mo</span>
+                </div>
+            </div>
+
+            <!-- Card: Chartered Accountant -->
+            <div class="career-card bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4" data-cluster="business">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">📑</span>
+                        <span class="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-black rounded-full uppercase">APS 34–36</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-gray-900">Chartered Accountant (CA(SA))</h3>
+                        <p class="text-xs text-gray-500">Audit, Corporate Finance & Investment Banking</p>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Key High School Subjects:</p>
+                            <p class="text-gray-600">Pure Mathematics (Level 5+), Accounting (Level 5+), English (Level 5+).</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Higher Education Pathways:</p>
+                            <p class="text-gray-600">BCom Accounting / BAcc accredited by SAICA.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span class="text-gray-500">Starting Salary (Article Clerk):</span>
+                    <span class="font-bold text-emerald-600">R18,000 – R30,000 / mo</span>
+                </div>
+            </div>
+
+            <!-- Card: Mechanical / Mechatronics Engineer -->
+            <div class="career-card bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4" data-cluster="engineering">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">⚙️</span>
+                        <span class="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-black rounded-full uppercase">APS 36–38</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-gray-900">Mechanical / Mechatronics Engineer</h3>
+                        <p class="text-xs text-gray-500">Automotive, Mining, Aerospace & Robotics</p>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Key High School Subjects:</p>
+                            <p class="text-gray-600">Pure Mathematics (Level 6+), Physical Sciences (Level 6+), English.</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Higher Education Pathways:</p>
+                            <p class="text-gray-600">BSc / BEng Mechanical Engineering accredited by ECSA.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span class="text-gray-500">Starting Salary:</span>
+                    <span class="font-bold text-emerald-600">R28,000 – R48,000 / mo</span>
+                </div>
+            </div>
+
+            <!-- Card: Registered Nurse / Healthcare -->
+            <div class="career-card bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4" data-cluster="health">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">🏥</span>
+                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-full uppercase">APS 28–30</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-gray-900">Professional Registered Nurse</h3>
+                        <p class="text-xs text-gray-500">Hospitals, Community Clinics & Emergency Care</p>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Key High School Subjects:</p>
+                            <p class="text-gray-600">Life Sciences (Level 4+), Mathematics or Maths Lit (Level 4+), English.</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 space-y-1 border border-gray-100">
+                            <p class="font-bold text-gray-800">Higher Education Pathways:</p>
+                            <p class="text-gray-600">Bachelor of Nursing (BCur) or Nursing College Diploma.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span class="text-gray-500">Starting Salary:</span>
+                    <span class="font-bold text-emerald-600">R20,000 – R32,000 / mo</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Upload Modal (for re-uploading new term reports) -->
+<div id="upload-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-gray-200 space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-black text-gray-900">Upload New Term Report Card</h3>
+            <button type="button" onclick="toggleUploadModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+        </div>
+        <p class="text-xs text-gray-500">
+            Upload your latest term report card (e.g. Term 2, Term 3, or Prelims). The AI will verify and update your APS and study timetable automatically.
+        </p>
+
+        <form onsubmit="handleModalReportUpload(event)" class="space-y-4 pt-2">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Upload Photo or PDF</label>
+                <input type="file" id="modal-report-file" accept="image/*,application/pdf" required
+                       class="w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-600 file:text-white border border-gray-200 rounded-xl p-2 bg-gray-50">
+            </div>
+            <button type="submit" id="modal-upload-btn"
+                    class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5">
+                <span>⚡</span>
+                <span id="modal-upload-btn-text">Verify & Update Timetable</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function filterCluster(cluster) {
+        document.querySelectorAll('.cluster-tab').forEach(b => {
+            b.classList.remove('bg-purple-600', 'text-white');
+            b.classList.add('bg-white', 'text-gray-700');
+        });
+        const activeBtn = document.getElementById('btn-cluster-' + cluster);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-purple-600', 'text-white');
+            activeBtn.classList.remove('bg-white', 'text-gray-700');
+        }
+
+        const cards = document.querySelectorAll('.career-card');
+        cards.forEach(card => {
+            if (cluster === 'all' || card.dataset.cluster === cluster) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function toggleUploadModal() {
+        const modal = document.getElementById('upload-modal');
+        if (modal) {
+            modal.classList.toggle('hidden');
+        }
+    }
+
+    async function handleReportUpload(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('report-file-input');
+        const careerSelect = document.getElementById('target-career-select');
+        const btn = document.getElementById('report-upload-btn');
+        const btnIcon = document.getElementById('report-upload-btn-icon');
+        const btnText = document.getElementById('report-upload-btn-text');
+
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            alert('Please select a report card photo or PDF file.');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const career = careerSelect ? careerSelect.value : 'Software Engineer';
+
+        btn.disabled = true;
+        btnIcon.textContent = '⏳';
+        btnText.textContent = 'Scanning Report Card with Gemini Vision...';
+
+        const formData = new FormData();
+        formData.append('report_file', file);
+        formData.append('target_career', career);
+
+        try {
+            const res = await fetch('/student/api/career/upload-report', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Could not parse report card. Please make sure marks and subjects are clear.');
+                btn.disabled = false;
+                btnIcon.textContent = '⚡';
+                btnText.textContent = 'Scan & Verify Report Card';
+            }
+        } catch (err) {
+            alert('Network error while uploading report card. Please try again.');
+            btn.disabled = false;
+            btnIcon.textContent = '⚡';
+            btnText.textContent = 'Scan & Verify Report Card';
+        }
+    }
+
+    async function handleModalReportUpload(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('modal-report-file');
+        const btn = document.getElementById('modal-upload-btn');
+        const btnText = document.getElementById('modal-upload-btn-text');
+
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            alert('Please select a report card photo or PDF file.');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        btn.disabled = true;
+        btnText.textContent = 'Analyzing Report Card...';
+
+        const formData = new FormData();
+        formData.append('report_file', file);
+
+        try {
+            const res = await fetch('/student/api/career/upload-report', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Could not parse report card.');
+                btn.disabled = false;
+                btnText.textContent = 'Verify & Update Timetable';
+            }
+        } catch (err) {
+            alert('Upload error. Please try again.');
+            btn.disabled = false;
+            btnText.textContent = 'Verify & Update Timetable';
+        }
+    }
+
+    async function toggleSlotCompleted(slotId) {
+        const card = document.getElementById('card-' + slotId);
+        try {
+            const res = await fetch('/student/api/career/confirm-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ toggle_slot_id: slotId })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                const isCompleted = data.completed_slots.includes(slotId);
+                if (card) {
+                    if (isCompleted) {
+                        card.classList.add('bg-emerald-50/90', 'border-emerald-200', 'opacity-80');
+                        card.classList.remove('bg-white');
+                    } else {
+                        card.classList.remove('bg-emerald-50/90', 'border-emerald-200', 'opacity-80');
+                        card.classList.add('bg-white');
+                    }
+                }
+            }
+        } catch(err) {
+            console.warn('Failed to toggle study slot:', err);
+        }
+    }
+
+    async function confirmWeeklyTimetable() {
+        const btn = document.getElementById('confirm-timetable-btn');
+        const icon = document.getElementById('confirm-timetable-icon');
+        const label = document.getElementById('confirm-timetable-label');
+
+        try {
+            const res = await fetch('/student/api/career/confirm-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm_week: true })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                btn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                btn.classList.add('bg-emerald-600');
+                icon.textContent = '✅';
+                label.textContent = 'Confirmed for Week ' + data.current_week_code;
+            }
+        } catch(err) {
+            alert('Could not confirm timetable. Please try again.');
+        }
+    }
+
+    async function submitCustomCareer() {
+        const input = document.getElementById('custom-career-input');
+        if (!input) return;
+        const career = input.value.trim();
+        if (!career) {
+            alert('Please type a career or job title.');
+            input.focus();
+            return;
+        }
+        await changeCareerTarget(career);
+    }
+
+    function setCareerTarget(career) {
+        const input = document.getElementById('custom-career-input');
+        if (input) {
+            input.value = career;
+        }
+        changeCareerTarget(career);
+    }
+
+    async function changeCareerTarget(newCareer) {
+        const btn = document.getElementById('analyze-career-btn');
+        const icon = document.getElementById('analyze-career-icon');
+        const text = document.getElementById('analyze-career-text');
+
+        if (btn) {
+            btn.disabled = true;
+            if (icon) icon.textContent = '⏳';
+            if (text) text.textContent = 'Analyzing Criteria...';
+        }
+
+        try {
+            const res = await fetch('/student/api/career/select-target', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_career: newCareer })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to evaluate career. Please try again.');
+                if (btn) {
+                    btn.disabled = false;
+                    if (icon) icon.textContent = '⚡';
+                    if (text) text.textContent = 'Analyze Career';
+                }
+            }
+        } catch(err) {
+            console.warn('Failed to update target career:', err);
+            if (btn) {
+                btn.disabled = false;
+                if (icon) icon.textContent = '⚡';
+                if (text) text.textContent = 'Analyze Career';
+            }
+        }
+    }
+</script>
+{% endblock %}
