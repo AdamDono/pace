@@ -993,3 +993,91 @@ class Model3DComparisonItem(db.Model):
 
     # Relationships
     comparison = db.relationship('Model3DComparison', backref='items')
+
+
+class StudentReportCard(db.Model):
+    """Uploaded and AI-verified term report card for South African student"""
+    __tablename__ = 'student_report_cards'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    file_path = db.Column(db.String(255), nullable=False)
+    school_name = db.Column(db.String(150), nullable=True)
+    grade = db.Column(db.Integer, default=11)  # 9, 10, 11, 12
+    term = db.Column(db.Integer, default=2)    # 1, 2, 3, 4
+    academic_year = db.Column(db.Integer, default=2026)
+    
+    # JSON array of extracted verified subjects:
+    # [{"subject": "Mathematics", "mark": 54, "level": 4}, {"subject": "Physical Sciences", "mark": 46, "level": 3}, ...]
+    subjects_json = db.Column(db.Text, nullable=False, default='[]')
+    
+    aps_score = db.Column(db.Integer, default=0)
+    is_verified = db.Column(db.Boolean, default=True)  # Locked from editing by student
+    target_career = db.Column(db.String(100), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('report_cards', lazy=True, order_by='StudentReportCard.created_at.desc()'))
+
+
+class StudentStudyTimetable(db.Model):
+    """Personalized adaptive weekly study timetable generated from report card gaps"""
+    __tablename__ = 'student_study_timetables'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    report_card_id = db.Column(db.Integer, db.ForeignKey('student_report_cards.id'), nullable=True)
+    
+    target_career = db.Column(db.String(100), nullable=True)
+    target_aps = db.Column(db.Integer, default=35)
+    
+    # Weekly study schedule structure in JSON
+    weekly_schedule_json = db.Column(db.Text, nullable=False, default='{}')
+    
+    # Array of completed slot IDs for the current week: ["mon-1", "tue-2"]
+    completed_slots_json = db.Column(db.Text, default='[]')
+    
+    # ISO week string e.g. "2026-W43"
+    current_week_code = db.Column(db.String(20), nullable=True)
+    is_weekly_confirmed = db.Column(db.Boolean, default=False)
+    confirmed_at = db.Column(db.DateTime, nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('study_timetables', lazy=True, order_by='StudentStudyTimetable.created_at.desc()'))
+    report_card = db.relationship('StudentReportCard', backref='timetables')
+
+
+class StudentAIChatMessage(db.Model):
+    """Persistent chat history for Bookworm AI Socratic Companion"""
+    __tablename__ = 'student_ai_chat_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    role = db.Column(db.String(20), nullable=False)  # 'user' or 'bookworm'
+    content = db.Column(db.Text, nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=True)
+    section_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    user = db.relationship('User', backref=db.backref('ai_chat_messages', lazy=True, order_by='StudentAIChatMessage.created_at.asc()'))
+
+
+class StudentAISparkUsage(db.Model):
+    """Daily persistent AI Sparks quota tracking per user"""
+    __tablename__ = 'student_ai_spark_usage'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    date_str = db.Column(db.String(10), nullable=False, index=True)  # 'YYYY-MM-DD'
+    sparks_used = db.Column(db.Integer, default=0, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'date_str', name='uq_user_daily_sparks'),
+    )
+
+    user = db.relationship('User', backref=db.backref('spark_usages', lazy=True))

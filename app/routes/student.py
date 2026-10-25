@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort, make_response
+from flask import Blueprint, render_template, redirect, url_for, jsonify, send_from_directory, request, flash, current_app, abort, make_response, session
 from flask_login import login_required, current_user
 from app.decorators import student_required, student_enrolled, admin_required, teacher_required
-from app import db
+from app import db, csrf
 from app.models import Course, Enrollment, Section, EnrollmentSection, Assignment, AssignmentSubmission, Quiz, QuizQuestion, QuizAttempt, QuizAnswer, Rating, Announcement, Notification, VideoWatchProgress, VideoInteractiveQuestion, VideoQuestionResponse
 from app.forms import ProfileForm, SubmissionForm
 from app.utils.file_helpers import allowed_file, allowed_file_size
@@ -1825,3 +1825,641 @@ def ask_live_question(session_id):
     
     flash('❓ Question submitted to instructor for the live session!', 'success')
     return redirect(url_for('student.live_classrooms'))
+
+
+# ---------------------------------------------------------------------------
+# Socratic AI Tutor ('Bookworm') Endpoints
+# ---------------------------------------------------------------------------
+@student_bp.route('/api/ai-tutor/chat', methods=['POST'])
+@csrf.exempt
+@login_required
+def ai_tutor_chat():
+    """Generates Socratic diagnostic guidance from Bookworm AI companion"""
+    from datetime import datetime
+    from app.services.ai_tutor import AITutorService, extract_lesson_context
+    from app.models import Course, Section
+    
+    data = request.get_json() or {}
+    user_message = data.get('message', '').strip()
+    if not user_message:
+        return jsonify({'success': False, 'message': 'Message cannot be empty.'}), 400
+        
+    course_id = data.get('course_id')
+    section_id = data.get('section_id')
+    hotspots = data.get('hotspots', [])
+    history = data.get('history', [])
+    
+    # 1. Quota check (Free tier gets 50 daily sparks; Pro, Teachers, Admins get unlimited)
+    from app.models import StudentAIChatMessage, StudentAISparkUsage
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    spark_record = StudentAISparkUsage.query.filter_by(user_id=current_user.id, date_str=today_str).first()
+    current_sparks = spark_record.sparks_used if spark_record else 0
+    
+    is_pro = getattr(current_user, 'is_pro', False) or current_user.role in ['teacher', 'admin']
+    max_sparks = 9999 if is_pro else 50  # 50 sparks/day for free users, unlimited for Pro/Matric Core
+
+    if not is_pro and current_sparks >= max_sparks:
+        return jsonify({
+            'success': False,
+            'quota_exceeded': True,
+            'quota_remaining': 0,
+            'quota_total': max_sparks,
+            'mascot_state': 'encouraging',
+            'response': "🔒 **Bookworm AI Tutor** daily sparks reached! You have used your 50 free daily sparks today. Upgrade to **Matric Core** or **Varsity & Skills Pro** for unlimited 24/7 AI tutoring, past paper drills, and personal study scheduling!"
+        }), 200
+
+    course_title = None
+    section_title = None
+    section_content = None
+    models_3d = []
+    
+    if not course_id and section_id:
+        s_lookup = Section.query.get(section_id)
+        if s_lookup:
+            course_id = s_lookup.course_id
+
+    # Build real-time academic context from database (syllabus, assignments, grades, report card)
+    academic_context = {
+        'syllabus': [],
+        'assignments': [],
+        'quizzes': [],
+        'report_card': None
+    }
+
+    if course_id:
+        c = Course.query.get(course_id)
+        if c:
+            course_title = c.title
+            # 1. Course Syllabus
+            sections = Section.query.filter_by(course_id=c.id).order_by(Section.order).all()
+            for sec in sections:
+                is_current = (sec.id == section_id)
+                academic_context['syllabus'].append({
+                    'title': sec.title,
+                    'is_current': is_current
+                })
+            
+            # 2. Assignments & Student Submissions
+            from app.models import Assignment, AssignmentSubmission, Quiz, QuizAttempt
+            course_assignments = Assignment.query.join(Section).filter(Section.course_id == c.id).all()
+            for a in course_assignments:
+                sub = AssignmentSubmission.query.filter_by(
+                    assignment_id=a.id, 
+                    student_id=current_user.id
+                ).order_by(AssignmentSubmission.submitted_at.desc()).first()
+                
+                due_str = a.due_date.strftime('%d %b %Y') if a.due_date else 'No set deadline'
+                academic_context['assignments'].append({
+                    'title': a.title,
+                    'due_date': due_str,
+                    'is_submitted': bool(sub),
+                    'grade': sub.grade if sub else None,
+                    'feedback': sub.feedback if sub else None,
+                    'lesson': a.section.title if a.section else ''
+                })
+
+            # 3. Quizzes & Student Attempts
+            course_quizzes = Quiz.query.join(Section).filter(Section.course_id == c.id).all()
+            for q in course_quizzes:
+                attempt = QuizAttempt.query.filter_by(
+                    quiz_id=q.id, 
+                    student_id=current_user.id
+                ).order_by(QuizAttempt.score.desc()).first()
+                academic_context['quizzes'].append({
+                    'title': q.title,
+                    'score': attempt.score if attempt else None
+                })
+
+    if section_id:
+        s = Section.query.get(section_id)
+        if s:
+            section_title = s.title
+            # Clean lesson text + every 3D model (name & pins) saved in this lesson
+            lesson_ctx = extract_lesson_context(s)
+            section_content = lesson_ctx['text']
+            models_3d = lesson_ctx['models']
+
+    # 4. Official Report Card & Career Profile
+    from app.models import StudentReportCard
+    latest_report = StudentReportCard.query.filter_by(user_id=current_user.id).order_by(StudentReportCard.created_at.desc()).first()
+    if latest_report:
+        subjects_list = []
+        if latest_report.subjects_json:
+            try:
+                import json
+                subjects_list = json.loads(latest_report.subjects_json)
+            except Exception:
+                subjects_list = []
+        academic_context['report_card'] = {
+            'school': latest_report.school_name,
+            'grade': latest_report.grade,
+            'term': latest_report.term,
+            'aps': latest_report.aps_score,
+            'target_career': latest_report.target_career,
+            'subjects': subjects_list
+        }
+
+    student_name = current_user.first_name or current_user.username
+
+    result = AITutorService.generate_socratic_guidance(
+        user_message=user_message,
+        course_title=course_title,
+        section_title=section_title,
+        section_content=section_content,
+        hotspots=hotspots,
+        history=history,
+        student_name=student_name,
+        models_3d=models_3d,
+        academic_context=academic_context
+    )
+
+    if result.get('success'):
+        # Persist spark usage in DB
+        if not spark_record:
+            spark_record = StudentAISparkUsage(user_id=current_user.id, date_str=today_str, sparks_used=1)
+            db.session.add(spark_record)
+        else:
+            spark_record.sparks_used += 1
+
+        # Persist conversation history in DB
+        msg_user = StudentAIChatMessage(
+            user_id=current_user.id,
+            role='user',
+            content=user_message,
+            course_id=course_id if course_id else None,
+            section_id=section_id if section_id else None
+        )
+        msg_bot = StudentAIChatMessage(
+            user_id=current_user.id,
+            role='bookworm',
+            content=result.get('response', ''),
+            course_id=course_id if course_id else None,
+            section_id=section_id if section_id else None
+        )
+        db.session.add(msg_user)
+        db.session.add(msg_bot)
+        db.session.commit()
+
+        sparks_now = spark_record.sparks_used
+        result['quota_remaining'] = max(0, max_sparks - sparks_now) if not is_pro else 999
+        result['quota_total'] = max_sparks if not is_pro else 'Unlimited'
+        result['is_pro'] = is_pro
+
+    return jsonify(result)
+
+
+@student_bp.route('/api/ai-tutor/career-pathway', methods=['POST'])
+@csrf.exempt
+@login_required
+def ai_tutor_career():
+    """Generates CAPS-aligned South African career and APS university pathway analysis"""
+    from app.services.ai_tutor import AITutorService
+    from app.models import Course, Section
+
+    data = request.get_json() or {}
+    course_id = data.get('course_id')
+    section_id = data.get('section_id')
+
+    course_title = "Science & Digital Literacy"
+    section_title = None
+
+    if course_id:
+        c = Course.query.get(course_id)
+        if c:
+            course_title = c.title
+    if section_id:
+        s = Section.query.get(section_id)
+        if s:
+            section_title = s.title
+
+    res = AITutorService.get_career_pathway(course_title=course_title, section_title=section_title)
+    return jsonify(res)
+
+
+@student_bp.route('/api/ai-tutor/quota', methods=['GET'])
+@login_required
+def ai_tutor_quota():
+    """Returns current user's spark quota and plan tier from database"""
+    from datetime import datetime
+    from app.models import StudentAISparkUsage
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    spark_record = StudentAISparkUsage.query.filter_by(user_id=current_user.id, date_str=today_str).first()
+    current_sparks = spark_record.sparks_used if spark_record else 0
+
+    is_pro = getattr(current_user, 'is_pro', False) or current_user.role in ['teacher', 'admin']
+    max_sparks = 9999 if is_pro else 50
+    
+    return jsonify({
+        'is_pro': is_pro,
+        'quota_remaining': max(0, max_sparks - current_sparks) if not is_pro else 999,
+        'quota_total': max_sparks if not is_pro else 'Unlimited',
+        'sparks_used': current_sparks
+    })
+
+
+@student_bp.route('/api/ai-tutor/history', methods=['GET'])
+@login_required
+def ai_tutor_history():
+    """Returns recent persistent chat history for Bookworm AI"""
+    from app.models import StudentAIChatMessage
+    # Fetch last 50 messages for current user
+    recent_messages = StudentAIChatMessage.query.filter_by(user_id=current_user.id).order_by(StudentAIChatMessage.created_at.desc()).limit(50).all()
+    recent_messages.reverse()
+    
+    history_data = [
+        {
+            'id': m.id,
+            'role': m.role,
+            'content': m.content,
+            'created_at': m.created_at.isoformat() if m.created_at else None
+        }
+        for m in recent_messages
+    ]
+    return jsonify({'success': True, 'messages': history_data})
+
+
+@student_bp.route('/api/ai-tutor/clear-history', methods=['POST'])
+@csrf.exempt
+@login_required
+def ai_tutor_clear_history():
+    """Clears user's chat history with Bookworm AI for a fresh start"""
+    from app.models import StudentAIChatMessage
+    StudentAIChatMessage.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Chat history cleared successfully.'})
+
+
+@student_bp.route('/career-guidance')
+@login_required
+def career_guidance():
+    """Dedicated South African career pathways and APS admission guidance"""
+    import json
+    from datetime import datetime
+    from app.models import Course, Enrollment, StudentReportCard, StudentStudyTimetable
+    from app.services.ai_tutor import AITutorService
+    
+    enrolled_courses = Course.query.join(Enrollment).filter(Enrollment.student_id == current_user.id).all()
+    all_courses = Course.query.filter(Course.status == 'approved', Course.visibility != 'private').all()
+    courses_data = [
+        {'id': c.id, 'title': c.title, 'category': getattr(c, 'category', 'general'), 'pricing_type': c.pricing_type, 'price': c.price, 'slug_or_id': getattr(c, 'slug_or_id', c.id)}
+        for c in all_courses
+    ]
+
+    latest_report = StudentReportCard.query.filter_by(user_id=current_user.id).order_by(StudentReportCard.created_at.desc()).first()
+    latest_timetable = StudentStudyTimetable.query.filter_by(user_id=current_user.id).order_by(StudentStudyTimetable.created_at.desc()).first()
+    
+    parsed_subjects = []
+    if latest_report and latest_report.subjects_json:
+        try:
+            parsed_subjects = json.loads(latest_report.subjects_json)
+        except Exception:
+            parsed_subjects = []
+
+    # Detect student math profile (Pure Maths vs Mathematical Literacy)
+    math_info = {
+        'type': 'none',
+        'name': 'Mathematics',
+        'mark': 0,
+        'level': 1,
+        'is_lit': False
+    }
+    for s in parsed_subjects:
+        s_name = s.get('subject', '').strip()
+        s_lower = s_name.lower()
+        if 'lit' in s_lower and ('math' in s_lower or 'wiskunde' in s_lower):
+            math_info = {
+                'type': 'lit',
+                'name': s_name,
+                'mark': s.get('mark', 0),
+                'level': s.get('level', 1),
+                'is_lit': True
+            }
+            break
+        elif 'math' in s_lower or 'wiskunde' in s_lower:
+            math_info = {
+                'type': 'pure',
+                'name': s_name,
+                'mark': s.get('mark', 0),
+                'level': s.get('level', 1),
+                'is_lit': False
+            }
+
+    timetable_data = None
+    completed_slots = []
+    if latest_timetable:
+        try:
+            timetable_data = json.loads(latest_timetable.weekly_schedule_json)
+        except Exception:
+            timetable_data = None
+        try:
+            completed_slots = json.loads(latest_timetable.completed_slots_json or '[]')
+        except Exception:
+            completed_slots = []
+
+    # Initial career analysis for current target career
+    initial_career = latest_report.target_career if (latest_report and latest_report.target_career) else 'Software Engineer'
+    career_analysis_res = AITutorService.analyze_career_requirements(
+        target_career=initial_career,
+        subjects=parsed_subjects,
+        available_courses=courses_data
+    )
+    career_analysis = career_analysis_res.get('analysis', {})
+
+    now = datetime.utcnow()
+    current_week_code = f"{now.isocalendar()[0]}-W{now.isocalendar()[1]:02d}"
+
+    return render_template(
+        'student/career_guidance.html',
+        enrolled_courses=enrolled_courses,
+        all_courses=all_courses,
+        report_card=latest_report,
+        subjects=parsed_subjects,
+        math_info=math_info,
+        career_analysis=career_analysis,
+        timetable=timetable_data,
+        timetable_obj=latest_timetable,
+        completed_slots=completed_slots,
+        current_week_code=current_week_code
+    )
+
+
+@student_bp.route('/api/career/upload-report', methods=['POST'])
+@csrf.exempt
+@login_required
+def upload_report_card():
+    """Uploads and scans a student's real report card image/PDF, locking verified marks"""
+    import os, json
+    from datetime import datetime
+    from flask import current_app
+    from werkzeug.utils import secure_filename
+    from app.models import StudentReportCard, StudentStudyTimetable
+    from app.services.ai_tutor import AITutorService
+
+    if 'report_file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file uploaded.'}), 400
+
+    file = request.files['report_file']
+    if not file or not file.filename:
+        return jsonify({'success': False, 'error': 'No file selected.'}), 400
+
+    filename = secure_filename(file.filename)
+    mime_type = file.mimetype or 'image/jpeg'
+    file_bytes = file.read()
+
+    if len(file_bytes) < 100:
+        return jsonify({'success': False, 'error': 'File is empty or corrupted.'}), 400
+
+    # Save to static/uploads/reports/
+    upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'reports')
+    os.makedirs(upload_folder, exist_ok=True)
+    saved_filename = f"report_user_{current_user.id}_{int(datetime.utcnow().timestamp())}_{filename}"
+    saved_path = os.path.join(upload_folder, saved_filename)
+    with open(saved_path, 'wb') as f:
+        f.write(file_bytes)
+    relative_file_path = f"/static/uploads/reports/{saved_filename}"
+
+    # Parse with Gemini Vision
+    res = AITutorService.parse_report_card(file_bytes=file_bytes, mime_type=mime_type)
+    if not res.get('success'):
+        return jsonify({'success': False, 'error': res.get('error', 'Could not read report card. Please upload a clear photo or PDF.')}), 400
+
+    data = res.get('data', {})
+    subjects = data.get('subjects', [])
+    if not subjects:
+        return jsonify({'success': False, 'error': 'No subjects could be detected. Please ensure marks and subjects are clearly legible.'}), 400
+
+    grade = data.get('grade', 11)
+    term = data.get('term', 2)
+    year = data.get('academic_year', 2026)
+    school = data.get('school_name', '')
+    aps = data.get('aps_score', AITutorService.calculate_aps(subjects))
+    target_career = request.form.get('target_career', 'Software Engineer')
+
+    # Save locked, verified report card in database
+    report = StudentReportCard(
+        user_id=current_user.id,
+        file_path=relative_file_path,
+        school_name=school,
+        grade=grade,
+        term=term,
+        academic_year=year,
+        subjects_json=json.dumps(subjects),
+        aps_score=aps,
+        is_verified=True,
+        target_career=target_career
+    )
+    db.session.add(report)
+    db.session.commit()
+
+    # Generate initial adaptive study timetable
+    timetable_res = AITutorService.generate_study_timetable(
+        subjects=subjects,
+        target_career=target_career,
+        grade=grade,
+        term=term
+    )
+    timetable_json = {}
+    if timetable_res.get('success'):
+        timetable_json = timetable_res.get('timetable', {})
+
+    now = datetime.utcnow()
+    current_week_code = f"{now.isocalendar()[0]}-W{now.isocalendar()[1]:02d}"
+
+    study_timetable = StudentStudyTimetable(
+        user_id=current_user.id,
+        report_card_id=report.id,
+        target_career=target_career,
+        target_aps=timetable_json.get('target_aps', 36),
+        weekly_schedule_json=json.dumps(timetable_json),
+        completed_slots_json='[]',
+        current_week_code=current_week_code,
+        is_weekly_confirmed=False
+    )
+    db.session.add(study_timetable)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'report_card': {
+            'id': report.id,
+            'grade': grade,
+            'term': term,
+            'school_name': school,
+            'aps_score': aps,
+            'subjects': subjects,
+            'is_verified': True
+        },
+        'timetable': timetable_json
+    })
+
+
+@student_bp.route('/api/career/confirm-timetable', methods=['POST'])
+@csrf.exempt
+@login_required
+def confirm_study_timetable():
+    """Confirms student weekly timetable and toggles completed study slots"""
+    import json
+    from datetime import datetime
+    from app.models import StudentStudyTimetable
+
+    data = request.get_json() or {}
+    timetable = StudentStudyTimetable.query.filter_by(user_id=current_user.id).order_by(StudentStudyTimetable.created_at.desc()).first()
+    if not timetable:
+        return jsonify({'success': False, 'error': 'No study timetable found. Please upload a report card first.'}), 404
+
+    now = datetime.utcnow()
+    current_week_code = f"{now.isocalendar()[0]}-W{now.isocalendar()[1]:02d}"
+
+    # Handle slot completion toggle
+    slot_id = data.get('toggle_slot_id')
+    completed_slots = []
+    try:
+        completed_slots = json.loads(timetable.completed_slots_json or '[]')
+    except Exception:
+        completed_slots = []
+
+    if slot_id:
+        if slot_id in completed_slots:
+            completed_slots.remove(slot_id)
+        else:
+            completed_slots.append(slot_id)
+        timetable.completed_slots_json = json.dumps(completed_slots)
+
+    # Handle weekly confirmation
+    if data.get('confirm_week'):
+        timetable.is_weekly_confirmed = True
+        timetable.current_week_code = current_week_code
+        timetable.confirmed_at = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'is_weekly_confirmed': timetable.is_weekly_confirmed,
+        'completed_slots': completed_slots,
+        'current_week_code': current_week_code
+    })
+
+
+@student_bp.route('/api/career/select-target', methods=['POST'])
+@csrf.exempt
+@login_required
+def select_career_target():
+    """Updates target career and generates an updated adaptive weekly study timetable"""
+    import json
+    from datetime import datetime
+    from app.models import StudentReportCard, StudentStudyTimetable
+    from app.services.ai_tutor import AITutorService
+
+    data = request.get_json() or {}
+    target_career = data.get('target_career', '').strip()
+    if not target_career:
+        return jsonify({'success': False, 'error': 'Target career is required.'}), 400
+
+    report = StudentReportCard.query.filter_by(user_id=current_user.id).order_by(StudentReportCard.created_at.desc()).first()
+    if not report:
+        return jsonify({'success': False, 'error': 'Please upload a verified report card first.'}), 404
+
+    report.target_career = target_career
+    subjects = json.loads(report.subjects_json or '[]')
+
+    # Fetch available courses for alignment check
+    from app.models import Course
+    all_courses = Course.query.filter(Course.status == 'approved', Course.visibility != 'private').all()
+    courses_data = [
+        {'id': c.id, 'title': c.title, 'category': getattr(c, 'category', 'general'), 'pricing_type': c.pricing_type, 'price': c.price, 'slug_or_id': getattr(c, 'slug_or_id', c.id)}
+        for c in all_courses
+    ]
+
+    # Analyze career requirements & math compatibility
+    career_analysis_res = AITutorService.analyze_career_requirements(
+        target_career=target_career,
+        subjects=subjects,
+        available_courses=courses_data
+    )
+    career_analysis = career_analysis_res.get('analysis', {})
+    target_aps = career_analysis.get('typical_aps_required', 34)
+
+    timetable_res = AITutorService.generate_study_timetable(
+        subjects=subjects,
+        target_career=target_career,
+        grade=report.grade,
+        term=report.term
+    )
+    timetable_json = timetable_res.get('timetable', {}) if timetable_res.get('success') else {}
+    if 'target_aps' not in timetable_json or not timetable_json['target_aps']:
+        timetable_json['target_aps'] = target_aps
+
+    now = datetime.utcnow()
+    current_week_code = f"{now.isocalendar()[0]}-W{now.isocalendar()[1]:02d}"
+
+    study_timetable = StudentStudyTimetable(
+        user_id=current_user.id,
+        report_card_id=report.id,
+        target_career=target_career,
+        target_aps=target_aps,
+        weekly_schedule_json=json.dumps(timetable_json),
+        completed_slots_json='[]',
+        current_week_code=current_week_code,
+        is_weekly_confirmed=False
+    )
+    db.session.add(study_timetable)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'target_career': target_career,
+        'analysis': career_analysis,
+        'timetable': timetable_json
+    })
+
+
+@student_bp.route('/api/ai-tutor/speak', methods=['POST'])
+@csrf.exempt
+@login_required
+def ai_tutor_speak():
+    """Generates realistic human neural voice audio for Bookworm message"""
+    from app.services.ai_tutor import AITutorService
+    data = request.get_json() or {}
+    text = data.get('text', '').strip()
+    voice = data.get('voice', 'Puck')
+    if not text:
+        return jsonify({'success': False, 'message': 'Text cannot be empty.'}), 400
+
+    res = AITutorService.generate_neural_speech(text=text, voice=voice)
+    return jsonify(res)
+
+
+@student_bp.route('/api/ai-tutor/transcribe', methods=['POST'])
+@csrf.exempt
+@login_required
+def ai_tutor_transcribe():
+    """Transcribes student microphone audio into text using Gemini 3.1 Flash Lite"""
+    import base64
+    from app.services.ai_tutor import AITutorService
+
+    audio_bytes = None
+    mime_type = "audio/webm"
+
+    # Support multipart file upload
+    if 'audio' in request.files:
+        audio_file = request.files['audio']
+        audio_bytes = audio_file.read()
+        mime_type = audio_file.mimetype or "audio/webm"
+    elif request.is_json:
+        data = request.get_json() or {}
+        b64_raw = data.get('audio_b64', '')
+        if ',' in b64_raw:
+            b64_raw = b64_raw.split(',', 1)[1]
+        if b64_raw:
+            try:
+                audio_bytes = base64.b64decode(b64_raw)
+            except Exception:
+                pass
+        mime_type = data.get('mime_type', 'audio/webm')
+
+    if not audio_bytes or len(audio_bytes) < 30:
+        return jsonify({'success': False, 'error': 'No audio data received.'}), 400
+
+    res = AITutorService.transcribe_audio(audio_bytes=audio_bytes, mime_type=mime_type)
+    return jsonify(res)

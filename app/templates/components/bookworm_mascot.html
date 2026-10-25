@@ -1,0 +1,1299 @@
+<!-- =========================================================================
+     PACE ACADEMY: "BOOKWORM" SOCRATIC AI COMPANION COMPONENT
+     Non-intrusive animated mascot that peeks, hides when idle, and provides
+     Socratic diagnostic guidance without revealing answers.
+========================================================================= -->
+
+<div id="bookworm-companion-root" class="fixed bottom-6 right-6 z-40 select-none">
+    
+    <!-- 1. Tucked Mascot Container (Peeks out, lowers when idle) -->
+    <div id="worm-dock" class="relative group cursor-pointer transition-all duration-500 ease-out transform"
+         onclick="toggleBookwormDrawer()"
+         title="Click to study with Bookworm AI">
+        
+        <!-- Subtle Speech Nudge Bubble (Auto-fades in/out) -->
+        <div id="worm-speech-pill" 
+             class="absolute -top-10 right-0 bg-white/95 backdrop-blur-md text-gray-800 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-lg border border-indigo-100 flex items-center gap-1.5 whitespace-nowrap opacity-0 pointer-events-none transition-all duration-300 transform translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 worm-nudge-peek">
+            <span class="text-amber-500">✨</span>
+            <span id="worm-nudge-text">Need a hint?</span>
+        </div>
+
+        <!-- The Animated SVG Bookworm Character -->
+        <div id="worm-avatar" class="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-xl transition-transform duration-300 worm-alive-float group-hover:scale-105 active:scale-95">
+            <svg viewBox="0 0 120 120" class="w-full h-full overflow-visible">
+                <defs>
+                    <linearGradient id="wormSkin" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#4ade80" />
+                        <stop offset="100%" stop-color="#16a34a" />
+                    </linearGradient>
+                    <linearGradient id="wormBelly" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#fef08a" />
+                        <stop offset="100%" stop-color="#facc15" />
+                    </linearGradient>
+                    <filter id="wormGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#15803d" flood-opacity="0.3"/>
+                    </filter>
+                </defs>
+
+                <!-- Tail Segments (Curled up comfortably) -->
+                <g id="worm-tail">
+                    <circle cx="28" cy="88" r="14" fill="url(#wormSkin)" />
+                    <circle cx="48" cy="85" r="16" fill="url(#wormSkin)" />
+                    <circle cx="70" cy="80" r="18" fill="url(#wormSkin)" />
+                    <!-- Belly stripe accents -->
+                    <path d="M 40 85 Q 48 92 56 85" stroke="#ca8a04" stroke-width="2.5" fill="none" opacity="0.4" />
+                    <path d="M 62 80 Q 70 88 78 80" stroke="#ca8a04" stroke-width="2.5" fill="none" opacity="0.4" />
+                </g>
+
+                <!-- Main Head Segment -->
+                <circle id="worm-head" cx="78" cy="46" r="26" fill="url(#wormSkin)" filter="url(#wormGlow)" class="transition-transform duration-300" />
+
+                <!-- Cute Rosy Cheeks -->
+                <ellipse cx="62" cy="54" rx="4" ry="2.5" fill="#f87171" opacity="0.6" />
+                <ellipse cx="94" cy="54" rx="4" ry="2.5" fill="#f87171" opacity="0.6" />
+
+                <!-- Animated Eyes -->
+                <g id="worm-eyes" class="transition-all duration-150">
+                    <!-- Left Eye -->
+                    <circle cx="68" cy="42" r="7" fill="#ffffff" stroke="#14532d" stroke-width="1.5" />
+                    <circle id="pupil-left" cx="70" cy="42" r="3.5" fill="#0f172a" />
+                    <circle cx="68.5" cy="40.5" r="1.2" fill="#ffffff" />
+
+                    <!-- Right Eye -->
+                    <circle cx="88" cy="42" r="7" fill="#ffffff" stroke="#14532d" stroke-width="1.5" />
+                    <circle id="pupil-right" cx="90" cy="42" r="3.5" fill="#0f172a" />
+                    <circle cx="88.5" cy="40.5" r="1.2" fill="#ffffff" />
+                </g>
+
+                <!-- Intellectual Round Spectacles (Glasses) -->
+                <g id="worm-glasses" stroke="#78350f" stroke-width="2.2" fill="none">
+                    <circle cx="68" cy="42" r="9" />
+                    <circle cx="88" cy="42" r="9" />
+                    <path d="M 77 42 L 79 42" stroke-linecap="round" />
+                    <!-- Glasses Ear Piece -->
+                    <path d="M 59 41 L 52 40" stroke-linecap="round" />
+                    <!-- Reflection shine -->
+                    <path d="M 64 37 L 70 37" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.8" />
+                    <path d="M 84 37 L 90 37" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.8" />
+                </g>
+
+                <!-- Expressive Mouth -->
+                <path id="worm-mouth" d="M 73 53 Q 78 59 83 53" fill="none" stroke="#14532d" stroke-width="2" stroke-linecap="round" />
+
+                <!-- Tiny Graduation Cap / Scholar Hat -->
+                <g id="worm-cap" transform="rotate(-12, 78, 22)">
+                    <!-- Mortarboard Diamond -->
+                    <polygon points="78,14 100,22 78,30 56,22" fill="#1e1b4b" stroke="#312e81" stroke-width="1" />
+                    <!-- Skull cap base -->
+                    <path d="M 68 25 Q 78 28 88 25 L 86 31 Q 78 33 70 31 Z" fill="#0f172a" />
+                    <!-- Gold Tassel -->
+                    <g id="worm-tassel">
+                        <path d="M 78 22 Q 88 24 92 34" fill="none" stroke="#eab308" stroke-width="1.5" stroke-linecap="round" />
+                        <circle cx="92" cy="35" r="2" fill="#ca8a04" />
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Spark Indicator Pill -->
+        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gray-900/90 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-gray-700 shadow flex items-center gap-1">
+            <span>✨</span>
+            <span id="worm-dock-sparks">Bookworm</span>
+        </div>
+    </div>
+
+
+    <!-- 2. Socratic Chat Drawer (Hidden by default, slides out) -->
+    <div id="bookworm-drawer" 
+         class="fixed bottom-6 right-6 w-[94vw] sm:w-[410px] max-h-[85vh] h-[640px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/80 flex flex-col overflow-hidden z-50 transition-all duration-300 transform scale-95 opacity-0 pointer-events-none origin-bottom-right">
+        
+        <!-- Drawer Header -->
+        <div class="p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 text-white flex items-center justify-between shrink-0 shadow-sm relative overflow-hidden">
+            <div class="flex items-center gap-3 relative z-10">
+                <div class="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md p-1 border border-white/20 flex items-center justify-center shrink-0">
+                    <span id="worm-header-emoji" class="text-2xl animate-bounce">🐛</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-black text-base tracking-tight">Bookworm AI</h3>
+                    </div>
+                    <p class="text-[11px] text-emerald-100 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Active & Reading with you
+                    </p>
+                </div>
+            </div>
+
+            <!-- Controls (Clear Chat, Voice Toggle & Close Button) -->
+            <div class="flex items-center gap-1.5 relative z-10">
+                <button type="button" id="worm-clear-history-btn" onclick="confirmClearHistory()" 
+                        class="px-2 py-1 rounded-xl bg-white/10 hover:bg-rose-500/30 text-white flex items-center gap-1 text-[11px] font-bold transition"
+                        title="Start a new conversation and clear chat history">
+                    <span class="text-xs">🗑️</span>
+                    <span class="hidden sm:inline">New Chat</span>
+                </button>
+                <button type="button" id="worm-auto-speak-toggle" onclick="toggleAutoSpeak()" 
+                        class="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1 text-[11px] font-bold transition"
+                        title="Toggle automatic voice speech for Bookworm responses">
+                    <span id="worm-auto-speak-icon">🔊</span>
+                    <span id="worm-auto-speak-label">Voice On</span>
+                </button>
+                <button type="button" onclick="toggleBookwormDrawer()" 
+                        class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition"
+                        aria-label="Minimize companion">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Decorative Glow Shape -->
+            <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+        </div>
+
+        <!-- Quota & Context Alert Banner -->
+        <div class="px-4 py-2 bg-slate-50 border-b border-gray-100 flex items-center justify-between text-[11px] text-gray-500 shrink-0">
+            <div class="flex items-center gap-1.5">
+                <span class="text-amber-500 font-bold">✨</span>
+                <span id="worm-drawer-quota-text">AI Companion • <strong>Matric Core & Pro</strong></span>
+            </div>
+            <a href="{{ url_for('auth.pricing') }}" target="_blank" class="text-indigo-600 font-bold hover:underline flex items-center gap-0.5">
+                <span>View Plans</span>
+                <span>↗</span>
+            </a>
+        </div>
+
+        <!-- Chat Conversation Stream -->
+        <div id="worm-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3.5 bg-gradient-to-b from-slate-50/50 to-white text-sm">
+            
+            <!-- Default Welcome Socratic Prompt from Bookworm -->
+            <div class="flex items-start gap-2.5" id="worm-welcome-msg" data-speech-text="Hey there! I'm Bookworm. I'm studying alongside you. If you get stuck on a tricky concept, need an explanation, or want to test your understanding, let me know!">
+                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-200">
+                    🐛
+                </div>
+                <div class="bg-white border border-gray-200/80 rounded-2xl rounded-tl-sm p-3.5 text-gray-800 shadow-sm max-w-[85%] leading-relaxed">
+                    <p class="font-bold text-xs text-emerald-700 mb-1">Hey there! I'm Bookworm.</p>
+                    <p class="text-xs text-gray-600">
+                        I'm studying alongside you. If you get stuck on a tricky concept, need an explanation, or want to test your understanding, let me know!
+                    </p>
+                    <div class="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                        <button type="button" onclick="toggleSpeakMessage('worm-welcome-msg')" id="worm-welcome-msg-audio-btn"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 transition">
+                            <span class="audio-icon">🔊</span>
+                            <span class="audio-label">Listen</span>
+                        </button>
+                        <span class="italic">Ask anything below or speak!</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Quick Action Starter Chips -->
+        <div id="worm-quick-chips" class="px-4 py-2 bg-white border-t border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+            <button type="button" onclick="sendQuickPrompt('Can you explain what we are learning right now in simple, clear terms?')" 
+                    class="shrink-0 text-xs bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-gray-700 px-3 py-1.5 rounded-full border border-gray-200 transition font-medium">
+                📝 Explain Simply
+            </button>
+            <button type="button" id="worm-chip-practice" onclick="handleContextualPracticePrompt()" 
+                    class="shrink-0 text-xs bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 text-gray-700 px-3 py-1.5 rounded-full border border-gray-200 transition font-medium">
+                🎯 Practice Question
+            </button>
+            <button type="button" onclick="sendQuickPrompt('Can you give me a relatable South African analogy for this lesson?')" 
+                    class="shrink-0 text-xs bg-gray-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 text-gray-700 px-3 py-1.5 rounded-full border border-gray-200 transition font-medium">
+                💡 Real-world Analogy
+            </button>
+        </div>
+
+        <!-- Input Box & Controls -->
+        <div class="p-3 bg-white border-t border-gray-200 shrink-0">
+            <form id="worm-chat-form" onsubmit="handleWormSubmit(event)" class="flex items-center gap-2">
+                <input type="text" id="worm-input" placeholder="Ask a question or explain what you think..." 
+                       autocomplete="off"
+                       class="flex-1 bg-gray-100 text-gray-900 placeholder-gray-400 text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition">
+                
+                <!-- Voice Input (Mic) Button (Tap to toggle or Hold to record) -->
+                <button type="button" id="worm-mic-btn" onclick="toggleVoiceInput(event)" aria-label="Tap to speak or hold to record" title="Tap to speak or hold to record"
+                        style="touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;"
+                        class="w-10 h-10 rounded-2xl bg-gray-100 hover:bg-purple-100 text-gray-600 hover:text-purple-700 active:scale-95 flex items-center justify-center shrink-0 border border-gray-200 transition select-none relative">
+                    <span id="worm-mic-icon-wrap" class="pointer-events-none flex items-center justify-center">
+                        <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3z"></path>
+                        </svg>
+                    </span>
+                </button>
+
+                <!-- Send Button -->
+                <button type="submit" id="worm-send-btn" aria-label="Send message to Bookworm"
+                        class="w-10 h-10 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md transition disabled:opacity-50 disabled:pointer-events-none">
+                    <svg class="w-4 h-4 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Styles for Mascot Animations & Dynamic Expressions -->
+<style>
+    /* Idle peek animation: worm drops slightly below screen edge when reading */
+    #worm-dock.idle-tucked {
+        transform: translateY(34px);
+    }
+    #worm-dock.idle-tucked:hover {
+        transform: translateY(0);
+    }
+
+    /* 1. Lively Float & Breathing Bobbing */
+    @keyframes wormAliveFloat {
+        0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+        }
+        25% {
+            transform: translateY(-5px) rotate(-1.5deg);
+        }
+        50% {
+            transform: translateY(-1.5px) rotate(1deg);
+        }
+        75% {
+            transform: translateY(-6px) rotate(-0.5deg);
+        }
+    }
+    .worm-alive-float {
+        animation: wormAliveFloat 3.8s ease-in-out infinite;
+    }
+
+    /* 2. Natural Eye Blinking */
+    @keyframes wormBlink {
+        0%, 88%, 93%, 97%, 100% {
+            transform: scaleY(1);
+        }
+        90.5%, 95% {
+            transform: scaleY(0.12);
+        }
+    }
+    #worm-eyes {
+        transform-origin: 78px 42px;
+        animation: wormBlink 4.2s ease-in-out infinite;
+    }
+
+    /* 3. Curious Looking Pupils */
+    @keyframes pupilLook {
+        0%, 42%, 100% {
+            transform: translate(0, 0);
+        }
+        48%, 65% {
+            transform: translate(-1.8px, -0.8px);
+        }
+        72%, 88% {
+            transform: translate(1.8px, 0.4px);
+        }
+    }
+    #pupil-left, #pupil-right {
+        animation: pupilLook 6.5s ease-in-out infinite;
+    }
+
+    /* 4. Tail Wiggle & Body Ripple */
+    @keyframes wormTailSway {
+        0%, 100% {
+            transform: rotate(0deg);
+        }
+        33% {
+            transform: rotate(-3.5deg);
+        }
+        66% {
+            transform: rotate(3deg);
+        }
+    }
+    #worm-tail {
+        transform-origin: 70px 80px;
+        animation: wormTailSway 3.2s ease-in-out infinite;
+    }
+
+    /* 5. Cap Tassel Sway */
+    @keyframes wormTasselSway {
+        0%, 100% {
+            transform: rotate(0deg);
+        }
+        50% {
+            transform: rotate(14deg);
+        }
+    }
+    #worm-tassel {
+        transform-origin: 78px 22px;
+        animation: wormTasselSway 2.4s ease-in-out infinite;
+    }
+
+    /* 6. Spark Badge Glow Pulse */
+    @keyframes sparkPillPulse {
+        0%, 100% {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            border-color: #374151;
+        }
+        50% {
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.45);
+            border-color: #ca8a04;
+        }
+    }
+    #worm-dock .absolute.-bottom-1 {
+        animation: sparkPillPulse 2.8s ease-in-out infinite;
+    }
+
+    /* 7. Gentle Nudge Pill Periodic Peek */
+    @keyframes nudgePeriodicPeek {
+        0%, 80%, 100% {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+        84%, 96% {
+            opacity: 0.95;
+            transform: translateY(0);
+        }
+    }
+    .worm-nudge-peek {
+        animation: nudgePeriodicPeek 14s ease-in-out infinite;
+    }
+
+    /* Worm Expressions */
+    @keyframes wormBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    .worm-celebrating {
+        animation: wormBounce 0.5s ease-in-out infinite;
+    }
+</style>
+
+<!-- JavaScript Logic for Bookworm AI -->
+<script>
+    const currentStudentUserId = '{{ current_user.id if current_user.is_authenticated else "" }}';
+    let wormChatHistory = [];
+    let isWormDrawerOpen = false;
+    let wormIdleTimer = null;
+
+    function getWormCacheKey() {
+        return 'worm_chat_cache_' + (currentStudentUserId || 'guest');
+    }
+
+    function updateSparksUI(remaining, total, isPro) {
+        const quotaText = document.getElementById('worm-drawer-quota-text');
+        const dockSparks = document.getElementById('worm-dock-sparks');
+        const sparkStr = isPro ? 'Unlimited' : `${remaining}/${total}`;
+        if (quotaText) {
+            quotaText.innerHTML = `Daily Sparks: <strong>${sparkStr}</strong>`;
+        }
+        if (dockSparks) {
+            dockSparks.textContent = sparkStr;
+        }
+    }
+
+    async function loadBookwormQuota() {
+        if (!currentStudentUserId) return;
+        try {
+            const res = await fetch('/student/api/ai-tutor/quota');
+            if (res.ok) {
+                const data = await res.json();
+                updateSparksUI(data.quota_remaining, data.quota_total, data.is_pro);
+            }
+        } catch(err) {
+            console.debug('Quota fetch error:', err);
+        }
+    }
+
+    function renderChatHistoryList(messages) {
+        const container = document.getElementById('worm-messages-container');
+        if (!container) return;
+        
+        const welcome = document.getElementById('worm-welcome-msg');
+        container.innerHTML = '';
+        if (welcome) {
+            container.appendChild(welcome);
+        }
+
+        messages.forEach(msg => {
+            appendWormMessage(msg.role, msg.content);
+        });
+        container.scrollTop = container.scrollHeight;
+    }
+
+    async function loadBookwormHistory() {
+        const cacheKey = getWormCacheKey();
+        
+        // 1. Immediately render from local cache if present
+        try {
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    wormChatHistory = parsed;
+                    renderChatHistoryList(wormChatHistory);
+                }
+            }
+        } catch(e) {}
+
+        // 2. Sync from database if user is authenticated
+        if (currentStudentUserId) {
+            try {
+                const res = await fetch('/student/api/ai-tutor/history');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.messages) && data.messages.length > 0) {
+                        wormChatHistory = data.messages.map(m => ({ role: m.role, content: m.content }));
+                        try {
+                            localStorage.setItem(cacheKey, JSON.stringify(wormChatHistory));
+                        } catch(e) {}
+                        renderChatHistoryList(wormChatHistory);
+                    }
+                }
+            } catch(err) {
+                console.debug('History fetch debug:', err);
+            }
+        }
+    }
+
+    async function confirmClearHistory() {
+        if (!confirm('Start a new conversation and clear your Bookworm chat history?')) return;
+        
+        const cacheKey = getWormCacheKey();
+        wormChatHistory = [];
+        try {
+            localStorage.removeItem(cacheKey);
+        } catch(e) {}
+
+        const container = document.getElementById('worm-messages-container');
+        if (container) {
+            const welcome = document.getElementById('worm-welcome-msg');
+            container.innerHTML = '';
+            if (welcome) container.appendChild(welcome);
+        }
+
+        if (currentStudentUserId) {
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                await fetch('/student/api/ai-tutor/clear-history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+            } catch(e) {}
+        }
+    }
+    window.confirmClearHistory = confirmClearHistory;
+
+    // Detect idle reading activity to tuck worm into corner
+    function resetWormIdleTimer() {
+        const dock = document.getElementById('worm-dock');
+        if (dock) {
+            dock.classList.remove('idle-tucked');
+        }
+        clearTimeout(wormIdleTimer);
+        // If drawer is closed, tuck mascot after 9 seconds of idle
+        if (!isWormDrawerOpen) {
+            wormIdleTimer = setTimeout(() => {
+                if (dock && !isWormDrawerOpen) {
+                    dock.classList.add('idle-tucked');
+                }
+            }, 9000);
+        }
+    }
+
+    window.addEventListener('mousemove', resetWormIdleTimer);
+    window.addEventListener('scroll', resetWormIdleTimer);
+    resetWormIdleTimer();
+
+    function toggleBookwormDrawer() {
+        const drawer = document.getElementById('bookworm-drawer');
+        const dock = document.getElementById('worm-dock');
+        if (!drawer || !dock) return;
+
+        isWormDrawerOpen = !isWormDrawerOpen;
+
+        if (isWormDrawerOpen) {
+            drawer.classList.remove('scale-95', 'opacity-0', 'pointer-events-none');
+            drawer.classList.add('scale-100', 'opacity-100', 'pointer-events-auto');
+            dock.classList.add('opacity-0', 'pointer-events-none');
+            // Ensure scrolled to latest message
+            const container = document.getElementById('worm-messages-container');
+            if (container) container.scrollTop = container.scrollHeight;
+            // Focus input
+            setTimeout(() => {
+                const input = document.getElementById('worm-input');
+                if (input) input.focus();
+            }, 300);
+        } else {
+            drawer.classList.add('scale-95', 'opacity-0', 'pointer-events-none');
+            drawer.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
+            dock.classList.remove('opacity-0', 'pointer-events-none');
+            resetWormIdleTimer();
+            stopAllSpeech();
+            stopVoiceInput();
+        }
+    }
+
+    // Expose globally for inline onclick handlers
+    window.toggleBookwormDrawer = toggleBookwormDrawer;
+
+    function handleContextualPracticePrompt() {
+        const has3D = (window.HOTSPOTS_DATA && Array.isArray(window.HOTSPOTS_DATA) && window.HOTSPOTS_DATA.length > 0);
+        if (has3D) {
+            sendQuickPrompt('Look at the 3D model on screen and test my knowledge with one diagnostic question.');
+        } else {
+            sendQuickPrompt('Can you ask me one quick question to test my understanding of this lesson?');
+        }
+    }
+
+    function updateStarterChipsForPage() {
+        const chipPractice = document.getElementById('worm-chip-practice');
+        if (chipPractice) {
+            const has3D = (window.HOTSPOTS_DATA && Array.isArray(window.HOTSPOTS_DATA) && window.HOTSPOTS_DATA.length > 0);
+            if (has3D) {
+                chipPractice.innerHTML = '🧊 Test 3D Model';
+            } else {
+                chipPractice.innerHTML = '🎯 Practice Question';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateStarterChipsForPage();
+        loadBookwormQuota();
+        loadBookwormHistory();
+    });
+    if (document.readyState !== 'loading') {
+        updateStarterChipsForPage();
+        loadBookwormQuota();
+        loadBookwormHistory();
+    }
+
+    function sendQuickPrompt(promptText) {
+        const input = document.getElementById('worm-input');
+        if (input) {
+            input.value = promptText;
+            document.getElementById('worm-chat-form').dispatchEvent(new Event('submit'));
+        }
+    }
+
+    let autoSpeakVoiceEnabled = true;
+    let userUsedVoiceForCurrentPrompt = false;
+    let lastSpokenText = '';
+
+    function toggleAutoSpeak() {
+        autoSpeakVoiceEnabled = !autoSpeakVoiceEnabled;
+        const btn = document.getElementById('worm-auto-speak-toggle');
+        const icon = document.getElementById('worm-auto-speak-icon');
+        const label = document.getElementById('worm-auto-speak-label');
+        if (!autoSpeakVoiceEnabled) {
+            stopAllSpeech();
+            if (icon) icon.textContent = '🔇';
+            if (label) label.textContent = 'Voice Off';
+            if (btn) btn.classList.add('opacity-70');
+        } else {
+            if (icon) icon.textContent = '🔊';
+            if (label) label.textContent = 'Voice On';
+            if (btn) btn.classList.remove('opacity-70');
+        }
+    }
+    window.toggleAutoSpeak = toggleAutoSpeak;
+
+    async function handleWormSubmit(e) {
+        e.preventDefault();
+        const wasVoice = userUsedVoiceForCurrentPrompt || isListening;
+        userUsedVoiceForCurrentPrompt = false;
+        stopVoiceInput();
+
+        const input = document.getElementById('worm-input');
+        const sendBtn = document.getElementById('worm-send-btn');
+        let userMsg = input.value.trim();
+
+        // If input box was empty but speech was captured, use it
+        if (!userMsg && lastSpokenText) {
+            userMsg = lastSpokenText.trim();
+        }
+        if (!userMsg) return;
+
+        lastSpokenText = '';
+
+        // Append student message to UI and history
+        appendWormMessage('user', userMsg);
+        wormChatHistory.push({ role: 'user', content: userMsg });
+        try {
+            localStorage.setItem(getWormCacheKey(), JSON.stringify(wormChatHistory));
+        } catch(err) {}
+
+        input.value = '';
+        input.disabled = true;
+        sendBtn.disabled = true;
+
+        // Show thinking indicator
+        const thinkingId = appendWormThinking();
+
+        // Collect context (Course ID, Section ID, 3D hotspots)
+        const currentCourseId = window.COURSE_ID || '{{ course.id if course else "" }}';
+        const currentSectionId = window.CURRENT_SECTION_ID || '';
+        
+        // Grab any 3D hotspots on page if available
+        let activeHotspots = [];
+        try {
+            if (window.HOTSPOTS_DATA && Array.isArray(window.HOTSPOTS_DATA)) {
+                activeHotspots = window.HOTSPOTS_DATA;
+            }
+        } catch(err){}
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res = await fetch('/student/api/ai-tutor/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    message: userMsg,
+                    course_id: currentCourseId,
+                    section_id: currentSectionId,
+                    hotspots: activeHotspots,
+                    history: wormChatHistory
+                })
+            });
+
+            const data = await res.json();
+            removeWormThinking(thinkingId);
+
+            if (data.response) {
+                const botMsgId = appendWormMessage('bookworm', data.response);
+                wormChatHistory.push({ role: 'bookworm', content: data.response });
+                try {
+                    localStorage.setItem(getWormCacheKey(), JSON.stringify(wormChatHistory));
+                } catch(err) {}
+
+                // Update quota UI
+                if (data.quota_remaining !== undefined) {
+                    updateSparksUI(data.quota_remaining, data.quota_total, data.is_pro);
+                }
+
+                // Animate mascot expression
+                updateMascotMood(data.mascot_state);
+
+                // Auto-speak response if student asked using voice or auto-voice is enabled
+                if (botMsgId && (wasVoice || autoSpeakVoiceEnabled)) {
+                    setTimeout(() => {
+                        toggleSpeakMessage(botMsgId);
+                    }, 120);
+                }
+            } else {
+                appendWormMessage('bookworm', data.message || 'I had a hiccup processing that. Please try again!');
+            }
+        } catch (err) {
+            removeWormThinking(thinkingId);
+            appendWormMessage('bookworm', 'Connection timeout. Check your internet connection and try again.');
+        } finally {
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+
+    function appendWormMessage(role, text) {
+        const container = document.getElementById('worm-messages-container');
+        if (!container) return null;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = role === 'user' ? 'flex items-start justify-end' : 'flex items-start gap-2.5';
+        let generatedMsgId = null;
+
+        if (role === 'user') {
+            msgDiv.innerHTML = `
+                <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-sm p-3.5 shadow-sm max-w-[85%] leading-relaxed text-xs sm:text-sm">
+                    ${escapeHtml(text)}
+                </div>
+            `;
+        } else {
+            // Render markdown-like bold and line breaks safely
+            const formatted = formatBookwormText(text);
+            const msgId = 'worm-msg-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            generatedMsgId = msgId;
+            msgDiv.id = msgId;
+            msgDiv.dataset.speechText = cleanTextForSpeech(text);
+            msgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-200">
+                    🐛
+                </div>
+                <div class="bg-white border border-gray-200/80 rounded-2xl rounded-tl-sm p-3.5 text-gray-800 shadow-sm max-w-[85%] leading-relaxed text-xs sm:text-sm">
+                    <div>${formatted}</div>
+                    <div class="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between">
+                        <button type="button" onclick="toggleSpeakMessage('${msgId}')" id="${msgId}-audio-btn"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 transition">
+                            <span class="audio-icon">🔊</span>
+                            <span class="audio-label">Listen</span>
+                        </button>
+                        <span class="text-[10px] text-gray-400 font-medium">Bookworm Voice</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+        return generatedMsgId;
+    }
+
+    function appendWormThinking() {
+        const container = document.getElementById('worm-messages-container');
+        const id = 'worm-thinking-' + Date.now();
+        const div = document.createElement('div');
+        div.id = id;
+        div.className = 'flex items-start gap-2.5';
+        div.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-200 animate-spin">
+                🐛
+            </div>
+            <div class="bg-white border border-gray-200/80 rounded-2xl rounded-tl-sm p-3 text-gray-500 shadow-sm text-xs flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce"></span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" style="animation-delay: 0.15s"></span>
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0.3s"></span>
+                <span class="ml-1 text-[11px] font-medium text-gray-400">Bookworm is thinking...</span>
+            </div>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        return id;
+    }
+
+    function removeWormThinking(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    }
+
+    function updateMascotMood(state) {
+        const avatar = document.getElementById('worm-avatar');
+        const emoji = document.getElementById('worm-header-emoji');
+        if (!avatar || !emoji) return;
+
+        avatar.classList.remove('worm-celebrating');
+        if (state === 'celebrating') {
+            avatar.classList.add('worm-celebrating');
+            emoji.textContent = '🎉';
+        } else if (state === 'explaining') {
+            emoji.textContent = '🧐';
+        } else if (state === 'encouraging') {
+            emoji.textContent = '💪';
+        } else {
+            emoji.textContent = '🐛';
+        }
+    }
+
+    // ── Voice Output (Realistic Human Neural Speech) ─────────────────────────
+    let currentSpeakingMsgId = null;
+    let currentAudioElement = null;
+    let currentUtterance = null;
+    let audioAbortController = null;
+
+    function cleanTextForSpeech(text) {
+        if (!text) return '';
+        let clean = text;
+        clean = clean.replace(/```[\s\S]*?```/g, ' Code snippet. ');
+        clean = clean.replace(/`([^`]+)`/g, '$1');
+        clean = clean.replace(/\*\*([^*]+)\*\*/g, '$1');
+        clean = clean.replace(/\*([^*]+)\*/g, '$1');
+        clean = clean.replace(/^#+\s+/gm, '');
+        clean = clean.replace(/^>\s+/gm, '');
+        clean = clean.replace(/^[-*+]\s+/gm, '');
+        clean = clean.replace(/https?:\/\/\S+/g, '');
+        clean = clean.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '');
+        return clean.trim();
+    }
+
+    function stopAllSpeech() {
+        if (audioAbortController) {
+            try { audioAbortController.abort(); } catch(e) {}
+            audioAbortController = null;
+        }
+        if (currentAudioElement) {
+            try {
+                currentAudioElement.pause();
+                currentAudioElement.currentTime = 0;
+            } catch(e) {}
+            currentAudioElement = null;
+        }
+        if ('speechSynthesis' in window) {
+            try { window.speechSynthesis.cancel(); } catch(e) {}
+        }
+        if (currentSpeakingMsgId) {
+            const btn = document.getElementById(currentSpeakingMsgId + '-audio-btn');
+            if (btn) {
+                btn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-200', 'bg-indigo-50', 'text-indigo-600', 'border-indigo-200');
+                btn.classList.add('bg-gray-50', 'text-gray-600', 'border-gray-200');
+                const icon = btn.querySelector('.audio-icon');
+                const label = btn.querySelector('.audio-label');
+                if (icon) icon.textContent = '🔊';
+                if (label) label.textContent = 'Listen';
+            }
+        }
+        currentSpeakingMsgId = null;
+        currentUtterance = null;
+    }
+
+    async function toggleSpeakMessage(msgId) {
+        // If clicking currently active message, stop playback
+        if (currentSpeakingMsgId === msgId) {
+            stopAllSpeech();
+            updateMascotMood('idle');
+            return;
+        }
+
+        stopAllSpeech();
+
+        const msgEl = document.getElementById(msgId);
+        if (!msgEl) return;
+
+        let speechText = msgEl.dataset.speechText;
+        if (!speechText) {
+            speechText = cleanTextForSpeech(msgEl.innerText || msgEl.textContent);
+        }
+        if (!speechText) return;
+
+        const btn = document.getElementById(msgId + '-audio-btn');
+        const icon = btn ? btn.querySelector('.audio-icon') : null;
+        const label = btn ? btn.querySelector('.audio-label') : null;
+
+        currentSpeakingMsgId = msgId;
+
+        // Visual loading indicator on button
+        if (btn) {
+            btn.classList.remove('bg-gray-50', 'text-gray-600');
+            btn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-indigo-200');
+            if (icon) icon.textContent = '⏳';
+            if (label) label.textContent = 'Loading...';
+        }
+
+        audioAbortController = new AbortController();
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res = await fetch('/student/api/ai-tutor/speak', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    text: speechText,
+                    voice: 'Puck'
+                }),
+                signal: audioAbortController.signal
+            });
+
+            if (!res.ok) throw new Error('Neural TTS request failed with status ' + res.status);
+
+            const data = await res.json();
+            if (data.success && data.audio_url) {
+                const audio = new Audio(data.audio_url);
+                currentAudioElement = audio;
+
+                audio.onplay = () => {
+                    if (btn && currentSpeakingMsgId === msgId) {
+                        btn.classList.remove('bg-indigo-50', 'text-indigo-600');
+                        btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
+                        if (icon) icon.textContent = '⏹️';
+                        if (label) label.textContent = 'Stop';
+                    }
+                    updateMascotMood('explaining');
+                };
+
+                audio.onended = () => {
+                    stopAllSpeech();
+                    updateMascotMood('idle');
+                };
+
+                audio.onerror = () => {
+                    console.warn('Neural audio playback error, falling back to speech synthesis.');
+                    fallbackSpeechSynthesis(speechText, msgId);
+                };
+
+                await audio.play();
+                return;
+            } else {
+                throw new Error(data.error || 'No audio returned');
+            }
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            console.warn('Real human neural TTS unavailable, using fallback synthesis:', err);
+            fallbackSpeechSynthesis(speechText, msgId);
+        }
+    }
+
+    function fallbackSpeechSynthesis(speechText, msgId) {
+        if (!('speechSynthesis' in window)) {
+            stopAllSpeech();
+            return;
+        }
+        const btn = document.getElementById(msgId + '-audio-btn');
+        const icon = btn ? btn.querySelector('.audio-icon') : null;
+        const label = btn ? btn.querySelector('.audio-label') : null;
+
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        currentUtterance = utterance;
+        currentSpeakingMsgId = msgId;
+
+        const voices = window.speechSynthesis.getVoices() || [];
+        let preferredVoice = voices.find(v => v.lang === 'en-ZA' || v.lang === 'en_ZA');
+        if (!preferredVoice) {
+            preferredVoice = voices.find(v => (v.lang.startsWith('en-GB') || v.lang.startsWith('en-US')) && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Siri')));
+        }
+        if (!preferredVoice) {
+            preferredVoice = voices.find(v => v.lang.startsWith('en'));
+        }
+        if (preferredVoice) utterance.voice = preferredVoice;
+
+        utterance.rate = 1.0;
+        utterance.pitch = 1.02;
+
+        utterance.onstart = function() {
+            if (btn) {
+                btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-indigo-50', 'text-indigo-600');
+                btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
+                if (icon) icon.textContent = '⏹️';
+                if (label) label.textContent = 'Stop';
+            }
+            updateMascotMood('explaining');
+        };
+
+        utterance.onend = function() {
+            stopAllSpeech();
+            updateMascotMood('idle');
+        };
+
+        utterance.onerror = function() {
+            stopAllSpeech();
+            updateMascotMood('idle');
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+    }
+
+    // ── Voice Input (Dual Engine: Live Speech Recognition + Gemini Neural Transcribe) ──
+    let speechRecognizer = null;
+    let mediaRecorder = null;
+    let recordedAudioChunks = [];
+    let isListening = false;
+    let isTranscribingBackend = false;
+    let micPointerStartTime = 0;
+    let micHoldActive = false;
+    let baseTranscript = '';
+    let isUserExplicitlyStopping = false;
+    let micRestartTimer = null;
+    let activeMicMediaStream = null;
+
+    function getSpeechRecognitionClass() {
+        return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    }
+
+    async function ensureMicAccess() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+        if (activeMicMediaStream && activeMicMediaStream.active) return true;
+        try {
+            activeMicMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            return true;
+        } catch (err) {
+            console.warn('Microphone permission not granted:', err);
+            alert('Microphone permission is required to speak with Bookworm. Please click "Allow" in your browser.');
+            return false;
+        }
+    }
+
+    function initSpeechRecognizer() {
+        const SpeechRecognitionClass = getSpeechRecognitionClass();
+        if (!SpeechRecognitionClass) return null;
+
+        const recognizer = new SpeechRecognitionClass();
+        recognizer.continuous = true;
+        recognizer.interimResults = true;
+        recognizer.lang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en-US';
+
+        recognizer.onstart = function() {
+            clearTimeout(micRestartTimer);
+        };
+
+        recognizer.onresult = function(event) {
+            let sessionTranscript = '';
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript + ' ';
+            }
+            sessionTranscript = sessionTranscript.trim();
+            if (sessionTranscript) {
+                const input = document.getElementById('worm-input');
+                const combined = (baseTranscript ? (baseTranscript + ' ' + sessionTranscript) : sessionTranscript).trim();
+                if (input) {
+                    input.value = combined;
+                }
+                lastSpokenText = combined;
+            }
+        };
+
+        recognizer.onerror = function(event) {
+            console.warn('Browser speech recognition status:', event.error);
+        };
+
+        recognizer.onend = function() {
+            if (isListening && !isUserExplicitlyStopping) {
+                const input = document.getElementById('worm-input');
+                if (input && input.value) {
+                    baseTranscript = input.value.trim();
+                }
+                clearTimeout(micRestartTimer);
+                micRestartTimer = setTimeout(() => {
+                    if (isListening && !isUserExplicitlyStopping) {
+                        try { recognizer.start(); } catch(e) {}
+                    }
+                }, 80);
+            }
+        };
+
+        return recognizer;
+    }
+
+    function setMicUIActive(active) {
+        const micBtn = document.getElementById('worm-mic-btn');
+        const iconWrap = document.getElementById('worm-mic-icon-wrap');
+        const input = document.getElementById('worm-input');
+        if (micBtn) {
+            if (active) {
+                micBtn.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                micBtn.classList.add('bg-rose-600', 'text-white', 'border-rose-500', 'ring-4', 'ring-rose-200', 'scale-105', 'shadow-md');
+                if (iconWrap) {
+                    iconWrap.innerHTML = `
+                        <span class="relative flex h-3.5 w-3.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-200 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-white"></span>
+                        </span>
+                    `;
+                }
+            } else {
+                micBtn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'ring-4', 'ring-rose-200', 'scale-105', 'shadow-md');
+                micBtn.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                if (iconWrap) {
+                    iconWrap.innerHTML = `
+                        <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3z"></path>
+                        </svg>
+                    `;
+                }
+            }
+        }
+        if (input) {
+            if (active) {
+                input.placeholder = '🎙️ Listening... (Speak your question, tap mic when done)';
+            } else if (!isTranscribingBackend) {
+                input.placeholder = 'Ask a question or explain what you think...';
+            }
+        }
+    }
+
+    function setMicUITranscribing(transcribing) {
+        isTranscribingBackend = transcribing;
+        const micBtn = document.getElementById('worm-mic-btn');
+        const iconWrap = document.getElementById('worm-mic-icon-wrap');
+        const input = document.getElementById('worm-input');
+        if (transcribing) {
+            if (micBtn) {
+                micBtn.classList.remove('bg-gray-100', 'text-gray-600');
+                micBtn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-indigo-300');
+            }
+            if (iconWrap) {
+                iconWrap.innerHTML = `<span class="animate-spin text-sm">⏳</span>`;
+            }
+            if (input && !input.value) {
+                input.placeholder = '⚡ Transcribing your voice with Bookworm...';
+            }
+        } else {
+            setMicUIActive(false);
+        }
+    }
+
+    async function toggleVoiceInput(e) {
+        if (e) e.preventDefault();
+        if (isListening) {
+            stopVoiceInput();
+        } else {
+            await startVoiceInput();
+        }
+    }
+
+    async function startVoiceInput() {
+        const hasAccess = await ensureMicAccess();
+        if (!hasAccess) return;
+
+        stopAllSpeech();
+        isUserExplicitlyStopping = false;
+        userUsedVoiceForCurrentPrompt = true;
+        isListening = true;
+
+        const input = document.getElementById('worm-input');
+        baseTranscript = (input && input.value) ? input.value.trim() : '';
+
+        // 1. Initialize hardware MediaRecorder
+        recordedAudioChunks = [];
+        try {
+            let options = {};
+            if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                    options = { mimeType: 'audio/webm;codecs=opus' };
+                } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                    options = { mimeType: 'audio/webm' };
+                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    options = { mimeType: 'audio/mp4' };
+                }
+            }
+            mediaRecorder = new MediaRecorder(activeMicMediaStream, options);
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data && event.data.size > 0) {
+                    recordedAudioChunks.push(event.data);
+                }
+            };
+            mediaRecorder.start(200);
+        } catch (err) {
+            console.warn('MediaRecorder init error:', err);
+        }
+
+        // 2. Also run browser SpeechRecognition if available for live interim preview
+        if (!speechRecognizer) {
+            speechRecognizer = initSpeechRecognizer();
+        }
+        if (speechRecognizer) {
+            try {
+                speechRecognizer.start();
+            } catch(e) {}
+        }
+
+        setMicUIActive(true);
+    }
+
+    function stopVoiceInput() {
+        isUserExplicitlyStopping = true;
+        micHoldActive = false;
+        clearTimeout(micRestartTimer);
+        isListening = false;
+        setMicUIActive(false);
+
+        if (speechRecognizer) {
+            try { speechRecognizer.stop(); } catch(e) {}
+        }
+
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.onstop = async () => {
+                const input = document.getElementById('worm-input');
+                const hasExistingText = input && input.value && input.value.trim().length > 3;
+
+                // If browser already converted speech to text, we're done!
+                if (hasExistingText) {
+                    lastSpokenText = input.value.trim();
+                    if (input) input.focus();
+                    return;
+                }
+
+                // If browser speech was empty or failed, transcribe via Gemini 3.1 Flash Lite!
+                if (recordedAudioChunks.length > 0) {
+                    setMicUITranscribing(true);
+                    try {
+                        const mime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+                        const blob = new Blob(recordedAudioChunks, { type: mime });
+                        const formData = new FormData();
+                        formData.append('audio', blob, 'recording.webm');
+
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                        const res = await fetch('/student/api/ai-tutor/transcribe', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrfToken },
+                            body: formData
+                        });
+
+                        const data = await res.json();
+                        if (data.success && data.text) {
+                            const trimmed = data.text.trim();
+                            if (input) {
+                                input.value = trimmed;
+                                input.focus();
+                            }
+                            lastSpokenText = trimmed;
+                        }
+                    } catch(err) {
+                        console.warn('Gemini audio transcription error:', err);
+                    } finally {
+                        setMicUITranscribing(false);
+                    }
+                }
+            };
+
+            try {
+                mediaRecorder.stop();
+            } catch(e) {}
+        } else {
+            const input = document.getElementById('worm-input');
+            if (input) input.focus();
+        }
+    }
+
+    function setupMicHandlers() {
+        const micBtn = document.getElementById('worm-mic-btn');
+        if (!micBtn) return;
+
+        micBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Support optional Hold-to-Talk via pointer events
+        micBtn.addEventListener('pointerdown', (e) => {
+            micPointerStartTime = Date.now();
+            micHoldActive = true;
+            try { micBtn.setPointerCapture(e.pointerId); } catch(err) {}
+        });
+
+        const handlePointerRelease = (e) => {
+            try { micBtn.releasePointerCapture(e.pointerId); } catch(err) {}
+            if (!micHoldActive) return;
+            const elapsed = Date.now() - micPointerStartTime;
+            micHoldActive = false;
+
+            // If held down for more than 550ms, this was deliberate hold-to-talk: stop on release
+            if (elapsed > 550 && isListening) {
+                stopVoiceInput();
+            }
+        };
+
+        micBtn.addEventListener('pointerup', handlePointerRelease);
+        micBtn.addEventListener('pointercancel', handlePointerRelease);
+    }
+
+    window.toggleVoiceInput = toggleVoiceInput;
+    window.stopVoiceInput = stopVoiceInput;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupMicHandlers);
+    } else {
+        setupMicHandlers();
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const p = document.createElement('p');
+        p.textContent = text;
+        return p.innerHTML;
+    }
+
+    function formatBookwormText(text) {
+        if (!text) return '';
+        let escaped = escapeHtml(text);
+        // Replace **bold** with <strong>
+        escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Replace line breaks with <br>
+        escaped = escaped.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+        return escaped;
+    }
+</script>

@@ -42,6 +42,10 @@ def privacy_policy():
 def terms_of_service():
     return render_template('auth/terms.html')
 
+@auth_bp.route('/pricing')
+def pricing():
+    return render_template('auth/pricing.html')
+
 @auth_bp.route('/courses/<identifier>')
 @auth_bp.route('/course/<identifier>')
 def public_course_detail(identifier):

@@ -389,7 +389,7 @@
 <body class="modern-bg min-h-screen text-gray-800 selection:bg-blue-500/10 selection:text-blue-700 overflow-x-hidden">
 
     <!-- Navigation Header -->
-    <header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-transparent">
+    <header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white shadow-sm" style="border-bottom:1px solid #e8edf2;">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <!-- Brand Logo -->
             <a href="/" class="flex items-center group">
@@ -401,6 +401,7 @@
             <!-- Desktop Navigation Menu -->
             <div class="hidden md:flex items-center space-x-9">
                 <a href="#courses" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Courses</a>
+                <a href="#pricing" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Pricing</a>
                 <a href="#story" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Why Us</a>
                 <a href="#features" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Technology</a>
                 <a href="#enterprise" class="text-sm font-bold text-[#0d2a4a]/85 hover:text-[#0F4476] transition-colors">Enterprise</a>
@@ -431,6 +432,8 @@
             class="hidden absolute top-20 left-0 right-0 bg-white border-b border-gray-200 flex flex-col p-6 space-y-4 shadow-xl md:hidden z-50">
             <a href="#courses" onclick="toggleMenu()"
                 class="text-base font-bold text-gray-800 py-2 border-b border-gray-100">Courses</a>
+            <a href="#pricing" onclick="toggleMenu()"
+                class="text-base font-bold text-gray-800 py-2 border-b border-gray-100">Pricing</a>
             <a href="#story" onclick="toggleMenu()"
                 class="text-base font-bold text-gray-800 py-2 border-b border-gray-100">Why Us</a>
             <a href="#features" onclick="toggleMenu()"
@@ -626,19 +629,20 @@
 
                 <!-- Left Column: Content -->
                 <div class="lg:col-span-6 xl:col-span-6 space-y-6 pb-8 lg:pb-16">
-                    <h1 class="text-4xl sm:text-5xl lg:text-[58px] font-extrabold text-gray-900 leading-tight tracking-tight">
-                        Learn skills that actually<br>move you forward.
+                    <h1 class="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-gray-900 leading-tight tracking-tight">
+                        From Matric to<br>
+                        <span class="text-[#0d2a4a]">Market-Ready.</span>
                     </h1>
 
                     <p class="text-base sm:text-lg text-[#1e4d75] font-medium leading-relaxed max-w-lg">
-                        Explore new skills, follow clear learning paths, and grow at your own pace without pressure.
+                        High school APS, 24/7 Voice AI tutoring, and accredited digital skills — all in one platform.
                     </p>
 
                     <!-- Actions: CTA Button + Real Learner Avatars -->
                     <div class="pt-2 flex flex-wrap items-center gap-6">
-                        <a href="#courses"
+                        <a href="{{ url_for('auth.login') }}"
                            class="inline-flex items-center justify-center px-8 py-3.5 bg-gray-900 hover:bg-black text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
-                            Our Courses
+                            Start Learning Free
                         </a>
 
                         <div class="flex items-center gap-3">
@@ -1536,8 +1540,623 @@
         </div>
     </section>
 
+    <!-- =========================================================================
+         PRICING & PLANS SECTION (Aligned with Landing Page Aesthetics)
+    ========================================================================= -->
+    <!-- =========================================================================
+         PRICING & PLANS SECTION (Premium Uniform Card Design - No Emojis)
+    ========================================================================= -->
+    <!-- ======================================================
+         PREMIUM PRICING SECTION
+    ====================================================== -->
+    <section id="pricing" style="background: #f8fafc; padding: 96px 24px; position: relative; overflow: hidden; border-top: 1px solid #e2e8f0;">
 
-    <!-- Frequently Asked Questions (FAQ) Section -->
+        <!-- Decorative blobs -->
+        <div style="position:absolute;top:-120px;left:-120px;width:500px;height:500px;background:radial-gradient(circle,rgba(99,102,241,0.06) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-100px;right:-80px;width:450px;height:450px;background:radial-gradient(circle,rgba(59,130,246,0.05) 0%,transparent 70%);pointer-events:none;"></div>
+
+        <div style="max-width:1200px;margin:0 auto;position:relative;z-index:1;">
+
+            <!-- Section Header -->
+            <div style="text-align:center;margin-bottom:56px;">
+                <h2 style="font-size:clamp(32px,5vw,54px);font-weight:900;color:#0f172a;line-height:1.1;letter-spacing:-0.03em;margin:0 0 16px 0;">
+                    Invest in Your <span style="color:#0f172a;">Future</span>
+                </h2>
+                <p style="color:#64748b;font-size:16px;max-width:520px;margin:0 auto;line-height:1.7;">
+                    Honest, affordable plans for learners, job seekers, and career builders across South Africa.
+                </p>
+            </div>
+
+            <!-- Segment Tabs -->
+            <div style="display:flex;justify-content:center;margin-bottom:48px;">
+                <div style="display:inline-flex;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:6px;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex-wrap:wrap;justify-content:center;">
+                    <button type="button" id="lp-tab-school" onclick="lpSwitchPricingTab('school')"
+                        style="padding:10px 24px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:all 0.25s ease;background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;box-shadow:0 4px 16px rgba(79,70,229,0.25);">
+                        High School (Grades 10–12)
+                    </button>
+                    <button type="button" id="lp-tab-skills" onclick="lpSwitchPricingTab('skills')"
+                        style="padding:10px 24px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:all 0.25s ease;background:transparent;color:#64748b;">
+                        Digital Skills &amp; Careers
+                    </button>
+                    <button type="button" id="lp-tab-corporate" onclick="lpSwitchPricingTab('corporate')"
+                        style="padding:10px 24px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:all 0.25s ease;background:transparent;color:#64748b;">
+                        Corporates &amp; Skills Dev
+                    </button>
+                </div>
+            </div>
+
+            <!-- =============================================
+                 TAB 1: HIGH SCHOOL PLANS
+            ============================================= -->
+            <div id="lp-pricing-school" style="transition:all 0.3s ease;">
+
+                <!-- Billing Toggle -->
+                <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:40px;">
+                    <span id="lp-school-monthly-label" style="font-size:13px;font-weight:600;color:#64748b;">Monthly</span>
+                    <button type="button" id="lp-school-toggle-btn" onclick="lpToggleSchoolBilling()" aria-label="Toggle billing period"
+                        style="position:relative;width:52px;height:28px;background:linear-gradient(135deg,#4f46e5,#3b82f6);border:none;border-radius:100px;cursor:pointer;padding:0;flex-shrink:0;">
+                        <span id="lp-school-toggle-thumb" style="position:absolute;top:3px;left:27px;width:22px;height:22px;background:#fff;border-radius:50%;transition:left 0.2s ease;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></span>
+                    </button>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span id="lp-school-annual-label" style="font-size:13px;font-weight:700;color:#4f46e5;">Annual Pass</span>
+                        <span style="background:#dcfce7;border:1px solid #bbf7d0;color:#16a34a;font-size:10px;font-weight:800;padding:3px 10px;border-radius:100px;letter-spacing:0.1em;text-transform:uppercase;">Save 30%</span>
+                    </div>
+                </div>
+
+                <!-- 3 School Pricing Cards -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:stretch;">
+
+                    <!-- Card 1: Free Starter -->
+                    <div class="pricing-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;padding:36px;display:flex;flex-direction:column;transition:all 0.3s ease;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+                        <div>
+                            <span style="display:inline-block;background:#f1f5f9;color:#64748b;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">Foundation</span>
+                            <h3 style="font-size:24px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">Free Starter</h3>
+                            <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 28px 0;">Core CAPS curriculum reading &amp; lesson notes — no payment needed.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #f1f5f9;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span style="font-size:52px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R0</span>
+                                    <span style="color:#94a3b8;font-size:14px;font-weight:500;">/ forever</span>
+                                </div>
+                                <p style="color:#94a3b8;font-size:11px;margin:6px 0 0 0;">No credit card required</p>
+                            </div>
+
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#475569;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Access to <strong style="color:#0f172a;">2 School Subjects</strong> (e.g. Life Sciences + 1 core)</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#475569;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Official CAPS curriculum notes &amp; lesson breakdowns</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#475569;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Interactive 3D diagrams &amp; scientific model viewer</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#94a3b8;">
+                                    <span style="width:18px;height:18px;background:#f1f5f9;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                    </span>
+                                    <span>Bookworm AI Tutor <em style="font-size:11px;color:#94a3b8;">(paid plans only)</em></span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:32px;">
+                            <a href="{{ url_for('auth.login') }}"
+                               style="display:block;text-align:center;padding:14px 20px;border-radius:12px;font-weight:700;font-size:14px;border:1px solid #cbd5e1;color:#0f172a;background:#ffffff;text-decoration:none;transition:all 0.2s ease;"
+                               onmouseover="this.style.borderColor='#94a3b8';this.style.background='#f8fafc';"
+                               onmouseout="this.style.borderColor='#cbd5e1';this.style.background='#ffffff';">
+                                Start Learning Free
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Matric Core (Featured) -->
+                    <div class="pricing-card" style="background:linear-gradient(160deg,#f5f3ff 0%,#eff6ff 100%);border:1px solid #c7d2fe;border-radius:24px;padding:36px;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;transform:translateY(-8px);box-shadow:0 8px 30px rgba(79,70,229,0.12);">
+                        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;font-size:10px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:5px 16px;border-radius:100px;white-space:nowrap;box-shadow:0 4px 16px rgba(79,70,229,0.4);">
+                            Most Popular
+                        </div>
+                        <div>
+                            <span style="display:inline-block;background:#ede9fe;border:1px solid #c4b5fd;color:#5b21b6;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">Core Mastery</span>
+                            <h3 style="font-size:24px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">Matric Core</h3>
+                            <p style="color:#4b5563;font-size:13px;line-height:1.6;margin:0 0 28px 0;">Full subject suite with 24/7 AI Socratic coaching to guide you through Matric.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #e0e7ff;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span id="lp-school-core-price" style="font-size:52px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R699</span>
+                                    <span id="lp-school-core-cadence" style="color:#4f46e5;font-size:14px;font-weight:600;">/ year</span>
+                                </div>
+                                <p id="lp-school-core-subtext" style="color:#4f46e5;font-size:11px;font-weight:700;margin:6px 0 0 0;">Save 35% vs monthly · Only R58.25/mo billed annually</p>
+                            </div>
+
+                            <p style="color:#4f46e5;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 14px 0;">Everything in Free, plus:</p>
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Full 5 High School CAPS Subjects</strong> — Life Sciences, Maths, Physics, English, and more</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v4l3 2" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round"/><circle cx="6" cy="6" r="4" stroke="#7c3aed" stroke-width="1.8"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Unlimited Bookworm AI Tutor</strong> — Socratic step-by-step guidance, never just answers</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>NSC Matric Past Paper Drills with worked-answer breakdowns</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Automated SA University APS score tracker</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:32px;">
+                            <a href="{{ url_for('auth.login') }}?plan=matric_core"
+                               style="display:block;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;text-decoration:none;transition:all 0.2s ease;box-shadow:0 6px 24px rgba(79,70,229,0.35);"
+                               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(79,70,229,0.45)';"
+                               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(79,70,229,0.35)';">
+                                Get Matric Core
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Varsity & Skills Pro -->
+                    <div class="pricing-card" style="background:#ffffff;border:1px solid #e9d5ff;border-radius:24px;padding:36px;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+                        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-size:10px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:5px 16px;border-radius:100px;white-space:nowrap;box-shadow:0 4px 16px rgba(124,58,237,0.4);">
+                            All-In-One
+                        </div>
+                        <div>
+                            <span style="display:inline-block;background:#f5f3ff;border:1px solid #ddd6fe;color:#6d28d9;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">School + Career Launch</span>
+                            <h3 style="font-size:24px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">Varsity &amp; Skills Pro</h3>
+                            <p style="color:#4b5563;font-size:13px;line-height:1.6;margin:0 0 28px 0;">High school CAPS + an accredited digital course + university application support — complete matric readiness.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #ede9fe;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span id="lp-school-pro-price" style="font-size:52px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R999</span>
+                                    <span id="lp-school-pro-cadence" style="color:#7c3aed;font-size:14px;font-weight:600;">/ year</span>
+                                </div>
+                                <p id="lp-school-pro-subtext" style="color:#7c3aed;font-size:11px;font-weight:700;margin:6px 0 0 0;">Save 31% vs monthly · Only R83.25/mo billed annually</p>
+                            </div>
+
+                            <p style="color:#6d28d9;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 14px 0;">Everything in Matric Core, plus:</p>
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#f5f3ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Accredited Course Included</strong> — choose from accredited courses across technical &amp; workplace fields</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#f5f3ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">University Application Guidance</strong> — Wits, UCT, UP, UJ, TVET, and more</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#f5f3ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Verified Digital Certificate</strong> with QR code for CVs and employer verification</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:32px;">
+                            <a href="{{ url_for('auth.login') }}?plan=varsity_pro"
+                               style="display:block;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:#0d2a4a;color:#fff;text-decoration:none;transition:all 0.2s ease;box-shadow:0 4px 16px rgba(13,42,74,0.2);"
+                               onmouseover="this.style.background='#071826';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(13,42,74,0.3)';"
+                               onmouseout="this.style.background='#0d2a4a';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 16px rgba(13,42,74,0.2)';">
+                                Get Varsity &amp; Skills Pro
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- =============================================
+                 TAB 2: DIGITAL SKILLS & CAREERS
+            ============================================= -->
+            <div id="lp-pricing-skills" style="display:none;transition:all 0.3s ease;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:stretch;">
+
+                    <!-- Card 1: Single Course Pass -->
+                    <div class="pricing-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;padding:36px;display:flex;flex-direction:column;transition:all 0.3s ease;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+                        <div>
+                            <span style="display:inline-block;background:#f1f5f9;color:#64748b;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">Standalone</span>
+                            <h3 style="font-size:24px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">Single Course Pass</h3>
+                            <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 28px 0;">Enroll in one specific accredited vocational or technology qualification.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #f1f5f9;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span style="font-size:40px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">From R150</span>
+                                </div>
+                                <p style="color:#94a3b8;font-size:11px;margin:6px 0 0 0;">Once-off payment · Lifetime access</p>
+                            </div>
+
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#475569;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Lifetime access to course modules, video lectures &amp; materials</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#475569;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Course-specific Bookworm AI tutor support &amp; concept mastery</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#475569;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Practical assessments &amp; real-world project tasks</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#475569;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Certificate of Completion</strong> — awarded on passing all assessments</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:32px;">
+                            <a href="#courses"
+                               style="display:block;text-align:center;padding:14px 20px;border-radius:12px;font-weight:700;font-size:14px;border:1px solid #e2e8f0;color:#475569;text-decoration:none;transition:all 0.2s ease;"
+                               onmouseover="this.style.borderColor='#4f46e5';this.style.color='#4f46e5';"
+                               onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#475569';">
+                                Browse Courses
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: All-Access Skills Pass (Featured) -->
+                    <div class="pricing-card" style="background:linear-gradient(160deg,#f5f3ff 0%,#eff6ff 100%);border:1px solid #c7d2fe;border-radius:24px;padding:36px;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;transform:translateY(-8px);box-shadow:0 8px 30px rgba(79,70,229,0.12);">
+                        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;font-size:10px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:5px 16px;border-radius:100px;white-space:nowrap;box-shadow:0 4px 16px rgba(79,70,229,0.4);">
+                            Most Popular
+                        </div>
+                        <div>
+                            <span style="display:inline-block;background:#ede9fe;border:1px solid #c4b5fd;color:#5b21b6;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">Career Essentials</span>
+                            <h3 style="font-size:24px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">All-Access Skills Pass</h3>
+                            <p style="color:#4b5563;font-size:13px;line-height:1.6;margin:0 0 28px 0;">Unlimited access to the complete digital &amp; workplace vocational course library. <strong style="color:#dc2626;">Certificate of Completion only</strong> — not a full accredited qualification.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #e0e7ff;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span style="font-size:52px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R99</span>
+                                    <span style="color:#4f46e5;font-size:14px;font-weight:600;">/ month</span>
+                                </div>
+                                <p style="color:#4f46e5;font-size:11px;font-weight:700;margin:6px 0 0 0;">Flexible monthly billing · Cancel anytime</p>
+                            </div>
+
+                            <p style="color:#4f46e5;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 14px 0;">What's Included:</p>
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Full Non-Accredited Course Library:</strong> Self-paced learning with Certificate of Completion</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Diverse Categories:</strong> Coding, HR, Business Administration, Tech Fundamentals &amp; Digital Skills</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v4l3 2" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round"/><circle cx="6" cy="6" r="4" stroke="#7c3aed" stroke-width="1.8"/></svg>
+                                    </span>
+                                    <span>Unlimited Socratic AI Code &amp; Study Assistant</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Certificate of Completion on all enrolled courses</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:32px;">
+                            <a href="{{ url_for('auth.login') }}?plan=skills_all_access"
+                               style="display:block;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;text-decoration:none;transition:all 0.2s ease;box-shadow:0 6px 24px rgba(79,70,229,0.35);"
+                               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(79,70,229,0.45)';"
+                               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(79,70,229,0.35)';">
+                                Get All-Access Pass
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Accredited Course Pass -->
+                    <div class="pricing-card" style="background:#ffffff;border:1px solid #e9d5ff;border-radius:24px;padding:36px;display:flex;flex-direction:column;transition:all 0.3s ease;position:relative;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+                        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#0d2a4a;color:#fff;font-size:10px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:5px 16px;border-radius:100px;white-space:nowrap;box-shadow:0 4px 16px rgba(13,42,74,0.3);">
+                            SETA Accredited
+                        </div>
+                        <div>
+                            <span style="display:inline-block;background:#f5f3ff;border:1px solid #ddd6fe;color:#6d28d9;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">National Qualification</span>
+                            <h3 style="font-size:24px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">Accredited Course Pass</h3>
+                            <p style="color:#4b5563;font-size:13px;line-height:1.6;margin:0 0 28px 0;">Official SETA/QCTO aligned vocational course with registered assessor moderation, digital PoE &amp; formal accredited certification.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #ede9fe;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span style="font-size:52px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R1,500</span>
+                                    <span style="color:#7c3aed;font-size:14px;font-weight:600;">/ once-off</span>
+                                </div>
+                                <p style="color:#7c3aed;font-size:11px;font-weight:700;margin:6px 0 0 0;">Per accredited course · Includes assessment &amp; moderation</p>
+                            </div>
+
+                            <p style="color:#6d28d9;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 14px 0;">Everything in All-Access, plus:</p>
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#f5f3ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong>1 Full Accredited Course:</strong> Choose any accredited qualification across our technical, business or administrative tracks</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#f5f3ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong>Registered Assessor &amp; Moderator Review:</strong> Complete grading of Portfolio of Evidence (PoE)</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#f5f3ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong>Official Statement of Results (SoR)</strong> &amp; verified digital certificate with QR code</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#374151;">
+                                    <span style="width:18px;height:18px;background:#f5f3ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Continuous practical workplace assignments with tutor feedback</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:32px;">
+                            <a href="{{ url_for('auth.login') }}?plan=accredited_course"
+                               style="display:block;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:#0d2a4a;color:#fff;text-decoration:none;transition:all 0.2s ease;box-shadow:0 4px 16px rgba(13,42,74,0.2);"
+                               onmouseover="this.style.background='#071826';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(13,42,74,0.3)';"
+                               onmouseout="this.style.background='#0d2a4a';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 16px rgba(13,42,74,0.2)';">
+                                Enroll in Accredited Course — R1,500
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- =============================================
+                 TAB 3: CORPORATES & SKILLS DEVELOPMENT (SDP)
+            ============================================= -->
+            <div id="lp-pricing-corporate" style="display:none;transition:all 0.3s ease;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:28px;align-items:stretch;max-width:1100px;margin:0 auto;">
+
+                    <!-- Card 1: For Corporates -->
+                    <div class="pricing-card" style="background:#ffffff;border:1px solid #cbd5e1;border-radius:24px;padding:38px;display:flex;flex-direction:column;justify-content:between;transition:all 0.3s ease;box-shadow:0 2px 14px rgba(0,0,0,0.05);position:relative;">
+                        <div style="position:absolute;top:-14px;left:36px;background:#0d2a4a;color:#fff;font-size:10px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:5px 16px;border-radius:100px;">
+                            For Employers
+                        </div>
+                        <div>
+                            <span style="display:inline-block;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">B-BBEE Compliant</span>
+                            <h3 style="font-size:26px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">Corporate Workforce Upskilling</h3>
+                            <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 24px 0;">Custom digital training and accredited staff upskilling aligned to your company's operational needs.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #f1f5f9;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span style="font-size:48px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R5,000</span>
+                                    <span style="color:#64748b;font-size:14px;font-weight:600;">/ month</span>
+                                </div>
+                                <p style="color:#047857;font-size:11px;font-weight:700;margin:6px 0 0 0;">Retainer package · B-BBEE Skills Development Scorecard compliant</p>
+                            </div>
+
+                            <p style="color:#0f172a;font-size:12px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 14px 0;">What's Included:</p>
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Access to Accredited Courses</strong> — training across business, HR, coding &amp; digital productivity categories</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Tailor-Made Company Courses</strong> — custom-designed around your internal SOPs, workflows &amp; software tools</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong>Manager Analytics &amp; Compliance Dashboard:</strong> live tracking of staff progress, quiz scores &amp; completion rates</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong>Verifiable Digital Certificates</strong> with tamper-proof QR codes for company audit reports</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Bulk staff spreadsheet onboarding, dedicated corporate account manager &amp; Priority SLA</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:36px;">
+                            <button type="button" onclick="openEnterpriseModal()"
+                               style="display:block;width:100%;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:#0d2a4a;color:#fff;border:none;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 16px rgba(13,42,74,0.2);"
+                               onmouseover="this.style.background='#071826';this.style.transform='translateY(-2px)';"
+                               onmouseout="this.style.background='#0d2a4a';this.style.transform='translateY(0)';">
+                                Request Corporate Proposal
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: For Skills Development Programs & SDPs -->
+                    <div class="pricing-card" style="background:#ffffff;border:2px solid #818cf8;border-radius:24px;padding:38px;display:flex;flex-direction:column;justify-content:between;transition:all 0.3s ease;box-shadow:0 8px 30px rgba(99,102,241,0.1);position:relative;">
+                        <div style="position:absolute;top:-14px;left:36px;background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;font-size:10px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:5px 16px;border-radius:100px;box-shadow:0 4px 16px rgba(79,70,229,0.35);">
+                            For Training Providers &amp; Learnerships
+                        </div>
+                        <div>
+                            <span style="display:inline-block;background:#ede9fe;border:1px solid #c4b5fd;color:#5b21b6;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">SETA &amp; QCTO Ready</span>
+                            <h3 style="font-size:26px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">Skills Development Portal (SDP)</h3>
+                            <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 24px 0;">Complete digital delivery LMS for accredited skills providers, TVETs and funded learnership cohorts.</p>
+
+                            <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #f1f5f9;">
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span style="font-size:48px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R500</span>
+                                    <span style="color:#4f46e5;font-size:14px;font-weight:600;">/ learner / month</span>
+                                </div>
+                                <p style="color:#4f46e5;font-size:11px;font-weight:700;margin:6px 0 0 0;">Per active enrolled learner · Full LMS &amp; audit compliance engine</p>
+                            </div>
+
+                            <p style="color:#0f172a;font-size:12px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 14px 0;">What's Included:</p>
+                            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Accredited LMS Delivery Platform:</strong> White-label learner portal with 24/7 access on web &amp; mobile</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Tailor-Made Course Digitization:</strong> We create &amp; upload your specific curriculum &amp; unit standards</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Digital Portfolio of Evidence (PoE):</strong> Automated student PoE compilation, uploads &amp; cloud archiving</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong>SETA &amp; QCTO Compliance Audit Trail:</strong> Formative &amp; summative assessments, assessor &amp; moderator sign-offs</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span>Workplace logbook tracking, daily electronic attendance registers &amp; SETA NLRD upload-ready data packs</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div style="margin-top:36px;">
+                            <button type="button" onclick="openEnterpriseModal()"
+                               style="display:block;width:100%;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;border:none;cursor:pointer;transition:all 0.2s ease;box-shadow:0 6px 24px rgba(79,70,229,0.35);"
+                               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(79,70,229,0.45)';"
+                               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(79,70,229,0.35)';">
+                                Set Up SDP Platform (R500/learner)
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+
+
+        </div>
+    </section>
+    <!-- Pricing JS -->
+    <script>
+        function lpSwitchPricingTab(tab) {
+            const schoolSection = document.getElementById('lp-pricing-school');
+            const skillsSection = document.getElementById('lp-pricing-skills');
+            const corporateSection = document.getElementById('lp-pricing-corporate');
+            const btnSchool = document.getElementById('lp-tab-school');
+            const btnSkills = document.getElementById('lp-tab-skills');
+            const btnCorporate = document.getElementById('lp-tab-corporate');
+
+            const activeStyle = 'padding:10px 24px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:all 0.25s ease;background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;box-shadow:0 4px 16px rgba(79,70,229,0.35);';
+            const inactiveStyle = 'padding:10px 24px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:all 0.25s ease;background:transparent;color:#94a3b8;';
+
+            schoolSection.style.display = 'none';
+            skillsSection.style.display = 'none';
+            corporateSection.style.display = 'none';
+            btnSchool.style.cssText = inactiveStyle;
+            btnSkills.style.cssText = inactiveStyle;
+            btnCorporate.style.cssText = inactiveStyle;
+
+            if (tab === 'school') {
+                schoolSection.style.display = '';
+                btnSchool.style.cssText = activeStyle;
+            } else if (tab === 'skills') {
+                skillsSection.style.display = '';
+                btnSkills.style.cssText = activeStyle;
+            } else if (tab === 'corporate') {
+                corporateSection.style.display = '';
+                btnCorporate.style.cssText = activeStyle;
+            }
+        }
+
+        let lpIsSchoolAnnual = true;
+        function lpToggleSchoolBilling() {
+            lpIsSchoolAnnual = !lpIsSchoolAnnual;
+            const thumb = document.getElementById('lp-school-toggle-thumb');
+            const monthlyLabel = document.getElementById('lp-school-monthly-label');
+            const annualLabel = document.getElementById('lp-school-annual-label');
+            const corePrice = document.getElementById('lp-school-core-price');
+            const coreCadence = document.getElementById('lp-school-core-cadence');
+            const coreSubtext = document.getElementById('lp-school-core-subtext');
+            const proPrice = document.getElementById('lp-school-pro-price');
+            const proCadence = document.getElementById('lp-school-pro-cadence');
+            const proSubtext = document.getElementById('lp-school-pro-subtext');
+
+            if (lpIsSchoolAnnual) {
+                thumb.style.left = '27px';
+                annualLabel.style.color = '#4f46e5';
+                monthlyLabel.style.color = '#64748b';
+                corePrice.textContent = 'R699';
+                coreCadence.textContent = '/ year';
+                coreSubtext.textContent = 'Save 35% vs monthly · Only R58.25/mo billed annually';
+                proPrice.textContent = 'R999';
+                proCadence.textContent = '/ year';
+                proSubtext.textContent = 'Save 31% vs monthly · Only R83.25/mo billed annually';
+            } else {
+                thumb.style.left = '3px';
+                monthlyLabel.style.color = '#4f46e5';
+                annualLabel.style.color = '#64748b';
+                corePrice.textContent = 'R89';
+                coreCadence.textContent = '/ month';
+                coreSubtext.textContent = 'Billed monthly · Cancel anytime';
+                proPrice.textContent = 'R120';
+                proCadence.textContent = '/ month';
+                proSubtext.textContent = 'Billed monthly · Cancel anytime';
+            }
+        }
+
+        /* Hover glow on pricing cards */
+        document.querySelectorAll('.pricing-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.borderColor = 'rgba(129,140,248,0.45)';
+                card.style.transform = card.style.transform.includes('-8px') ? 'translateY(-8px) scale(1.01)' : 'translateY(-4px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.borderColor = card.dataset.originalBorder || '';
+                card.style.transform = card.dataset.originalTransform || '';
+            });
+        });
+    </script>
+
     <section id="faq" class="py-24 px-6 bg-white" style="border-top: 1px solid #f3f4f6;">
         <div class="max-w-2xl mx-auto">
             <!-- Section Heading -->

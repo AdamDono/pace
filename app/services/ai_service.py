@@ -22,13 +22,13 @@ class AIService:
     """
     
     BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-    DEFAULT_MODEL = "gemini-3.5-flash"
+    DEFAULT_MODEL = "gemini-3.1-flash-lite"
     ALLOWED_MODELS = [
-        "gemini-3.5-flash",
-        "gemini-3.6-flash",
+        "gemini-3.1-flash-lite",
         "gemini-3.5-flash-lite",
-        "gemini-flash-lite-latest",
-        "gemini-flash-latest",
+        "gemini-3.6-flash",
+        "gemini-3.7-flash",
+        "gemini-3.8-flash",
         "gemini-pro-latest"
     ]
 
@@ -89,11 +89,11 @@ class AIService:
         target_model = cls._normalize_model(model)
         models_to_try = [target_model]
         fallback_pool = [
-            "gemini-3.5-flash",
-            "gemini-3.6-flash",
+            "gemini-3.1-flash-lite",
             "gemini-3.5-flash-lite",
-            "gemini-flash-lite-latest",
-            "gemini-flash-latest"
+            "gemini-3.6-flash",
+            "gemini-3.7-flash",
+            "gemini-3.8-flash"
         ]
         for candidate in fallback_pool:
             if candidate not in models_to_try:
@@ -128,7 +128,7 @@ class AIService:
             # 1. Try with requests if installed
             if HAS_REQUESTS:
                 try:
-                    res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=60)
+                    res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=8)
                     if res.status_code == 200:
                         data = res.json()
                         return data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -150,11 +150,12 @@ class AIService:
                     method="POST"
                 )
                 try:
-                    ssl_ctx = ssl.create_default_context()
+                    import certifi
+                    ssl_ctx = ssl.create_default_context(cafile=certifi.where())
                 except Exception:
                     ssl_ctx = ssl._create_unverified_context()
 
-                with urllib.request.urlopen(req, timeout=60, context=ssl_ctx) as response:
+                with urllib.request.urlopen(req, timeout=8, context=ssl_ctx) as response:
                     resp_body = response.read().decode('utf-8')
                     data = json.loads(resp_body)
                     return data["candidates"][0]["content"]["parts"][0]["text"].strip()
