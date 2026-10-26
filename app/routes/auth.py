@@ -326,6 +326,11 @@ def apply_plan():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # If student or lead clicked a pricing plan link (?plan=matric_core etc.), route directly to pricing modal
+    plan = request.args.get('plan')
+    if plan and request.method == 'GET':
+        return redirect(url_for('auth.pricing', plan=plan))
+
     if current_user.is_authenticated:
         return redirect_based_on_role()
         

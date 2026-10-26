@@ -807,19 +807,21 @@
         closePlanModal();
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        // Support URL query param ?tab=skills or ?tab=enterprise or ?tab=school
+    function checkUrlAndOpenPlan() {
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab');
         if (tab === 'skills' || tab === 'enterprise' || tab === 'school') {
             switchCategory(tab);
         }
 
-        // Support direct ?plan=matric_core or ?plan=varsity_pro etc.
         const planParam = urlParams.get('plan');
+        if (!planParam) return;
+
         if (planParam === 'matric_core') {
+            switchCategory('school');
             openPlanModal('matric_core', 'Matric Core (Grades 10–12)', 'school');
         } else if (planParam === 'varsity_pro') {
+            switchCategory('school');
             openPlanModal('varsity_pro', 'Varsity & Skills Pro', 'school');
         } else if (planParam === 'skills_all_access') {
             switchCategory('skills');
@@ -827,7 +829,29 @@
         } else if (planParam === 'accredited_course') {
             switchCategory('skills');
             openPlanModal('accredited_course', 'Accredited Qualification Pass (QCTO/SETA)', 'skills', 'R1,500 once-off');
+        } else if (planParam === 'corporate_workforce') {
+            switchCategory('enterprise');
+            openPlanModal('corporate_workforce', 'Corporate Employee Training', 'enterprise', 'From R1,500 / cohort');
+        } else if (planParam === 'sdp_ngo') {
+            switchCategory('enterprise');
+            openPlanModal('sdp_ngo', 'Skills Development & NGO Portal', 'enterprise', 'R150 – R300 / learner / mo');
+        } else if (planParam === 'school_licensing') {
+            switchCategory('enterprise');
+            openPlanModal('school_licensing', 'School / TVET Institutional Licensing', 'enterprise', 'R15 – R25 / student / mo');
         }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            checkUrlAndOpenPlan();
+            setTimeout(checkUrlAndOpenPlan, 80);
+        });
+    } else {
+        checkUrlAndOpenPlan();
+        setTimeout(checkUrlAndOpenPlan, 80);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
 
         // Handle Tailored Plan Enrollment Form Submission
         document.getElementById('planEnrollForm')?.addEventListener('submit', function (e) {
