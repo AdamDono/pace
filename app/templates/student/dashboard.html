@@ -47,36 +47,36 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-xs sm:text-sm text-gray-600 mb-1">Certificates</p>
-          <p class="text-2xl sm:text-3xl font-bold text-purple-600">{{ stats.certificates }}</p>
+          <p class="text-2xl sm:text-3xl font-bold text-blue-600">{{ stats.certificates }}</p>
         </div>
-        <div class="bg-purple-100 p-2.5 sm:p-3 rounded-lg">
-          <i class="fas fa-certificate text-xl sm:text-2xl text-purple-600"></i>
+        <div class="bg-blue-100 p-2.5 sm:p-3 rounded-lg">
+          <i class="fas fa-certificate text-xl sm:text-2xl text-blue-600"></i>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Career Guidance & Adaptive Timetable Spotlight Banner -->
-  <div class="mb-6 sm:mb-8 bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden border border-indigo-700/40">
+  <div class="mb-6 sm:mb-8 bg-blue-600 rounded-2xl p-5 sm:p-6 text-white shadow-md relative overflow-hidden">
     <div class="absolute -right-8 -bottom-10 opacity-15 pointer-events-none">
-      <i class="fas fa-compass text-9xl text-indigo-300"></i>
+      <i class="fas fa-compass text-9xl text-white"></i>
     </div>
     <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
       <div class="max-w-2xl">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold uppercase tracking-wider mb-2.5">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white border border-white/30 text-xs font-semibold uppercase tracking-wider mb-2.5">
           <i class="fas fa-shield-alt"></i> Official CAPS Report Card Verified
         </div>
         <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight">
           Career Guidance & Adaptive Study Timetable
         </h3>
-        <p class="text-indigo-200 text-sm mt-1.5 leading-relaxed">
+        <p class="text-blue-100 text-sm mt-1.5 leading-relaxed">
           Upload your term report card. Our AI locks in your authentic South African APS score, compares your marks against university degree criteria (Medicine, Engineering, CA, Software Dev), and generates your weekly study timetable targeting your struggle subjects.
         </p>
       </div>
       <div class="shrink-0 flex items-center gap-3">
         <a href="{{ url_for('student.career_guidance') }}"
-          class="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-0.5">
-          <i class="fas fa-calendar-alt"></i> Open Guidance & Timetable →
+          class="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-blue-600 hover:bg-blue-50 font-bold text-sm shadow transition transform hover:-translate-y-0.5">
+          <i class="fas fa-calendar-alt text-blue-600"></i> Open Guidance & Timetable →
         </a>
       </div>
     </div>
@@ -89,7 +89,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       {% for item in continue_learning[:2] %}
       <a href="{{ url_for('student.course_detail', identifier=item.course.slug_or_id, section_id=item.section.id) }}"
-        class="block bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-5 sm:p-6 text-white hover:shadow-lg transition group">
+        class="block bg-blue-600 hover:bg-blue-700 rounded-xl p-5 sm:p-6 text-white hover:shadow-lg transition group">
         <div class="flex items-start justify-between mb-3 gap-2">
           <div class="flex-1 min-w-0">
             <h3 class="font-bold text-base sm:text-lg mb-1 truncate">{{ item.course.title }}</h3>
@@ -172,13 +172,13 @@
          data-progress="{{ progress_by_course.get(course.id, 0)|round(0) }}"
          data-blocked="{{ 'true' if is_blocked else 'false' }}">
       <!-- Card Header with Thumbnail -->
-      <div class="relative aspect-[16/9] bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100 overflow-hidden">
+      <div class="relative aspect-[16/9] bg-blue-50 overflow-hidden">
         {% if course.banner_image %}
         <img src="{{ course.banner_image|media_url }}"
           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 {% if is_blocked %}grayscale brightness-75{% endif %}"
           alt="{{ course.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
         <div
-          class="absolute inset-0 hidden items-center justify-center bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100">
+          class="absolute inset-0 hidden items-center justify-center bg-blue-50">
           <div class="text-center">
             <div class="text-6xl mb-2">📚</div>
             <p class="text-sm text-gray-600 font-medium px-4">{{ course.title[:30] }}...</p>
@@ -261,7 +261,7 @@
         </button>
         {% else %}
         <a href="{{ url_for('student.course_detail', identifier=course.slug_or_id) }}"
-          class="mt-4 w-full inline-flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition">
+          class="mt-4 w-full inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
           Continue Learning
           <i class="fas fa-arrow-right ml-2"></i>
         </a>
@@ -275,7 +275,7 @@
   <div id="emptySearchState" class="hidden bg-white rounded-3xl border border-gray-200/80 p-8 sm:p-14 text-center max-w-xl mx-auto my-6 shadow-xs">
     <!-- Modern SVG Illustration -->
     <div class="relative w-24 h-24 mx-auto mb-5 flex items-center justify-center">
-      <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-100 via-blue-50 to-purple-100"></div>
+      <div class="absolute inset-0 rounded-full bg-blue-50"></div>
       <div class="relative z-10 w-16 h-16 rounded-2xl bg-white shadow-md border border-indigo-100 flex items-center justify-center text-indigo-600">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>

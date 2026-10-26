@@ -6,22 +6,21 @@
 <div class="max-w-7xl mx-auto space-y-8 pb-16">
 
     <!-- Header Banner -->
-    <div class="bg-gradient-to-r from-[#0d2a4a] via-[#123962] to-[#1e4d75] text-white p-8 rounded-3xl border border-blue-900/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+    <div class="bg-blue-600 text-white p-6 sm:p-8 rounded-3xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         <div class="space-y-3 relative z-10">
-            <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-200 font-extrabold text-[10px] uppercase tracking-wider rounded-full border border-blue-400/30">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/20 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-full border border-white/30">
                 <span>🧭 Career Pathways & Study Plan</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 <span>South Africa 2026/2027</span>
             </div>
-            <h1 class="text-3xl font-black text-white tracking-tight">Career Guidance & Adaptive Timetable</h1>
-            <p class="text-xs sm:text-sm text-blue-100/90 max-w-2xl font-normal leading-relaxed">
+            <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Career Guidance & Adaptive Timetable</h1>
+            <p class="text-xs sm:text-sm text-blue-100 max-w-2xl font-normal leading-relaxed">
                 Upload your official school report card to unlock your verified APS admission score, discover degree requirements for your dream career, and follow an adaptive study timetable targeting your struggle subjects.
             </p>
         </div>
-        <div class="w-16 h-16 bg-blue-500/20 text-blue-200 rounded-3xl flex items-center justify-center text-3xl shrink-0 border border-blue-400/30 shadow-inner relative z-10">
+        <div class="w-16 h-16 bg-white/20 text-white rounded-2xl flex items-center justify-center text-3xl shrink-0 border border-white/30 shadow-inner relative z-10">
             🧭
         </div>
-        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
     </div>
 
     <!-- =========================================================================
@@ -54,7 +53,7 @@
                 <div class="text-right">
                     <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Official University APS</p>
                     <div class="flex items-baseline justify-end gap-1">
-                        <span class="text-3xl font-black text-[#0d2a4a]">{{ report_card.aps_score }}</span>
+                        <span class="text-3xl font-black text-blue-600">{{ report_card.aps_score }}</span>
                         <span class="text-sm font-bold text-gray-400">/ 42</span>
                     </div>
                 </div>
@@ -122,7 +121,7 @@
     {% else %}
     <!-- No Report Card Uploaded: Intake Hero Card -->
     <div class="bg-white rounded-3xl p-8 border-2 border-dashed border-blue-200 shadow-sm text-center max-w-3xl mx-auto space-y-6">
-        <div class="w-16 h-16 rounded-3xl bg-blue-50 text-[#0d2a4a] flex items-center justify-center text-3xl mx-auto shadow-inner border border-blue-100">
+        <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-3xl mx-auto shadow-inner border border-blue-100">
             📋
         </div>
         <div class="space-y-2">
@@ -135,7 +134,7 @@
         <form id="report-upload-form" onsubmit="handleReportUpload(event)" class="space-y-4 max-w-md mx-auto text-left">
             <div>
                 <label class="block text-xs font-bold text-gray-700 mb-1.5">What is your dream career?</label>
-                <select id="target-career-select" class="w-full bg-gray-50 border border-gray-300 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-blue-200 focus:border-[#0d2a4a] transition">
+                <select id="target-career-select" class="w-full bg-gray-50 border border-gray-300 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-600 transition">
                     <option value="Software Engineer">💻 Software Engineer / Web Developer (APS 34–36)</option>
                     <option value="Doctor (Medicine MBChB)">🧬 Doctor / Medical Specialist (APS 38–42)</option>
                     <option value="Chartered Accountant (CA)">📊 Chartered Accountant / Finance (APS 34–36)</option>
@@ -151,12 +150,12 @@
             <div>
                 <label class="block text-xs font-bold text-gray-700 mb-1.5">Upload Official Report Card Photo or PDF</label>
                 <input type="file" id="report-file-input" accept="image/*,application/pdf" required
-                       class="w-full text-xs text-gray-600 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#0d2a4a] file:text-white hover:file:bg-[#1e4d75] file:cursor-pointer border border-gray-200 rounded-2xl p-2 bg-gray-50 transition">
+                       class="w-full text-xs text-gray-600 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-gray-200 rounded-2xl p-2 bg-gray-50 transition">
             </div>
 
             <div class="pt-2">
                 <button type="submit" id="report-upload-btn"
-                        class="w-full py-3 px-4 rounded-2xl bg-[#0d2a4a] hover:bg-[#1e4d75] text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                        class="w-full py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
                     <span id="report-upload-btn-icon">⚡</span>
                     <span id="report-upload-btn-text">Scan & Verify Report Card</span>
                 </button>
@@ -198,7 +197,7 @@
                            class="w-full bg-blue-50/70 border border-blue-200 text-slate-900 font-bold text-xs rounded-xl pl-9 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-400 placeholder-blue-400/80 shadow-2xs transition">
                 </div>
                 <button type="button" onclick="submitCustomCareer()" id="analyze-career-btn"
-                        class="px-4 py-2.5 rounded-xl bg-[#0d2a4a] hover:bg-[#1e4d75] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 shrink-0">
+                        class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 shrink-0">
                     <span id="analyze-career-icon">⚡</span>
                     <span id="analyze-career-text">Analyze Career</span>
                 </button>
@@ -208,26 +207,26 @@
         <!-- Quick Suggestion Chips -->
         <div class="flex items-center gap-1.5 flex-wrap text-xs">
             <span class="text-[11px] font-bold text-gray-400 mr-1">Popular Targets:</span>
-            <button type="button" onclick="setCareerTarget('Software Engineer')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-[#0d2a4a] font-semibold text-[11px] transition">💻 Software Engineer</button>
+            <button type="button" onclick="setCareerTarget('Software Engineer')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-semibold text-[11px] transition">💻 Software Engineer</button>
             <button type="button" onclick="setCareerTarget('Graphic Designer')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">🎨 Graphic Designer (Maths Lit ✅)</button>
             <button type="button" onclick="setCareerTarget('Lawyer (LLB)')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">⚖️ Lawyer (Maths Lit ✅)</button>
             <button type="button" onclick="setCareerTarget('Professional Nurse')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">🩺 Nurse (Maths Lit ✅)</button>
-            <button type="button" onclick="setCareerTarget('Mechanical Engineer')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-[#0d2a4a] font-semibold text-[11px] transition">⚙️ Mechanical Engineer</button>
-            <button type="button" onclick="setCareerTarget('Chartered Accountant (CA)')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-[#0d2a4a] font-semibold text-[11px] transition">📊 Accountant (CA)</button>
-            <button type="button" onclick="setCareerTarget('Commercial Pilot')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-[#0d2a4a] font-semibold text-[11px] transition">✈️ Commercial Pilot</button>
+            <button type="button" onclick="setCareerTarget('Mechanical Engineer')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-semibold text-[11px] transition">⚙️ Mechanical Engineer</button>
+            <button type="button" onclick="setCareerTarget('Chartered Accountant (CA)')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-semibold text-[11px] transition">📊 Accountant (CA)</button>
+            <button type="button" onclick="setCareerTarget('Commercial Pilot')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-semibold text-[11px] transition">✈️ Commercial Pilot</button>
             <button type="button" onclick="setCareerTarget('Digital Marketing Specialist')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition">📱 Digital Marketer (Maths Lit ✅)</button>
-            <button type="button" onclick="setCareerTarget('Data Scientist / AI Specialist')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-[#0d2a4a] font-semibold text-[11px] transition">🤖 Data Scientist</button>
+            <button type="button" onclick="setCareerTarget('Data Scientist / AI Specialist')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-semibold text-[11px] transition">🤖 Data Scientist</button>
         </div>
 
         <!-- Reality Gap Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             <!-- APS Comparison Card -->
-            <div class="p-5 rounded-2xl bg-gradient-to-br from-blue-50/70 to-white border border-blue-100 space-y-2 flex flex-col justify-between">
+            <div class="p-5 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-2 flex flex-col justify-between">
                 <div class="space-y-1">
-                    <p class="text-xs font-bold text-[#0d2a4a] uppercase tracking-wide">APS Benchmark</p>
+                    <p class="text-xs font-bold text-blue-900 uppercase tracking-wide">APS Benchmark</p>
                     <div class="flex items-baseline justify-between pt-1">
                         <div>
-                            <span class="text-3xl font-black text-[#0d2a4a]">{{ report_card.aps_score }}</span>
+                            <span class="text-3xl font-black text-blue-600">{{ report_card.aps_score }}</span>
                             <span class="text-xs text-gray-400 ml-1">Current</span>
                         </div>
                         <span class="text-gray-300 font-light">vs</span>
@@ -251,7 +250,7 @@
             </div>
 
             <!-- Crucial Mathematics Prerequisite Check (Smart Pure vs Maths Lit Handling) -->
-            <div class="p-5 rounded-2xl {% if math_info.is_lit and career_analysis.requires_pure_maths %}bg-gradient-to-br from-amber-50/90 to-white border border-amber-200{% elif math_info.is_lit %}bg-gradient-to-br from-emerald-50/80 to-white border border-emerald-200{% else %}bg-gradient-to-br from-blue-50/70 to-white border border-blue-100{% endif %} space-y-2 flex flex-col justify-between">
+            <div class="p-5 rounded-2xl {% if math_info.is_lit and career_analysis.requires_pure_maths %}bg-amber-50 border border-amber-200{% elif math_info.is_lit %}bg-emerald-50 border border-emerald-200{% else %}bg-blue-50 border border-blue-100{% endif %} space-y-2 flex flex-col justify-between">
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between">
                         <p class="text-xs font-bold {% if math_info.is_lit and career_analysis.requires_pure_maths %}text-amber-800{% elif math_info.is_lit %}text-emerald-800{% else %}text-blue-800{% endif %} uppercase tracking-wide">
@@ -285,7 +284,7 @@
             </div>
 
             <!-- South African University & Alternative Institutions -->
-            <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 space-y-2 flex flex-col justify-between">
+            <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 flex flex-col justify-between">
                 <div class="space-y-1.5">
                     <p class="text-xs font-bold text-slate-800 uppercase tracking-wide">Recommended SA Institutions</p>
                     <div class="flex flex-wrap gap-1.5 pt-1">
@@ -318,7 +317,7 @@
              ALIGNED PACE UPSKILLING TRACKS (Only shown if genuinely aligned!)
              ========================================================================= -->
         {% if career_analysis and career_analysis.aligned_pace_courses and career_analysis.aligned_pace_courses|length > 0 %}
-        <div class="mt-4 pt-5 border-t border-blue-100 bg-gradient-to-r from-blue-50/40 via-sky-50/20 to-transparent p-5 rounded-2xl border">
+        <div class="mt-4 pt-5 border-t border-blue-100 bg-blue-50/40 p-5 rounded-2xl border">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2">
                     <span class="text-lg">🚀</span>
@@ -337,7 +336,7 @@
                 <div class="bg-white rounded-xl p-4 border border-blue-100 shadow-2xs hover:shadow-md transition flex flex-col justify-between space-y-3">
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-[#0d2a4a] uppercase">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 uppercase">
                                 {{ ac.category or 'Skills Track' }}
                             </span>
                             <span class="text-xs font-black text-emerald-600">
@@ -349,7 +348,7 @@
                     </div>
 
                     <a href="{{ url_for('student.dashboard') }}" 
-                       class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#0d2a4a] hover:bg-[#1e4d75] text-white font-bold text-xs transition shadow-xs">
+                       class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs">
                         <span>Start Learning</span>
                         <span>→</span>
                     </a>
@@ -376,7 +375,7 @@
                 <div class="flex items-center gap-2">
                     <span class="text-xl">📅</span>
                     <h2 class="text-lg font-black text-gray-900 tracking-tight">Adaptive Weekly Study Timetable</h2>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#0d2a4a]">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">
                         Week {{ current_week_code }}
                     </span>
                 </div>
@@ -388,7 +387,7 @@
             <!-- Weekly Confirmation Action Button -->
             <div class="flex items-center gap-2 shrink-0">
                 <button type="button" onclick="confirmWeeklyTimetable()" id="confirm-timetable-btn"
-                        class="px-4 py-2.5 rounded-2xl {% if timetable_obj and timetable_obj.is_weekly_confirmed %}bg-emerald-600 text-white{% else %}bg-[#0d2a4a] hover:bg-[#1e4d75] text-white{% endif %} text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                        class="px-4 py-2.5 rounded-2xl {% if timetable_obj and timetable_obj.is_weekly_confirmed %}bg-emerald-600 text-white{% else %}bg-blue-600 hover:bg-blue-700 text-white{% endif %} text-xs font-bold shadow-md transition flex items-center gap-1.5">
                     <span id="confirm-timetable-icon">{% if timetable_obj and timetable_obj.is_weekly_confirmed %}✅{% else %}✍️{% endif %}</span>
                     <span id="confirm-timetable-label">
                         {% if timetable_obj and timetable_obj.is_weekly_confirmed %}Confirmed for Week {{ current_week_code }}{% else %}Confirm This Week's Timetable{% endif %}
@@ -444,7 +443,7 @@
 
                         <div>
                             <span class="text-xs font-black text-gray-900 block">{{ slot.subject }}</span>
-                            <span class="text-[11px] text-[#0d2a4a] font-bold block">{{ slot.topic }}</span>
+                            <span class="text-[11px] text-blue-600 font-bold block">{{ slot.topic }}</span>
                         </div>
 
                         {% if slot.goal %}
@@ -476,7 +475,7 @@
         <!-- Career Cluster Filters -->
         <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
             <button type="button" onclick="filterCluster('all')" id="btn-cluster-all"
-                    class="cluster-tab px-4 py-2 rounded-xl bg-[#0d2a4a] text-white shadow-sm transition">
+                    class="cluster-tab px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition">
                 🌟 All Clusters
             </button>
             <button type="button" onclick="filterCluster('tech')" id="btn-cluster-tech"
@@ -688,10 +687,10 @@
             <div>
                 <label class="block text-xs font-bold text-gray-700 mb-1">Upload Photo or PDF</label>
                 <input type="file" id="modal-report-file" accept="image/*,application/pdf" required
-                       class="w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#0d2a4a] file:text-white hover:file:bg-[#1e4d75] border border-gray-200 rounded-xl p-2 bg-gray-50">
+                       class="w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 border border-gray-200 rounded-xl p-2 bg-gray-50">
             </div>
             <button type="submit" id="modal-upload-btn"
-                    class="w-full py-2.5 rounded-xl bg-[#0d2a4a] hover:bg-[#1e4d75] text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5">
+                    class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5">
                 <span>⚡</span>
                 <span id="modal-upload-btn-text">Verify & Update Timetable</span>
             </button>
@@ -702,12 +701,12 @@
 <script>
     function filterCluster(cluster) {
         document.querySelectorAll('.cluster-tab').forEach(b => {
-            b.classList.remove('bg-[#0d2a4a]', 'text-white');
+            b.classList.remove('bg-blue-600', 'text-white');
             b.classList.add('bg-white', 'text-gray-700');
         });
         const activeBtn = document.getElementById('btn-cluster-' + cluster);
         if (activeBtn) {
-            activeBtn.classList.add('bg-[#0d2a4a]', 'text-white');
+            activeBtn.classList.add('bg-blue-600', 'text-white');
             activeBtn.classList.remove('bg-white', 'text-gray-700');
         }
 
@@ -746,7 +745,7 @@
 
         btn.disabled = true;
         btnIcon.textContent = '⏳';
-        btnText.textContent = 'Scanning Report Card with Gemini Vision...';
+        btnText.textContent = 'Scanning Card...';
 
         const formData = new FormData();
         formData.append('report_file', file);
@@ -788,7 +787,7 @@
 
         const file = fileInput.files[0];
         btn.disabled = true;
-        btnText.textContent = 'Analyzing Report Card...';
+        btnText.textContent = 'Scanning Card...';
 
         const formData = new FormData();
         formData.append('report_file', file);
@@ -855,7 +854,7 @@
 
             const data = await res.json();
             if (data.success) {
-                btn.classList.remove('bg-[#0d2a4a]', 'hover:bg-[#1e4d75]');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 btn.classList.add('bg-emerald-600');
                 icon.textContent = '✅';
                 label.textContent = 'Confirmed for Week ' + data.current_week_code;
