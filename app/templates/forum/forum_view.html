@@ -5,24 +5,24 @@
 <div class="container mx-auto px-4 py-8 max-w-5xl">
 
     <!-- Top Course Navigation Bar -->
-    <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+    <div class="bg-blue-600 rounded-3xl shadow-md p-8 mb-8 text-white relative overflow-hidden">
         <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
                 <div class="flex items-center gap-2 mb-2">
-                    <a href="{{ url_for('student.course_detail', course_id=course.id) }}" class="inline-flex items-center gap-1.5 text-xs text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
+                    <a href="{{ url_for('student.course_detail', course_id=course.id) }}" class="inline-flex items-center gap-1.5 text-xs text-blue-100 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
                         ← Back to Lessons
                     </a>
-                    <span class="text-xs text-indigo-300 font-medium">💬 Discussion & Community</span>
+                    <span class="text-xs text-blue-100 font-medium">💬 Discussion & Community</span>
                 </div>
                 <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">{{ course.title }}</h1>
-                <p class="text-sm text-indigo-200 mt-1 max-w-2xl">
+                <p class="text-sm text-blue-100 mt-1 max-w-2xl">
                     Ask questions, share project ideas, solve doubts, and collaborate with your peers and lead instructors.
                 </p>
             </div>
             
             <button type="button" 
                     onclick="openAskQuestionModal()"
-                    class="bg-white text-indigo-900 hover:bg-indigo-50 text-sm font-bold px-5 py-3 rounded-2xl shadow-lg transition transform hover:scale-105 flex items-center gap-2 flex-shrink-0">
+                    class="bg-white text-blue-600 hover:bg-blue-50 text-sm font-bold px-5 py-3 rounded-2xl shadow-md transition transform hover:scale-105 flex items-center gap-2 flex-shrink-0">
                 <span>✏️</span> Ask a Question
             </button>
         </div>

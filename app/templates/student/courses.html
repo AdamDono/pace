@@ -19,13 +19,13 @@
            class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
 
             <!-- Thumbnail -->
-            <div class="relative aspect-[16/9] bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100 overflow-hidden">
+            <div class="relative aspect-[16/9] bg-blue-50 overflow-hidden">
                 {% if course.banner_image %}
                 <img src="{{ course.banner_image|media_url }}"
                      alt="{{ course.title }}"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                <div class="absolute inset-0 hidden items-center justify-center bg-gradient-to-br from-purple-100 via-blue-100 to-orange-100">
+                <div class="absolute inset-0 hidden items-center justify-center bg-blue-50">
                     <div class="text-center">
                         <div class="text-5xl mb-2">📚</div>
                         <p class="text-xs text-gray-600 font-medium px-4">{{ course.title[:30] }}...</p>
