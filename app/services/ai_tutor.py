@@ -437,8 +437,13 @@ Ensure the output is clean JSON only.
         if not clean_text:
             return {"success": False, "error": "Text is empty."}
 
-        # Keep utterance to natural conversational length for snappy latency
-        clean_text = clean_text[:600]
+        # Truncate to first 1-2 punchy sentences for snappy latency and low token usage
+        import re
+        sentences = re.split(r'(?<=[.!?])\s+', clean_text)
+        speech_snippet = " ".join(sentences[:2]) if sentences else clean_text
+        if len(speech_snippet) > 200:
+            speech_snippet = speech_snippet[:200].rsplit(' ', 1)[0] + '...'
+        clean_text = speech_snippet
 
         cache_key = hashlib.md5(f"{clean_text}_{voice}".encode('utf-8')).hexdigest()
         if cache_key in cls._AUDIO_CACHE:
@@ -448,11 +453,8 @@ Ensure the output is clean JSON only.
         if not api_key:
             return {"success": False, "error": "Gemini API key not configured."}
 
-        models_to_try = [
-            "gemini-2.5-flash-preview-tts",
-            "gemini-3.1-flash-tts-preview",
-            "gemini-3.8-flash-tts"
-        ]
+        # Use only valid Gemini 2.5 Flash TTS model; avoid non-existent models
+        current_model = "gemini-2.5-flash-preview-tts"
 
         payload = {
             "contents": [
@@ -478,37 +480,35 @@ Ensure the output is clean JSON only.
         except ImportError:
             ssl_verify = True
 
-        last_error = None
-        for current_model in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
-            try:
-                res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=12, verify=ssl_verify)
-                if res.status_code == 200:
-                    data = res.json()
-                    pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
-                    pcm_bytes = base64.b64decode(pcm_b64)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
+        try:
+            res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=3.5, verify=ssl_verify)
+            if res.status_code == 200:
+                data = res.json()
+                pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+                pcm_bytes = base64.b64decode(pcm_b64)
 
-                    # Wrap in standard 24kHz mono WAV container
-                    wav_io = io.BytesIO()
-                    with wave.open(wav_io, 'wb') as wav_file:
-                        wav_file.setnchannels(1)
-                        wav_file.setsampwidth(2)
-                        wav_file.setframerate(24000)
-                        wav_file.writeframes(pcm_bytes)
+                # Wrap in standard 24kHz mono WAV container
+                wav_io = io.BytesIO()
+                with wave.open(wav_io, 'wb') as wav_file:
+                    wav_file.setnchannels(1)
+                    wav_file.setsampwidth(2)
+                    wav_file.setframerate(24000)
+                    wav_file.writeframes(pcm_bytes)
 
-                    wav_b64 = base64.b64encode(wav_io.getvalue()).decode('utf-8')
-                    audio_url = f"data:audio/wav;base64,{wav_b64}"
+                wav_b64 = base64.b64encode(wav_io.getvalue()).decode('utf-8')
+                audio_url = f"data:audio/wav;base64,{wav_b64}"
 
-                    # Cache recent responses
-                    if len(cls._AUDIO_CACHE) > 100:
-                        cls._AUDIO_CACHE.pop(next(iter(cls._AUDIO_CACHE)))
-                    cls._AUDIO_CACHE[cache_key] = audio_url
+                # Cache recent responses
+                if len(cls._AUDIO_CACHE) > 100:
+                    cls._AUDIO_CACHE.pop(next(iter(cls._AUDIO_CACHE)))
+                cls._AUDIO_CACHE[cache_key] = audio_url
 
-                    return {"success": True, "audio_url": audio_url}
-                else:
-                    last_error = f"{current_model}: {res.status_code} - {res.text[:150]}"
-            except Exception as e:
-                last_error = f"{current_model}: {e}"
+                return {"success": True, "audio_url": audio_url}
+            else:
+                last_error = f"{res.status_code}: {res.text[:120]}"
+        except Exception as e:
+            last_error = str(e)
 
         logger.warning(f"Neural speech generation failed: {last_error}")
         return {"success": False, "error": last_error}

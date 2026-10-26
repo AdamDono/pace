@@ -836,8 +836,36 @@
         currentUtterance = null;
     }
 
+    let bookwormLockedVoice = null;
+    const bookwormAudioCache = {};
+
+    function getBookwormVoice() {
+        if (bookwormLockedVoice) return bookwormLockedVoice;
+        if (!('speechSynthesis' in window)) return null;
+        const voices = window.speechSynthesis.getVoices() || [];
+        if (!voices.length) return null;
+
+        // Permanently lock to the crystal-clear friendly English voice (Samantha on macOS, Google US English in Chrome, or system default)
+        // so Bookworm NEVER changes voices between messages!
+        bookwormLockedVoice = voices.find(v => v.name.includes('Samantha')) ||
+                              voices.find(v => v.name.includes('Google US English')) ||
+                              voices.find(v => v.name.includes('Natural') && v.lang.startsWith('en')) ||
+                              voices.find(v => v.default && v.lang.startsWith('en')) ||
+                              voices.find(v => v.lang === 'en-US' && !v.name.includes('Bad')) ||
+                              voices.find(v => v.lang.startsWith('en')) ||
+                              voices[0];
+        return bookwormLockedVoice;
+    }
+
+    if ('speechSynthesis' in window) {
+        getBookwormVoice();
+        window.speechSynthesis.onvoiceschanged = () => {
+            getBookwormVoice();
+        };
+    }
+
     async function toggleSpeakMessage(msgId) {
-        // If clicking currently active message, stop playback
+        // If clicking currently active message, stop playback immediately
         if (currentSpeakingMsgId === msgId) {
             stopAllSpeech();
             updateMascotMood('idle');
@@ -855,47 +883,28 @@
         }
         if (!speechText) return;
 
+        // Limit spoken snippet to first 2 clear sentences for natural conversational delivery
+        const sentences = speechText.split(/(?<=[.!?])\s+/);
+        let cleanSpokenSnippet = sentences.slice(0, 2).join(' ') || speechText;
+        if (cleanSpokenSnippet.length > 220) {
+            cleanSpokenSnippet = cleanSpokenSnippet.substring(0, 220).replace(/\s\S*$/, '') + '...';
+        }
+
         const btn = document.getElementById(msgId + '-audio-btn');
         const icon = btn ? btn.querySelector('.audio-icon') : null;
         const label = btn ? btn.querySelector('.audio-label') : null;
 
         currentSpeakingMsgId = msgId;
 
-        // Visual loading indicator on button
-        if (btn) {
-            btn.classList.remove('bg-gray-50', 'text-gray-600');
-            btn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-indigo-200');
-            if (icon) icon.textContent = '⏳';
-            if (label) label.textContent = 'Loading...';
-        }
-
-        audioAbortController = new AbortController();
-
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const res = await fetch('/student/api/ai-tutor/speak', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    text: speechText,
-                    voice: 'Puck'
-                }),
-                signal: audioAbortController.signal
-            });
-
-            if (!res.ok) throw new Error('Neural TTS request failed with status ' + res.status);
-
-            const data = await res.json();
-            if (data.success && data.audio_url) {
-                const audio = new Audio(data.audio_url);
+        // Check if pre-cached neural audio is already available
+        if (bookwormAudioCache[msgId]) {
+            try {
+                const audio = new Audio(bookwormAudioCache[msgId]);
                 currentAudioElement = audio;
 
                 audio.onplay = () => {
                     if (btn && currentSpeakingMsgId === msgId) {
-                        btn.classList.remove('bg-indigo-50', 'text-indigo-600');
+                        btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-indigo-50', 'text-indigo-600');
                         btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
                         if (icon) icon.textContent = '⏹️';
                         if (label) label.textContent = 'Stop';
@@ -909,50 +918,49 @@
                 };
 
                 audio.onerror = () => {
-                    console.warn('Neural audio playback error, falling back to speech synthesis.');
-                    fallbackSpeechSynthesis(speechText, msgId);
+                    playInstantSpeechSynthesis(cleanSpokenSnippet, msgId);
                 };
 
                 await audio.play();
                 return;
-            } else {
-                throw new Error(data.error || 'No audio returned');
+            } catch (e) {
+                // Audio play blocked or failed, fall through to instant synthesis
             }
-        } catch (err) {
-            if (err.name === 'AbortError') return;
-            console.warn('Real human neural TTS unavailable, using fallback synthesis:', err);
-            fallbackSpeechSynthesis(speechText, msgId);
         }
+
+        // Instant Zero-Latency Playback: Speak immediately without waiting for API timeouts or rate limits!
+        playInstantSpeechSynthesis(cleanSpokenSnippet, msgId);
     }
 
-    function fallbackSpeechSynthesis(speechText, msgId) {
+    function playInstantSpeechSynthesis(speechText, msgId) {
         if (!('speechSynthesis' in window)) {
             stopAllSpeech();
             return;
         }
+
         const btn = document.getElementById(msgId + '-audio-btn');
         const icon = btn ? btn.querySelector('.audio-icon') : null;
         const label = btn ? btn.querySelector('.audio-label') : null;
+
+        try {
+            window.speechSynthesis.cancel();
+        } catch(e) {}
 
         const utterance = new SpeechSynthesisUtterance(speechText);
         currentUtterance = utterance;
         currentSpeakingMsgId = msgId;
 
-        const voices = window.speechSynthesis.getVoices() || [];
-        let preferredVoice = voices.find(v => v.lang === 'en-ZA' || v.lang === 'en_ZA');
-        if (!preferredVoice) {
-            preferredVoice = voices.find(v => (v.lang.startsWith('en-GB') || v.lang.startsWith('en-US')) && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Siri')));
+        const voice = getBookwormVoice();
+        if (voice) {
+            utterance.voice = voice;
         }
-        if (!preferredVoice) {
-            preferredVoice = voices.find(v => v.lang.startsWith('en'));
-        }
-        if (preferredVoice) utterance.voice = preferredVoice;
 
-        utterance.rate = 1.0;
-        utterance.pitch = 1.02;
+        // Energetic, warm, cheerful student tutor cadence
+        utterance.rate = 1.02;
+        utterance.pitch = 1.04;
 
         utterance.onstart = function() {
-            if (btn) {
+            if (btn && currentSpeakingMsgId === msgId) {
                 btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-indigo-50', 'text-indigo-600');
                 btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
                 if (icon) icon.textContent = '⏹️';
@@ -972,12 +980,6 @@
         };
 
         window.speechSynthesis.speak(utterance);
-    }
-
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.onvoiceschanged = () => {
-            window.speechSynthesis.getVoices();
-        };
     }
 
     // ── Voice Input (Dual Engine: Live Speech Recognition + Gemini Neural Transcribe) ──

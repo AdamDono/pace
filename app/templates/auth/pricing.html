@@ -171,10 +171,10 @@
                     </div>
 
                     <div class="mt-8">
-                        <a href="{{ url_for('auth.login') }}?plan=matric_core" 
-                           class="w-full block text-center py-3.5 px-4 rounded-xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-md">
+                        <button type="button" onclick="openPlanModal('matric_core', 'Matric Core (Grades 10–12)', 'school')" 
+                           class="w-full block text-center py-3.5 px-4 rounded-xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-md cursor-pointer border-0">
                             Get Matric Core
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -230,10 +230,10 @@
                     </div>
 
                     <div class="mt-8">
-                        <a href="{{ url_for('auth.login') }}?plan=varsity_pro" 
-                           class="w-full block text-center py-3.5 px-4 rounded-xl font-black text-sm bg-slate-900 hover:bg-slate-800 text-white transition shadow-lg">
+                        <button type="button" onclick="openPlanModal('varsity_pro', 'Varsity & Skills Pro', 'school')" 
+                           class="w-full block text-center py-3.5 px-4 rounded-xl font-black text-sm bg-slate-900 hover:bg-slate-800 text-white transition shadow-lg cursor-pointer border-0">
                             Get Varsity & Skills Pro
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -332,10 +332,10 @@
                                 </li>
                             </ul>
                         </div>
-                        <a href="{{ url_for('auth.login') }}?plan=skills_all_access" 
-                           class="w-full block text-center py-2.5 px-4 rounded-xl font-black text-xs bg-purple-700 hover:bg-purple-800 text-white transition shadow-sm">
+                        <button type="button" onclick="openPlanModal('skills_all_access', 'All-Access Digital Skills Pass', 'skills', 'R199 / month')" 
+                           class="w-full block text-center py-2.5 px-4 rounded-xl font-black text-xs bg-purple-700 hover:bg-purple-800 text-white transition shadow-sm cursor-pointer border-0">
                             Get All-Access Skills — R199/mo
-                        </a>
+                        </button>
                     </div>
 
                     <!-- Accredited Qualification Course -->
@@ -379,10 +379,10 @@
                                 </li>
                             </ul>
                         </div>
-                        <a href="{{ url_for('auth.login') }}?plan=accredited_course" 
-                           class="w-full block text-center py-2.5 px-4 rounded-xl font-black text-xs bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm">
+                        <button type="button" onclick="openPlanModal('accredited_course', 'Accredited Qualification Pass (QCTO/SETA)', 'skills', 'R1,500 once-off')" 
+                           class="w-full block text-center py-2.5 px-4 rounded-xl font-black text-xs bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm cursor-pointer border-0">
                             Enroll in Accredited Program — R1,500
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -439,7 +439,7 @@
                         </ul>
                     </div>
 
-                    <button type="button" onclick="openEnterpriseModal()" 
+                    <button type="button" onclick="openPlanModal('corporate_workforce', 'Corporate Employee Training', 'enterprise', 'From R1,500 / cohort')" 
                        class="w-full block text-center py-3 px-4 rounded-xl font-bold text-sm bg-gray-900 hover:bg-black text-white transition shadow-sm cursor-pointer border-0">
                         Request Corporate Proposal
                     </button>
@@ -490,7 +490,7 @@
                         </ul>
                     </div>
 
-                    <button type="button" onclick="openEnterpriseModal()" 
+                    <button type="button" onclick="openPlanModal('sdp_ngo', 'Skills Development & NGO Portal', 'enterprise', 'R150 – R300 / learner / mo')" 
                        class="w-full block text-center py-3 px-4 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm cursor-pointer border-0">
                         Set Up SDP Portal (From R150/learner)
                     </button>
@@ -538,7 +538,7 @@
                         </ul>
                     </div>
 
-                    <button type="button" onclick="openEnterpriseModal()" 
+                    <button type="button" onclick="openPlanModal('school_licensing', 'School / TVET Institutional Licensing', 'enterprise', 'R15 – R25 / student / mo')" 
                        class="w-full block text-center py-3 px-4 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm cursor-pointer border-0">
                         Contact School Partnerships
                     </button>
@@ -720,15 +720,91 @@
         }
     }
 
-    // Enterprise Institutional Partnerships Modal
-    function openEnterpriseModal() {
-        document.getElementById('enterpriseModal').classList.remove('hidden');
+    // Tailored Plan Enrollment / Inquiry Modal
+    function openPlanModal(planId, planName, planCategory, defaultPrice = '') {
+        const modal = document.getElementById('planModal');
+        if (!modal) return;
+
+        // Set hidden form parameters
+        document.getElementById('planModal_plan_id').value = planId;
+        document.getElementById('planModal_plan_name').value = planName;
+        document.getElementById('planModal_plan_category').value = planCategory;
+
+        // Determine dynamic price if not provided
+        let priceText = defaultPrice;
+        if (!priceText && planCategory === 'school') {
+            if (planId === 'matric_core') {
+                priceText = isSchoolAnnual ? 'Annual Pass — R699 / year' : 'Monthly — R89 / month';
+            } else if (planId === 'varsity_pro') {
+                priceText = isSchoolAnnual ? 'Annual Pass — R999 / year' : 'Monthly — R120 / month';
+            }
+        }
+        document.getElementById('planModal_billing_cycle').value = priceText;
+
+        // Update modal UI text
+        document.getElementById('planModal_title').textContent = planName;
+        document.getElementById('planModal_price_badge').textContent = priceText;
+
+        const categoryBadge = document.getElementById('planModal_category_badge');
+        const schoolFields = document.getElementById('planModal_school_fields');
+        const skillsFields = document.getElementById('planModal_skills_fields');
+        const enterpriseFields = document.getElementById('planModal_enterprise_fields');
+        const submitBtn = document.getElementById('planModal_submit_btn');
+
+        // Reset visibility of tailored sections
+        schoolFields.classList.add('hidden');
+        skillsFields.classList.add('hidden');
+        enterpriseFields.classList.add('hidden');
+
+        // Enable section-specific inputs so required flags don't block other forms
+        schoolFields.querySelectorAll('input, select').forEach(el => el.disabled = true);
+        skillsFields.querySelectorAll('input, select').forEach(el => el.disabled = true);
+        enterpriseFields.querySelectorAll('input, select').forEach(el => el.disabled = true);
+
+        if (planCategory === 'school') {
+            categoryBadge.textContent = '🎒 High School & Matric (Grades 10–12)';
+            categoryBadge.className = 'inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200 mb-2';
+            schoolFields.classList.remove('hidden');
+            schoolFields.querySelectorAll('input, select').forEach(el => el.disabled = false);
+            submitBtn.innerHTML = `Complete Registration — ${planName}`;
+
+            const billingSelect = document.getElementById('planModal_school_billing');
+            if (billingSelect) {
+                billingSelect.value = isSchoolAnnual ? 'annual' : 'monthly';
+            }
+        } else if (planCategory === 'skills') {
+            categoryBadge.textContent = '💻 Digital Career Skills & Qualifications';
+            categoryBadge.className = 'inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 mb-2';
+            skillsFields.classList.remove('hidden');
+            skillsFields.querySelectorAll('input, select').forEach(el => el.disabled = false);
+            submitBtn.innerHTML = `Enroll in Program — ${planName}`;
+        } else {
+            categoryBadge.textContent = '🏢 Institutional & Corporate Partnership';
+            categoryBadge.className = 'inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 mb-2';
+            enterpriseFields.classList.remove('hidden');
+            enterpriseFields.querySelectorAll('input, select').forEach(el => el.disabled = false);
+            submitBtn.innerHTML = `Request Proposal — ${planName}`;
+        }
+
+        modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 
+    function closePlanModal() {
+        const modal = document.getElementById('planModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    }
+
+    // Keep backwards compatibility for any lingering calls
+    function openEnterpriseModal() {
+        openPlanModal('corporate_workforce', 'Corporate Employee Training', 'enterprise', 'From R1,500 / cohort');
+    }
+
     function closeEnterpriseModal() {
-        document.getElementById('enterpriseModal').classList.add('hidden');
-        document.body.style.overflow = '';
+        closePlanModal();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -738,146 +814,342 @@
         if (tab === 'skills' || tab === 'enterprise' || tab === 'school') {
             switchCategory(tab);
         }
-        document.getElementById('enterpriseForm')?.addEventListener('submit', function (e) {
+
+        // Support direct ?plan=matric_core or ?plan=varsity_pro etc.
+        const planParam = urlParams.get('plan');
+        if (planParam === 'matric_core') {
+            openPlanModal('matric_core', 'Matric Core (Grades 10–12)', 'school');
+        } else if (planParam === 'varsity_pro') {
+            openPlanModal('varsity_pro', 'Varsity & Skills Pro', 'school');
+        } else if (planParam === 'skills_all_access') {
+            switchCategory('skills');
+            openPlanModal('skills_all_access', 'All-Access Digital Skills Pass', 'skills', 'R199 / month');
+        } else if (planParam === 'accredited_course') {
+            switchCategory('skills');
+            openPlanModal('accredited_course', 'Accredited Qualification Pass (QCTO/SETA)', 'skills', 'R1,500 once-off');
+        }
+
+        // Handle Tailored Plan Enrollment Form Submission
+        document.getElementById('planEnrollForm')?.addEventListener('submit', function (e) {
             e.preventDefault();
 
             const form = this;
-            const submitBtn = form.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('planModal_submit_btn');
             const originalText = submitBtn.innerHTML;
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Submitting Request...';
+            submitBtn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Registering Details...</span>';
 
             const formData = new FormData(form);
 
-            fetch('/apply-enterprise', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': formData.get('csrf_token')
+            // Sync dynamic billing cadence selection for high school
+            const planCat = formData.get('plan_category');
+            if (planCat === 'school') {
+                const billingChoice = document.getElementById('planModal_school_billing')?.value;
+                const pId = formData.get('plan_id');
+                if (billingChoice === 'annual') {
+                    formData.set('billing_cycle', pId === 'varsity_pro' ? 'Annual Pass — R999 / year' : 'Annual Pass — R699 / year');
+                } else if (billingChoice === 'term') {
+                    formData.set('billing_cycle', pId === 'varsity_pro' ? 'Term Pass — R350 / term' : 'Term Pass — R250 / term');
+                } else {
+                    formData.set('billing_cycle', pId === 'varsity_pro' ? 'Monthly — R120 / month' : 'Monthly — R89 / month');
                 }
+
+                // Gather checked struggle subjects
+                const checkedSubjects = [];
+                form.querySelectorAll('input[name="struggle_subject_choice"]:checked').forEach(cb => {
+                    checkedSubjects.push(cb.value);
+                });
+                if (checkedSubjects.length > 0) {
+                    formData.set('struggle_subjects', checkedSubjects.join(', '));
+                }
+            }
+
+            fetch('/apply-plan', {
+                method: 'POST',
+                body: formData
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('ent-form-fields').classList.add('hidden');
-                        document.getElementById('ent-form-success').classList.remove('hidden');
-                        setTimeout(() => {
-                            closeEnterpriseModal();
-                            form.reset();
-                            document.getElementById('ent-form-fields').classList.remove('hidden');
-                            document.getElementById('ent-form-success').classList.add('hidden');
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = originalText;
-                        }, 3000);
-                    } else {
-                        alert(data.message || 'Something went wrong. Please try again.');
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('planModal_form_fields').classList.add('hidden');
+                    document.getElementById('planModal_success_view').classList.remove('hidden');
+                    document.getElementById('planModal_success_plan_name').textContent = data.plan_name || 'Selected Plan';
+                    document.getElementById('planModal_success_msg').textContent = data.message;
+
+                    setTimeout(() => {
+                        closePlanModal();
+                        form.reset();
+                        document.getElementById('planModal_form_fields').classList.remove('hidden');
+                        document.getElementById('planModal_success_view').classList.add('hidden');
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error submitting inquiry:', error);
-                    alert('Submission failed. Please email us directly at corporate@paceacademy.co.za');
+                    }, 4000);
+                } else {
+                    alert(data.message || 'Something went wrong. Please try again.');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
-                });
+                }
+            })
+            .catch(error => {
+                console.error('Submission error:', error);
+                alert('Could not submit. Please check your internet connection or email admissions@paceacademy.co.za');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
         });
     });
 </script>
 
-<!-- Institutional Partnerships Modal -->
-<div id="enterpriseModal"
-    class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm p-4">
-    <div class="max-w-lg w-full bg-white rounded-3xl p-8 relative shadow-2xl border border-gray-200">
+<!-- ===================================================================
+     TAILORED PLAN REGISTRATION & ENROLLMENT MODAL
+=================================================================== -->
+<div id="planModal"
+     class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="max-w-xl w-full bg-white rounded-3xl p-6 sm:p-8 relative shadow-2xl border border-gray-200 max-h-[92vh] overflow-y-auto">
+        
         <!-- Close Button -->
-        <button onclick="closeEnterpriseModal()"
-            class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer border-0 bg-transparent">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        <button onclick="closePlanModal()" type="button" aria-label="Close modal"
+                class="absolute top-5 right-5 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer border-0 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
         </button>
 
-        <div id="ent-form-fields">
-            <h3 class="text-2xl font-black text-gray-900 mb-2">Institutional Partnerships</h3>
-            <p class="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-6">Request custom licensing & proposals</p>
+        <!-- Form Container -->
+        <div id="planModal_form_fields">
+            <!-- Header Badges -->
+            <div class="mb-4">
+                <span id="planModal_category_badge" class="inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200 mb-2">
+                    High School &amp; Matric
+                </span>
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 id="planModal_title" class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+                        Matric Core
+                    </h3>
+                    <span id="planModal_price_badge" class="text-sm font-black text-indigo-700 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-200">
+                        Annual Pass — R699 / year
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Enter your details below to activate your enrollment. No credit card required upfront.</p>
+            </div>
 
-            <form id="enterpriseForm" class="space-y-4">
+            <form id="planEnrollForm" class="space-y-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" id="planModal_plan_id" name="plan_id" value="matric_core">
+                <input type="hidden" id="planModal_plan_name" name="plan_name" value="Matric Core">
+                <input type="hidden" id="planModal_plan_category" name="plan_category" value="school">
+                <input type="hidden" id="planModal_billing_cycle" name="billing_cycle" value="">
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Common Contact Fields (Always Visible) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Contact Person</label>
-                        <input type="text" name="full_name" required placeholder="Your full name"
-                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm">
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            Applicant / Parent Full Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="full_name" required placeholder="e.g. Thabo Mthembu"
+                               class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Institution / Company</label>
-                        <input type="text" name="organization" required placeholder="Organization name"
-                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Email Address</label>
-                        <input type="email" name="email" required placeholder="contact@organization.com"
-                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Phone Number</label>
-                        <input type="tel" name="phone" required placeholder="e.g. 082 123 4567"
-                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Inquiry Focus</label>
-                        <select name="inquiry_type" required
-                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-white">
-                            <option value="corporate">Corporate Upskilling (R5,000/mo)</option>
-                            <option value="sdp">SDP & Learnership LMS (R500/learner)</option>
-                            <option value="school">School / TVET Licensing</option>
-                            <option value="other">General B2B Partnership</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Estimated Learners / Staff</label>
-                        <select name="estimated_learners"
-                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-white">
-                            <option value="20">1 - 20 learners</option>
-                            <option value="100">21 - 100 learners</option>
-                            <option value="500">101 - 500 learners</option>
-                            <option value="1000">500+ learners</option>
-                        </select>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            Email Address <span class="text-red-500">*</span>
+                        </label>
+                        <input type="email" name="email" required placeholder="student@gmail.com"
+                               class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Requirements / Message</label>
-                    <textarea name="message" rows="3"
-                        placeholder="Describe your organization's training goals, accreditation needs, or learnership cohort size..."
-                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm resize-none"></textarea>
+                    <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                        WhatsApp / Phone Number <span class="text-red-500">*</span>
+                    </label>
+                    <input type="tel" name="phone" required placeholder="e.g. 082 123 4567"
+                           class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium">
+                    <p class="text-[10px] text-gray-400 mt-1">Our academic advisor will send your login and timetable activation details via WhatsApp/SMS.</p>
                 </div>
 
-                <button type="submit"
-                    class="w-full text-center text-sm font-bold text-white py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-md cursor-pointer border-0 transition-all">
-                    Request Proposal
-                </button>
+                <!-- ==========================================
+                     TAILORED SECTION 1: HIGH SCHOOL & MATRIC
+                =========================================== -->
+                <div id="planModal_school_fields" class="space-y-3.5 pt-2 border-t border-gray-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                High School Name &amp; Town <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="school_name" placeholder="e.g. Soweto High, JHB"
+                                   class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Current Academic Level <span class="text-red-500">*</span>
+                            </label>
+                            <select name="grade_level"
+                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium bg-white">
+                                <option value="Grade 12 (Matric)">Grade 12 (Matric 2026)</option>
+                                <option value="Grade 11">Grade 11</option>
+                                <option value="Grade 10">Grade 10</option>
+                                <option value="Matric Rewrite / Upgrade">Matric Rewrite / Upgrade</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            Preferred Payment Option
+                        </label>
+                        <select id="planModal_school_billing"
+                                class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium bg-white">
+                            <option value="annual">Annual Pass (Best Value — Save ~35%)</option>
+                            <option value="monthly">Monthly Subscription (Cancel Anytime)</option>
+                            <option value="term">Term Pass (Paid per School Term)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Key Struggle Subjects to Boost with AI Tutor:
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <input type="checkbox" name="struggle_subject_choice" value="Pure Mathematics" checked class="rounded text-indigo-600">
+                                <span>Pure Mathematics</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <input type="checkbox" name="struggle_subject_choice" value="Physical Sciences" checked class="rounded text-indigo-600">
+                                <span>Physical Sciences</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <input type="checkbox" name="struggle_subject_choice" value="Life Sciences" class="rounded text-indigo-600">
+                                <span>Life Sciences</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <input type="checkbox" name="struggle_subject_choice" value="Accounting" class="rounded text-indigo-600">
+                                <span>Accounting</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <input type="checkbox" name="struggle_subject_choice" value="Mathematical Literacy" class="rounded text-indigo-600">
+                                <span>Maths Literacy</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <input type="checkbox" name="struggle_subject_choice" value="English FAL" class="rounded text-indigo-600">
+                                <span>English FAL</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==========================================
+                     TAILORED SECTION 2: DIGITAL CAREER SKILLS
+                =========================================== -->
+                <div id="planModal_skills_fields" class="space-y-3.5 pt-2 border-t border-gray-100 hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Current Employment Status <span class="text-red-500">*</span>
+                            </label>
+                            <select name="employment_status"
+                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium bg-white">
+                                <option value="Unemployed Job Seeker">Unemployed Matriculant / Job Seeker</option>
+                                <option value="Employed / Working Professional">Employed Professional (Upskilling)</option>
+                                <option value="University / TVET Student">Tertiary / TVET Student</option>
+                                <option value="High School Learner">High School Learner</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Primary Career Track Focus <span class="text-red-500">*</span>
+                            </label>
+                            <select name="career_interest"
+                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium bg-white">
+                                <option value="Full Stack Web Development">Full Stack Web Development (HTML/CSS/JS)</option>
+                                <option value="Python & AI Automation">Python &amp; AI Automation</option>
+                                <option value="Data Analysis & Excel">Data Analysis &amp; Advanced Excel</option>
+                                <option value="End User Computing (QCTO/SETA)">End User Computing (SETA/QCTO)</option>
+                                <option value="IT Technical Support">IT Technical Support &amp; Cloud</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            South African ID / Passport Number <span class="text-gray-400 font-normal">(Optional, for SETA PoE certification)</span>
+                        </label>
+                        <input type="text" name="id_number" placeholder="e.g. 020415..."
+                               class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium">
+                    </div>
+                </div>
+
+                <!-- ==========================================
+                     TAILORED SECTION 3: ENTERPRISE & INSTITUTIONS
+                =========================================== -->
+                <div id="planModal_enterprise_fields" class="space-y-3.5 pt-2 border-t border-gray-100 hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Company / School Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="organization" placeholder="e.g. Acme Holdings / Metro High"
+                                   class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Estimated Staff / Learners <span class="text-red-500">*</span>
+                            </label>
+                            <select name="estimated_learners"
+                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium bg-white">
+                                <option value="20">1 – 20 learners</option>
+                                <option value="100">21 – 100 learners</option>
+                                <option value="500">101 – 500 learners</option>
+                                <option value="1000">500+ learners</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes / Special Instructions -->
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                        Any Specific Goals or Questions? <span class="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <textarea name="message" rows="2"
+                              placeholder="Tell us about your target university degree, career goals, or training requirements..."
+                              class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xs font-medium resize-none"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-2">
+                    <button type="submit" id="planModal_submit_btn"
+                            class="w-full py-3.5 px-4 rounded-xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-lg hover:shadow-xl cursor-pointer border-0">
+                        Complete Registration
+                    </button>
+                    <p class="text-[10px] text-center text-gray-400 mt-2">
+                        🔒 Safe &amp; Secure · POPIA Compliant · Official Pace Academy Admissions
+                    </p>
+                </div>
             </form>
         </div>
 
-        <!-- Success Panel -->
-        <div id="ent-form-success" class="hidden text-center py-8">
-            <div class="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
-                📈
+        <!-- Success Celebration View -->
+        <div id="planModal_success_view" class="hidden text-center py-8">
+            <div class="w-16 h-16 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 animate-bounce">
+                🎉
             </div>
-            <h3 class="text-xl font-black text-gray-900 mb-2">Proposal Request Received!</h3>
-            <p class="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto">
-                We've received your partnership request. A confirmation email has been sent to you. Our corporate team will prepare a custom proposal and follow up shortly.
+            <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full uppercase tracking-wider">
+                Registration Confirmed
+            </span>
+            <h3 id="planModal_success_plan_name" class="text-2xl font-black text-gray-900 mt-3 mb-2">
+                Matric Core
+            </h3>
+            <p id="planModal_success_msg" class="text-sm text-gray-600 leading-relaxed max-w-sm mx-auto mb-6">
+                Thank you! Your enrollment request has been recorded. Our admissions team will reach out to you via WhatsApp/phone to activate your dashboard.
             </p>
+            <button onclick="closePlanModal()" type="button"
+                    class="px-6 py-2.5 rounded-xl font-bold text-xs bg-gray-900 hover:bg-black text-white transition">
+                Return to Pricing
+            </button>
         </div>
+
     </div>
 </div>
 {% endblock %}

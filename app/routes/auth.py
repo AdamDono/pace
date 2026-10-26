@@ -199,6 +199,131 @@ def apply_enterprise():
     
     return jsonify({'success': True, 'message': 'Proposal request submitted successfully!'})
 
+@auth_bp.route('/apply-plan', methods=['POST'])
+@csrf.exempt
+def apply_plan():
+    from flask import jsonify
+    from app.models import Lead
+    from app.utils.email import send_email
+    
+    plan_id = request.form.get('plan_id', 'general')
+    plan_name = request.form.get('plan_name', 'Pace Academy Plan')
+    plan_category = request.form.get('plan_category', 'school')
+    billing_cycle = request.form.get('billing_cycle', '')
+    
+    full_name = request.form.get('full_name', '').strip()
+    email = request.form.get('email', '').strip()
+    phone = request.form.get('phone', '').strip()
+    
+    # Specific fields based on plan category
+    school_name = request.form.get('school_name', '').strip()
+    grade_level = request.form.get('grade_level', '').strip()
+    struggle_subjects = request.form.get('struggle_subjects', '').strip()
+    
+    employment_status = request.form.get('employment_status', '').strip()
+    career_interest = request.form.get('career_interest', '').strip()
+    id_number = request.form.get('id_number', '').strip()
+    
+    organization = request.form.get('organization', '').strip()
+    raw_learners = request.form.get('estimated_learners', '').strip()
+    estimated_learners = int(raw_learners) if raw_learners and raw_learners.isdigit() else None
+    
+    user_message = request.form.get('message', '').strip()
+    
+    if not (full_name and email and phone):
+        return jsonify({'success': False, 'message': 'Please provide your full name, email address, and phone number.'}), 400
+
+    # Categorize lead_type
+    lead_type = 'individual'
+    org_field = organization or school_name or None
+    emp_field = grade_level or employment_status or None
+    
+    if plan_category in ['school', 'High School & Matric']:
+        lead_type = 'school_plan'
+    elif plan_category in ['skills', 'Digital Career Skills']:
+        lead_type = 'skills_plan'
+    elif plan_category in ['enterprise', 'Enterprise B2B']:
+        lead_type = 'enterprise'
+    
+    # Build clean inquiry_type for admin dashboard
+    inquiry_label = f"{plan_name} ({billing_cycle})" if billing_cycle else plan_name
+    
+    # Build rich details string
+    details = [f"Plan: {inquiry_label}"]
+    if school_name:
+        details.append(f"School: {school_name}")
+    if grade_level:
+        details.append(f"Grade: {grade_level}")
+    if struggle_subjects:
+        details.append(f"Target Subjects: {struggle_subjects}")
+    if employment_status:
+        details.append(f"Status: {employment_status}")
+    if career_interest:
+        details.append(f"Career Focus: {career_interest}")
+    if id_number:
+        details.append(f"National ID: {id_number}")
+    if organization:
+        details.append(f"Organization: {organization}")
+    if estimated_learners:
+        details.append(f"Learners: {estimated_learners}")
+    if user_message:
+        details.append(f"Note: {user_message}")
+        
+    full_message = " | ".join(details)
+    
+    lead = Lead(
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        lead_type=lead_type,
+        organization=org_field,
+        employment_status=emp_field,
+        inquiry_type=inquiry_label,
+        estimated_learners=estimated_learners,
+        message=full_message
+    )
+    db.session.add(lead)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Database storage failed. Please try again.'}), 500
+        
+    # Send email notifications
+    admin_recipient = 'adam@pacetech.co.za'
+    try:
+        send_email(
+            subject=f'New Plan Registration: {inquiry_label} - {full_name}',
+            recipient=admin_recipient,
+            template='admin_admission_alert',
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            employment_status=emp_field,
+            message=full_message,
+            course_title=inquiry_label
+        )
+    except Exception:
+        pass
+        
+    try:
+        send_email(
+            subject=f'Welcome to Pace Academy - {plan_name} Application Received',
+            recipient=email,
+            template='student_admission_confirm',
+            full_name=full_name,
+            course_title=inquiry_label
+        )
+    except Exception:
+        pass
+        
+    return jsonify({
+        'success': True,
+        'message': f'Thank you {full_name}! Your enrollment application for {plan_name} has been received. Our team will contact you on WhatsApp/phone to activate your account.',
+        'plan_name': plan_name,
+        'inquiry_label': inquiry_label
+    })
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
