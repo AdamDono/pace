@@ -664,6 +664,9 @@
 
             if (data.response) {
                 const botMsgId = appendWormMessage('bookworm', data.response);
+                if (data.audio_url && botMsgId) {
+                    bookwormAudioCache[botMsgId] = data.audio_url;
+                }
                 wormChatHistory.push({ role: 'bookworm', content: data.response });
                 try {
                     localStorage.setItem(getWormCacheKey(), JSON.stringify(wormChatHistory));
@@ -681,7 +684,7 @@
                 if (botMsgId && (wasVoice || autoSpeakVoiceEnabled)) {
                     setTimeout(() => {
                         toggleSpeakMessage(botMsgId);
-                    }, 120);
+                    }, 50);
                 }
             } else {
                 appendWormMessage('bookworm', data.message || 'I had a hiccup processing that. Please try again!');
@@ -837,7 +840,8 @@
         currentUtterance = null;
     }
 
-    // ── Persistent Voice Locking: Locks to ONE consistent, natural English voice forever ──
+    // ── Human Neural Voice Engine (Google Gemini 'Puck' Authentic Human Tutor Voice) ──
+    const bookwormAudioCache = {};
     let bookwormLockedVoice = null;
     let bookwormLockedVoiceName = '';
     try {
@@ -849,7 +853,6 @@
         const voices = window.speechSynthesis.getVoices() || [];
         if (!voices.length) return bookwormLockedVoice;
 
-        // 1. If voice name already chosen and exists in voice list, always stick with it!
         if (bookwormLockedVoiceName) {
             const matched = voices.find(v => v.name === bookwormLockedVoiceName);
             if (matched) {
@@ -858,7 +861,6 @@
             }
         }
 
-        // 2. Select ONE friendly, natural English voice (Samantha on macOS, Google US English in Chrome, Natural en)
         const chosen = voices.find(v => v.name === 'Samantha') ||
                        voices.find(v => v.name.includes('Samantha')) ||
                        voices.find(v => v.name.includes('Google US English')) ||
@@ -882,6 +884,45 @@
         window.speechSynthesis.onvoiceschanged = () => {
             getBookwormVoice();
         };
+    }
+
+    function playNeuralAudio(audioUrl, msgId, fallbackText) {
+        stopAllSpeech();
+
+        const btn = document.getElementById(msgId + '-audio-btn');
+        const icon = btn ? btn.querySelector('.audio-icon') : null;
+        const label = btn ? btn.querySelector('.audio-label') : null;
+
+        if (btn) {
+            btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-blue-50', 'text-blue-600');
+            btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
+            if (icon) icon.textContent = '⏹️';
+            if (label) label.textContent = 'Stop';
+        }
+        updateMascotMood('explaining');
+
+        const audio = new Audio(audioUrl);
+        currentAudioElement = audio;
+        currentSpeakingMsgId = msgId;
+
+        audio.onended = () => {
+            stopAllSpeech();
+            updateMascotMood('idle');
+        };
+
+        audio.onerror = () => {
+            if (fallbackText) {
+                playInstantSpeechSynthesis(fallbackText, msgId);
+            } else {
+                stopAllSpeech();
+                updateMascotMood('idle');
+            }
+        };
+
+        audio.play().catch(err => {
+            console.warn('Neural audio playback prevented or failed:', err);
+            if (fallbackText) playInstantSpeechSynthesis(fallbackText, msgId);
+        });
     }
 
     async function toggleSpeakMessage(msgId) {
@@ -910,7 +951,48 @@
             cleanSpokenSnippet = cleanSpokenSnippet.substring(0, 220).replace(/\s\S*$/, '') + '...';
         }
 
-        // Instant Zero-Latency Playback: Speak immediately with ZERO waiting and locked voice!
+        // 1. If authentic human neural voice is already in cache, play IMMEDIATELY in 0ms!
+        if (bookwormAudioCache[msgId]) {
+            playNeuralAudio(bookwormAudioCache[msgId], msgId, cleanSpokenSnippet);
+            return;
+        }
+
+        // 2. Otherwise fetch the authentic human voice from backend
+        const btn = document.getElementById(msgId + '-audio-btn');
+        const icon = btn ? btn.querySelector('.audio-icon') : null;
+        const label = btn ? btn.querySelector('.audio-label') : null;
+
+        if (btn) {
+            btn.classList.remove('bg-gray-50', 'text-gray-600');
+            btn.classList.add('bg-blue-50', 'text-blue-600');
+            if (icon) icon.textContent = '⏳';
+            if (label) label.textContent = 'Voice...';
+        }
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res = await fetch('/student/api/ai-tutor/speak', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    text: cleanSpokenSnippet,
+                    voice: 'Puck'
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.audio_url) {
+                bookwormAudioCache[msgId] = data.audio_url;
+                playNeuralAudio(data.audio_url, msgId, cleanSpokenSnippet);
+                return;
+            }
+        } catch(e) {
+            console.warn('Neural speak fetch failed:', e);
+        }
+
+        // Offline or network fallback only
         playInstantSpeechSynthesis(cleanSpokenSnippet, msgId);
     }
 

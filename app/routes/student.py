@@ -2005,6 +2005,16 @@ def ai_tutor_chat():
         result['quota_total'] = max_sparks if not is_pro else 'Unlimited'
         result['is_pro'] = is_pro
 
+        # Pre-generate authentic human neural speech for instant, zero-latency playback
+        try:
+            bot_text = result.get('response', '')
+            if bot_text:
+                tts_res = AITutorService.generate_neural_speech(text=bot_text, voice='Puck')
+                if tts_res.get('success'):
+                    result['audio_url'] = tts_res.get('audio_url')
+        except Exception as e:
+            pass
+
     return jsonify(result)
 
 
