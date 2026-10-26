@@ -108,7 +108,7 @@
          class="fixed bottom-6 right-6 w-[94vw] sm:w-[410px] max-h-[85vh] h-[640px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/80 flex flex-col overflow-hidden z-50 transition-all duration-300 transform scale-95 opacity-0 pointer-events-none origin-bottom-right">
         
         <!-- Drawer Header -->
-        <div class="p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 text-white flex items-center justify-between shrink-0 shadow-sm relative overflow-hidden">
+        <div class="p-4 bg-blue-600 text-white flex items-center justify-between shrink-0 shadow-sm relative overflow-hidden">
             <div class="flex items-center gap-3 relative z-10">
                 <div class="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md p-1 border border-white/20 flex items-center justify-center shrink-0">
                     <span id="worm-header-emoji" class="text-2xl animate-bounce">🐛</span>
@@ -117,7 +117,7 @@
                     <div class="flex items-center gap-2">
                         <h3 class="font-black text-base tracking-tight">Bookworm AI</h3>
                     </div>
-                    <p class="text-[11px] text-emerald-100 flex items-center gap-1">
+                    <p class="text-[11px] text-blue-100 flex items-center gap-1">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         Active & Reading with you
                     </p>
@@ -155,7 +155,7 @@
                 <span class="text-amber-500 font-bold">✨</span>
                 <span id="worm-drawer-quota-text">AI Companion • <strong>Matric Core & Pro</strong></span>
             </div>
-            <a href="{{ url_for('auth.pricing') }}" target="_blank" class="text-indigo-600 font-bold hover:underline flex items-center gap-0.5">
+            <a href="{{ url_for('auth.pricing') }}" target="_blank" class="text-blue-600 font-bold hover:underline flex items-center gap-0.5">
                 <span>View Plans</span>
                 <span>↗</span>
             </a>
@@ -170,13 +170,13 @@
                     🐛
                 </div>
                 <div class="bg-white border border-gray-200/80 rounded-2xl rounded-tl-sm p-3.5 text-gray-800 shadow-sm max-w-[85%] leading-relaxed">
-                    <p class="font-bold text-xs text-emerald-700 mb-1">Hey there! I'm Bookworm.</p>
+                    <p class="font-bold text-xs text-blue-700 mb-1">Hey there! I'm Bookworm.</p>
                     <p class="text-xs text-gray-600">
                         I'm studying alongside you. If you get stuck on a tricky concept, need an explanation, or want to test your understanding, let me know!
                     </p>
                     <div class="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
                         <button type="button" onclick="toggleSpeakMessage('worm-welcome-msg')" id="worm-welcome-msg-audio-btn"
-                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 transition">
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 transition">
                             <span class="audio-icon">🔊</span>
                             <span class="audio-label">Listen</span>
                         </button>
@@ -190,7 +190,7 @@
         <!-- Quick Action Starter Chips -->
         <div id="worm-quick-chips" class="px-4 py-2 bg-white border-t border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
             <button type="button" onclick="sendQuickPrompt('Can you explain what we are learning right now in simple, clear terms?')" 
-                    class="shrink-0 text-xs bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-gray-700 px-3 py-1.5 rounded-full border border-gray-200 transition font-medium">
+                    class="shrink-0 text-xs bg-gray-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 text-gray-700 px-3 py-1.5 rounded-full border border-gray-200 transition font-medium">
                 📝 Explain Simply
             </button>
             <button type="button" id="worm-chip-practice" onclick="handleContextualPracticePrompt()" 
@@ -208,12 +208,12 @@
             <form id="worm-chat-form" onsubmit="handleWormSubmit(event)" class="flex items-center gap-2">
                 <input type="text" id="worm-input" placeholder="Ask a question or explain what you think..." 
                        autocomplete="off"
-                       class="flex-1 bg-gray-100 text-gray-900 placeholder-gray-400 text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition">
+                       class="flex-1 bg-gray-100 text-gray-900 placeholder-gray-400 text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-transparent focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition">
                 
                 <!-- Voice Input (Mic) Button (Tap to toggle or Hold to record) -->
                 <button type="button" id="worm-mic-btn" onclick="toggleVoiceInput(event)" aria-label="Tap to speak or hold to record" title="Tap to speak or hold to record"
                         style="touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;"
-                        class="w-10 h-10 rounded-2xl bg-gray-100 hover:bg-purple-100 text-gray-600 hover:text-purple-700 active:scale-95 flex items-center justify-center shrink-0 border border-gray-200 transition select-none relative">
+                        class="w-10 h-10 rounded-2xl bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-700 active:scale-95 flex items-center justify-center shrink-0 border border-gray-200 transition select-none relative">
                     <span id="worm-mic-icon-wrap" class="pointer-events-none flex items-center justify-center">
                         <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3z"></path>
@@ -223,7 +223,7 @@
 
                 <!-- Send Button -->
                 <button type="submit" id="worm-send-btn" aria-label="Send message to Bookworm"
-                        class="w-10 h-10 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md transition disabled:opacity-50 disabled:pointer-events-none">
+                        class="w-10 h-10 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md transition disabled:opacity-50 disabled:pointer-events-none">
                     <svg class="w-4 h-4 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                     </svg>
@@ -706,7 +706,7 @@
 
         if (role === 'user') {
             msgDiv.innerHTML = `
-                <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-sm p-3.5 shadow-sm max-w-[85%] leading-relaxed text-xs sm:text-sm">
+                <div class="bg-blue-600 text-white rounded-2xl rounded-tr-sm p-3.5 shadow-sm max-w-[85%] leading-relaxed text-xs sm:text-sm">
                     ${escapeHtml(text)}
                 </div>
             `;
@@ -725,7 +725,7 @@
                     <div>${formatted}</div>
                     <div class="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between">
                         <button type="button" onclick="toggleSpeakMessage('${msgId}')" id="${msgId}-audio-btn"
-                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 transition">
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 transition">
                             <span class="audio-icon">🔊</span>
                             <span class="audio-label">Listen</span>
                         </button>
@@ -751,7 +751,7 @@
                 🐛
             </div>
             <div class="bg-white border border-gray-200/80 rounded-2xl rounded-tl-sm p-3 text-gray-500 shadow-sm text-xs flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce"></span>
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-bounce"></span>
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" style="animation-delay: 0.15s"></span>
                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0.3s"></span>
                 <span class="ml-1 text-[11px] font-medium text-gray-400">Bookworm is thinking...</span>
@@ -821,10 +821,11 @@
         if ('speechSynthesis' in window) {
             try { window.speechSynthesis.cancel(); } catch(e) {}
         }
+        window.__currentBookwormUtterance = null;
         if (currentSpeakingMsgId) {
             const btn = document.getElementById(currentSpeakingMsgId + '-audio-btn');
             if (btn) {
-                btn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-200', 'bg-indigo-50', 'text-indigo-600', 'border-indigo-200');
+                btn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-200', 'bg-blue-50', 'text-blue-600', 'border-blue-200');
                 btn.classList.add('bg-gray-50', 'text-gray-600', 'border-gray-200');
                 const icon = btn.querySelector('.audio-icon');
                 const label = btn.querySelector('.audio-label');
@@ -836,24 +837,43 @@
         currentUtterance = null;
     }
 
+    // ── Persistent Voice Locking: Locks to ONE consistent, natural English voice forever ──
     let bookwormLockedVoice = null;
-    const bookwormAudioCache = {};
+    let bookwormLockedVoiceName = '';
+    try {
+        bookwormLockedVoiceName = localStorage.getItem('pace_bookworm_locked_voice_name') || '';
+    } catch(e) {}
 
     function getBookwormVoice() {
-        if (bookwormLockedVoice) return bookwormLockedVoice;
         if (!('speechSynthesis' in window)) return null;
         const voices = window.speechSynthesis.getVoices() || [];
-        if (!voices.length) return null;
+        if (!voices.length) return bookwormLockedVoice;
 
-        // Permanently lock to the crystal-clear friendly English voice (Samantha on macOS, Google US English in Chrome, or system default)
-        // so Bookworm NEVER changes voices between messages!
-        bookwormLockedVoice = voices.find(v => v.name.includes('Samantha')) ||
-                              voices.find(v => v.name.includes('Google US English')) ||
-                              voices.find(v => v.name.includes('Natural') && v.lang.startsWith('en')) ||
-                              voices.find(v => v.default && v.lang.startsWith('en')) ||
-                              voices.find(v => v.lang === 'en-US' && !v.name.includes('Bad')) ||
-                              voices.find(v => v.lang.startsWith('en')) ||
-                              voices[0];
+        // 1. If voice name already chosen and exists in voice list, always stick with it!
+        if (bookwormLockedVoiceName) {
+            const matched = voices.find(v => v.name === bookwormLockedVoiceName);
+            if (matched) {
+                bookwormLockedVoice = matched;
+                return matched;
+            }
+        }
+
+        // 2. Select ONE friendly, natural English voice (Samantha on macOS, Google US English in Chrome, Natural en)
+        const chosen = voices.find(v => v.name === 'Samantha') ||
+                       voices.find(v => v.name.includes('Samantha')) ||
+                       voices.find(v => v.name.includes('Google US English')) ||
+                       voices.find(v => v.name.includes('Natural') && v.lang.startsWith('en')) ||
+                       voices.find(v => v.name.includes('Jenny') && v.lang.startsWith('en')) ||
+                       voices.find(v => v.lang === 'en-US' && !v.name.includes('Bad') && !v.name.includes('Whisper')) ||
+                       voices.find(v => v.default && v.lang.startsWith('en')) ||
+                       voices.find(v => v.lang.startsWith('en')) ||
+                       voices[0];
+
+        if (chosen) {
+            bookwormLockedVoice = chosen;
+            bookwormLockedVoiceName = chosen.name;
+            try { localStorage.setItem('pace_bookworm_locked_voice_name', chosen.name); } catch(e) {}
+        }
         return bookwormLockedVoice;
     }
 
@@ -890,45 +910,7 @@
             cleanSpokenSnippet = cleanSpokenSnippet.substring(0, 220).replace(/\s\S*$/, '') + '...';
         }
 
-        const btn = document.getElementById(msgId + '-audio-btn');
-        const icon = btn ? btn.querySelector('.audio-icon') : null;
-        const label = btn ? btn.querySelector('.audio-label') : null;
-
-        currentSpeakingMsgId = msgId;
-
-        // Check if pre-cached neural audio is already available
-        if (bookwormAudioCache[msgId]) {
-            try {
-                const audio = new Audio(bookwormAudioCache[msgId]);
-                currentAudioElement = audio;
-
-                audio.onplay = () => {
-                    if (btn && currentSpeakingMsgId === msgId) {
-                        btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-indigo-50', 'text-indigo-600');
-                        btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
-                        if (icon) icon.textContent = '⏹️';
-                        if (label) label.textContent = 'Stop';
-                    }
-                    updateMascotMood('explaining');
-                };
-
-                audio.onended = () => {
-                    stopAllSpeech();
-                    updateMascotMood('idle');
-                };
-
-                audio.onerror = () => {
-                    playInstantSpeechSynthesis(cleanSpokenSnippet, msgId);
-                };
-
-                await audio.play();
-                return;
-            } catch (e) {
-                // Audio play blocked or failed, fall through to instant synthesis
-            }
-        }
-
-        // Instant Zero-Latency Playback: Speak immediately without waiting for API timeouts or rate limits!
+        // Instant Zero-Latency Playback: Speak immediately with ZERO waiting and locked voice!
         playInstantSpeechSynthesis(cleanSpokenSnippet, msgId);
     }
 
@@ -942,26 +924,40 @@
         const icon = btn ? btn.querySelector('.audio-icon') : null;
         const label = btn ? btn.querySelector('.audio-label') : null;
 
+        // Immediately update button UI with 0ms delay: never show Loading...
+        if (btn) {
+            btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-blue-50', 'text-blue-600');
+            btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
+            if (icon) icon.textContent = '⏹️';
+            if (label) label.textContent = 'Stop';
+        }
+        updateMascotMood('explaining');
+
         try {
             window.speechSynthesis.cancel();
+            window.speechSynthesis.resume();
         } catch(e) {}
 
         const utterance = new SpeechSynthesisUtterance(speechText);
+        window.__currentBookwormUtterance = utterance; // Prevent V8 garbage collection mid-speech
         currentUtterance = utterance;
         currentSpeakingMsgId = msgId;
 
         const voice = getBookwormVoice();
         if (voice) {
             utterance.voice = voice;
+            utterance.lang = voice.lang || 'en-US';
+        } else {
+            utterance.lang = 'en-US';
         }
 
-        // Energetic, warm, cheerful student tutor cadence
-        utterance.rate = 1.02;
-        utterance.pitch = 1.04;
+        // Constant, friendly tutor cadence - rate and pitch never change
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
 
         utterance.onstart = function() {
             if (btn && currentSpeakingMsgId === msgId) {
-                btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-indigo-50', 'text-indigo-600');
+                btn.classList.remove('bg-gray-50', 'text-gray-600', 'bg-blue-50', 'text-blue-600');
                 btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
                 if (icon) icon.textContent = '⏹️';
                 if (label) label.textContent = 'Stop';
@@ -970,16 +966,19 @@
         };
 
         utterance.onend = function() {
+            window.__currentBookwormUtterance = null;
             stopAllSpeech();
             updateMascotMood('idle');
         };
 
         utterance.onerror = function() {
+            window.__currentBookwormUtterance = null;
             stopAllSpeech();
             updateMascotMood('idle');
         };
 
         window.speechSynthesis.speak(utterance);
+        try { window.speechSynthesis.resume(); } catch(e) {}
     }
 
     // ── Voice Input (Dual Engine: Live Speech Recognition + Gemini Neural Transcribe) ──
@@ -1108,7 +1107,7 @@
         if (transcribing) {
             if (micBtn) {
                 micBtn.classList.remove('bg-gray-100', 'text-gray-600');
-                micBtn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-indigo-300');
+                micBtn.classList.add('bg-blue-50', 'text-blue-600', 'border-blue-300');
             }
             if (iconWrap) {
                 iconWrap.innerHTML = `<span class="animate-spin text-sm">⏳</span>`;
