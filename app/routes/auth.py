@@ -44,7 +44,13 @@ def terms_of_service():
 
 @auth_bp.route('/pricing')
 def pricing():
-    return render_template('auth/pricing.html')
+    plan = request.args.get('plan')
+    tab = request.args.get('tab')
+    if plan:
+        return redirect(url_for('auth.landing', plan=plan, _anchor='pricing'))
+    if tab:
+        return redirect(url_for('auth.landing', tab=tab, _anchor='pricing'))
+    return redirect(url_for('auth.landing', _anchor='pricing'))
 
 @auth_bp.route('/courses/<identifier>')
 @auth_bp.route('/course/<identifier>')
@@ -329,7 +335,7 @@ def login():
     # If student or lead clicked a pricing plan link (?plan=matric_core etc.), route directly to pricing modal
     plan = request.args.get('plan')
     if plan and request.method == 'GET':
-        return redirect(url_for('auth.pricing', plan=plan))
+        return redirect(url_for('auth.landing', plan=plan, _anchor='pricing'))
 
     if current_user.is_authenticated:
         return redirect_based_on_role()
