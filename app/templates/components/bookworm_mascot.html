@@ -911,17 +911,14 @@
         };
 
         audio.onerror = () => {
-            if (fallbackText) {
-                playInstantSpeechSynthesis(fallbackText, msgId);
-            } else {
-                stopAllSpeech();
-                updateMascotMood('idle');
-            }
+            stopAllSpeech();
+            updateMascotMood('idle');
         };
 
         audio.play().catch(err => {
             console.warn('Neural audio playback prevented or failed:', err);
-            if (fallbackText) playInstantSpeechSynthesis(fallbackText, msgId);
+            stopAllSpeech();
+            updateMascotMood('idle');
         });
     }
 
@@ -953,11 +950,11 @@
 
         // 1. If authentic human neural voice is already in cache, play IMMEDIATELY in 0ms!
         if (bookwormAudioCache[msgId]) {
-            playNeuralAudio(bookwormAudioCache[msgId], msgId, cleanSpokenSnippet);
+            playNeuralAudio(bookwormAudioCache[msgId], msgId);
             return;
         }
 
-        // 2. Otherwise fetch the authentic human voice from backend
+        // 2. Otherwise fetch the authentic human voice from backend (NEVER fall back to robotic browser speechSynthesis)
         const btn = document.getElementById(msgId + '-audio-btn');
         const icon = btn ? btn.querySelector('.audio-icon') : null;
         const label = btn ? btn.querySelector('.audio-label') : null;
@@ -969,31 +966,34 @@
             if (label) label.textContent = 'Voice...';
         }
 
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const res = await fetch('/student/api/ai-tutor/speak', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    text: cleanSpokenSnippet,
-                    voice: 'Puck'
-                })
-            });
-            const data = await res.json();
-            if (data.success && data.audio_url) {
-                bookwormAudioCache[msgId] = data.audio_url;
-                playNeuralAudio(data.audio_url, msgId, cleanSpokenSnippet);
-                return;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const res = await fetch('/student/api/ai-tutor/speak', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        text: cleanSpokenSnippet,
+                        voice: 'Puck'
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.audio_url) {
+                    bookwormAudioCache[msgId] = data.audio_url;
+                    playNeuralAudio(data.audio_url, msgId);
+                    return;
+                }
+            } catch(e) {
+                console.warn('Neural speak fetch attempt failed:', e);
             }
-        } catch(e) {
-            console.warn('Neural speak fetch failed:', e);
         }
 
-        // Offline or network fallback only
-        playInstantSpeechSynthesis(cleanSpokenSnippet, msgId);
+        // If neural voice could not be reached, reset button cleanly instead of playing a robotic voice
+        stopAllSpeech();
+        updateMascotMood('idle');
     }
 
     function playInstantSpeechSynthesis(speechText, msgId) {

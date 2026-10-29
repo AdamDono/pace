@@ -32,13 +32,12 @@ except ImportError:
                 headers=headers or {"Content-Type": "application/json"},
                 method="POST",
             )
-            ctx = ssl.create_default_context()
-            if isinstance(verify, str):
-                try:
-                    ctx.load_verify_locations(cafile=verify)
-                except Exception:
-                    pass
-            elif verify is False:
+            try:
+                import certifi
+                ctx = ssl.create_default_context(cafile=certifi.where())
+            except Exception:
+                ctx = ssl._create_unverified_context()
+            if verify is False:
                 ctx = ssl._create_unverified_context()
             try:
                 with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
@@ -521,34 +520,36 @@ Ensure the output is clean JSON only.
             ssl_verify = True
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
-        try:
-            res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=3.5, verify=ssl_verify)
-            if res.status_code == 200:
-                data = res.json()
-                pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
-                pcm_bytes = base64.b64decode(pcm_b64)
+        last_error = None
+        for _attempt in range(2):
+            try:
+                res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=12, verify=ssl_verify)
+                if res.status_code == 200:
+                    data = res.json()
+                    pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+                    pcm_bytes = base64.b64decode(pcm_b64)
 
-                # Wrap in standard 24kHz mono WAV container
-                wav_io = io.BytesIO()
-                with wave.open(wav_io, 'wb') as wav_file:
-                    wav_file.setnchannels(1)
-                    wav_file.setsampwidth(2)
-                    wav_file.setframerate(24000)
-                    wav_file.writeframes(pcm_bytes)
+                    # Wrap in standard 24kHz mono WAV container
+                    wav_io = io.BytesIO()
+                    with wave.open(wav_io, 'wb') as wav_file:
+                        wav_file.setnchannels(1)
+                        wav_file.setsampwidth(2)
+                        wav_file.setframerate(24000)
+                        wav_file.writeframes(pcm_bytes)
 
-                wav_b64 = base64.b64encode(wav_io.getvalue()).decode('utf-8')
-                audio_url = f"data:audio/wav;base64,{wav_b64}"
+                    wav_b64 = base64.b64encode(wav_io.getvalue()).decode('utf-8')
+                    audio_url = f"data:audio/wav;base64,{wav_b64}"
 
-                # Cache recent responses
-                if len(cls._AUDIO_CACHE) > 100:
-                    cls._AUDIO_CACHE.pop(next(iter(cls._AUDIO_CACHE)))
-                cls._AUDIO_CACHE[cache_key] = audio_url
+                    # Cache recent responses
+                    if len(cls._AUDIO_CACHE) > 100:
+                        cls._AUDIO_CACHE.pop(next(iter(cls._AUDIO_CACHE)))
+                    cls._AUDIO_CACHE[cache_key] = audio_url
 
-                return {"success": True, "audio_url": audio_url}
-            else:
-                last_error = f"{res.status_code}: {res.text[:120]}"
-        except Exception as e:
-            last_error = str(e)
+                    return {"success": True, "audio_url": audio_url}
+                else:
+                    last_error = f"{res.status_code}: {res.text[:120]}"
+            except Exception as e:
+                last_error = str(e)
 
         logger.warning(f"Neural speech generation failed: {last_error}")
         return {"success": False, "error": last_error}
