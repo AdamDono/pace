@@ -6,14 +6,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Student Dashboard{% endblock %} - Pace Academy</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <style>
-        /* Quill content styling for student view */
-        .ql-editor {
+        /* Moodle Boost Typography for Student Lesson View (Enforced across ALL courses) */
+        .ql-editor,
+        .prose {
             padding: 0 !important;
-            font-size: 16px;
-            line-height: 1.8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+            font-size: 0.96875rem !important; /* 15.5px Moodle Boost standard */
+            line-height: 1.65 !important;
+            color: #1d2125 !important; /* Moodle signature charcoal */
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Force all pasted spans/paragraphs/headings in non-Moodle courses to use the exact same Moodle font */
+        .ql-editor *:not(code):not(pre):not(i):not(.fa):not(.fas):not(.far):not(.fab),
+        .prose *:not(code):not(pre):not(i):not(.fa):not(.fas):not(.far):not(.fab) {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+        }
+
+        .ql-editor p,
+        .prose p {
+            margin-top: 0 !important;
+            margin-bottom: 0.9rem !important;
+            line-height: 1.65 !important;
+            color: #1d2125 !important;
+            font-size: 0.96875rem !important;
+        }
+
+        /* Normalize pasted dark inline text colors to Moodle charcoal */
+        .ql-editor span[style*="rgb(0, 0, 0)"],
+        .ql-editor span[style*="rgb(15, 17, 21)"],
+        .ql-editor span[style*="rgb(17, 24, 39)"],
+        .ql-editor span[style*="rgb(33, 37, 41)"] {
+            color: #1d2125 !important;
+        }
+
+        /* Prevent double-gaps when Quill content contains empty <p><br></p> spacers */
+        .ql-editor p:has(> br:only-child),
+        .prose p:has(> br:only-child) {
+            margin-bottom: 0.25rem !important;
+            height: 0.25rem !important;
+            line-height: 0.25rem !important;
+        }
+
+        .ql-editor strong,
+        .ql-editor b,
+        .prose strong,
+        .prose b {
+            font-weight: 700 !important;
+            color: #1d2125 !important;
+        }
+
+        /* Moodle List Typography (ul / ol / li) */
+        .ql-editor ul,
+        .prose ul {
+            list-style-type: disc !important;
+            margin-top: 0 !important;
+            margin-bottom: 1rem !important;
+            padding-left: 2rem !important;
+        }
+
+        .ql-editor ol,
+        .prose ol {
+            list-style-type: decimal !important;
+            margin-top: 0 !important;
+            margin-bottom: 1rem !important;
+            padding-left: 2rem !important;
+        }
+
+        .ql-editor ul ul,
+        .prose ul ul,
+        .ql-editor ol ul,
+        .prose ol ul {
+            list-style-type: circle !important;
+            margin-top: 0.35rem !important;
+            margin-bottom: 0.35rem !important;
+        }
+
+        .ql-editor li,
+        .prose li {
+            margin-bottom: 0.4rem !important;
+            line-height: 1.65 !important;
+            color: #1d2125 !important;
+            padding-left: 0.2rem !important;
+        }
+
+        .ql-editor a,
+        .prose a {
+            color: #0f6cbf !important; /* Moodle Boost link blue */
+            text-decoration: none;
+        }
+
+        .ql-editor a:hover,
+        .prose a:hover {
+            color: #094478 !important;
+            text-decoration: underline !important;
         }
 
         /* Preserve Quill formatting */
@@ -89,35 +182,54 @@
             font-weight: 600;
         }
 
-        /* Make headers inside rich text / prose content larger and more prominent */
+        /* Moodle Boost Heading Scale (h1 - h6) */
         .prose h1, .ql-editor h1 {
-            font-size: 2.25rem !important;
-            font-weight: 800 !important;
-            margin-top: 2rem !important;
-            margin-bottom: 1rem !important;
-            color: #0f172a !important;
+            font-size: 1.875rem !important; /* 30px */
+            font-weight: 700 !important;
+            margin-top: 1.75rem !important;
+            margin-bottom: 0.75rem !important;
+            color: #1d2125 !important;
             line-height: 1.25 !important;
         }
         .prose h2, .ql-editor h2 {
-            font-size: 1.75rem !important;
-            font-weight: 800 !important;
-            margin-top: 1.75rem !important;
-            margin-bottom: 0.75rem !important;
-            color: #0f172a !important;
+            font-size: 1.5rem !important; /* 24px */
+            font-weight: 700 !important;
+            margin-top: 1.5rem !important;
+            margin-bottom: 0.65rem !important;
+            color: #1d2125 !important;
             line-height: 1.3 !important;
         }
         .prose h3, .ql-editor h3 {
-            font-size: 1.375rem !important;
+            font-size: 1.25rem !important; /* 20px */
             font-weight: 700 !important;
-            margin-top: 1.5rem !important;
-            margin-bottom: 0.5rem !important;
-            color: #1e293b !important;
+            margin-top: 1.35rem !important;
+            margin-bottom: 0.55rem !important;
+            color: #1d2125 !important;
             line-height: 1.35 !important;
         }
         .prose h4, .ql-editor h4 {
-            font-size: 1.125rem !important;
+            font-size: 1.125rem !important; /* 18px */
             font-weight: 700 !important;
-            color: #334155 !important;
+            margin-top: 1.2rem !important;
+            margin-bottom: 0.5rem !important;
+            color: #1d2125 !important;
+            line-height: 1.4 !important;
+        }
+        .prose h5, .ql-editor h5 {
+            font-size: 1.03125rem !important; /* 16.5px - used heavily in Moodle lessons */
+            font-weight: 700 !important;
+            margin-top: 1.15rem !important;
+            margin-bottom: 0.45rem !important;
+            color: #1d2125 !important;
+            line-height: 1.45 !important;
+        }
+        .prose h6, .ql-editor h6 {
+            font-size: 0.9375rem !important; /* 15px */
+            font-weight: 700 !important;
+            margin-top: 1rem !important;
+            margin-bottom: 0.4rem !important;
+            color: #495057 !important;
+            line-height: 1.45 !important;
         }
 
         /* Make images & video embeds inside rich text content centered, large, and responsive */
@@ -140,12 +252,13 @@
         .ql-editor img,
         .content-body img,
         blockquote img {
-            max-width: 100% !important;
+            width: 100% !important;
+            max-width: 800px !important;
             height: auto !important;
-            max-height: 85vh !important;
+            max-height: none !important;
             object-fit: contain !important;
             display: block !important;
-            margin: 20px auto !important;
+            margin: 24px auto !important;
             border-radius: 12px !important;
             box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
         }

@@ -72,17 +72,20 @@
         margin: 16px 0 !important;
         border-radius: 0 10px 10px 0 !important;
         display: block !important;
-    /* Full View Responsive Images without Scrollbars */
+    }
+
+    /* Full View Responsive Images without Scrollbars (Same 800px width as YouTube videos) */
     .prose img,
     .ql-editor img,
     .content-body img,
     blockquote img {
-        max-width: 100% !important;
+        width: 100% !important;
+        max-width: 800px !important;
         height: auto !important;
-        max-height: 85vh !important;
+        max-height: none !important;
         object-fit: contain !important;
         display: block !important;
-        margin: 20px auto !important;
+        margin: 24px auto !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
     }
@@ -319,9 +322,39 @@
         });
     });
 
-    // Auto-convert YouTube links into embedded player iframes while preserving text & link
+    // Auto-convert YouTube links and Image-URL iframes so linked images fit the exact same 800px container without scrollbars
     function autoConvertYouTube(container) {
         if (!container) return;
+
+        // 0. Convert any <iframe> whose src is actually an image URL (.jpg, .png, .webp, .gif, .svg, etc.) into a responsive <img>
+        const iframes = container.querySelectorAll('iframe[src]');
+        iframes.forEach(function (iframe) {
+            const src = (iframe.getAttribute('src') || '').trim();
+            const cleanPath = src.split('?')[0].split('#')[0].toLowerCase();
+            const isImageUrl = /\.(jpg|jpeg|png|gif|webp|svg|bmp|avif)$/i.test(cleanPath) ||
+                               /wp-content\/uploads\/.*\.(jpg|jpeg|png|gif|webp|svg)/i.test(src) ||
+                               /images\.unsplash\.com\/photo-|i\.imgur\.com\/|res\.cloudinary\.com\/[^/]+\/image\/upload/i.test(src);
+            if (isImageUrl) {
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = iframe.getAttribute('title') || 'Lesson illustration';
+                img.loading = 'lazy';
+                img.referrerPolicy = 'no-referrer';
+                img.style.cssText = 'width:100%;max-width:800px;height:auto;display:block;margin:24px auto;border-radius:12px;box-shadow:0 4px 20px -2px rgba(0,0,0,0.08);object-fit:contain;';
+
+                const wrapperParent = iframe.closest('.h5p-embed-container, .ql-video-wrapper');
+                if (wrapperParent) {
+                    wrapperParent.parentNode.replaceChild(img, wrapperParent);
+                } else {
+                    iframe.parentNode.replaceChild(img, iframe);
+                }
+            }
+        });
+
+        // 0b. Ensure all existing <img> tags in the lesson use no-referrer so external image links never fail to load
+        container.querySelectorAll('img[src^="http"]').forEach(function (img) {
+            if (!img.referrerPolicy) img.referrerPolicy = 'no-referrer';
+        });
 
         // 1. Convert <a> tags with YouTube URLs
         const aTags = container.querySelectorAll('a[href*="youtube.com"], a[href*="youtu.be"], a[href*="vimeo.com"]');

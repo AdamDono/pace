@@ -20,6 +20,11 @@
         {% endif %}
     </div>
 
+    <!-- Moodle Activity Title Header -->
+    <h1 class="text-2xl font-bold text-[#1d2125] mb-5 pb-3 border-b border-gray-200 tracking-tight" style="margin-top: 0 !important;">
+        {{ section.title }}
+    </h1>
+
     <!-- ─── Content Rendering ─────────────────────────────────── -->
     {% if not section.content and not section.video_url and not section.media_file and not section.assignments and not section.quizzes %}
         <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">

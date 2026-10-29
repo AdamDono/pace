@@ -125,7 +125,15 @@
 <link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
 <link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=6" rel="stylesheet">
 <style>
-.ql-editor { font-size: 15px; line-height: 1.6; min-height: 380px; }
+.ql-editor {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+    font-size: 0.96875rem;
+    line-height: 1.65;
+    color: #1d2125;
+    min-height: 380px;
+}
+.ql-editor p { margin-bottom: 0.85rem; }
+.ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5 { font-weight: 700; color: #1d2125; margin-top: 1.25rem; margin-bottom: 0.5rem; }
 .ql-toolbar.ql-snow { border-radius: 8px; background: #f9fafb; padding: 10px 12px; border: 1px solid #e5e7eb; }
 .ql-container.ql-snow { border-radius: 8px; border: 1px solid #e5e7eb; }
 

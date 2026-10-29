@@ -431,11 +431,23 @@ function insertVideoFromModal() {
     const range = window.currentQuill.getSelection(true);
     const index = range ? range.index : window.currentQuill.getLength();
 
-    let captionHtml = desc 
-        ? `<p class="ql-align-center" style="text-align: center; margin: 18px 0 8px 0; font-size: 15px; color: #111827;">🎥 <strong>Watch:</strong> <span style="color: #111827; font-style: italic;">${desc}</span></p>`
-        : '';
+    const cleanRawPath = rawUrl.split('?')[0].split('#')[0].toLowerCase();
+    const isDirectImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp|avif)$/i.test(cleanRawPath) ||
+                          /images\.unsplash\.com\/photo-|i\.imgur\.com\/|res\.cloudinary\.com\/[^/]+\/image\/upload/i.test(rawUrl);
 
-    let videoHtml = `${captionHtml}<div class="ql-video-wrapper" style="width: 100%; max-width: 800px; margin: 0 auto 18px auto; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #000;"><iframe src="${embedUrl}" class="ql-video" style="width: 100%; height: 100%; border: 0;" frameborder="0" allowfullscreen="true" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div><p><br></p>`;
+    let videoHtml = '';
+    if (isDirectImage) {
+        const imgCaption = desc
+            ? `<p class="ql-align-center" style="text-align: center; margin: 18px 0 8px 0; font-size: 15px; color: #1d2125;"><strong>${desc}</strong></p>`
+            : '';
+        videoHtml = `${imgCaption}<img src="${rawUrl}" alt="${desc || 'Lesson illustration'}" referrerpolicy="no-referrer" style="width: 100%; max-width: 800px; height: auto; display: block; margin: 18px auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); object-fit: contain;"><p><br></p>`;
+    } else {
+        let captionHtml = desc 
+            ? `<p class="ql-align-center" style="text-align: center; margin: 18px 0 8px 0; font-size: 15px; color: #111827;">🎥 <strong>Watch:</strong> <span style="color: #111827; font-style: italic;">${desc}</span></p>`
+            : '';
+
+        videoHtml = `${captionHtml}<div class="ql-video-wrapper" style="width: 100%; max-width: 800px; margin: 0 auto 18px auto; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #000;"><iframe src="${embedUrl}" class="ql-video" style="width: 100%; height: 100%; border: 0;" frameborder="0" allowfullscreen="true" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div><p><br></p>`;
+    }
 
     window.currentQuill.clipboard.dangerouslyPasteHTML(index, videoHtml);
     window.currentQuill.root.setAttribute('data-custom-html', 'true');
@@ -488,7 +500,13 @@ function insertEmbed() {
     }
 
     const range = window.currentQuill.getSelection(true);
-    const embedCode = `<div class="h5p-embed-container" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;margin:20px 0;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="Embedded Interactive Content"></iframe></div><p><br></p>`;
+    const cleanEmbedPath = url.split('?')[0].split('#')[0].toLowerCase();
+    const isImageEmbed = /\.(jpg|jpeg|png|gif|webp|svg|bmp|avif)$/i.test(cleanEmbedPath) ||
+                         /images\.unsplash\.com\/photo-|i\.imgur\.com\/|res\.cloudinary\.com\/[^/]+\/image\/upload/i.test(url);
+
+    const embedCode = isImageEmbed
+        ? `<img src="${url}" alt="Lesson illustration" referrerpolicy="no-referrer" style="width:100%;max-width:800px;height:auto;display:block;margin:20px auto;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);object-fit:contain;"><p><br></p>`
+        : `<div class="h5p-embed-container" style="position:relative;width:100%;max-width:800px;padding-bottom:56.25%;height:0;overflow:hidden;margin:20px auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#f9fafb;"><iframe src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="Embedded Interactive Content"></iframe></div><p><br></p>`;
 
     // Insert the HTML
     window.currentQuill.clipboard.dangerouslyPasteHTML(range.index, embedCode);
