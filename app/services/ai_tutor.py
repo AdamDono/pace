@@ -6,7 +6,48 @@ import base64
 import hashlib
 import io
 import wave
-import requests
+try:
+    import requests
+except ImportError:
+    import urllib.request
+    import urllib.error
+    import ssl
+
+    class _RequestsShim:
+        class _Response:
+            def __init__(self, status_code: int, body: str):
+                self.status_code = status_code
+                self.text = body
+
+            def json(self):
+                return json.loads(self.text)
+
+        @staticmethod
+        def post(url: str, headers=None, json=None, timeout=10, verify=True):
+            import json as _json
+            data = _json.dumps(json or {}).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers=headers or {"Content-Type": "application/json"},
+                method="POST",
+            )
+            ctx = ssl.create_default_context()
+            if isinstance(verify, str):
+                try:
+                    ctx.load_verify_locations(cafile=verify)
+                except Exception:
+                    pass
+            elif verify is False:
+                ctx = ssl._create_unverified_context()
+            try:
+                with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+                    return _RequestsShim._Response(resp.status, resp.read().decode("utf-8", errors="replace"))
+            except urllib.error.HTTPError as err:
+                body = err.read().decode("utf-8", errors="replace") if err.fp else str(err)
+                return _RequestsShim._Response(err.code, body)
+
+    requests = _RequestsShim()
 from html import unescape
 from html.parser import HTMLParser
 from typing import Dict, Any, List, Optional
@@ -431,7 +472,6 @@ Ensure the output is clean JSON only.
         import base64
         import io
         import wave
-        import requests
 
         clean_text = _clean_text(text)
         if not clean_text:
