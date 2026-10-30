@@ -92,6 +92,12 @@
                                 class="px-2.5 py-1 text-xs font-semibold bg-amber-50 text-amber-800 border-l-4 border-amber-500 rounded-r hover:bg-amber-100 transition-colors shadow-sm cursor-pointer">
                                 🟡 Yellow Note
                             </button>
+                            <span class="text-gray-300 mx-1">|</span>
+                            <button type="button" onmousedown="event.preventDefault()" onclick="showTableModal(window.quill || window.currentQuill)"
+                                class="px-3 py-1 text-xs font-bold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer inline-flex items-center gap-1">
+                                <span>⊞</span>
+                                <span>Insert Table</span>
+                            </button>
                         </div>
 
                         <!-- Slot for Quill's Toolbar -->
@@ -123,7 +129,7 @@
 <!-- Load Quill CSS -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <link href="https://unpkg.com/quill-better-table@1.2.10/dist/quill-better-table.css" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=6" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/quill-buttons.css') }}?v=12" rel="stylesheet">
 <style>
 .ql-editor {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
@@ -134,6 +140,21 @@
 }
 .ql-editor p { margin-bottom: 0.85rem; }
 .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5 { font-weight: 700; color: #1d2125; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+.ql-editor .pace-table-wrapper { margin: 18px 0; cursor: pointer; position: relative; border-radius: 10px; transition: box-shadow 0.15s ease; }
+.ql-editor .pace-table-wrapper:hover { box-shadow: 0 0 0 2px #2563eb; }
+.ql-editor .pace-table-wrapper:hover::after {
+    content: '✏️ Click to edit table';
+    position: absolute;
+    top: -11px;
+    right: 12px;
+    background: #2563eb;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(37,99,235,0.25);
+}
 .ql-toolbar.ql-snow { border-radius: 8px; background: #f9fafb; padding: 10px 12px; border: 1px solid #e5e7eb; }
 .ql-container.ql-snow { border-radius: 8px; border: 1px solid #e5e7eb; }
 
@@ -183,7 +204,7 @@ blockquote:not([data-color]):not([class*="callout"]):not([style*="border-left"])
 <script>
     window._quill3dUploadUrl = "{{ url_for('teacher.quill_upload_3d', course_id=course.id, section_id=section.id) }}";
 </script>
-<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}?v=10"></script>
+<script src="{{ url_for('static', filename='js/quill-enhanced.js') }}?v=12"></script>
 <script src="{{ url_for('static', filename='js/3d-hotspot-editor.js') }}?v=6"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
@@ -199,7 +220,9 @@ blockquote:not([data-color]):not([class*="callout"]):not([style*="border-left"])
     // Initial content population if needed
     const textarea = document.getElementById('content-editor');
     if (textarea && textarea.value && window.quill) {
-        window.quill.root.innerHTML = textarea.value;
+        window.quill.root.innerHTML = typeof _wrapRawTablesForQuill === 'function'
+            ? _wrapRawTablesForQuill(textarea.value)
+            : textarea.value;
     }
 
     // Ensure Quill toolbar is docked inside the sticky header slot

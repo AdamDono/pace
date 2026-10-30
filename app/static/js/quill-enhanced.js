@@ -1,11 +1,84 @@
 // Enhanced Quill Editor - Tables, Emojis, Embed, Source Code, 3D Models
 // Usage: initQuillEnhanced('editor-id', 'textarea-id', 'placeholder')
 
+// Register custom BlockEmbed for HTML Tables so Quill 1.3.6 never strips <table>, <thead>, <tbody>, <tr>, <th>, <td>
+(function registerPaceTableBlot() {
+    if (typeof Quill === 'undefined') return;
+    try {
+        const BlockEmbed = Quill.import('blots/block/embed');
+        class PaceTableBlot extends BlockEmbed {
+            static create(value) {
+                const node = super.create();
+                node.setAttribute('contenteditable', 'false');
+                node.setAttribute('data-pace-table', '1');
+                node.className = 'pace-table-wrapper';
+                if (typeof value === 'string') {
+                    node.innerHTML = value;
+                } else if (value && typeof value === 'object') {
+                    node.innerHTML = value.html || '';
+                }
+                return node;
+            }
+            static value(node) {
+                return {
+                    html: node.innerHTML
+                };
+            }
+        }
+        PaceTableBlot.blotName = 'paceTable';
+        PaceTableBlot.tagName = 'div';
+        PaceTableBlot.className = 'pace-table-wrapper';
+        Quill.register(PaceTableBlot, true);
+    } catch (e) {
+        console.warn('PaceTableBlot registration notice:', e);
+    }
+})();
+
+// Wrap any raw <table> tags in .pace-table-wrapper before feeding HTML into Quill so Quill preserves them
+function _wrapRawTablesForQuill(html) {
+    if (!html || !html.includes('<table')) return html;
+    try {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const tables = temp.querySelectorAll('table');
+        tables.forEach(table => {
+            if (!table.closest('.pace-table-wrapper')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'pace-table-wrapper';
+                wrapper.setAttribute('contenteditable', 'false');
+                wrapper.setAttribute('data-pace-table', '1');
+                table.parentNode.insertBefore(wrapper, table);
+                wrapper.appendChild(table);
+            }
+        });
+        return temp.innerHTML;
+    } catch (e) {
+        return html;
+    }
+}
+
 function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...') {
-    // Register table module if available
-    if (typeof QuillBetterTable !== 'undefined') {
+    // Ensure PaceTableBlot is registered if Quill loaded after script parse
+    if (typeof Quill !== 'undefined' && !Quill.imports['formats/paceTable']) {
         try {
-            Quill.register({'modules/better-table': QuillBetterTable}, true);
+            const BlockEmbed = Quill.import('blots/block/embed');
+            class PaceTableBlot extends BlockEmbed {
+                static create(value) {
+                    const node = super.create();
+                    node.setAttribute('contenteditable', 'false');
+                    node.setAttribute('data-pace-table', '1');
+                    node.className = 'pace-table-wrapper';
+                    node.innerHTML = (typeof value === 'string') ? value : (value && value.html ? value.html : '');
+                    return node;
+                }
+                static value(node) {
+                    return { html: node.innerHTML };
+                }
+            }
+            PaceTableBlot.blotName = 'paceTable';
+            PaceTableBlot.tagName = 'div';
+            PaceTableBlot.className = 'pace-table-wrapper';
+            Quill.register(PaceTableBlot, true);
         } catch(e) {}
     }
 
@@ -228,18 +301,6 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
         }
     };
     
-    // Add better-table if available
-    if (typeof QuillBetterTable !== 'undefined') {
-        modules['better-table'] = {
-            operationMenu: {
-                items: { unmergeCells: { text: 'Unmerge cells' } }
-            }
-        };
-        modules.keyboard = {
-            bindings: QuillBetterTable.keyboardBindings
-        };
-    }
-    
     const quill = new Quill('#' + editorId, {
         theme: 'snow',
         placeholder: placeholder,
@@ -248,8 +309,19 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
 
     const textarea = document.getElementById(textareaId);
     if (textarea && textarea.value) {
-        quill.root.innerHTML = textarea.value;
+        quill.root.innerHTML = _wrapRawTablesForQuill(textarea.value);
     }
+
+    // Allow clicking any existing table inside the editor to open the Table Builder Modal and edit it
+    quill.root.addEventListener('click', function(e) {
+        const tableWrapper = e.target.closest('.pace-table-wrapper') || (e.target.closest('table') ? e.target.closest('table').parentElement : null);
+        const tableEl = e.target.closest('table') || (tableWrapper ? tableWrapper.querySelector('table') : null);
+        if (tableEl) {
+            e.preventDefault();
+            e.stopPropagation();
+            showTableModal(quill, tableEl.closest('.pace-table-wrapper') || tableEl);
+        }
+    });
 
     // Automatically relocate toolbar to designated sticky container if present
     const stickySlot = document.querySelector(`[data-quill-toolbar-for="${editorId}"]`) ||
@@ -264,15 +336,7 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
     // Sync Quill content to textarea on change
     quill.on('text-change', function(delta, oldDelta, source) {
         if (!textarea) return;
-        
-        // If custom HTML flag is set, NEVER sync (preserve custom HTML)
-        if (quill.root.getAttribute('data-custom-html') === 'true') {
-            console.log('🔒 Custom HTML protected, not syncing');
-            return; // Don't sync at all
-        }
-        
-        // Normal sync only for user changes
-        if (source === 'user') {
+        if (source === 'user' || source === 'api') {
             textarea.value = quill.root.innerHTML;
         }
     });
@@ -282,15 +346,8 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
     if (form) {
         form.addEventListener('submit', (e) => {
             if (textarea) {
-                // If custom HTML flag is set, DON'T override textarea
-                if (!quill.root.getAttribute('data-custom-html')) {
-                    textarea.value = quill.root.innerHTML;
-                    console.log('📤 Normal sync on submit');
-                } else {
-                    console.log('📤 Preserving custom HTML on submit');
-                }
+                textarea.value = quill.root.innerHTML;
                 console.log('📤 Submitting content length:', textarea.value.length);
-                console.log('📤 First 200 chars:', textarea.value.substring(0, 200));
             }
         });
     }
@@ -304,7 +361,7 @@ function initQuillEnhanced(editorId, textareaId, placeholder = 'Start typing...'
     return quill;
 }
 
-// Helper: style the 🧊 button in the Quill toolbar
+// Helper: style the 🧊 and ⊞ Table buttons in the Quill toolbar
 function _styleModel3DButton() {
     const apply = () => {
         const btns = document.querySelectorAll('.ql-model3d');
@@ -314,6 +371,10 @@ function _styleModel3DButton() {
             if (!style || !style.content || style.content === 'none' || style.content === '""' || style.content === 'normal') {
                 btn.innerHTML = '🧊';
             }
+        });
+        const tableBtns = document.querySelectorAll('.ql-table');
+        tableBtns.forEach(btn => {
+            btn.title = 'Insert / Edit Table';
         });
     };
     setTimeout(apply, 100);
@@ -341,16 +402,414 @@ function insertEmoji(emoji) {
     closeEmojiModal();
 }
 
-// ─── Table ────────────────────────────────────────────────────────────────────
+// ─── Interactive Table Builder Modal ──────────────────────────────────────────
+let _tableModalState = {
+    headers: ['Column 1', 'Column 2', 'Column 3'],
+    rows: [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+    ],
+    theme: 'moodle', // 'moodle' | 'blue' | 'minimal'
+    striped: true,
+    caption: '',
+    editingTarget: null,
+    savedRange: null
+};
+
+function _ensureTableModalDOM() {
+    if (document.getElementById('pace-table-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'pace-table-modal';
+    modal.style.cssText = 'display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:24px;border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,0.28);z-index:10002;width:760px;max-width:95vw;max-height:88vh;overflow-y:auto;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;border:1px solid #e2e8f0;';
+    modal.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
+            <div>
+                <h3 id="pace-table-modal-title" style="margin:0;font-size:18px;font-weight:700;color:#1d2125;display:flex;align-items:center;gap:8px;">
+                    <span>📊</span> <span>Insert Lesson Table</span>
+                </h3>
+                <p style="margin:3px 0 0;font-size:12px;color:#64748b;">Type directly into cells or paste a table from Excel, Word, or Google Sheets.</p>
+            </div>
+            <button type="button" onclick="closeTableModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;line-height:1;">&times;</button>
+        </div>
+
+        <!-- Toolbar Controls -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:#f8fafc;padding:10px 12px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:14px;">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                <button type="button" onclick="paceTableAddRow()" style="padding:6px 11px;background:white;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;font-weight:600;color:#1e293b;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.03);">+ Add Row</button>
+                <button type="button" onclick="paceTableRemoveRow()" style="padding:6px 11px;background:white;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;">− Row</button>
+                <span style="color:#cbd5e1;">|</span>
+                <button type="button" onclick="paceTableAddCol()" style="padding:6px 11px;background:white;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;font-weight:600;color:#1e293b;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.03);">+ Add Column</button>
+                <button type="button" onclick="paceTableRemoveCol()" style="padding:6px 11px;background:white;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;">− Column</button>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <label style="font-size:12px;font-weight:600;color:#475569;display:flex;align-items:center;gap:6px;">
+                    Style:
+                    <select id="pace-table-theme" onchange="_tableModalState.theme=this.value;_renderTableModalGrid();" style="padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:white;color:#1e293b;font-weight:600;">
+                        <option value="moodle">Moodle Classic Gray</option>
+                        <option value="blue">Pace Blue Header</option>
+                        <option value="minimal">Clean Minimal</option>
+                    </select>
+                </label>
+                <label style="font-size:12px;font-weight:600;color:#475569;display:flex;align-items:center;gap:5px;cursor:pointer;">
+                    <input type="checkbox" id="pace-table-striped" checked onchange="_tableModalState.striped=this.checked;_renderTableModalGrid();">
+                    Striped rows
+                </label>
+            </div>
+        </div>
+
+        <!-- Optional Caption -->
+        <div style="margin-bottom:12px;">
+            <input type="text" id="pace-table-caption" placeholder="Optional table title / caption (e.g. Table 1: Comparison of DNA and RNA)"
+                   oninput="_tableModalState.caption=this.value"
+                   style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;color:#1d2125;box-sizing:border-box;outline:none;">
+        </div>
+
+        <!-- Interactive Editable Grid -->
+        <div id="pace-table-grid-container" style="overflow-x:auto;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:16px;max-height:360px;overflow-y:auto;"></div>
+
+        <!-- Modal Footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px solid #e5e7eb;">
+            <div>
+                <button type="button" id="pace-table-delete-btn" onclick="deleteActivePaceTable()" style="display:none;padding:9px 14px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">
+                    🗑️ Delete Table
+                </button>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button type="button" onclick="closeTableModal()" style="padding:9px 18px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;color:#334155;">Cancel</button>
+                <button type="button" id="pace-table-submit-btn" onclick="confirmInsertPaceTable()" style="padding:9px 22px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;box-shadow:0 2px 6px rgba(37,99,235,0.25);">
+                    ✅ Insert Table
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function _syncModalInputsToState() {
+    const container = document.getElementById('pace-table-grid-container');
+    if (!container) return;
+    const thInputs = container.querySelectorAll('input[data-pace-th]');
+    thInputs.forEach(inp => {
+        const c = parseInt(inp.getAttribute('data-pace-th'), 10);
+        if (!isNaN(c) && c < _tableModalState.headers.length) {
+            _tableModalState.headers[c] = inp.value;
+        }
+    });
+    const tdInputs = container.querySelectorAll('textarea[data-pace-td]');
+    tdInputs.forEach(inp => {
+        const parts = inp.getAttribute('data-pace-td').split(',');
+        const r = parseInt(parts[0], 10);
+        const c = parseInt(parts[1], 10);
+        if (!isNaN(r) && !isNaN(c) && _tableModalState.rows[r] && c < _tableModalState.rows[r].length) {
+            _tableModalState.rows[r][c] = inp.value;
+        }
+    });
+}
+
+function _renderTableModalGrid() {
+    const container = document.getElementById('pace-table-grid-container');
+    if (!container) return;
+
+    const theme = _tableModalState.theme || 'moodle';
+    const headerBg = theme === 'blue' ? '#2563eb' : (theme === 'minimal' ? '#ffffff' : '#f1f5f9');
+    const headerColor = theme === 'blue' ? '#ffffff' : '#1d2125';
+
+    let html = `<table style="width:100%;border-collapse:collapse;min-width:480px;">`;
+    html += `<thead><tr style="background:${headerBg};">`;
+    _tableModalState.headers.forEach((h, cIdx) => {
+        const escaped = (h || '').replace(/"/g, '&quot;');
+        html += `<th style="border:1px solid #cbd5e1;padding:6px;">
+            <input type="text" data-pace-th="${cIdx}" value="${escaped}" placeholder="Header ${cIdx + 1}"
+                   oninput="_tableModalState.headers[${cIdx}]=this.value"
+                   onpaste="handlePaceTablePaste(event, -1, ${cIdx})"
+                   style="width:100%;border:none;background:transparent;font-weight:700;font-size:13px;color:${headerColor};outline:none;padding:4px;box-sizing:border-box;">
+        </th>`;
+    });
+    html += `</tr></thead><tbody>`;
+
+    _tableModalState.rows.forEach((row, rIdx) => {
+        const rowBg = (_tableModalState.striped && rIdx % 2 === 1) ? '#f8fafc' : '#ffffff';
+        html += `<tr style="background:${rowBg};">`;
+        row.forEach((cell, cIdx) => {
+            const safeVal = (cell || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += `<td style="border:1px solid #e2e8f0;padding:5px;vertical-align:top;">
+                <textarea data-pace-td="${rIdx},${cIdx}" rows="2" placeholder="Cell..."
+                          oninput="_tableModalState.rows[${rIdx}][${cIdx}]=this.value"
+                          onpaste="handlePaceTablePaste(event, ${rIdx}, ${cIdx})"
+                          style="width:100%;border:none;background:transparent;font-size:13px;color:#1d2125;outline:none;padding:4px;box-sizing:border-box;resize:vertical;font-family:inherit;line-height:1.45;">${safeVal}</textarea>
+            </td>`;
+        });
+        html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+
+// Allow pasting multi-cell data copied from Excel / Google Sheets / Word directly into the table grid
+function handlePaceTablePaste(event, startRow, startCol) {
+    const clipText = (event.clipboardData || window.clipboardData).getData('text');
+    if (!clipText || (!clipText.includes('\t') && !clipText.includes('\n'))) return;
+
+    const lines = clipText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim().length > 0);
+    if (lines.length <= 1 && !clipText.includes('\t')) return;
+
+    event.preventDefault();
+    _syncModalInputsToState();
+
+    lines.forEach((line, rOffset) => {
+        const cols = line.split('\t');
+        const targetRow = startRow + rOffset;
+
+        // Expand columns if needed
+        while (_tableModalState.headers.length < startCol + cols.length) {
+            _tableModalState.headers.push(`Column ${_tableModalState.headers.length + 1}`);
+            _tableModalState.rows.forEach(r => r.push(''));
+        }
+
+        if (targetRow === -1) {
+            cols.forEach((val, cOffset) => {
+                _tableModalState.headers[startCol + cOffset] = val.trim();
+            });
+        } else {
+            while (_tableModalState.rows.length <= targetRow) {
+                _tableModalState.rows.push(new Array(_tableModalState.headers.length).fill(''));
+            }
+            cols.forEach((val, cOffset) => {
+                _tableModalState.rows[targetRow][startCol + cOffset] = val.trim();
+            });
+        }
+    });
+
+    _renderTableModalGrid();
+}
+
+function paceTableAddRow() {
+    _syncModalInputsToState();
+    _tableModalState.rows.push(new Array(_tableModalState.headers.length).fill(''));
+    _renderTableModalGrid();
+}
+
+function paceTableRemoveRow() {
+    _syncModalInputsToState();
+    if (_tableModalState.rows.length > 1) {
+        _tableModalState.rows.pop();
+        _renderTableModalGrid();
+    }
+}
+
+function paceTableAddCol() {
+    _syncModalInputsToState();
+    const newColNum = _tableModalState.headers.length + 1;
+    _tableModalState.headers.push(`Column ${newColNum}`);
+    _tableModalState.rows.forEach(r => r.push(''));
+    _renderTableModalGrid();
+}
+
+function paceTableRemoveCol() {
+    _syncModalInputsToState();
+    if (_tableModalState.headers.length > 1) {
+        _tableModalState.headers.pop();
+        _tableModalState.rows.forEach(r => r.pop());
+        _renderTableModalGrid();
+    }
+}
+
 function insertTable(quill) {
-    if (typeof QuillBetterTable !== 'undefined') {
-        const tableModule = quill.getModule('better-table');
-        if (tableModule) {
-            tableModule.insertTable(3, 3);
+    showTableModal(quill, null);
+}
+
+function showTableModal(quill, existingWrapperOrTable = null) {
+    window.currentQuill = quill;
+    _ensureTableModalDOM();
+
+    const range = quill.getSelection();
+    _tableModalState.savedRange = range ? { index: range.index, length: range.length } : { index: quill.getLength(), length: 0 };
+    _tableModalState.editingTarget = existingWrapperOrTable;
+
+    const titleEl = document.getElementById('pace-table-modal-title');
+    const submitBtn = document.getElementById('pace-table-submit-btn');
+    const deleteBtn = document.getElementById('pace-table-delete-btn');
+    const captionInput = document.getElementById('pace-table-caption');
+    const themeSelect = document.getElementById('pace-table-theme');
+    const stripedCheck = document.getElementById('pace-table-striped');
+
+    if (existingWrapperOrTable) {
+        const tableEl = existingWrapperOrTable.tagName === 'TABLE' ? existingWrapperOrTable : existingWrapperOrTable.querySelector('table');
+        const capEl = existingWrapperOrTable.querySelector('.pace-table-caption') || (tableEl ? tableEl.querySelector('caption') : null);
+        _tableModalState.caption = capEl ? capEl.textContent.trim() : '';
+        _tableModalState.theme = (tableEl && tableEl.getAttribute('data-theme')) || 'moodle';
+        _tableModalState.striped = tableEl ? tableEl.getAttribute('data-striped') !== 'false' : true;
+
+        const headers = [];
+        const rows = [];
+        if (tableEl) {
+            const ths = tableEl.querySelectorAll('thead th, tr:first-child th');
+            if (ths.length > 0) {
+                ths.forEach(th => headers.push(th.textContent.trim()));
+            }
+            const bodyTrs = tableEl.querySelectorAll('tbody tr');
+            const trList = bodyTrs.length > 0 ? bodyTrs : tableEl.querySelectorAll('tr');
+            trList.forEach((tr, idx) => {
+                if (idx === 0 && ths.length > 0 && !tableEl.querySelector('tbody')) return;
+                const cells = [];
+                tr.querySelectorAll('td, th').forEach(td => cells.push(td.textContent.trim()));
+                if (cells.length > 0) rows.push(cells);
+            });
+        }
+        const colCount = Math.max(headers.length, rows[0] ? rows[0].length : 3, 1);
+        _tableModalState.headers = headers.length ? headers : Array.from({ length: colCount }, (_, i) => `Column ${i + 1}`);
+        _tableModalState.rows = rows.length ? rows : [new Array(colCount).fill('')];
+
+        if (titleEl) titleEl.innerHTML = '<span>📊</span> <span>Edit Lesson Table</span>';
+        if (submitBtn) submitBtn.textContent = '✅ Update Table';
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+    } else {
+        _tableModalState.headers = ['Column 1', 'Column 2', 'Column 3'];
+        _tableModalState.rows = [
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', '']
+        ];
+        _tableModalState.theme = 'moodle';
+        _tableModalState.striped = true;
+        _tableModalState.caption = '';
+
+        if (titleEl) titleEl.innerHTML = '<span>📊</span> <span>Insert Lesson Table</span>';
+        if (submitBtn) submitBtn.textContent = '✅ Insert Table';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+    }
+
+    if (captionInput) captionInput.value = _tableModalState.caption;
+    if (themeSelect) themeSelect.value = _tableModalState.theme;
+    if (stripedCheck) stripedCheck.checked = _tableModalState.striped;
+
+    _renderTableModalGrid();
+
+    document.getElementById('pace-table-modal').style.display = 'block';
+    const overlay = document.getElementById('emoji-overlay');
+    if (overlay) {
+        overlay.style.display = 'block';
+        overlay.onclick = () => {
+            closeEmojiModal();
+            closeVideoModal();
+            closeEmbedModal();
+            closeModel3DModal();
+            closeSourceCodeModal();
+            closeTableModal();
+        };
+    }
+}
+
+function closeTableModal() {
+    const modal = document.getElementById('pace-table-modal');
+    if (modal) modal.style.display = 'none';
+    const overlay = document.getElementById('emoji-overlay');
+    if (overlay) overlay.style.display = 'none';
+    _tableModalState.editingTarget = null;
+}
+
+function _escapeCellHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+}
+
+function _buildPaceTableInnerHtml() {
+    _syncModalInputsToState();
+    const theme = _tableModalState.theme || 'moodle';
+    const striped = _tableModalState.striped;
+    const caption = (_tableModalState.caption || '').trim();
+
+    let thBg = '#f8fafc';
+    let thColor = '#1d2125';
+    let thBorder = '1px solid #cbd5e1';
+    if (theme === 'blue') {
+        thBg = '#2563eb';
+        thColor = '#ffffff';
+        thBorder = '1px solid #1d4ed8';
+    } else if (theme === 'minimal') {
+        thBg = '#ffffff';
+        thColor = '#1d2125';
+        thBorder = 'none;border-bottom:2px solid #1d2125';
+    }
+
+    let html = '';
+    if (caption) {
+        html += `<div class="pace-table-caption" style="font-weight:700;font-size:14.5px;color:#1d2125;margin-bottom:8px;">${_escapeCellHtml(caption)}</div>`;
+    }
+    html += `<div style="overflow-x:auto;width:100%;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.03);">`;
+    html += `<table data-theme="${theme}" data-striped="${striped}" style="width:100%;border-collapse:collapse;margin:0;font-size:15px;color:#1d2125;background:#ffffff;">`;
+    html += `<thead><tr>`;
+    _tableModalState.headers.forEach(h => {
+        html += `<th style="background:${thBg};color:${thColor};font-weight:700;text-align:left;padding:11px 14px;border:${thBorder};line-height:1.4;">${_escapeCellHtml(h)}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+    _tableModalState.rows.forEach((row, rIdx) => {
+        const bg = (striped && rIdx % 2 === 1) ? '#f8fafc' : '#ffffff';
+        html += `<tr style="background:${bg};">`;
+        row.forEach(cell => {
+            html += `<td style="padding:10px 14px;border:1px solid #e2e8f0;color:#1d2125;vertical-align:top;line-height:1.55;">${_escapeCellHtml(cell)}</td>`;
+        });
+        html += `</tr>`;
+    });
+    html += `</tbody></table></div>`;
+    return html;
+}
+
+function _syncQuillToHiddenTextarea() {
+    if (!window.currentQuill) return;
+    const textarea = document.getElementById('content-editor') ||
+                     document.getElementById('content') ||
+                     document.getElementById('announcement-content') ||
+                     document.getElementById('course-description');
+    if (textarea) {
+        textarea.value = window.currentQuill.root.innerHTML;
+    }
+}
+
+function confirmInsertPaceTable() {
+    if (!window.currentQuill) return;
+    const tableInnerHtml = _buildPaceTableInnerHtml();
+
+    if (_tableModalState.editingTarget) {
+        const target = _tableModalState.editingTarget;
+        if (target.classList && target.classList.contains('pace-table-wrapper')) {
+            target.innerHTML = tableInnerHtml;
+        } else {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'pace-table-wrapper';
+            wrapper.setAttribute('contenteditable', 'false');
+            wrapper.setAttribute('data-pace-table', '1');
+            wrapper.innerHTML = tableInnerHtml;
+            target.parentNode.replaceChild(wrapper, target);
         }
     } else {
-        alert('Table feature not available');
+        const index = _tableModalState.savedRange ? _tableModalState.savedRange.index : window.currentQuill.getLength();
+        try {
+            window.currentQuill.insertEmbed(index, 'paceTable', { html: tableInnerHtml }, 'user');
+            window.currentQuill.insertText(index + 1, '\n', 'user');
+            window.currentQuill.setSelection(index + 2, 0, 'silent');
+        } catch (err) {
+            const wrapperHtml = `<div class="pace-table-wrapper" contenteditable="false" data-pace-table="1">${tableInnerHtml}</div><p><br></p>`;
+            window.currentQuill.clipboard.dangerouslyPasteHTML(index, wrapperHtml);
+        }
     }
+
+    _syncQuillToHiddenTextarea();
+    closeTableModal();
+}
+
+function deleteActivePaceTable() {
+    if (_tableModalState.editingTarget) {
+        _tableModalState.editingTarget.remove();
+        _syncQuillToHiddenTextarea();
+    }
+    closeTableModal();
 }
 
 // ─── Video helpers ────────────────────────────────────────────────────────────
@@ -842,15 +1301,16 @@ function applySourceCode() {
     }
     
     if (textarea) {
+        const wrappedHtml = _wrapRawTablesForQuill(htmlContent);
         // CRITICAL: Update textarea (this is what saves to database)
-        textarea.value = htmlContent;
-        console.log('✅ Textarea updated:', textarea.id, 'Length:', htmlContent.length);
+        textarea.value = wrappedHtml;
+        console.log('✅ Textarea updated:', textarea.id, 'Length:', wrappedHtml.length);
         
         // Set the flag BEFORE updating visual display
         window.currentQuill.root.setAttribute('data-custom-html', 'true');
         
         // Update visual display - completely replace Quill content
-        window.currentQuill.root.innerHTML = htmlContent;
+        window.currentQuill.root.innerHTML = wrappedHtml;
         
         console.log('✅ Visual editor updated');
         console.log('🔒 Custom HTML flag set - textarea is protected');

@@ -5,8 +5,26 @@
 }
 
 .ql-table::before {
-    content: '📊';
-    font-size: 16px;
+    content: '⊞ Table';
+    font-size: 12px;
+    font-weight: 700;
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 5px;
+    padding: 2px 7px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.ql-snow .ql-toolbar button.ql-table,
+.ql-snow.ql-toolbar button.ql-table {
+    width: auto !important;
+    height: 26px !important;
+    padding: 0 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .ql-h5p::before {
