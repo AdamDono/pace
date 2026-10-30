@@ -395,6 +395,7 @@ def create_app():
     from app.routes.importer import importer_bp
     from app.routes.health import health_bp
     from app.routes.forum import forum_bp
+    from app.routes.analytics import analytics_bp, record_analytics_event
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -405,6 +406,16 @@ def create_app():
     app.register_blueprint(importer_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(forum_bp)
+    app.register_blueprint(analytics_bp)
+
+    @app.before_request
+    def auto_track_pageviews():
+        from flask import request
+        if request.method != 'GET':
+            return
+        ep = request.endpoint or ''
+        if ep in ('auth.home', 'auth.landing', 'auth.pricing', 'auth.public_course_detail', 'auth.login'):
+            record_analytics_event('page_view', event_label=ep, page_path=request.path)
 
     # Register error handlers
     @app.errorhandler(404)

@@ -1081,3 +1081,34 @@ class StudentAISparkUsage(db.Model):
     )
 
     user = db.relationship('User', backref=db.backref('spark_usages', lazy=True))
+
+
+class SiteAnalyticsEvent(db.Model):
+    """First-party website traffic, funnel, Bookworm engagement, and UTM ad analytics"""
+    __tablename__ = 'site_analytics_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    visitor_hash = db.Column(db.String(32), nullable=False, index=True)
+    session_id = db.Column(db.String(48), nullable=True, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+
+    # Event classification:
+    # 'page_view', 'bookworm_open', 'bookworm_question', 'pricing_tab_click',
+    # 'plan_modal_open', 'lead_submitted', 'cta_click', 'course_view'
+    event_type = db.Column(db.String(50), nullable=False, index=True)
+    event_label = db.Column(db.String(255), nullable=True)
+    page_path = db.Column(db.String(255), nullable=True, index=True)
+
+    # Acquisition & Ad Attribution
+    referrer_source = db.Column(db.String(100), nullable=True, default='Direct', index=True)
+    referrer_url = db.Column(db.String(500), nullable=True)
+    utm_source = db.Column(db.String(100), nullable=True, index=True)
+    utm_medium = db.Column(db.String(100), nullable=True)
+    utm_campaign = db.Column(db.String(150), nullable=True, index=True)
+
+    # Device & Environment
+    device_type = db.Column(db.String(20), nullable=True, default='Desktop', index=True)
+    browser = db.Column(db.String(40), nullable=True)
+    os_name = db.Column(db.String(40), nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
