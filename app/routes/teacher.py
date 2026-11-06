@@ -1375,23 +1375,39 @@ def edit_assignment(course_id, section_id, assignment_id):
 def _save_quiz_questions(quiz_id, form_data):
     from app.models import QuizQuestion, db
     questions_data = {}
-    for key in form_data:
+    question_order = []
+    for key in form_data.keys():
         if key.startswith('q_') and '_' in key[2:]:
             parts = key.split('_')
             if len(parts) >= 3:
-                q_id = parts[1]
-                field = parts[-1]  # text, a, b, c, d, correct
+                q_id = f"{parts[1]}_{parts[2]}" if len(parts) >= 4 else parts[1]
+                field = parts[-1]  # text, a, b, c, d, correct, qtype
                 if q_id not in questions_data:
-                    questions_data[q_id] = {'question': '', 'a': '', 'b': '', 'c': '', 'd': '', 'correct': 'a'}
+                    questions_data[q_id] = {
+                        'question': '',
+                        'a': '',
+                        'b': '',
+                        'c': '',
+                        'd': '',
+                        'correct': 'a',
+                        'qtype': 'multiple_choice'
+                    }
+                    question_order.append(q_id)
                 if field == 'text':
-                    questions_data[q_id]['question'] = form_data[key].strip()
+                    questions_data[q_id]['question'] = (form_data.get(key) or '').strip()
                 elif field in ['a', 'b', 'c', 'd']:
-                    questions_data[q_id][field] = form_data[key].strip()
+                    questions_data[q_id][field] = (form_data.get(key) or '').strip()
+                elif field == 'qtype':
+                    questions_data[q_id]['qtype'] = (form_data.get(key) or 'multiple_choice').strip()
                 elif field == 'correct':
-                    questions_data[q_id]['correct'] = form_data[key].strip()
+                    raw_vals = form_data.getlist(key) if hasattr(form_data, 'getlist') else [form_data.get(key, 'a')]
+                    cleaned = sorted(set(v.strip().lower() for v in raw_vals if v and v.strip().lower() in ('a', 'b', 'c', 'd')))
+                    questions_data[q_id]['correct'] = ','.join(cleaned) if cleaned else 'a'
 
-    for q_id, q in questions_data.items():
+    for q_id in question_order:
+        q = questions_data[q_id]
         if q['question'] and q['a'] and q['b']:
+            is_multi = ',' in q.get('correct', '') or q.get('qtype') == 'multi_select'
             question = QuizQuestion(
                 quiz_id=quiz_id,
                 question_text=q['question'],
@@ -1399,7 +1415,8 @@ def _save_quiz_questions(quiz_id, form_data):
                 option_b=q['b'],
                 option_c=q.get('c') or None,
                 option_d=q.get('d') or None,
-                correct_answer=q.get('correct', 'a')
+                correct_answer=q.get('correct', 'a'),
+                question_type='multi_select' if is_multi else 'multiple_choice'
             )
             db.session.add(question)
 
@@ -1423,20 +1440,29 @@ def add_quiz(course_id, section_id):
             return render_template('teacher/add_quiz.html', course=course, section=section)
 
         try:
+            raw_pass = request.form.get('passing_score')
+            parsed_pass = float(raw_pass) if (raw_pass is not None and str(raw_pass).strip() != '') else 60.0
+            raw_time = request.form.get('time_limit')
+            parsed_time = int(float(raw_time)) if (raw_time is not None and str(raw_time).strip() != '') else None
+            raw_attempts = request.form.get('max_attempts')
+            parsed_attempts = int(float(raw_attempts)) if (raw_attempts is not None and str(raw_attempts).strip() != '') else None
+
             if existing_quiz:
                 quiz = existing_quiz
                 quiz.title = title
-                quiz.time_limit = int(request.form.get('time_limit')) if request.form.get('time_limit') else None
-                quiz.passing_score = int(request.form.get('passing_score', 60))
+                quiz.time_limit = parsed_time
+                quiz.passing_score = parsed_pass
+                if parsed_attempts is not None:
+                    quiz.max_attempts = parsed_attempts
                 from app.models import QuizQuestion
                 QuizQuestion.query.filter_by(quiz_id=quiz.id).delete()
             else:
                 quiz = Quiz(
                     title=title,
                     section_id=section_id,
-                    time_limit=int(request.form.get('time_limit')) if request.form.get('time_limit') else None,
-                    passing_score=int(request.form.get('passing_score', 60)),
-                    max_attempts=int(request.form.get('max_attempts')) if request.form.get('max_attempts') else None
+                    time_limit=parsed_time,
+                    passing_score=parsed_pass,
+                    max_attempts=parsed_attempts
                 )
                 db.session.add(quiz)
                 db.session.flush()
@@ -1469,9 +1495,17 @@ def edit_quiz(course_id, section_id, quiz_id):
             return render_template('teacher/add_quiz.html', course=course, section=section, quiz=quiz)
 
         try:
+            raw_pass = request.form.get('passing_score')
+            parsed_pass = float(raw_pass) if (raw_pass is not None and str(raw_pass).strip() != '') else 60.0
+            raw_time = request.form.get('time_limit')
+            parsed_time = int(float(raw_time)) if (raw_time is not None and str(raw_time).strip() != '') else None
+            raw_attempts = request.form.get('max_attempts')
+            parsed_attempts = int(float(raw_attempts)) if (raw_attempts is not None and str(raw_attempts).strip() != '') else quiz.max_attempts
+
             quiz.title = title
-            quiz.passing_score = int(request.form.get('passing_score', 60))
-            quiz.time_limit = int(request.form.get('time_limit')) if request.form.get('time_limit') else None
+            quiz.passing_score = parsed_pass
+            quiz.time_limit = parsed_time
+            quiz.max_attempts = parsed_attempts
 
             QuizQuestion.query.filter_by(quiz_id=quiz.id).delete()
             _save_quiz_questions(quiz.id, request.form)

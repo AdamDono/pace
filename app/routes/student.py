@@ -576,8 +576,10 @@ def take_quiz(section_id, quiz_id):
         score = 0
         total = len(questions)
         for q in questions:
-            user_answer = request.form.get(f'q{q.id}')
-            if user_answer and user_answer == q.correct_answer:
+            selected_vals = request.form.getlist(f'q{q.id}')
+            user_norm = ','.join(sorted(set(v.strip().lower() for v in selected_vals if v and v.strip())))
+            correct_norm = ','.join(sorted(set(v.strip().lower() for v in (q.correct_answer or '').split(',') if v and v.strip())))
+            if user_norm and user_norm == correct_norm:
                 score += 1
         
         attempt_percentage = (score / total) * 100
