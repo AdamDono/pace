@@ -430,13 +430,15 @@
                     nextIconBox.innerHTML = '<div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300"></div>';
                 }
 
-                // Update active sidebar link styling
-                document.querySelectorAll('.sidebar-section-link').forEach(el => {
-                    el.classList.remove('bg-indigo-50/80', 'border-indigo-600', 'font-bold');
-                    el.classList.add('bg-white', 'border-transparent');
-                });
-                nextBtn.classList.remove('bg-white', 'border-transparent');
-                nextBtn.classList.add('bg-indigo-50/80', 'border-indigo-600', 'font-bold');
+                // Update active sidebar link styling (unless staying on inline quiz results)
+                if (!data.keep_current_active) {
+                    document.querySelectorAll('.sidebar-section-link').forEach(el => {
+                        el.classList.remove('bg-indigo-50/80', 'border-indigo-600', 'font-bold');
+                        el.classList.add('bg-white', 'border-transparent');
+                    });
+                    nextBtn.classList.remove('bg-white', 'border-transparent');
+                    nextBtn.classList.add('bg-indigo-50/80', 'border-indigo-600', 'font-bold');
+                }
 
                 // Expand parent module if collapsed
                 const parentModuleId = nextBtn.getAttribute('data-parent-module-id');

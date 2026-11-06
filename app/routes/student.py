@@ -575,20 +575,38 @@ def take_quiz(section_id, quiz_id):
     if request.method == 'POST':
         score = 0
         total = len(questions)
+        parsed_answers = []
         for q in questions:
             selected_vals = request.form.getlist(f'q{q.id}')
             user_norm = ','.join(sorted(set(v.strip().lower() for v in selected_vals if v and v.strip())))
             correct_norm = ','.join(sorted(set(v.strip().lower() for v in (q.correct_answer or '').split(',') if v and v.strip())))
             if user_norm and user_norm == correct_norm:
                 score += 1
+            parsed_answers.append((q.id, user_norm[:20] if user_norm else '-'))
         
+        raw_time = request.form.get('time_taken', '0')
+        try:
+            time_taken_sec = max(0, int(float(raw_time)))
+        except (ValueError, TypeError):
+            time_taken_sec = 0
+
         attempt_percentage = (score / total) * 100
         attempt = QuizAttempt(
             quiz_id=quiz_id,
             student_id=current_user.id,
-            score=attempt_percentage
+            score=attempt_percentage,
+            time_taken=time_taken_sec,
+            completed_at=datetime.utcnow()
         )
         db.session.add(attempt)
+        db.session.flush()
+
+        for q_id, sel_val in parsed_answers:
+            db.session.add(QuizAnswer(
+                attempt_id=attempt.id,
+                question_id=q_id,
+                selected_answer=sel_val
+            ))
 
         # Auto-mark section as completed upon quiz submission
         es = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, section_id=section_id).first()
@@ -603,7 +621,59 @@ def take_quiz(section_id, quiz_id):
         # Calculate updated best score including this attempt
         updated_attempts = QuizAttempt.query.filter_by(quiz_id=quiz_id, student_id=current_user.id).all()
         updated_best_score = max([a.score for a in updated_attempts]) if updated_attempts else attempt_percentage
-        
+
+        # Find next section in sequential order & check course completion
+        from app.models import Module
+        modules = Module.query.filter_by(course_id=section.course_id).order_by(Module.order).all()
+        ordered_sections = []
+        for m in modules:
+            ordered_sections.extend(Section.query.filter_by(module_id=m.id).order_by(Section.order).all())
+        ordered_sections.extend(Section.query.filter_by(course_id=section.course_id, module_id=None).order_by(Section.order).all())
+
+        next_section_id = None
+        for idx, sec in enumerate(ordered_sections):
+            if sec.id == section_id and idx + 1 < len(ordered_sections):
+                next_section_id = ordered_sections[idx + 1].id
+                break
+
+        all_sections = Section.query.filter_by(course_id=section.course_id).all()
+        all_enrollment_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id).all()
+        is_course_completed = all(e_sec.completed for e_sec in all_enrollment_sections) and len(all_enrollment_sections) == len(all_sections)
+        if is_course_completed and not enrollment.completed:
+            enrollment.completed = True
+            enrollment.completed_at = datetime.utcnow()
+            db.session.commit()
+
+        if request.headers.get('HX-Request'):
+            import json
+            resp = make_response(render_template('student/_quiz_results_inline.html',
+                                   quiz=quiz,
+                                   section=section,
+                                   score=score,
+                                   total=total,
+                                   percentage=attempt_percentage,
+                                   attempt_number=len(updated_attempts),
+                                   max_attempts=max_attempts,
+                                   attempts=updated_attempts,
+                                   best_score=updated_best_score,
+                                   time_taken=time_taken_sec,
+                                   next_section_id=next_section_id))
+            trigger_payload = {
+                'sectionCompleted': {
+                    'section_id': section_id,
+                    'sectionId': section_id,
+                    'next_section_id': next_section_id,
+                    'nextSectionId': next_section_id,
+                    'keep_current_active': True,
+                    'is_course_completed': is_course_completed,
+                    'isCourseCompleted': is_course_completed
+                }
+            }
+            if is_course_completed:
+                trigger_payload['course-completed'] = True
+            resp.headers['HX-Trigger'] = json.dumps(trigger_payload)
+            return resp
+
         return render_template('student/quiz_results.html', 
                                quiz=quiz, 
                                section=section, 
@@ -613,7 +683,8 @@ def take_quiz(section_id, quiz_id):
                                attempt_number=len(updated_attempts),
                                max_attempts=max_attempts,
                                attempts=updated_attempts,
-                               best_score=updated_best_score)
+                               best_score=updated_best_score,
+                               time_taken=time_taken_sec)
     return render_template('student/take_quiz.html', quiz=quiz, questions=questions, section=section, attempts=all_attempts, attempt_count=attempt_count, max_attempts=max_attempts, best_score=best_score)
 
 @student_bp.route('/section/<int:section_id>/mark-completed', methods=['POST'])

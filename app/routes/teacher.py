@@ -332,10 +332,13 @@ def course_analytics(identifier=None, course_id=None):
                 avg_score = sum([a.score for a in attempts]) / len(attempts)
                 max_score = max([a.score for a in attempts])
                 min_score = min([a.score for a in attempts])
+                timed_attempts = [a.time_taken for a in attempts if a.time_taken is not None and a.time_taken > 0]
+                avg_time_sec = int(round(sum(timed_attempts) / len(timed_attempts))) if timed_attempts else None
             else:
                 avg_score = 0
                 max_score = 0
                 min_score = 0
+                avg_time_sec = None
             
             # Question-level analysis
             question_analysis = []
@@ -370,6 +373,7 @@ def course_analytics(identifier=None, course_id=None):
                 'avg_score': round(avg_score, 1),
                 'max_score': round(max_score, 1),
                 'min_score': round(min_score, 1),
+                'avg_time_sec': avg_time_sec,
                 'questions': question_analysis,
                 'has_attempts': len(attempts) > 0  # Flag for template
             })
@@ -1736,24 +1740,40 @@ def submit_feedback(submission_id):
 def view_quiz_attempts(course_id, section_id):
     from app.models import Course, Section, Quiz, QuizAttempt, User, QuizAnswer  # Moved here
     course = Course.query.get_or_404(course_id)
-    section = Section.query.get_or_404(section_id)
+    quiz_id_filter = request.args.get('quiz_id', type=int)
+    student_id_filter = request.args.get('student_id', type=int)
+
+    if section_id == 0 and quiz_id_filter:
+        quiz_obj = Quiz.query.get_or_404(quiz_id_filter)
+        section = Section.query.get_or_404(quiz_obj.section_id)
+    else:
+        section = Section.query.get_or_404(section_id)
+
     if section.course_id != course_id or course.teacher_id != current_user.id:
         abort(403)
 
-    # Get all quizzes in this section
-    quizzes = Quiz.query.filter_by(section_id=section_id).all()
+    # Get all quizzes in this section (or specific quiz if filtered)
+    if quiz_id_filter:
+        quizzes = Quiz.query.filter_by(id=quiz_id_filter, section_id=section.id).all()
+    else:
+        quizzes = Quiz.query.filter_by(section_id=section.id).all()
+
     quiz_attempts = []
     for quiz in quizzes:
-        # Get all attempts for this quiz
-        attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
+        q_query = QuizAttempt.query.filter_by(quiz_id=quiz.id)
+        if student_id_filter:
+            q_query = q_query.filter_by(student_id=student_id_filter)
+        attempts = q_query.order_by(QuizAttempt.attempted_at.desc()).all()
         for attempt in attempts:
-            # Get the student and their answers
             student = User.query.get(attempt.student_id)
             answers = QuizAnswer.query.filter_by(attempt_id=attempt.id).all()
             quiz_attempts.append({
                 'quiz_title': quiz.title,
-                'student_email': student.email,
-                'score': attempt.score,
+                'time_limit': quiz.time_limit,
+                'student_email': student.email if student else 'Unknown',
+                'student_name': f"{student.first_name or ''} {student.last_name or ''}".strip() if student else '',
+                'score': round(attempt.score, 1),
+                'time_taken': attempt.time_taken,
                 'attempted_at': attempt.attempted_at,
                 'answers': answers
             })

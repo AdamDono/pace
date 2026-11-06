@@ -386,7 +386,7 @@
             }
             document.addEventListener('htmx:afterSettle', activateInline3DViewers);
         })();
-        </script>
+    </script>
         {% endif %}
     {% endif %}
 
@@ -463,8 +463,15 @@
                         </span>
                         {% endif %}
                         {% if quiz.time_limit %}
-                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full">
-                            ⏱️ {{ quiz.time_limit }} min
+                        <span id="inline-timer-badge-{{ quiz.id }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full font-mono transition-colors">
+                            <span>⏱️</span>
+                            <span id="inline-timer-display-{{ quiz.id }}">{{ '%02d'|format(quiz.time_limit) }}:00</span>
+                            <span class="text-[10px] font-sans font-semibold text-indigo-500">left</span>
+                        </span>
+                        {% else %}
+                        <span id="inline-timer-badge-{{ quiz.id }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full font-mono">
+                            <span>⏱️</span>
+                            <span id="inline-timer-display-{{ quiz.id }}">00:00</span>
                         </span>
                         {% endif %}
                     </div>
@@ -503,8 +510,17 @@
                     {% endif %}
                 </div>
             {% else %}
-                <form method="POST" action="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" id="inline-quiz-form-{{ quiz.id }}" onsubmit="return validateStepQuizSubmit({{ quiz.id }}, {{ q_list|length }})">
+                <form method="POST"
+                      action="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}"
+                      hx-post="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}"
+                      hx-target="#main-reader-content"
+                      hx-swap="innerHTML"
+                      id="inline-quiz-form-{{ quiz.id }}"
+                      data-storage-prefix="pace_quiz_{{ current_user.id }}_{{ quiz.id }}_{{ attempt_count + 1 }}"
+                      data-total-questions="{{ q_list|length }}"
+                      onsubmit="return validateStepQuizSubmit({{ quiz.id }}, {{ q_list|length }})">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="time_taken" id="inline-time-taken-{{ quiz.id }}" value="0"/>
 
                     <!-- Step Number Pills (1, 2, 3...) -->
                     <div class="flex flex-wrap items-center gap-2 mb-4" id="step-pills-{{ quiz.id }}">
@@ -614,6 +630,104 @@
                         {% endfor %}
                     </div>
                 </form>
+                <script>
+                    (function() {
+                        const quizId = {{ quiz.id }};
+                        const totalQ = {{ q_list|length }};
+                        const timeLimitMin = {{ quiz.time_limit or 0 }};
+                        const limitSeconds = timeLimitMin > 0 ? timeLimitMin * 60 : 0;
+                        const form = document.getElementById('inline-quiz-form-' + quizId);
+                        const storagePrefix = form ? form.dataset.storagePrefix : ('pace_quiz_' + quizId);
+                        const startKey = storagePrefix + '_start';
+                        const answersKey = storagePrefix + '_answers';
+                        const stepKey = storagePrefix + '_step';
+
+                        let startMs = Date.now();
+                        try {
+                            const savedStart = parseInt(sessionStorage.getItem(startKey), 10);
+                            if (savedStart && !isNaN(savedStart) && savedStart <= Date.now()) {
+                                startMs = savedStart;
+                            } else {
+                                sessionStorage.setItem(startKey, String(startMs));
+                            }
+                        } catch (e) {}
+
+                        // Restore any saved draft answers and active question step
+                        try {
+                            const rawAnswers = sessionStorage.getItem(answersKey);
+                            if (rawAnswers && form) {
+                                const parsed = JSON.parse(rawAnswers);
+                                Object.keys(parsed).forEach(function(qName) {
+                                    const vals = parsed[qName] || [];
+                                    vals.forEach(function(v) {
+                                        const inp = form.querySelector('input[name="' + qName + '"][value="' + v + '"]');
+                                        if (inp) inp.checked = true;
+                                    });
+                                });
+                            }
+                            const savedStep = parseInt(sessionStorage.getItem(stepKey), 10);
+                            if (!isNaN(savedStep) && savedStep >= 0 && savedStep < totalQ) {
+                                setTimeout(function() {
+                                    if (typeof goToQuizQuestion === 'function') {
+                                        goToQuizQuestion(quizId, savedStep, totalQ);
+                                    }
+                                }, 0);
+                            } else {
+                                setTimeout(function() {
+                                    if (typeof updateInlineQuizProgress === 'function') {
+                                        updateInlineQuizProgress(quizId, totalQ, 0);
+                                    }
+                                }, 0);
+                            }
+                        } catch (e) {}
+
+                        window._quizTimers = window._quizTimers || {};
+                        if (window._quizTimers[quizId]) clearInterval(window._quizTimers[quizId]);
+
+                        function fmtMMSS(sec) {
+                            const s = Math.max(0, Math.floor(sec));
+                            const m = Math.floor(s / 60);
+                            const r = s % 60;
+                            return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+                        }
+
+                        function tickTimer() {
+                            const curForm = document.getElementById('inline-quiz-form-' + quizId);
+                            if (!curForm) {
+                                clearInterval(window._quizTimers[quizId]);
+                                return;
+                            }
+                            const elapsedSec = Math.floor((Date.now() - startMs) / 1000);
+                            const hiddenTime = document.getElementById('inline-time-taken-' + quizId);
+                            if (hiddenTime) hiddenTime.value = elapsedSec;
+
+                            const displayEl = document.getElementById('inline-timer-display-' + quizId);
+                            const badgeEl = document.getElementById('inline-timer-badge-' + quizId);
+
+                            if (limitSeconds > 0) {
+                                const remaining = Math.max(0, limitSeconds - elapsedSec);
+                                if (displayEl) displayEl.textContent = fmtMMSS(remaining);
+                                if (badgeEl && remaining <= 120) {
+                                    badgeEl.className = 'inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-300 px-3 py-1 rounded-full font-mono animate-pulse';
+                                }
+                                if (remaining <= 0) {
+                                    clearInterval(window._quizTimers[quizId]);
+                                    curForm.dataset.forceTimeoutSubmit = '1';
+                                    if (typeof curForm.requestSubmit === 'function') {
+                                        curForm.requestSubmit();
+                                    } else {
+                                        curForm.submit();
+                                    }
+                                }
+                            } else {
+                                if (displayEl) displayEl.textContent = fmtMMSS(elapsedSec);
+                            }
+                        }
+
+                        tickTimer();
+                        window._quizTimers[quizId] = setInterval(tickTimer, 1000);
+                    })();
+                </script>
             {% endif %}
         </div>
     {% endfor %}
@@ -650,9 +764,26 @@
             }
         }
 
+        function saveInlineQuizDraft(quizId, activeIdx) {
+            const form = document.getElementById('inline-quiz-form-' + quizId);
+            if (!form || !form.dataset.storagePrefix) return;
+            try {
+                const map = {};
+                form.querySelectorAll('input.inline-option-input:checked').forEach(function(inp) {
+                    map[inp.name] = map[inp.name] || [];
+                    map[inp.name].push(inp.value);
+                });
+                sessionStorage.setItem(form.dataset.storagePrefix + '_answers', JSON.stringify(map));
+                if (typeof activeIdx === 'number') {
+                    sessionStorage.setItem(form.dataset.storagePrefix + '_step', String(activeIdx));
+                }
+            } catch (e) {}
+        }
+
         function onQuizOptionSelected(quizId, stepIdx, totalCount) {
             const alertBox = document.getElementById('step-alert-' + quizId);
             if (alertBox) alertBox.classList.add('hidden');
+            saveInlineQuizDraft(quizId, stepIdx);
             updateInlineQuizProgress(quizId, totalCount, stepIdx);
         }
 
@@ -666,6 +797,7 @@
                     el.classList.add('hidden');
                 }
             });
+            saveInlineQuizDraft(quizId, targetIdx);
             updateInlineQuizProgress(quizId, totalCount, targetIdx);
         }
 
@@ -681,6 +813,10 @@
         }
 
         function validateStepQuizSubmit(quizId, totalCount) {
+            const form = document.getElementById('inline-quiz-form-' + quizId);
+            if (form && form.dataset.forceTimeoutSubmit === '1') {
+                return true;
+            }
             for (let i = 0; i < totalCount; i++) {
                 if (!isStepAnswered(quizId, i)) {
                     goToQuizQuestion(quizId, i, totalCount);
@@ -689,7 +825,23 @@
                     return false;
                 }
             }
+            if (window._quizTimers && window._quizTimers[quizId]) {
+                clearInterval(window._quizTimers[quizId]);
+            }
             return true;
+        }
+        if (!window._inlineQuizHtmxHooked) {
+            window._inlineQuizHtmxHooked = true;
+            document.body.addEventListener('htmx:confirm', function(evt) {
+                const form = evt.detail.elt;
+                if (form && form.id && form.id.indexOf('inline-quiz-form-') === 0) {
+                    const quizId = parseInt(form.id.replace('inline-quiz-form-', ''), 10);
+                    const totalCount = parseInt(form.dataset.totalQuestions || '0', 10);
+                    if (!validateStepQuizSubmit(quizId, totalCount)) {
+                        evt.preventDefault();
+                    }
+                }
+            });
         }
     </script>
     {% endif %}
