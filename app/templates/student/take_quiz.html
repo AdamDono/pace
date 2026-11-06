@@ -104,6 +104,7 @@
             <div class="space-y-5">
                 {% for question in questions %}
                 {% set is_multi = (question.question_type == 'multi_select') or (',' in (question.correct_answer or '')) %}
+                {% set is_tf = (question.question_type == 'true_false') or (not question.option_c and not question.option_d and (question.option_a or '')|lower == 'true' and (question.option_b or '')|lower == 'false') %}
                 <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 question-card" id="question-{{ loop.index }}">
                     <!-- Question Number + Text -->
                     <div class="flex items-start justify-between gap-3 mb-5">
@@ -116,6 +117,10 @@
                         {% if is_multi %}
                         <span class="flex-shrink-0 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
                             ☑ Select all that apply
+                        </span>
+                        {% elif is_tf %}
+                        <span class="flex-shrink-0 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                            ⚖️ True / False
                         </span>
                         {% endif %}
                     </div>

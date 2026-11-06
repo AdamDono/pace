@@ -153,6 +153,20 @@ def create_app():
             # Check and add columns to users
             add_column_if_missing('users', 'id_number', 'VARCHAR(30)')
 
+            # Ensure quiz_questions.correct_answer & quiz_answers.selected_answer support multi-select ('a,b,c') on Postgres
+            add_column_if_missing('quiz_questions', 'question_type', 'VARCHAR(30) DEFAULT \'multiple_choice\'')
+            if db.engine.name != 'sqlite':
+                for alter_sql in [
+                    "ALTER TABLE quiz_questions ALTER COLUMN correct_answer TYPE VARCHAR(20);",
+                    "ALTER TABLE quiz_questions ALTER COLUMN question_type TYPE VARCHAR(30);",
+                    "ALTER TABLE quiz_answers ALTER COLUMN selected_answer TYPE VARCHAR(20);"
+                ]:
+                    try:
+                        db.session.execute(text(alter_sql))
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
             # Check and add columns to enrollments
             add_column_if_missing('enrollments', 'completed_at', 'TIMESTAMP')
             add_column_if_missing('enrollments', 'certificate_path', 'VARCHAR(255)')

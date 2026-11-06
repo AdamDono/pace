@@ -435,10 +435,10 @@ class QuizQuestion(db.Model):
     option_b = db.Column(db.Text, nullable=False)
     option_c = db.Column(db.Text, nullable=True)
     option_d = db.Column(db.Text, nullable=True)
-    correct_answer = db.Column(db.String(10), nullable=False)
+    correct_answer = db.Column(db.String(20), nullable=False)
 
-    # 3D Model Question Support
-    question_type = db.Column(db.String(20), default='multiple_choice')  # 'multiple_choice', '3d_model', '3d_label'
+    # Question Type Support ('multiple_choice', 'multi_select', 'true_false', '3d_model', '3d_label')
+    question_type = db.Column(db.String(30), default='multiple_choice')
     model_3d_file = db.Column(db.String(255), nullable=True)  # Path to 3D model for this question
     model_3d_hotspots = db.Column(db.Text, nullable=True)  # JSON array of hotspot configurations
     model_3d_labels = db.Column(db.Text, nullable=True)  # JSON array of label configurations for labeling exercises
@@ -476,7 +476,7 @@ class QuizAnswer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     attempt_id = db.Column(db.Integer, db.ForeignKey('quiz_attempts.id'), nullable=False)
     question_id = db.Column(db.Integer, db.ForeignKey('quiz_questions.id'), nullable=False)
-    selected_answer = db.Column(db.String(1), nullable=False)
+    selected_answer = db.Column(db.String(20), nullable=False)
     attempt = db.relationship('QuizAttempt', back_populates='answers')
     question = db.relationship('QuizQuestion', back_populates='answers')
 

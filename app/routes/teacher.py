@@ -1372,8 +1372,7 @@ def edit_assignment(course_id, section_id, assignment_id):
 
     return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
 
-def _save_quiz_questions(quiz_id, form_data):
-    from app.models import QuizQuestion, db
+def _parse_quiz_questions_from_form(form_data):
     questions_data = {}
     question_order = []
     for key in form_data.keys():
@@ -1403,11 +1402,40 @@ def _save_quiz_questions(quiz_id, form_data):
                     raw_vals = form_data.getlist(key) if hasattr(form_data, 'getlist') else [form_data.get(key, 'a')]
                     cleaned = sorted(set(v.strip().lower() for v in raw_vals if v and v.strip().lower() in ('a', 'b', 'c', 'd')))
                     questions_data[q_id]['correct'] = ','.join(cleaned) if cleaned else 'a'
+    return [questions_data[qid] for qid in question_order]
 
-    for q_id in question_order:
-        q = questions_data[q_id]
+
+def _save_quiz_questions(quiz_id, form_data):
+    from app.models import QuizQuestion, db
+    from sqlalchemy import text
+
+    # Self-heal Postgres VARCHAR(1) constraint if still present before inserting multi-select answers
+    if db.engine.name != 'sqlite':
+        try:
+            db.session.execute(text("ALTER TABLE quiz_questions ALTER COLUMN correct_answer TYPE VARCHAR(20);"))
+            db.session.execute(text("ALTER TABLE quiz_questions ALTER COLUMN question_type TYPE VARCHAR(30);"))
+        except Exception:
+            pass
+
+    parsed_list = _parse_quiz_questions_from_form(form_data)
+    for q in parsed_list:
+        qtype = q.get('qtype', 'multiple_choice')
+        if qtype == 'true_false':
+            q['a'] = 'True'
+            q['b'] = 'False'
+            q['c'] = None
+            q['d'] = None
+            if q.get('correct') not in ('a', 'b'):
+                q['correct'] = 'a'
+
         if q['question'] and q['a'] and q['b']:
-            is_multi = ',' in q.get('correct', '') or q.get('qtype') == 'multi_select'
+            if qtype == 'true_false':
+                final_type = 'true_false'
+            elif ',' in q.get('correct', '') or qtype == 'multi_select':
+                final_type = 'multi_select'
+            else:
+                final_type = 'multiple_choice'
+
             question = QuizQuestion(
                 quiz_id=quiz_id,
                 question_text=q['question'],
@@ -1416,7 +1444,7 @@ def _save_quiz_questions(quiz_id, form_data):
                 option_c=q.get('c') or None,
                 option_d=q.get('d') or None,
                 correct_answer=q.get('correct', 'a'),
-                question_type='multi_select' if is_multi else 'multiple_choice'
+                question_type=final_type
             )
             db.session.add(question)
 
@@ -1433,11 +1461,25 @@ def add_quiz(course_id, section_id):
     if existing_quiz and request.method == 'GET':
         return redirect(url_for('teacher.edit_quiz', course_id=course_id, section_id=section_id, quiz_id=existing_quiz.id))
 
+    submitted_questions = None
     if request.method == 'POST':
+        submitted_questions = [
+            {
+                'question_text': q['question'],
+                'option_a': q['a'] or ('True' if q['qtype'] == 'true_false' else ''),
+                'option_b': q['b'] or ('False' if q['qtype'] == 'true_false' else ''),
+                'option_c': q['c'] or '',
+                'option_d': q['d'] or '',
+                'correct_answer': q['correct'],
+                'question_type': q['qtype']
+            }
+            for q in _parse_quiz_questions_from_form(request.form)
+            if q['question'] or q['a'] or q['b']
+        ]
         title = request.form.get('title', 'New Quiz').strip()
         if not title:
             flash('Quiz title is required', 'danger')
-            return render_template('teacher/add_quiz.html', course=course, section=section)
+            return render_template('teacher/add_quiz.html', course=course, section=section, submitted_questions=submitted_questions)
 
         try:
             raw_pass = request.form.get('passing_score')
@@ -1476,7 +1518,7 @@ def add_quiz(course_id, section_id):
             db.session.rollback()
             flash(f'Error saving quiz: {str(e)}', 'danger')
 
-    return render_template('teacher/add_quiz.html', course=course, section=section)
+    return render_template('teacher/add_quiz.html', course=course, section=section, submitted_questions=submitted_questions)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/quiz/<int:quiz_id>/edit', methods=['GET', 'POST'])
 @teacher_required
@@ -1488,11 +1530,25 @@ def edit_quiz(course_id, section_id, quiz_id):
     if section.course_id != course_id or course.teacher_id != current_user.id or quiz.section_id != section_id:
         abort(403)
 
+    submitted_questions = None
     if request.method == 'POST':
+        submitted_questions = [
+            {
+                'question_text': q['question'],
+                'option_a': q['a'] or ('True' if q['qtype'] == 'true_false' else ''),
+                'option_b': q['b'] or ('False' if q['qtype'] == 'true_false' else ''),
+                'option_c': q['c'] or '',
+                'option_d': q['d'] or '',
+                'correct_answer': q['correct'],
+                'question_type': q['qtype']
+            }
+            for q in _parse_quiz_questions_from_form(request.form)
+            if q['question'] or q['a'] or q['b']
+        ]
         title = request.form.get('title', quiz.title).strip()
         if not title:
             flash('Quiz title is required', 'danger')
-            return render_template('teacher/add_quiz.html', course=course, section=section, quiz=quiz)
+            return render_template('teacher/add_quiz.html', course=course, section=section, quiz=quiz, submitted_questions=submitted_questions)
 
         try:
             raw_pass = request.form.get('passing_score')
@@ -1517,7 +1573,7 @@ def edit_quiz(course_id, section_id, quiz_id):
             db.session.rollback()
             flash(f'Error updating quiz: {str(e)}', 'danger')
 
-    return render_template('teacher/add_quiz.html', course=course, section=section, quiz=quiz)
+    return render_template('teacher/add_quiz.html', course=course, section=section, quiz=quiz, submitted_questions=submitted_questions)
 
 @teacher_bp.route('/course/<int:course_id>/section/<int:section_id>/submissions')
 @teacher_required

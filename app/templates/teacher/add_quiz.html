@@ -26,22 +26,33 @@
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
-                <div class="flex flex-wrap items-center gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Pass Score (%)</label>
-                        <input type="number" name="passing_score" value="{{ quiz.passing_score|round(0)|int if quiz and quiz.passing_score is not none else 60 }}" min="0" max="100" step="any"
-                            class="w-24 px-3 py-2 border rounded-lg">
+                <div class="flex flex-wrap items-center justify-between gap-6">
+                    <div class="flex flex-wrap items-center gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pass Score (%)</label>
+                            <input type="number" name="passing_score" value="{{ quiz.passing_score|round(0)|int if quiz and quiz.passing_score is not none else 60 }}" min="0" max="100" step="any"
+                                class="w-24 px-3 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Time Limit (min)</label>
+                            <input type="number" name="time_limit" value="{{ quiz.time_limit or '' if quiz else '' }}" placeholder="Unlimited" step="1"
+                                class="w-32 px-3 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Max Attempts</label>
+                            <input type="number" name="max_attempts" value="{{ quiz.max_attempts or 3 if quiz else 3 }}" min="1" max="50" step="1"
+                                class="w-28 px-3 py-2 border rounded-lg">
+                        </div>
                     </div>
+
+                    {% if 'dna' in (section.title or '')|lower or (quiz and 'dna' in (quiz.title or '')|lower) %}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Time Limit (min)</label>
-                        <input type="number" name="time_limit" value="{{ quiz.time_limit or '' if quiz else '' }}" placeholder="Unlimited" step="1"
-                            class="w-32 px-3 py-2 border rounded-lg">
+                        <button type="button" onclick="restoreDnaQuestions()"
+                            class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                            🧬 Restore Your 8 DNA Quiz Questions
+                        </button>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Max Attempts</label>
-                        <input type="number" name="max_attempts" value="{{ quiz.max_attempts or 3 if quiz else 3 }}" min="1" max="50" step="1"
-                            class="w-28 px-3 py-2 border rounded-lg">
-                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -57,6 +68,10 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
                     + Add Question
+                </button>
+                <button type="button" onclick="addQuestion({ question_type: 'true_false', option_a: 'True', option_b: 'False', correct_answer: 'a' })"
+                    class="px-5 py-2.5 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors flex items-center font-medium text-sm">
+                    + Add True / False Question
                 </button>
                 <button type="button" onclick="addMultipleQuestions(5)"
                     class="px-5 py-2.5 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors flex items-center font-medium text-sm">
@@ -98,6 +113,7 @@
                     class="question-type-select text-xs bg-gray-50 border border-gray-300 text-gray-700 rounded-lg px-2.5 py-1 focus:ring-1 focus:ring-blue-500">
                     <option value="multiple_choice">Single Correct Answer</option>
                     <option value="multi_select">Multiple Correct Answers (Select all that apply)</option>
+                    <option value="true_false">True / False</option>
                 </select>
             </div>
         </div>
@@ -108,25 +124,25 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
-            <div class="flex items-center">
+            <div class="flex items-center option-row-a">
                 <input type="radio" name="questions[][correct]" value="a" class="correct-selector mt-1 mr-2.5 w-4 h-4 text-blue-600 cursor-pointer" checked>
                 <input type="text" name="questions[][a]" placeholder="Option A" required
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
+                    class="option-input-a flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
             </div>
-            <div class="flex items-center">
+            <div class="flex items-center option-row-b">
                 <input type="radio" name="questions[][correct]" value="b" class="correct-selector mt-1 mr-2.5 w-4 h-4 text-blue-600 cursor-pointer">
                 <input type="text" name="questions[][b]" placeholder="Option B" required
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
+                    class="option-input-b flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
             </div>
-            <div class="flex items-center">
+            <div class="flex items-center option-row-c">
                 <input type="radio" name="questions[][correct]" value="c" class="correct-selector mt-1 mr-2.5 w-4 h-4 text-blue-600 cursor-pointer">
                 <input type="text" name="questions[][c]" placeholder="Option C (Optional)"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
+                    class="option-input-c flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
             </div>
-            <div class="flex items-center">
+            <div class="flex items-center option-row-d">
                 <input type="radio" name="questions[][correct]" value="d" class="correct-selector mt-1 mr-2.5 w-4 h-4 text-blue-600 cursor-pointer">
                 <input type="text" name="questions[][d]" placeholder="Option D (Optional)"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
+                    class="option-input-d flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
             </div>
         </div>
     </div>
@@ -135,30 +151,79 @@
 <script>
     let questionIndex = 0;
 
-    function toggleQuestionMode(selectEl) {
-        const block = selectEl.closest('.question-block');
-        const isMulti = selectEl.value === 'multi_select';
+    function applyModeUI(block, mode) {
+        const isMulti = mode === 'multi_select';
+        const isTF = mode === 'true_false';
         const selectors = block.querySelectorAll('.correct-selector');
         const hint = block.querySelector('.question-hint');
+        const rowC = block.querySelector('.option-row-c');
+        const rowD = block.querySelector('.option-row-d');
+        const inputA = block.querySelector('.option-input-a');
+        const inputB = block.querySelector('.option-input-b');
+        const inputC = block.querySelector('.option-input-c');
+        const inputD = block.querySelector('.option-input-d');
 
         selectors.forEach(inp => {
             inp.type = isMulti ? 'checkbox' : 'radio';
         });
 
-        // Ensure at least one option stays checked
+        if (isTF) {
+            if (inputA) {
+                inputA.value = 'True';
+                inputA.readOnly = true;
+                inputA.classList.add('bg-gray-50', 'font-semibold', 'text-gray-700');
+            }
+            if (inputB) {
+                inputB.value = 'False';
+                inputB.readOnly = true;
+                inputB.classList.add('bg-gray-50', 'font-semibold', 'text-gray-700');
+            }
+            if (inputC) inputC.value = '';
+            if (inputD) inputD.value = '';
+            if (rowC) rowC.classList.add('hidden');
+            if (rowD) rowD.classList.add('hidden');
+            // If C or D was checked, default back to A (True)
+            const checkedAOrB = Array.from(selectors).some(i => (i.value === 'a' || i.value === 'b') && i.checked);
+            if (!checkedAOrB && selectors.length > 0) {
+                selectors[0].checked = true;
+            }
+        } else {
+            if (inputA) {
+                if (inputA.readOnly && inputA.value === 'True') inputA.value = '';
+                inputA.readOnly = false;
+                inputA.classList.remove('bg-gray-50', 'font-semibold', 'text-gray-700');
+            }
+            if (inputB) {
+                if (inputB.readOnly && inputB.value === 'False') inputB.value = '';
+                inputB.readOnly = false;
+                inputB.classList.remove('bg-gray-50', 'font-semibold', 'text-gray-700');
+            }
+            if (rowC) rowC.classList.remove('hidden');
+            if (rowD) rowD.classList.remove('hidden');
+        }
+
         const anyChecked = Array.from(selectors).some(i => i.checked);
         if (!anyChecked && selectors.length > 0) {
             selectors[0].checked = true;
         }
 
         if (hint) {
-            hint.textContent = isMulti
-                ? '✓ Tick ALL correct options for this question'
-                : 'Select the single correct option below';
-            hint.className = isMulti
-                ? 'text-xs font-semibold text-indigo-600 question-hint'
-                : 'text-xs text-gray-500 question-hint';
+            if (isMulti) {
+                hint.textContent = '✓ Tick ALL correct options for this question';
+                hint.className = 'text-xs font-semibold text-indigo-600 question-hint';
+            } else if (isTF) {
+                hint.textContent = '✓ Select whether the statement is True or False';
+                hint.className = 'text-xs font-semibold text-emerald-600 question-hint';
+            } else {
+                hint.textContent = 'Select the single correct option below';
+                hint.className = 'text-xs text-gray-500 question-hint';
+            }
         }
+    }
+
+    function toggleQuestionMode(selectEl) {
+        const block = selectEl.closest('.question-block');
+        applyModeUI(block, selectEl.value);
     }
 
     function addQuestion(initialData = null) {
@@ -167,25 +232,31 @@
         const container = document.getElementById('questions-container');
         const template = document.getElementById('question-template');
         const clone = template.content.cloneNode(true);
+        const block = clone.querySelector('.question-block');
 
         const rawCorrect = initialData && initialData.correct_answer ? String(initialData.correct_answer) : 'a';
         const correctList = rawCorrect.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-        const isMulti = (initialData && initialData.question_type === 'multi_select') || correctList.length > 1;
+        let qType = (initialData && initialData.question_type) ? initialData.question_type : 'multiple_choice';
+        if (correctList.length > 1) {
+            qType = 'multi_select';
+        } else if (
+            initialData &&
+            !initialData.option_c &&
+            !initialData.option_d &&
+            String(initialData.option_a || '').toLowerCase() === 'true' &&
+            String(initialData.option_b || '').toLowerCase() === 'false'
+        ) {
+            qType = 'true_false';
+        }
 
         const qtypeSelect = clone.querySelector('.question-type-select');
         qtypeSelect.name = `${q_id}_qtype`;
-        qtypeSelect.value = isMulti ? 'multi_select' : 'multiple_choice';
-
-        const hint = clone.querySelector('.question-hint');
-        if (hint && isMulti) {
-            hint.textContent = '✓ Tick ALL correct options for this question';
-            hint.className = 'text-xs font-semibold text-indigo-600 question-hint';
-        }
+        qtypeSelect.value = qType;
 
         const selectors = clone.querySelectorAll('.correct-selector');
         selectors.forEach(sel => {
             sel.name = `${q_id}_correct`;
-            sel.type = isMulti ? 'checkbox' : 'radio';
+            sel.type = qType === 'multi_select' ? 'checkbox' : 'radio';
             sel.checked = correctList.includes(sel.value);
         });
 
@@ -213,6 +284,8 @@
             }
         });
 
+        applyModeUI(block, qType);
+
         const totalBlocks = document.querySelectorAll('.question-block').length + 1;
         clone.querySelector('.question-number').textContent = `Q${totalBlocks}`;
 
@@ -223,6 +296,86 @@
         for (let i = 0; i < count; i++) {
             addQuestion();
         }
+    }
+
+    function restoreDnaQuestions() {
+        const dnaPreset = [
+            {
+                question_text: 'What does the abbreviation DNA stand for?',
+                option_a: 'Deoxyribonucleic Acid',
+                option_b: 'Deoxyribose Nitrogen Acid',
+                option_c: 'Dinitrogenous Acid',
+                option_d: 'Ribonucleic Acid',
+                correct_answer: 'a',
+                question_type: 'multiple_choice'
+            },
+            {
+                question_text: 'In a typical human cell, where is most of the DNA found?',
+                option_a: 'Cytoplasm',
+                option_b: 'Nucleus',
+                option_c: 'Cell membrane',
+                option_d: 'Ribosome',
+                correct_answer: 'b',
+                question_type: 'multiple_choice'
+            },
+            {
+                question_text: 'Which sequence correctly describes how DNA is packaged into chromosomes?',
+                option_a: 'DNA → Chromosomes → Histones → Chromatin',
+                option_b: 'DNA → Ribosomes → Chromatin → Chromosomes',
+                option_c: 'DNA → Histones → Chromatin → Chromosomes',
+                option_d: 'DNA → Mitochondria → Histones → Chromosomes',
+                correct_answer: 'c',
+                question_type: 'multiple_choice'
+            },
+            {
+                question_text: 'What does the term double helix describe?',
+                option_a: 'A single straight strand of nucleotides',
+                option_b: 'Two parallel strands that do not twist',
+                option_c: 'Three strands joined into a circular structure',
+                option_d: 'Two strands twisted around each other',
+                correct_answer: 'd',
+                question_type: 'multiple_choice'
+            },
+            {
+                question_text: 'A DNA strand has the base sequence A–T–C–G. What is its complementary sequence?',
+                option_a: 'A–T–C–G',
+                option_b: 'T–A–G–C',
+                option_c: 'G–C–A–T',
+                option_d: 'T–G–A–C',
+                correct_answer: 'b',
+                question_type: 'multiple_choice'
+            },
+            {
+                question_text: 'Which two nitrogenous bases are classified as purines?',
+                option_a: 'Adenine and Thymine',
+                option_b: 'Cytosine and Thymine',
+                option_c: 'Adenine and Guanine',
+                option_d: 'Guanine and Cytosine',
+                correct_answer: 'c',
+                question_type: 'multiple_choice'
+            },
+            {
+                question_text: 'What is the main role of DNA in protein synthesis?',
+                option_a: 'It stores instructions used to make proteins.',
+                option_b: 'It directly joins amino acids into proteins.',
+                option_c: 'It transports oxygen around the body.',
+                option_d: 'It breaks down all unwanted substances.',
+                correct_answer: 'a',
+                question_type: 'multiple_choice'
+            },
+            {
+                question_text: 'Which THREE components make up a DNA nucleotide?',
+                option_a: 'Phosphate group',
+                option_b: 'Deoxyribose sugar',
+                option_c: 'Nitrogenous base',
+                option_d: 'Amino acid',
+                correct_answer: 'a,b,c',
+                question_type: 'multi_select'
+            }
+        ];
+        document.getElementById('questions-container').innerHTML = '';
+        questionIndex = 0;
+        dnaPreset.forEach(q => addQuestion(q));
     }
 
     function removeQuestion(btn) {
@@ -236,7 +389,19 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        {% if quiz and quiz.questions %}
+        {% if submitted_questions %}
+            {% for q in submitted_questions %}
+                addQuestion({
+                    question_text: {{ q.question_text|tojson }},
+                    option_a: {{ q.option_a|tojson }},
+                    option_b: {{ q.option_b|tojson }},
+                    option_c: {{ q.option_c|tojson }},
+                    option_d: {{ q.option_d|tojson }},
+                    correct_answer: {{ q.correct_answer|tojson }},
+                    question_type: {{ q.question_type|tojson }}
+                });
+            {% endfor %}
+        {% elif quiz and quiz.questions %}
             {% for q in quiz.questions %}
                 addQuestion({
                     question_text: {{ q.question_text|tojson }},
