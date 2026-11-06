@@ -354,31 +354,194 @@
     </div>
     {% endif %}
 
-    <!-- ─── Quizzes (only if any exist) ──────────────────────── -->
+    <!-- ─── Inline Quiz (renders directly when clicking the Quiz section) ─── -->
     {% if section.quizzes %}
-    <div class="mt-6">
-        <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span>❓</span> Quizzes
-        </h4>
-        <div class="space-y-2">
-        {% for quiz in section.quizzes %}
-            <a href="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}"
-               class="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition group">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 text-sm">❓</div>
-                    <p class="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">{{ quiz.title }}</p>
+    <style>
+        .inline-option-label {
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .inline-option-label:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: translateX(2px);
+        }
+        .inline-option-input:checked + .inline-option-label {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+        .inline-option-input:checked + .inline-option-label .inline-option-letter {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+            font-weight: 700;
+        }
+        .inline-option-input:checked + .inline-option-label .inline-option-text {
+            color: #1e40af;
+            font-weight: 600;
+        }
+    </style>
+    {% for quiz in section.quizzes %}
+        {% set q_list = quiz.questions %}
+        {% set student_attempts = quiz.attempts | selectattr('student_id', 'equalto', current_user.id) | list %}
+        {% set attempt_count = student_attempts | length %}
+        {% set max_attempts = quiz.max_attempts if quiz.max_attempts else 3 %}
+        {% set best_score = (student_attempts | map(attribute='score') | max) if student_attempts else None %}
+
+        <div class="mt-4">
+            <!-- Compact Quiz Status & Progress Bar -->
+            <div class="bg-gray-50 rounded-2xl border border-gray-200 p-5 mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold {% if attempt_count >= max_attempts %}text-red-700 bg-red-50 border-red-200{% else %}text-emerald-700 bg-emerald-50 border-emerald-200{% endif %} border px-3 py-1 rounded-full">
+                            🎯 Attempt {{ [attempt_count + 1, max_attempts]|min }} of {{ max_attempts }}
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full">
+                            📋 {{ q_list|length }} Question{{ 's' if q_list|length != 1 else '' }}
+                        </span>
+                        {% if quiz.passing_score %}
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full">
+                            🏆 Pass Mark: {{ quiz.passing_score|round(0)|int }}%
+                        </span>
+                        {% endif %}
+                        {% if quiz.time_limit %}
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full">
+                            ⏱️ {{ quiz.time_limit }} min
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if best_score is not none %}
+                    <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl">
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Best Score:</span>
+                        <span class="text-base font-black text-emerald-600">{{ best_score|round(0)|int }}%</span>
+                    </div>
+                    {% endif %}
                 </div>
-                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full group-hover:bg-indigo-100">
-                    Take Quiz →
-                </span>
-            </a>
-        {% endfor %}
+
+                {% if q_list and attempt_count < max_attempts %}
+                <div class="mt-4">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</span>
+                        <span id="inline-progress-label-{{ quiz.id }}" class="text-xs font-bold text-blue-600">0 / {{ q_list|length }} answered</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div id="inline-progress-bar-{{ quiz.id }}" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if not q_list %}
+                <div class="p-6 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm">
+                    ⚠️ No questions have been added to this quiz yet.
+                </div>
+            {% elif attempt_count >= max_attempts %}
+                <div class="p-6 bg-white border border-gray-200 rounded-2xl text-center shadow-sm">
+                    <div class="text-4xl mb-2">🏁</div>
+                    <h3 class="text-lg font-bold text-gray-900">Maximum Attempts Reached ({{ attempt_count }} / {{ max_attempts }})</h3>
+                    {% if best_score is not none %}
+                    <p class="text-sm text-gray-600 mt-1">Your highest recorded score is <strong class="text-emerald-600">{{ best_score|round(0)|int }}%</strong>.</p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <form method="POST" action="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" id="inline-quiz-form-{{ quiz.id }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                    <div class="space-y-5">
+                        {% for question in q_list %}
+                        {% set is_multi = (question.question_type == 'multi_select') or (',' in (question.correct_answer or '')) %}
+                        {% set is_tf = (question.question_type == 'true_false') or (not question.option_c and not question.option_d and (question.option_a or '')|lower == 'true' and (question.option_b or '')|lower == 'false') %}
+                        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6">
+                            <div class="flex items-start justify-between gap-3 mb-4">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-sm mt-0.5">
+                                        {{ loop.index }}
+                                    </span>
+                                    <p class="text-base font-semibold text-gray-900 leading-relaxed">{{ question.question_text }}</p>
+                                </div>
+                                {% if is_multi %}
+                                <span class="flex-shrink-0 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
+                                    ☑ Select all that apply
+                                </span>
+                                {% elif is_tf %}
+                                <span class="flex-shrink-0 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                                    ⚖️ True / False
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="space-y-2.5 sm:ml-10">
+                                {% set letters = ['A', 'B', 'C', 'D'] %}
+                                {% set options = [
+                                    (question.option_a, 'a'),
+                                    (question.option_b, 'b'),
+                                    (question.option_c, 'c') if question.option_c else None,
+                                    (question.option_d, 'd') if question.option_d else None
+                                ] %}
+
+                                {% for opt in options %}
+                                {% if opt %}
+                                <div class="relative">
+                                    <input
+                                        type="{{ 'checkbox' if is_multi else 'radio' }}"
+                                        name="q{{ question.id }}"
+                                        value="{{ opt[1] }}"
+                                        id="inline_q{{ question.id }}_{{ opt[1] }}"
+                                        class="inline-option-input sr-only"
+                                        {% if loop.first and not is_multi %}required{% endif %}
+                                        onchange="updateInlineQuizProgress({{ quiz.id }}, {{ q_list|length }})">
+                                    <label for="inline_q{{ question.id }}_{{ opt[1] }}"
+                                           class="inline-option-label flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 bg-white select-none">
+                                        <span class="inline-option-letter flex-shrink-0 w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 text-xs font-bold flex items-center justify-center">
+                                            {{ letters[loop.index0] }}
+                                        </span>
+                                        <span class="inline-option-text text-sm text-gray-700">{{ opt[0] }}</span>
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mt-6 bg-gray-50 rounded-2xl border border-gray-200 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Ready to submit your answers?</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Submitting this quiz will grade your answers and mark this section complete.</p>
+                        </div>
+                        <button type="submit"
+                                class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Submit Quiz
+                        </button>
+                    </div>
+                </form>
+            {% endif %}
         </div>
-    </div>
+    {% endfor %}
+    <script>
+        function updateInlineQuizProgress(quizId, totalCount) {
+            const form = document.getElementById('inline-quiz-form-' + quizId);
+            if (!form || !totalCount) return;
+            const answered = new Set();
+            form.querySelectorAll('input.inline-option-input:checked').forEach(inp => answered.add(inp.name));
+            const count = answered.size;
+            const pct = Math.round((count / totalCount) * 100);
+            const bar = document.getElementById('inline-progress-bar-' + quizId);
+            const lbl = document.getElementById('inline-progress-label-' + quizId);
+            if (bar) bar.style.width = pct + '%';
+            if (lbl) lbl.textContent = count + ' / ' + totalCount + ' answered';
+        }
+    </script>
     {% endif %}
 
-    <!-- ─── Mark as Complete ──────────────────────────────────── -->
-    {% if enrollment_section %}
+    <!-- ─── Mark as Complete (hidden on quiz sections since submitting the quiz completes it) ─── -->
+    {% if enrollment_section and not section.quizzes %}
         {% if not enrollment_section.completed %}
             <form method="POST" class="mt-8"
                   hx-post="{{ url_for('student.get_section_content', section_id=section.id) }}"
