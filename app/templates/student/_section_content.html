@@ -112,10 +112,67 @@
         <div id="ql-content-{{ section.id }}" class="ql-editor prose max-w-none mt-4">{{ section.content|safe }}</div>
         <script>
         (function() {
-            // ── Activate inline 3D viewers embedded via Quill ─────────────────
+            // ── Activate inline 3D viewers & clean Sketchfab embeds ───────────
+            function enhanceSketchfabEmbeds(contentEl) {
+                var iframes = contentEl.querySelectorAll('iframe[src*="sketchfab.com"]');
+                iframes.forEach(function(iframe) {
+                    if (iframe.dataset.paceClean3d === '1') return;
+                    iframe.dataset.paceClean3d = '1';
+
+                    var rawSrc = iframe.getAttribute('src') || '';
+                    var baseUrl = rawSrc.split('?')[0];
+                    var sfMatch = baseUrl.match(/sketchfab\.com\/(?:3d-models\/[^/]+-|models\/)?([a-f0-9]{32})/i);
+                    if (sfMatch && sfMatch[1]) {
+                        baseUrl = 'https://sketchfab.com/models/' + sfMatch[1] + '/embed';
+                    }
+                    var cleanUrl = baseUrl + '?autostart=1&autospin=0.2&preload=1&ui_infos=0&ui_watermark=0&ui_watermark_link=0&ui_stop=0&ui_inspector=0&ui_help=0&ui_settings=0&ui_vr=0&ui_annotations=0&dnt=1';
+
+                    var rawHeight = parseInt(iframe.getAttribute('height') || iframe.style.height || '500', 10);
+                    if (isNaN(rawHeight) || rawHeight < 320) rawHeight = 500;
+
+                    // Create clean masked container that crops out top creator bar (58px) & bottom logo (56px)
+                    var parentBox = iframe.parentElement;
+                    var maskContainer = document.createElement('div');
+                    maskContainer.style.cssText = 'position:relative;width:100%;max-width:820px;height:' + rawHeight + 'px;margin:12px auto 22px auto;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px -5px rgba(15,23,42,0.12);border:1px solid #e2e8f0;background:#1e293b;';
+
+                    iframe.setAttribute('allow', 'autoplay; fullscreen; xr-spatial-tracking');
+                    iframe.style.cssText = 'width:100%;height:' + (rawHeight + 116) + 'px;margin-top:-58px;display:block;border:none;';
+
+                    // Floating instruction badge (non-blocking so mouse drag/scroll passes right through)
+                    var hintBar = document.createElement('div');
+                    hintBar.style.cssText = 'position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:rgba(15,23,42,0.72);backdrop-filter:blur(6px);color:#f8fafc;padding:6px 14px;border-radius:9999px;font-size:12px;font-weight:600;pointer-events:none;z-index:10;white-space:nowrap;border:1px solid rgba(255,255,255,0.15);box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+                    hintBar.innerHTML = '<span>🖱️ Drag to rotate 3D model</span><span style="opacity:0.4;">•</span><span>🔍 Scroll to zoom</span>';
+
+                    if (parentBox && parentBox !== contentEl && parentBox.children.length === 1) {
+                        parentBox.style.cssText = 'width:100%;margin:0;padding:0;border:none;box-shadow:none;background:transparent;';
+                    }
+                    iframe.parentNode.insertBefore(maskContainer, iframe);
+                    maskContainer.appendChild(iframe);
+                    maskContainer.appendChild(hintBar);
+
+                    // Auto-start 3D model when scrolled into view
+                    if ('IntersectionObserver' in window) {
+                        var obs = new IntersectionObserver(function(entries, observer) {
+                            entries.forEach(function(entry) {
+                                if (entry.isIntersecting) {
+                                    if (iframe.getAttribute('src') !== cleanUrl) {
+                                        iframe.setAttribute('src', cleanUrl);
+                                    }
+                                    observer.unobserve(maskContainer);
+                                }
+                            });
+                        }, { rootMargin: '250px' });
+                        obs.observe(maskContainer);
+                    } else {
+                        iframe.setAttribute('src', cleanUrl);
+                    }
+                });
+            }
+
             function activateInline3DViewers() {
                 var contentEl = document.getElementById('ql-content-{{ section.id }}');
                 if (!contentEl) return;
+                enhanceSketchfabEmbeds(contentEl);
                 var blocks = contentEl.querySelectorAll('[data-ql-3d="1"]');
                 if (!blocks.length) return;
 
@@ -446,33 +503,54 @@
                     {% endif %}
                 </div>
             {% else %}
-                <form method="POST" action="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" id="inline-quiz-form-{{ quiz.id }}">
+                <form method="POST" action="{{ url_for('student.take_quiz', section_id=section.id, quiz_id=quiz.id) }}" id="inline-quiz-form-{{ quiz.id }}" onsubmit="return validateStepQuizSubmit({{ quiz.id }}, {{ q_list|length }})">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
-                    <div class="space-y-5">
+                    <!-- Step Number Pills (1, 2, 3...) -->
+                    <div class="flex flex-wrap items-center gap-2 mb-4" id="step-pills-{{ quiz.id }}">
                         {% for question in q_list %}
+                        <button type="button"
+                                id="step-pill-{{ quiz.id }}-{{ loop.index0 }}"
+                                onclick="goToQuizQuestion({{ quiz.id }}, {{ loop.index0 }}, {{ q_list|length }})"
+                                class="w-8 h-8 rounded-lg text-xs font-bold border transition-all flex items-center justify-center {% if loop.first %}bg-blue-600 text-white border-blue-600 shadow-sm{% else %}bg-white text-gray-500 border-gray-200 hover:border-blue-300{% endif %}">
+                            {{ loop.index }}
+                        </button>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Validation Alert Banner -->
+                    <div id="step-alert-{{ quiz.id }}" class="hidden mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>Please select an answer for this question before moving to the next question.</span>
+                    </div>
+
+                    <!-- Single Active Question Container -->
+                    <div>
+                        {% for question in q_list %}
+                        {% set q_idx = loop.index0 %}
                         {% set is_multi = (question.question_type == 'multi_select') or (',' in (question.correct_answer or '')) %}
                         {% set is_tf = (question.question_type == 'true_false') or (not question.option_c and not question.option_d and (question.option_a or '')|lower == 'true' and (question.option_b or '')|lower == 'false') %}
-                        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6">
-                            <div class="flex items-start justify-between gap-3 mb-4">
-                                <div class="flex items-start gap-3">
-                                    <span class="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-sm mt-0.5">
-                                        {{ loop.index }}
-                                    </span>
-                                    <p class="text-base font-semibold text-gray-900 leading-relaxed">{{ question.question_text }}</p>
-                                </div>
+                        <div class="quiz-step-card-{{ quiz.id }} bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-7 {% if not loop.first %}hidden{% endif %}"
+                             id="quiz-step-{{ quiz.id }}-{{ q_idx }}"
+                             data-step-index="{{ q_idx }}">
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
+                                    Question {{ loop.index }} of {{ q_list|length }}
+                                </span>
                                 {% if is_multi %}
-                                <span class="flex-shrink-0 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
+                                <span class="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
                                     ☑ Select all that apply
                                 </span>
                                 {% elif is_tf %}
-                                <span class="flex-shrink-0 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                                     ⚖️ True / False
                                 </span>
                                 {% endif %}
                             </div>
 
-                            <div class="space-y-2.5 sm:ml-10">
+                            <p class="text-base sm:text-lg font-bold text-gray-900 leading-relaxed mb-5">{{ question.question_text }}</p>
+
+                            <div class="space-y-3">
                                 {% set letters = ['A', 'B', 'C', 'D'] %}
                                 {% set options = [
                                     (question.option_a, 'a'),
@@ -490,10 +568,9 @@
                                         value="{{ opt[1] }}"
                                         id="inline_q{{ question.id }}_{{ opt[1] }}"
                                         class="inline-option-input sr-only"
-                                        {% if loop.first and not is_multi %}required{% endif %}
-                                        onchange="updateInlineQuizProgress({{ quiz.id }}, {{ q_list|length }})">
+                                        onchange="onQuizOptionSelected({{ quiz.id }}, {{ q_idx }}, {{ q_list|length }})">
                                     <label for="inline_q{{ question.id }}_{{ opt[1] }}"
-                                           class="inline-option-label flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 bg-white select-none">
+                                           class="inline-option-label flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 bg-white select-none">
                                         <span class="inline-option-letter flex-shrink-0 w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 text-xs font-bold flex items-center justify-center">
                                             {{ letters[loop.index0] }}
                                         </span>
@@ -503,29 +580,51 @@
                                 {% endif %}
                                 {% endfor %}
                             </div>
+
+                            <!-- Step Navigation Bar inside the Question Card -->
+                            <div class="mt-7 pt-5 border-t border-gray-100 flex items-center justify-between gap-3">
+                                {% if not loop.first %}
+                                <button type="button"
+                                        onclick="goToQuizQuestion({{ quiz.id }}, {{ q_idx - 1 }}, {{ q_list|length }})"
+                                        class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold text-xs sm:text-sm transition flex items-center gap-1.5">
+                                    ← Previous
+                                </button>
+                                {% else %}
+                                <div></div>
+                                {% endif %}
+
+                                {% if not loop.last %}
+                                <button type="button"
+                                        onclick="nextQuizQuestion({{ quiz.id }}, {{ q_idx }}, {{ q_list|length }})"
+                                        class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+                                    <span>Next Question</span>
+                                    <span>→</span>
+                                </button>
+                                {% else %}
+                                <button type="submit"
+                                        class="px-7 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span>Submit Quiz</span>
+                                </button>
+                                {% endif %}
+                            </div>
                         </div>
                         {% endfor %}
-                    </div>
-
-                    <div class="mt-6 bg-gray-50 rounded-2xl border border-gray-200 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div>
-                            <p class="text-sm font-semibold text-gray-800">Ready to submit your answers?</p>
-                            <p class="text-xs text-gray-500 mt-0.5">Submitting this quiz will grade your answers and mark this section complete.</p>
-                        </div>
-                        <button type="submit"
-                                class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            Submit Quiz
-                        </button>
                     </div>
                 </form>
             {% endif %}
         </div>
     {% endfor %}
     <script>
-        function updateInlineQuizProgress(quizId, totalCount) {
+        function isStepAnswered(quizId, stepIdx) {
+            const stepEl = document.getElementById('quiz-step-' + quizId + '-' + stepIdx);
+            if (!stepEl) return false;
+            return stepEl.querySelectorAll('input.inline-option-input:checked').length > 0;
+        }
+
+        function updateInlineQuizProgress(quizId, totalCount, activeIdx) {
             const form = document.getElementById('inline-quiz-form-' + quizId);
             if (!form || !totalCount) return;
             const answered = new Set();
@@ -536,6 +635,61 @@
             const lbl = document.getElementById('inline-progress-label-' + quizId);
             if (bar) bar.style.width = pct + '%';
             if (lbl) lbl.textContent = count + ' / ' + totalCount + ' answered';
+
+            for (let i = 0; i < totalCount; i++) {
+                const pill = document.getElementById('step-pill-' + quizId + '-' + i);
+                if (!pill) continue;
+                const done = isStepAnswered(quizId, i);
+                if (i === activeIdx) {
+                    pill.className = 'w-8 h-8 rounded-lg text-xs font-bold border transition-all flex items-center justify-center bg-blue-600 text-white border-blue-600 shadow-sm';
+                } else if (done) {
+                    pill.className = 'w-8 h-8 rounded-lg text-xs font-bold border transition-all flex items-center justify-center bg-emerald-50 text-emerald-700 border-emerald-300';
+                } else {
+                    pill.className = 'w-8 h-8 rounded-lg text-xs font-bold border transition-all flex items-center justify-center bg-white text-gray-500 border-gray-200 hover:border-blue-300';
+                }
+            }
+        }
+
+        function onQuizOptionSelected(quizId, stepIdx, totalCount) {
+            const alertBox = document.getElementById('step-alert-' + quizId);
+            if (alertBox) alertBox.classList.add('hidden');
+            updateInlineQuizProgress(quizId, totalCount, stepIdx);
+        }
+
+        function goToQuizQuestion(quizId, targetIdx, totalCount) {
+            const alertBox = document.getElementById('step-alert-' + quizId);
+            if (alertBox) alertBox.classList.add('hidden');
+            document.querySelectorAll('.quiz-step-card-' + quizId).forEach((el, idx) => {
+                if (idx === targetIdx) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+            updateInlineQuizProgress(quizId, totalCount, targetIdx);
+        }
+
+        function nextQuizQuestion(quizId, currentIdx, totalCount) {
+            if (!isStepAnswered(quizId, currentIdx)) {
+                const alertBox = document.getElementById('step-alert-' + quizId);
+                if (alertBox) alertBox.classList.remove('hidden');
+                return;
+            }
+            if (currentIdx + 1 < totalCount) {
+                goToQuizQuestion(quizId, currentIdx + 1, totalCount);
+            }
+        }
+
+        function validateStepQuizSubmit(quizId, totalCount) {
+            for (let i = 0; i < totalCount; i++) {
+                if (!isStepAnswered(quizId, i)) {
+                    goToQuizQuestion(quizId, i, totalCount);
+                    const alertBox = document.getElementById('step-alert-' + quizId);
+                    if (alertBox) alertBox.classList.remove('hidden');
+                    return false;
+                }
+            }
+            return true;
         }
     </script>
     {% endif %}

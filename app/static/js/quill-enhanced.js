@@ -1152,13 +1152,21 @@ function insertModel3D() {
             tmp.innerHTML = rawInput;
             const iframe = tmp.querySelector('iframe');
             if (iframe) {
+                let iSrc = iframe.getAttribute('src') || '';
+                const sfMatch = iSrc.match(/sketchfab\.com\/(?:3d-models\/[^/]+-|models\/)?([a-f0-9]{32})/i);
+                if (sfMatch && sfMatch[1]) {
+                    iSrc = `https://sketchfab.com/models/${sfMatch[1]}/embed?autostart=1&autospin=0.2&preload=1&ui_infos=0&ui_watermark=0&ui_watermark_link=0&ui_stop=0&ui_inspector=0&ui_help=0&ui_settings=0&ui_vr=0&ui_annotations=0&dnt=1`;
+                    iframe.setAttribute('src', iSrc);
+                }
+                const hNum = parseInt(height, 10) || 520;
                 iframe.setAttribute('width', '100%');
-                iframe.setAttribute('height', height);
+                iframe.setAttribute('height', String(hNum));
                 iframe.setAttribute('frameborder', '0');
                 iframe.setAttribute('allowfullscreen', 'true');
                 iframe.setAttribute('allow', 'autoplay; fullscreen; xr-spatial-tracking');
                 iframe.style.width = '100%';
-                iframe.style.height = height + 'px';
+                iframe.style.height = (hNum + 116) + 'px';
+                iframe.style.marginTop = '-58px';
                 iframe.style.display = 'block';
                 iframe.style.border = 'none';
                 iframeEl = iframe.outerHTML;
@@ -1166,13 +1174,16 @@ function insertModel3D() {
                 iframeEl = rawInput;
             }
         } else {
-            // Check if it's a Sketchfab link and ensure /embed is present
+            // Check if it's a Sketchfab link and ensure /embed + clean autostart parameters are present
             let src = rawInput;
             const sfMatch = src.match(/sketchfab\.com\/(?:3d-models\/[^/]+-|models\/)?([a-f0-9]{32})/i);
-            if (sfMatch && sfMatch[1] && !src.includes('/embed')) {
-                src = `https://sketchfab.com/models/${sfMatch[1]}/embed`;
+            const hNum = parseInt(height, 10) || 520;
+            if (sfMatch && sfMatch[1]) {
+                src = `https://sketchfab.com/models/${sfMatch[1]}/embed?autostart=1&autospin=0.2&preload=1&ui_infos=0&ui_watermark=0&ui_watermark_link=0&ui_stop=0&ui_inspector=0&ui_help=0&ui_settings=0&ui_vr=0&ui_annotations=0&dnt=1`;
+                iframeEl = `<iframe src="${src}" width="100%" height="${hNum}" frameborder="0" allowfullscreen allow="autoplay; fullscreen; xr-spatial-tracking" style="width:100%;height:${hNum + 116}px;margin-top:-58px;display:block;border:none;"></iframe>`;
+            } else {
+                iframeEl = `<iframe src="${src}" width="100%" height="${hNum}" frameborder="0" allowfullscreen allow="autoplay; fullscreen; xr-spatial-tracking" style="width:100%;height:${hNum}px;display:block;border:none;"></iframe>`;
             }
-            iframeEl = `<iframe src="${src}" width="100%" height="${height}" frameborder="0" allowfullscreen allow="autoplay; fullscreen; xr-spatial-tracking" style="width:100%;height:${height}px;display:block;border:none;"></iframe>`;
         }
 
         // Description / caption centered at the TOP
@@ -1180,8 +1191,8 @@ function insertModel3D() {
             ? `<p class="ql-align-center" style="text-align:center;margin:0 0 10px 0;font-size:15px;color:#111827;font-weight:600;">${caption}</p>`
             : '';
 
-        // Clean responsive container without any sketchfab author attribution text
-        const wrapperHtml = `<div style="width:100%;max-width:800px;margin:4px auto 18px auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">${iframeEl}</div>`;
+        // Clean responsive masked container without any sketchfab author attribution or watermark
+        const wrapperHtml = `<div style="position:relative;width:100%;max-width:820px;height:${height}px;margin:8px auto 20px auto;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px -5px rgba(15,23,42,0.12);border:1px solid #e2e8f0;background:#1e293b;">${iframeEl}</div>`;
 
         const fullHtml = `${captionHtml}${wrapperHtml}<p><br></p>`;
 
