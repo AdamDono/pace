@@ -410,6 +410,7 @@ def create_app():
     from app.routes.health import health_bp
     from app.routes.forum import forum_bp
     from app.routes.analytics import analytics_bp, record_analytics_event
+    from app.routes.colleague_zero import colleague_zero_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -421,6 +422,7 @@ def create_app():
     app.register_blueprint(health_bp)
     app.register_blueprint(forum_bp)
     app.register_blueprint(analytics_bp)
+    app.register_blueprint(colleague_zero_bp)
 
     @app.before_request
     def auto_track_pageviews():

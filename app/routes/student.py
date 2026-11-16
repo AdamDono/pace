@@ -534,9 +534,19 @@ def submit_assignment(section_id, assignment_id):
             es.completed = True
             es.completed_at = datetime.utcnow()
 
+            db.session.flush()
+            try:
+                from app.routes.colleague_zero import auto_grade_pace_submission_with_colleague_zero
+                auto_grade_pace_submission_with_colleague_zero(submission, assignment, current_user)
+            except Exception as cz_err:
+                logger.warning(f"Colleague Zero auto-grade fallback: {cz_err}")
+
             db.session.commit()
-            flash(f'Assignment Attempt {new_attempt_number} of {max_attempts} submitted successfully!', 'success')
-            return redirect(url_for('student.course_detail', course_id=section.course_id))
+            if submission.grade is not None:
+                flash(f'⚡ Attempt {new_attempt_number} of {max_attempts} submitted & auto-graded by Colleague Zero: {int(submission.grade)}%!', 'success')
+            else:
+                flash(f'Assignment Attempt {new_attempt_number} of {max_attempts} submitted successfully!', 'success')
+            return redirect(url_for('student.submit_assignment', section_id=section_id, assignment_id=assignment_id))
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error submitting assignment: {e}", exc_info=True)

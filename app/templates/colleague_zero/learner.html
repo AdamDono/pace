@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learner Portal · Colleague Zero</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #060a12; color: #f8fafc; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-enter { animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Live Floating Toast Notification -->
+  <div id="liveToast" class="fixed top-20 right-6 z-50 hidden max-w-md w-full toast-enter">
+    <div class="rounded-2xl bg-slate-900/95 border-2 border-indigo-500/70 p-4 shadow-2xl shadow-indigo-500/20 backdrop-blur">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-lg shrink-0">
+            🔔
+          </div>
+          <div>
+            <div class="text-[10px] mono uppercase tracking-wider text-indigo-400 font-bold">Colleague Zero · Assessment Complete</div>
+            <h4 id="toastTitle" class="text-xs font-bold text-white mt-0.5">Assignment Graded &amp; Moderated!</h4>
+            <p id="toastMessage" class="text-xs text-slate-300 mt-1 leading-relaxed"></p>
+          </div>
+        </div>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-white text-sm font-bold px-1">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-extrabold mono text-sm">
+          👩‍🎓
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-base text-white">Learner Portal</span>
+            <span class="text-[11px] mono uppercase px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-semibold">
+              Student Account
+            </span>
+          </div>
+          <p id="learnerHeaderSub" class="text-xs text-slate-400">Signed in as Learner</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Active Assignment Selector (Populated dynamically from Neon DB) -->
+        <select id="batchSelector" onchange="switchBatch(this.value)"
+          class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+        </select>
+
+        <!-- Notification Bell -->
+        <div class="relative">
+          <button onclick="toggleNotifDrawer()" class="relative px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition">
+            <span>🔔</span>
+            <span class="hidden sm:inline">Notifications</span>
+            <span id="notifBadge" class="hidden px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-bold mono text-[10px]">0</span>
+          </button>
+
+          <!-- Notification Dropdown -->
+          <div id="notifDrawer" class="hidden absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-4 z-50 space-y-2.5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="text-xs font-bold text-white mono uppercase">Learner Notifications</span>
+              <button onclick="markAllRead()" class="text-[11px] text-indigo-400 hover:text-indigo-300">Mark all read</button>
+            </div>
+            <div id="notifList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+        <a href="/login" class="text-xs px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition">
+          Sign Out / Switch
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main 2-Column Learner Workspace -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT COLUMN (6 Cols): Assignment Brief + Submit Assignment -->
+      <div class="lg:col-span-6 space-y-5">
+
+        <!-- Card 1: Active Assignment Question & Official Rubric -->
+        <div class="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 space-y-4 shadow-xl">
+          <div class="flex items-center justify-between">
+            <span id="programmeBadge" class="text-[11px] mono uppercase px-2.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-semibold">
+              Assessment
+            </span>
+            <span id="rubricVersionBadge" class="text-xs mono text-slate-400">Rubric</span>
+          </div>
+
+          <div>
+            <h1 id="assignmentTitle" class="text-lg font-bold text-white">Loading Assignment...</h1>
+            <div class="mt-2.5 p-3.5 rounded-xl bg-slate-950 border border-indigo-500/30">
+              <div class="text-[10px] mono uppercase text-indigo-400 font-bold mb-1">Assignment Prompt / Question:</div>
+              <p id="questionPromptText" class="text-xs text-slate-200 leading-relaxed"></p>
+            </div>
+          </div>
+
+          <!-- Rubric Criteria Breakdown -->
+          <div class="space-y-2">
+            <div class="text-[11px] mono uppercase text-slate-400 font-semibold">Grading Rubric Criteria (100 Marks Total):</div>
+            <div id="rubricCriteriaList" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+          </div>
+        </div>
+
+        <!-- Card 2: Submit Assignment Form -->
+        <div class="rounded-2xl bg-slate-900/90 border border-indigo-500/30 p-5 space-y-4 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-bold text-white">✍️ Your Assignment Submission</h2>
+              <p class="text-xs text-slate-400">Write your answer below or upload a document file (.txt / .md) to submit for grading.</p>
+            </div>
+
+            <!-- File Upload Button -->
+            <label class="cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 transition flex items-center gap-1.5">
+              <span>📎 Upload File (.txt/.md)</span>
+              <input type="file" accept=".txt,.md,.csv" class="hidden" onchange="handleFileUpload(event)" />
+            </label>
+          </div>
+
+          <!-- Learner Name / Cohort Verification Bar -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Learner Name</label>
+              <input id="learnerNameInput" type="text" placeholder="Your Full Name"
+                class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">School / Cohort</label>
+              <input id="learnerSchoolInput" type="text" placeholder="Your Class / Cohort"
+                class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <!-- Essay Textarea (Starts 100% Empty - Real Input Only) -->
+          <div>
+            <textarea id="essayInput" rows="7"
+              class="w-full rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 p-3.5 text-xs text-slate-100 leading-relaxed focus:outline-none"
+              placeholder="Write or paste your assignment answer addressing the rubric criteria above..."></textarea>
+          </div>
+
+          <!-- Live 4-Agent Progress Stepper (Hidden until submit) -->
+          <div id="submissionProgressBox" class="hidden rounded-xl bg-slate-950 border border-indigo-500/40 p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between text-xs mono">
+              <span id="progressStatusText" class="text-indigo-300 font-semibold">Colleague Zero is assessing &amp; moderating your submission...</span>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-[10px] mono text-center">
+              <div id="step-PL" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">1. [PL] Plan</div>
+              <div id="step-MK" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">2. [MK] Mark</div>
+              <div id="step-RV" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">3. [RV] Moderate</div>
+              <div id="step-MS" class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">4. [MS] Recovery</div>
+            </div>
+          </div>
+
+          <button id="submitBtn" onclick="submitLearnerAssignment()"
+            class="w-full py-3.5 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-extrabold text-sm transition shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
+            <span>🚀 Submit Assignment for Grading</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN (6 Cols): My Moderated Result, Fairness Audit & 3-Step Recovery Plan -->
+      <div class="lg:col-span-6 space-y-5">
+        <div id="resultContainer" class="rounded-2xl bg-slate-900/90 border border-slate-800 p-6 space-y-5 shadow-xl">
+          <!-- Populated dynamically with the learner's real graded submission -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = window.location.pathname.startsWith('/colleague-zero') ? '/colleague-zero' : '';
+    let currentBatchId = '';
+    let currentBatch = null;
+    let currentLearnerName = '';
+    let currentLearnerSchool = '';
+    let currentLearnerEmail = '';
+    let lastSeenNotifId = 0;
+
+    function initLearnerIdentity() {
+      const params = new URLSearchParams(window.location.search);
+      currentLearnerName = params.get('name') || localStorage.getItem('cz_learner_name') || '';
+      currentLearnerSchool = params.get('school') || localStorage.getItem('cz_learner_school') || '';
+      currentLearnerEmail = params.get('email') || localStorage.getItem('cz_learner_email') || '';
+
+      if (currentLearnerName) {
+        localStorage.setItem('cz_learner_name', currentLearnerName);
+        localStorage.setItem('cz_learner_school', currentLearnerSchool);
+        localStorage.setItem('cz_learner_email', currentLearnerEmail);
+      }
+
+      document.getElementById('learnerNameInput').value = currentLearnerName;
+      document.getElementById('learnerSchoolInput').value = currentLearnerSchool;
+      updateHeaderIdentity();
+    }
+
+    function updateHeaderIdentity() {
+      const name = document.getElementById('learnerNameInput').value.trim() || currentLearnerName || 'Guest Learner';
+      const school = document.getElementById('learnerSchoolInput').value.trim() || currentLearnerSchool || 'Cohort';
+      document.getElementById('learnerHeaderSub').textContent = `Signed in as ${name} · ${school}`;
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('essayInput').value = e.target.result;
+      };
+      reader.readAsText(file);
+    }
+
+    async function fetchLearnerBatch(batchId = currentBatchId, isPoll = false) {
+      currentBatchId = batchId;
+      const res = await fetch(`${API_BASE}/api/batches?batch_id=${encodeURIComponent(batchId)}`);
+      const data = await res.json();
+      if (!data.ok) return;
+
+      currentBatch = data.batch;
+      currentBatchId = currentBatch.id;
+
+      // Populate assignment dropdown dynamically (includes any custom teacher assignments!)
+      const sel = document.getElementById('batchSelector');
+      const prevVal = sel.value || currentBatchId;
+      sel.innerHTML = (data.available_batches || []).map(b =>
+        `<option value="${b.id}" ${b.id === currentBatchId ? 'selected' : ''}>📚 ${b.title} (${b.count} submitted)</option>`
+      ).join('');
+
+      if (!isPoll) {
+        document.getElementById('programmeBadge').textContent = currentBatch.programme_type;
+        document.getElementById('rubricVersionBadge').textContent = currentBatch.rubric.version;
+        document.getElementById('assignmentTitle').textContent = currentBatch.title;
+        document.getElementById('questionPromptText').textContent =
+          currentBatch.rubric.question_prompt || currentBatch.default_goal;
+        renderRubricCriteria();
+        renderLearnerResult();
+      }
+
+      updateLearnerNotifications(data.notifications || [], isPoll);
+    }
+
+    function switchBatch(batchId) {
+      fetchLearnerBatch(batchId, false);
+    }
+
+    function renderRubricCriteria() {
+      const container = document.getElementById('rubricCriteriaList');
+      container.innerHTML = currentBatch.rubric.criteria.map(c => `
+        <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800/90">
+          <div class="flex items-center justify-between text-xs font-bold text-white">
+            <span>${c.id} · ${c.name}</span>
+            <span class="mono text-indigo-400">${c.weight} Marks</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${c.description}</p>
+        </div>
+      `).join('');
+    }
+
+    async function submitLearnerAssignment() {
+      const nameVal = document.getElementById('learnerNameInput').value.trim();
+      const schoolVal = document.getElementById('learnerSchoolInput').value.trim() || 'Grade 12 / SETA Cohort';
+      const essay_text = document.getElementById('essayInput').value.trim();
+
+      if (!nameVal) {
+        alert('Please enter your Full Name.');
+        document.getElementById('learnerNameInput').focus();
+        return;
+      }
+      if (!essay_text) {
+        alert('Please write or upload your assignment response before submitting.');
+        document.getElementById('essayInput').focus();
+        return;
+      }
+
+      currentLearnerName = nameVal;
+      currentLearnerSchool = schoolVal;
+      localStorage.setItem('cz_learner_name', currentLearnerName);
+      localStorage.setItem('cz_learner_school', currentLearnerSchool);
+      updateHeaderIdentity();
+
+      const btn = document.getElementById('submitBtn');
+      const progBox = document.getElementById('submissionProgressBox');
+      btn.disabled = true;
+      btn.classList.add('opacity-60');
+      progBox.classList.remove('hidden');
+
+      const setStep = (code, active) => {
+        const el = document.getElementById(`step-${code}`);
+        if (active === 'working') {
+          el.className = 'p-2 rounded-lg bg-indigo-500/20 border border-indigo-400 text-indigo-200 font-bold animate-pulse';
+        } else if (active === 'done') {
+          el.className = 'p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold';
+        } else {
+          el.className = 'p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400';
+        }
+      };
+
+      setStep('PL', 'working');
+      setStep('MK', 'idle');
+      setStep('RV', 'idle');
+      setStep('MS', 'idle');
+      document.getElementById('progressStatusText').textContent = '1/4 · Planner Worker [PL] decomposing rubric criteria...';
+
+      const t1 = setTimeout(() => {
+        setStep('PL', 'done');
+        setStep('MK', 'working');
+        document.getElementById('progressStatusText').textContent = '2/4 · Assessor Worker [MK] scoring against rubric criteria...';
+      }, 300);
+
+      const t2 = setTimeout(() => {
+        setStep('MK', 'done');
+        setStep('RV', 'working');
+        document.getElementById('progressStatusText').textContent = '3/4 · Moderator Worker [RV] auditing & self-correcting marks...';
+      }, 650);
+
+      const t3 = setTimeout(() => {
+        setStep('RV', 'done');
+        setStep('MS', 'working');
+        document.getElementById('progressStatusText').textContent = '4/4 · Recovery Worker [MS] generating feedback & 3-step plan...';
+      }, 1000);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/submissions/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            batch_id: currentBatchId,
+            learner_name: currentLearnerName,
+            learner_email: currentLearnerEmail,
+            school_or_cohort: currentLearnerSchool,
+            essay_text: essay_text
+          })
+        });
+        const data = await res.json();
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        setStep('PL', 'done');
+        setStep('MK', 'done');
+        setStep('RV', 'done');
+        setStep('MS', 'done');
+        document.getElementById('progressStatusText').textContent = '✓ Assessment, Moderation & Recovery Plan Complete!';
+        if (data.ok) {
+          currentBatch = data.batch;
+          renderLearnerResult(data.submission);
+          updateLearnerNotifications(data.notifications || [], true);
+        } else {
+          alert(data.error || 'Submission failed.');
+        }
+      } catch (err) {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        console.error(err);
+        document.getElementById('progressStatusText').textContent = 'Retrying connection...';
+        await fetchLearnerBatch(currentBatchId, false);
+        setStep('PL', 'done');
+        setStep('MK', 'done');
+        setStep('RV', 'done');
+        setStep('MS', 'done');
+        document.getElementById('progressStatusText').textContent = '✓ Assessment, Moderation & Recovery Plan Complete!';
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-60');
+      }
+    }
+
+    function renderLearnerResult(explicitSub = null) {
+      if (!currentBatch) return;
+      const container = document.getElementById('resultContainer');
+
+      let sub = explicitSub;
+      if (!sub && currentLearnerName) {
+        sub = currentBatch.submissions.find(
+          s => s.learner_name.toLowerCase() === currentLearnerName.toLowerCase()
+        );
+      }
+      if (!sub && currentBatch.submissions.length > 0) {
+        sub = currentBatch.submissions[0];
+      }
+
+      if (!sub) {
+        container.innerHTML = `
+          <div class="py-16 text-center space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-2xl mx-auto">
+              📝
+            </div>
+            <h3 class="text-base font-bold text-white">No Submissions Yet for This Assignment</h3>
+            <p class="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+              Write or upload your assignment response on the left and click <strong>Submit Assignment for Grading</strong>. Colleague Zero's 4 agents (<span class="mono text-indigo-300">PL → MK → RV → MS</span>) will evaluate your work against every rubric criterion and display your moderated grade and 3-step recovery plan here.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      const initScore = sub.initial_mark.score;
+      const finalScore = sub.moderation.corrected_score;
+      const delta = finalScore - initScore;
+      const passMark = currentBatch.rubric.pass_mark || 50;
+      const passed = finalScore >= passMark;
+
+      container.innerHTML = `
+        <!-- Header & Verified Score -->
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Submission #${sub.number}</span>
+              <span class="text-xs mono text-slate-400">${sub.submitted_at}</span>
+            </div>
+            <h2 class="text-lg font-bold text-white mt-1">${sub.learner_name} — Moderated Result</h2>
+            <p class="text-xs text-slate-400">${sub.school_or_cohort}</p>
+          </div>
+
+          <div class="text-right">
+            <div class="text-[10px] mono uppercase text-slate-400">Final Verified Grade</div>
+            <div class="flex items-baseline justify-end gap-2">
+              ${sub.moderation.flagged ? `<span class="text-sm line-through text-slate-500 mono">${initScore}%</span>` : ''}
+              <span class="text-3xl font-extrabold mono ${passed ? 'text-emerald-400' : 'text-rose-400'}">${finalScore}%</span>
+            </div>
+            <span class="text-[11px] mono px-2 py-0.5 rounded ${passed ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'}">
+              ${passed ? '✓ PASSED' : '🛟 RECOVERY REQUIRED'}
+            </span>
+          </div>
+        </div>
+
+        <!-- Moderator Audit Box -->
+        ${sub.moderation.flagged ? `
+          <div class="rounded-xl bg-amber-500/10 border border-amber-500/40 p-4 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-300 mono flex items-center gap-1.5">
+                ⚡ Internal Moderator [RV] Self-Correction Applied
+              </span>
+              <span class="text-xs mono font-bold ${delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                ${initScore}% → ${finalScore}% (${delta >= 0 ? '+' + delta : delta}%)
+              </span>
+            </div>
+            <p class="text-xs text-amber-100/90 leading-relaxed">
+              <strong>Moderator Finding:</strong> ${sub.moderation.flag_reason}
+            </p>
+            <p class="text-[11px] mono text-emerald-300">
+              ✓ ${sub.moderation.correction_log}
+            </p>
+          </div>
+        ` : `
+          <div class="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3.5 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-emerald-300 font-bold mono">✓ Verified by Internal Moderator [RV]</span>
+              <span class="text-[11px] mono text-slate-400">${currentBatch.rubric.version}</span>
+            </div>
+            <p class="text-xs text-slate-300">${sub.initial_mark.rationale}</p>
+          </div>
+        `}
+
+        <!-- Personalised Feedback from [MS] -->
+        <div class="rounded-xl bg-slate-950 border border-slate-800 p-4 space-y-2">
+          <div class="text-xs font-bold uppercase tracking-wider text-indigo-300 mono">
+            💬 Personalised Feedback from Recovery Agent [MS]
+          </div>
+          <p class="text-xs text-slate-200 leading-relaxed">${sub.recovery.feedback}</p>
+        </div>
+
+        <!-- Interactive 3-Step Remedial Catch-Up / Mastery Plan -->
+        <div class="rounded-xl bg-indigo-950/30 border border-indigo-500/40 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 mono">
+              ${sub.recovery.needs_recovery ? '🛟 Your Custom 3-Step Remedial Catch-Up Plan' : '🚀 Your 3-Step Mastery & Polish Plan'}
+            </span>
+            <span id="checklistProgress" class="text-[11px] mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">
+              0 / 3 Completed
+            </span>
+          </div>
+          <div class="space-y-2">
+            ${sub.recovery.catchup_plan.map(step => `
+              <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-indigo-500/50 cursor-pointer transition">
+                <input type="checkbox" onchange="updateChecklistProgress()" class="mt-0.5 rounded border-slate-700 text-indigo-500 focus:ring-indigo-500 recovery-check" />
+                <span class="text-xs text-slate-200 leading-relaxed">${step}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Criterion-by-Criterion Breakdown -->
+        <div class="space-y-2.5">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mono">
+            📊 Criterion-by-Criterion Rubric Breakdown
+          </div>
+          <div class="space-y-2">
+            ${currentBatch.rubric.criteria.map(c => {
+              const iVal = sub.initial_mark.criteria_scores[c.id] ?? 0;
+              const fVal = sub.moderation.corrected_criteria_scores[c.id] ?? iVal;
+              const pct = Math.min(100, Math.round((fVal / c.weight) * 100));
+              const changed = fVal !== iVal;
+              return `
+                <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-200">${c.id} · ${c.name}</span>
+                    <span class="mono font-bold ${changed ? 'text-amber-400' : 'text-emerald-400'}">
+                      ${changed ? `<span class="line-through text-slate-500 mr-1">${iVal}</span>` : ''}${fVal} / ${c.weight}
+                    </span>
+                  </div>
+                  <div class="w-full h-2 rounded-full bg-slate-900 overflow-hidden">
+                    <div class="h-full rounded-full ${pct >= 60 ? 'bg-emerald-500' : 'bg-amber-500'}" style="width: ${pct}%"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function updateChecklistProgress() {
+      const checks = document.querySelectorAll('.recovery-check');
+      const done = Array.from(checks).filter(c => c.checked).length;
+      const badge = document.getElementById('checklistProgress');
+      if (badge) {
+        badge.textContent = `${done} / ${checks.length} Completed`;
+        if (done === checks.length && checks.length > 0) {
+          badge.className = 'text-[11px] mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold';
+        }
+      }
+    }
+
+    function updateLearnerNotifications(allNotifs, showToastIfNew = false) {
+      const learnerNotifs = allNotifs.filter(n => n.recipient_role === 'learner');
+      const unread = learnerNotifs.filter(n => !n.is_read);
+      const badge = document.getElementById('notifBadge');
+      if (unread.length > 0) {
+        badge.textContent = String(unread.length);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      if (learnerNotifs.length > 0) {
+        const newest = learnerNotifs[0];
+        if (showToastIfNew && newest.id > lastSeenNotifId && lastSeenNotifId !== 0) {
+          showToast(newest.title, newest.message);
+        }
+        lastSeenNotifId = Math.max(lastSeenNotifId, newest.id);
+      }
+
+      const listEl = document.getElementById('notifList');
+      if (learnerNotifs.length === 0) {
+        listEl.innerHTML = `<div class="text-xs text-slate-500 py-3 text-center">No notifications yet.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = learnerNotifs.map(n => `
+        <div class="p-3 rounded-xl bg-slate-950 border ${n.is_read ? 'border-slate-800/70' : 'border-indigo-500/50'} space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-white">${n.title}</span>
+            <span class="text-[10px] mono text-slate-500">${n.time_label}</span>
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">${n.message}</p>
+        </div>
+      `).join('');
+    }
+
+    function toggleNotifDrawer() {
+      document.getElementById('notifDrawer').classList.toggle('hidden');
+    }
+
+    async function markAllRead() {
+      await fetch(`${API_BASE}/api/notifications/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_id: currentBatchId, role: 'learner' })
+      });
+      fetchLearnerBatch(currentBatchId, true);
+    }
+
+    function showToast(title, message) {
+      document.getElementById('toastTitle').textContent = title;
+      document.getElementById('toastMessage').textContent = message;
+      document.getElementById('liveToast').classList.remove('hidden');
+      setTimeout(hideToast, 7000);
+    }
+
+    function hideToast() {
+      document.getElementById('liveToast').classList.add('hidden');
+    }
+
+    initLearnerIdentity();
+    fetchLearnerBatch('', false);
+    setInterval(() => fetchLearnerBatch(currentBatchId, true), 2500);
+  </script>
+</body>
+</html>

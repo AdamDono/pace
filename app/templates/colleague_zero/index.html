@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Educator &amp; Colleague Zero Hub · Autonomous Assessor &amp; Moderator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #060a12; color: #f1f5f9; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+      50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    }
+    .agent-working { animation: pulseGlow 1.5s infinite; border-color: #10b981 !important; }
+    @keyframes pulseAmber {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+      50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+    }
+    .agent-flagging { animation: pulseAmber 1.2s infinite; border-color: #f59e0b !important; }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-enter { animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Live Floating Toast Notification (Triggered when Learner Submits in Tab 1) -->
+  <div id="teacherToast" class="fixed top-20 right-6 z-50 hidden max-w-md w-full toast-enter">
+    <div class="rounded-2xl bg-slate-900/95 border-2 border-emerald-500/80 p-4 shadow-2xl shadow-emerald-500/20 backdrop-blur">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg shrink-0">
+            🔔
+          </div>
+          <div>
+            <div class="text-[10px] mono uppercase tracking-wider text-emerald-400 font-bold">Autonomous Colleague Alert · 0 Human Help</div>
+            <h4 id="teacherToastTitle" class="text-xs font-bold text-white mt-0.5">New Learner Submission Graded</h4>
+            <p id="teacherToastMessage" class="text-xs text-slate-300 mt-1 leading-relaxed"></p>
+          </div>
+        </div>
+        <button onclick="hideTeacherToast()" class="text-slate-400 hover:text-white text-sm font-bold px-1">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold mono text-sm">
+          👩‍🏫
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <span class="font-bold text-base tracking-tight text-white">Educator &amp; Colleague Zero Hub</span>
+            <span class="text-[11px] mono uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+              Autonomous Mode: ON
+            </span>
+          </div>
+          <p id="teacherHeaderSub" class="text-xs text-slate-400">Signed in as Educator · Assessment &amp; Moderation</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Dynamic Assignment Selector -->
+        <select id="batchSelector" onchange="switchBatch(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500">
+        </select>
+
+        <!-- Create New Assignment & Rubric Button -->
+        <button onclick="openCreateAssignmentModal()" class="text-xs font-bold px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5">
+          <span>＋</span> New Assignment &amp; Rubric
+        </button>
+
+        <!-- Notification Bell -->
+        <div class="relative">
+          <button onclick="toggleTeacherNotifDrawer()" class="relative px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-200 flex items-center gap-1.5 transition">
+            <span>🔔</span>
+            <span id="teacherNotifBadge" class="hidden px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-bold mono text-[10px]">0</span>
+          </button>
+
+          <div id="teacherNotifDrawer" class="hidden absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-4 z-50 space-y-2.5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="text-xs font-bold text-white mono uppercase">Educator &amp; Audit Alerts</span>
+              <button onclick="markTeacherNotifsRead()" class="text-[11px] text-emerald-400 hover:text-emerald-300">Mark all read</button>
+            </div>
+            <div id="teacherNotifList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+        <button onclick="openRubricModal()" class="text-xs font-medium px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          📋 View Rubric
+        </button>
+
+        <a id="exportCsvLink" href="/api/export/caps_life_sciences.csv" class="text-xs font-medium px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          ⬇ CSV
+        </a>
+
+        <button onclick="resetDemoData()" class="text-xs font-medium px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-rose-400 hover:text-rose-300 border border-slate-800 transition" title="Clear All Submissions">
+          🗑 Clear Submissions
+        </button>
+
+        <a href="/teacher/dashboard" class="text-xs px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 hover:text-white border border-emerald-500/30 transition">
+          ← Pace Academy
+        </a>
+        <a href="/login" class="text-xs px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Live Cross-Tab Incoming Submission Banner -->
+    <div id="liveIncomingBanner" class="hidden rounded-2xl bg-emerald-950/40 border-2 border-emerald-500/70 p-4 flex flex-wrap items-center justify-between gap-4 shadow-lg shadow-emerald-500/10">
+      <div class="flex items-center gap-3">
+        <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+        <div>
+          <div class="text-xs font-bold text-emerald-300 mono uppercase">⚡ Live Learner Submission Detected from Learner Portal (0 Human Intervention)</div>
+          <p id="liveIncomingText" class="text-xs text-slate-200 mt-0.5">Colleague Zero automatically woke up and is running PL → MK → RV → MS...</p>
+        </div>
+      </div>
+      <span class="text-xs mono px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+        Human Interventions: 0
+      </span>
+    </div>
+
+    <!-- Section 1: Standing Outcome Goal + 4-Agent Pipeline -->
+    <section class="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 shadow-xl">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex-1 space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] mono uppercase tracking-wider text-emerald-400 font-semibold">01 · Standing Outcome Goal (Autonomous Listener Active)</span>
+            <span id="runStateBadge" class="text-[11px] mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">listening for learner submissions</span>
+          </div>
+          <div class="relative">
+            <input id="goalInput" type="text"
+              class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/60 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-100 mono focus:outline-none"
+              value="" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-Agent Architecture Pipeline Cards -->
+      <div class="mt-4 pt-4 border-t border-slate-800/80">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 relative">
+
+          <!-- Agent 1: PL Planner -->
+          <div id="agent-card-PL" class="rounded-xl bg-slate-950/90 border border-slate-800 p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-sky-500/15 border border-sky-500/40 text-sky-400 mono text-xs font-bold flex items-center justify-center">PL</span>
+                <div>
+                  <h3 class="text-xs font-bold text-white">Planner Agent</h3>
+                  <p class="text-[10px] text-slate-400">01 · Reasons &amp; Queues</p>
+                </div>
+              </div>
+              <span id="agent-status-PL" class="text-[10px] mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">listening</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">Extracts rubric criteria &amp; weights and routes incoming learner submissions.</p>
+          </div>
+
+          <!-- Agent 2: MK Marker / Assessor -->
+          <div id="agent-card-MK" class="rounded-xl bg-slate-950/90 border border-slate-800 p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-purple-500/15 border border-purple-500/40 text-purple-400 mono text-xs font-bold flex items-center justify-center">MK</span>
+                <div>
+                  <h3 class="text-xs font-bold text-white">Assessor Agent</h3>
+                  <p class="text-[10px] text-slate-400">02 · Marks &amp; Re-Marks</p>
+                </div>
+              </div>
+              <span id="agent-status-MK" class="text-[10px] mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">standby</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">Scores each criterion and executes <span class="mono text-emerald-400">[MK·FIX]</span> when flagged by Moderator.</p>
+          </div>
+
+          <!-- Agent 3: RV Reviewer / Moderator -->
+          <div id="agent-card-RV" class="rounded-xl bg-slate-950/90 border border-slate-800 p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-400 mono text-xs font-bold flex items-center justify-center">RV</span>
+                <div>
+                  <h3 class="text-xs font-bold text-white">Moderator Agent</h3>
+                  <p class="text-[10px] text-amber-400/90 font-medium">03 · Self-Correction Loop</p>
+                </div>
+              </div>
+              <span id="agent-status-RV" class="text-[10px] mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">standby</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">Audits marks against rubric criteria, flags unfair penalties, and forces re-marking.</p>
+          </div>
+
+          <!-- Agent 4: MS Messenger / Recovery -->
+          <div id="agent-card-MS" class="rounded-xl bg-slate-950/90 border border-slate-800 p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 mono text-xs font-bold flex items-center justify-center">MS</span>
+                <div>
+                  <h3 class="text-xs font-bold text-white">Recovery Agent</h3>
+                  <p class="text-[10px] text-slate-400">04 · Feedback &amp; Catch-Up</p>
+                </div>
+              </div>
+              <span id="agent-status-MS" class="text-[10px] mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">standby</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">Generates criterion-specific feedback and 3-step recovery plans for the Learner Portal.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Live Agent Trace + KPIs & Self-Correction Spotlight -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left 7 Cols: Live Multi-Agent Terminal -->
+      <div class="lg:col-span-7 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex flex-col shadow-2xl">
+        <div class="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+            <span class="ml-2 text-xs mono text-slate-300 font-semibold">colleague-zero / live-agent-bus</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="selfCorrectionLoopBadge" class="hidden text-[11px] mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+              ⚡ RV → MK Self-Correction Active
+            </span>
+          </div>
+        </div>
+
+        <div id="agentTerminal" class="p-4 space-y-2 text-xs mono h-[290px] overflow-y-auto bg-[#050811]"></div>
+
+        <div class="px-4 py-2.5 bg-slate-900/90 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs mono">
+          <div class="flex items-center gap-4">
+            <span id="stepCounter" class="text-slate-300">Autonomous Listener Active</span>
+            <span class="text-emerald-400 font-semibold">Human interventions: 0</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-amber-300">RV Self-Corrections: <strong id="flagsCaughtCount">0</strong></span>
+            <span class="text-sky-300">Recovery Plans Sent: <strong id="recoveryPlansCount">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right 5 Cols: 4 KPI Cards + Self-Correction Audit Spotlight -->
+      <div class="lg:col-span-5 flex flex-col justify-between gap-4">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-3.5">
+            <div class="text-[11px] mono uppercase text-slate-400">Real Submissions</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span id="kpiMarked" class="text-2xl font-extrabold text-white mono">0</span>
+              <span id="kpiAvgScore" class="text-xs text-emerald-400 mono">Avg: --%</span>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-slate-900/90 border border-amber-500/30 p-3.5">
+            <div class="text-[11px] mono uppercase text-amber-300">RV Self-Corrections</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span id="kpiCorrections" class="text-2xl font-extrabold text-amber-400 mono">0</span>
+              <span class="text-xs text-amber-300/80 mono">marks adjusted</span>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-slate-900/90 border border-indigo-500/30 p-3.5">
+            <div class="text-[11px] mono uppercase text-indigo-300">Recovery Plans Sent</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span id="kpiRecovery" class="text-2xl font-extrabold text-indigo-400 mono">0</span>
+              <span class="text-xs text-indigo-300/80 mono">3-step plans</span>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-slate-900/90 border border-emerald-500/30 p-3.5">
+            <div class="text-[11px] mono uppercase text-emerald-300">Educator Time Saved</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span id="kpiTimeSaved" class="text-2xl font-extrabold text-emerald-400 mono">0.0 hrs</span>
+              <span class="text-xs text-emerald-300/80 mono">auto-graded</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Self-Correction Spotlight Panel -->
+        <div class="rounded-2xl bg-slate-900/90 border border-slate-800 p-4 flex-1 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-amber-400 mono">
+                🔍 Moderator Self-Correction Spotlight (RV → MK)
+              </span>
+            </div>
+            <div id="spotlightContainer" class="space-y-2 max-h-[185px] overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 3: Real Learner Submissions Marksheet -->
+    <section class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 id="batchTitleHeading" class="text-lg font-bold text-white">Real Learner Submissions &amp; Moderation Queue</h2>
+          <p class="text-xs text-slate-400">When a learner submits from the Learner Portal (`/learner`), Colleague Zero grades and moderates it here automatically.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="filterCards('all')" id="filter-all" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold">All Submissions</button>
+          <button onclick="filterCards('flagged')" id="filter-flagged" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-amber-300 hover:bg-slate-800 border border-amber-500/30">⚡ Moderator Self-Corrected</button>
+          <button onclick="filterCards('recovery')" id="filter-recovery" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-indigo-300 hover:bg-slate-800 border border-indigo-500/30">🛟 Recovery Plan Sent</button>
+        </div>
+      </div>
+
+      <div id="submissionsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+  </main>
+
+  <!-- Create New Assignment & Rubric Modal -->
+  <div id="createAssignmentModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white">Create New Assignment &amp; Rubric</h3>
+          <p class="text-xs text-slate-400">Learners can immediately select and submit to this assignment.</p>
+        </div>
+        <button onclick="closeCreateAssignmentModal()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+      </div>
+
+      <form onsubmit="submitNewAssignment(event)" class="space-y-3.5 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Assignment Title</label>
+            <input id="caTitle" type="text" placeholder="e.g. Grade 12 Physical Sciences — Chemical Equilibrium" required
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Programme / Subject</label>
+            <input id="caProg" type="text" placeholder="e.g. NSC CAPS · Grade 12 / SETA NQF 5" required
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Assignment Question Prompt (Shown to Learner)</label>
+          <textarea id="caPrompt" rows="2" placeholder="Describe the exact question learners must answer..." required
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white"></textarea>
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-emerald-400 mono uppercase">Rubric Criteria (Total 100 Marks):</div>
+
+          <div class="grid grid-cols-12 gap-2 items-start bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="col-span-4">
+              <input id="c1Name" type="text" placeholder="C1 Name (e.g. Le Chatelier's Principle)" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+            <div class="col-span-2">
+              <input id="c1Weight" type="number" value="30" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white mono" />
+            </div>
+            <div class="col-span-6">
+              <input id="c1Desc" type="text" placeholder="Required concepts & keywords for C1..." required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-12 gap-2 items-start bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="col-span-4">
+              <input id="c2Name" type="text" placeholder="C2 Name" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+            <div class="col-span-2">
+              <input id="c2Weight" type="number" value="30" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white mono" />
+            </div>
+            <div class="col-span-6">
+              <input id="c2Desc" type="text" placeholder="Required concepts & keywords for C2..." required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-12 gap-2 items-start bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="col-span-4">
+              <input id="c3Name" type="text" placeholder="C3 Name" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+            <div class="col-span-2">
+              <input id="c3Weight" type="number" value="25" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white mono" />
+            </div>
+            <div class="col-span-6">
+              <input id="c3Desc" type="text" placeholder="Required concepts & keywords for C3..." required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-12 gap-2 items-start bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="col-span-4">
+              <input id="c4Name" type="text" placeholder="C4 Name (e.g. Scientific Synthesis)" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+            <div class="col-span-2">
+              <input id="c4Weight" type="number" value="15" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white mono" />
+            </div>
+            <div class="col-span-6">
+              <input id="c4Desc" type="text" placeholder="Required concepts & keywords for C4..." required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeCreateAssignmentModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold">
+            Save Assignment &amp; Rubric
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Deep-Dive Learner Inspection Modal -->
+  <div id="inspectModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900 z-10">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="modalScriptNumber" class="text-xs mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">#1</span>
+            <h3 id="modalLearnerName" class="text-base font-bold text-white">Learner Name</h3>
+            <span id="modalFlagBadge" class="hidden text-[11px] mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">⚡ Self-Corrected by Moderator</span>
+          </div>
+          <p id="modalSchool" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <button onclick="closeInspectModal()" class="text-slate-400 hover:text-white text-xl font-bold px-2">✕</button>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mono mb-2">1. Learner Submission</h4>
+          <div id="modalEssayText" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 leading-relaxed"></div>
+        </div>
+
+        <div id="modalModerationBox" class="rounded-xl p-4 border">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider mono" id="modalModerationTitle">2. Multi-Agent Assessment &amp; Moderation Audit</span>
+            <div class="flex items-center gap-2 mono text-sm font-bold" id="modalScoreComparison"></div>
+          </div>
+          <p id="modalInitialRationale" class="text-xs text-slate-300 mb-1.5"></p>
+          <p id="modalFlagReason" class="text-xs text-amber-300 font-medium mb-1.5 hidden"></p>
+          <p id="modalCorrectionLog" class="text-xs text-emerald-300 font-medium"></p>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mono mb-2">3. Rubric Criterion Breakdown</h4>
+          <div class="overflow-x-auto rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 mono border-b border-slate-800">
+                <tr>
+                  <th class="py-2.5 px-3">Criterion</th>
+                  <th class="py-2.5 px-3 text-center">Weight</th>
+                  <th class="py-2.5 px-3 text-center">MK Initial</th>
+                  <th class="py-2.5 px-3 text-center">RV Moderated</th>
+                </tr>
+              </thead>
+              <tbody id="modalCriteriaTable" class="divide-y divide-slate-800/70 bg-slate-900/60"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-indigo-950/30 border border-indigo-500/30 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 mono">4. [MS] Personalised Feedback &amp; Learner Recovery Plan</span>
+            <span id="modalRecoveryStatus" class="text-[11px] mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">Dispatched to Learner Portal</span>
+          </div>
+          <p id="modalFeedbackText" class="text-xs text-slate-200 leading-relaxed"></p>
+          <div>
+            <div class="text-[11px] font-semibold text-indigo-300 mono mb-1.5">Actionable 3-Step Catch-Up / Mastery Plan:</div>
+            <ul id="modalCatchupList" class="space-y-1.5 text-xs text-slate-300 list-disc pl-5"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rubric Modal -->
+  <div id="rubricModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 id="rubricModalTitle" class="text-base font-bold text-white">Active Assessment Rubric</h3>
+          <p id="rubricModalPrompt" class="text-xs text-slate-300 mt-1"></p>
+        </div>
+        <button onclick="closeRubricModal()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+      </div>
+      <div id="rubricModalBody" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.pathname.startsWith('/colleague-zero') ? '/colleague-zero' : '';
+    let currentBatchId = '';
+    let currentBatch = null;
+    let currentFilter = 'all';
+    let runTimers = [];
+    let knownSubmissionIds = new Set();
+    let lastTeacherNotifId = 0;
+
+    function initTeacherIdentity() {
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get('name') || localStorage.getItem('cz_teacher_name') || 'Educator';
+      const school = params.get('school') || localStorage.getItem('cz_teacher_school') || 'Assessment & Moderation';
+      document.getElementById('teacherHeaderSub').textContent = `Signed in as ${name} · ${school}`;
+    }
+
+    async function loadBatchData(batchId = currentBatchId) {
+      currentBatchId = batchId;
+      clearRunTimers();
+      const res = await fetch(`${API_BASE}/api/batches?batch_id=${encodeURIComponent(batchId)}`);
+      const data = await res.json();
+      if (!data.ok) return;
+
+      currentBatch = data.batch;
+      currentBatchId = currentBatch.id;
+      knownSubmissionIds = new Set(currentBatch.submissions.map(s => s.id));
+
+      const sel = document.getElementById('batchSelector');
+      sel.innerHTML = (data.available_batches || []).map(b =>
+        `<option value="${b.id}" ${b.id === currentBatchId ? 'selected' : ''}>📚 ${b.title} (${b.count})</option>`
+      ).join('');
+
+      document.getElementById('goalInput').value = currentBatch.default_goal;
+      document.getElementById('batchTitleHeading').textContent = `${currentBatch.title} (${currentBatch.submissions.length} Submissions)`;
+      document.getElementById('exportCsvLink').href = `${API_BASE}/api/export/${currentBatch.id}.csv`;
+
+      updateTeacherNotifications(data.notifications || [], false);
+      renderSpotlights();
+      renderSubmissionsGrid();
+
+      const flagged = currentBatch.submissions.filter(s => s.moderation.flagged).length;
+      const recovery = currentBatch.submissions.filter(s => s.recovery.needs_recovery).length;
+      updateKPIs(currentBatch.submissions.length, flagged, recovery);
+      document.getElementById('flagsCaughtCount').textContent = String(flagged);
+      document.getElementById('recoveryPlansCount').textContent = String(recovery);
+      seedInitialTerminalSummary();
+    }
+
+    function seedInitialTerminalSummary() {
+      const term = document.getElementById('agentTerminal');
+      term.innerHTML = '';
+      const total = currentBatch.submissions.length;
+      const events = currentBatch.agent_events || [];
+      appendLog('READY', '[PL·STANDBY]', `Active Assignment: "${currentBatch.title}" (${currentBatch.rubric.version}).`, 'text-sky-400');
+      if (events.length > 0) {
+        const colorMap = {
+          'PL': 'text-sky-400',
+          'MK': 'text-purple-400',
+          'RV': 'text-amber-400',
+          'MS': 'text-emerald-400'
+        };
+        events.forEach(ev => {
+          const col = ev.tag === '[MK·FIX]' ? 'text-emerald-400' : (colorMap[ev.agent_code] || 'text-slate-300');
+          appendLog(ev.time_label || 'DB·LOG', ev.tag, ev.message, col);
+        });
+      } else if (total === 0) {
+        appendLog('WAIT', '[C0·LISTEN]', `0 submissions in database. Waiting for a learner to submit on the Learner Portal (/learner)...`, 'text-emerald-400');
+      } else {
+        const latest = currentBatch.submissions[0];
+        appendLog('DONE', '[MK·EVAL]', `Latest (#${latest.number} ${latest.learner_name}): ${latest.initial_mark.rationale}`, 'text-purple-400');
+        appendLog('DONE', '[RV·AUDIT]', `${latest.moderation.correction_log}`, 'text-amber-400');
+      }
+    }
+
+    async function pollForLiveLearnerSubmissions() {
+      if (!currentBatch) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/batches?batch_id=${encodeURIComponent(currentBatchId)}`);
+        const data = await res.json();
+        if (!data.ok) return;
+
+        updateTeacherNotifications(data.notifications || [], true);
+
+        const incomingSubs = data.batch.submissions;
+        const newSub = incomingSubs.find(s => !knownSubmissionIds.has(s.id));
+        if (newSub) {
+          currentBatch = data.batch;
+          incomingSubs.forEach(s => knownSubmissionIds.add(s.id));
+          animateLiveIncomingSubmission(newSub);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function animateLiveIncomingSubmission(sub) {
+      clearRunTimers();
+      const banner = document.getElementById('liveIncomingBanner');
+      const bannerText = document.getElementById('liveIncomingText');
+      banner.classList.remove('hidden');
+      bannerText.textContent = `New submission received from ${sub.learner_name} (${sub.school_or_cohort}) — Colleague Zero running PL → MK → RV → MS...`;
+
+      const term = document.getElementById('agentTerminal');
+      term.innerHTML = '';
+
+      setAgentState('PL', 'routing', 'working');
+      setAgentState('MK', 'standby', 'idle');
+      setAgentState('RV', 'standby', 'idle');
+      setAgentState('MS', 'standby', 'idle');
+
+      appendLog('LIVE·00s', '[PL·TRIGGER]', `New submission #${sub.number} from ${sub.learner_name}. Loaded ${currentBatch.rubric.version} (${currentBatch.rubric.criteria.length} criteria).`, 'text-sky-400');
+
+      runTimers.push(setTimeout(() => {
+        setAgentState('PL', 'done', 'done');
+        setAgentState('MK', 'marking', 'working');
+        appendLog('LIVE·01s', '[MK·INITIAL]', `Assessor [MK] scored #${sub.number} at ${sub.initial_mark.score}%: ${sub.initial_mark.rationale}`, 'text-purple-400');
+      }, 600));
+
+      runTimers.push(setTimeout(() => {
+        setAgentState('MK', 'done', 'done');
+        if (sub.moderation.flagged) {
+          setAgentState('RV', 'flagging', 'flagging');
+          document.getElementById('selfCorrectionLoopBadge').classList.remove('hidden');
+          appendLog('LIVE·02s', '[RV·FLAG]', `Moderator [RV] flagged initial mark (${sub.initial_mark.score}%): ${sub.moderation.flag_reason}`, 'text-amber-400');
+        } else {
+          setAgentState('RV', 'auditing', 'working');
+          appendLog('LIVE·02s', '[RV·AUDIT]', `Moderator [RV] auditing criterion scores against ${currentBatch.rubric.version}...`, 'text-amber-300');
+        }
+      }, 1500));
+
+      runTimers.push(setTimeout(() => {
+        if (sub.moderation.flagged) {
+          setAgentState('MK', 'fixing', 'working');
+          appendLog('LIVE·03s', '[MK·FIX]', `${sub.moderation.correction_log}`, 'text-emerald-400');
+        } else {
+          appendLog('LIVE·03s', '[RV·PASS]', `${sub.moderation.correction_log}`, 'text-emerald-400');
+        }
+      }, 2400));
+
+      runTimers.push(setTimeout(() => {
+        setAgentState('MK', 'done', 'done');
+        setAgentState('RV', 'done', 'done');
+        document.getElementById('selfCorrectionLoopBadge').classList.add('hidden');
+        setAgentState('MS', 'dispatching', 'working');
+        appendLog('LIVE·04s', '[MS·DISPATCH]', `Sent final grade (${sub.moderation.corrected_score}%) & custom 3-step recovery plan to ${sub.learner_name}'s Learner Portal.`, 'text-indigo-400');
+
+        document.getElementById('batchTitleHeading').textContent = `${currentBatch.title} (${currentBatch.submissions.length} Submissions)`;
+        renderSpotlights();
+        renderSubmissionsGrid();
+
+        const flaggedCount = currentBatch.submissions.filter(s => s.moderation.flagged).length;
+        const recCount = currentBatch.submissions.filter(s => s.recovery.needs_recovery).length;
+        updateKPIs(currentBatch.submissions.length, flaggedCount, recCount);
+        document.getElementById('flagsCaughtCount').textContent = String(flaggedCount);
+        document.getElementById('recoveryPlansCount').textContent = String(recCount);
+
+        setTimeout(() => {
+          setAgentState('MS', 'done', 'done');
+          bannerText.textContent = `✓ Completed autonomous assessment, moderation & recovery dispatch for ${sub.learner_name} (#${sub.number}) — Final Mark: ${sub.moderation.corrected_score}%.`;
+        }, 600);
+      }, 3200));
+    }
+
+    function switchBatch(batchId) {
+      document.getElementById('liveIncomingBanner').classList.add('hidden');
+      loadBatchData(batchId);
+    }
+
+    function clearRunTimers() {
+      runTimers.forEach(t => clearTimeout(t));
+      runTimers = [];
+    }
+
+    function setAgentState(agentCode, statusText, mode = 'idle') {
+      const card = document.getElementById(`agent-card-${agentCode}`);
+      const badge = document.getElementById(`agent-status-${agentCode}`);
+      if (!card || !badge) return;
+      card.classList.remove('agent-working', 'agent-flagging');
+      badge.className = 'text-[10px] mono px-2 py-0.5 rounded border ';
+      if (mode === 'working') {
+        card.classList.add('agent-working');
+        badge.className += 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+      } else if (mode === 'flagging') {
+        card.classList.add('agent-flagging');
+        badge.className += 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      } else if (mode === 'done') {
+        badge.className += 'bg-slate-800 text-emerald-400 border-emerald-500/30';
+      } else {
+        badge.className += 'bg-slate-900 text-slate-400 border-slate-800';
+      }
+      badge.textContent = statusText;
+    }
+
+    function appendLog(ts, tag, message, colorClass = 'text-slate-300') {
+      const term = document.getElementById('agentTerminal');
+      const row = document.createElement('div');
+      row.className = 'flex items-start gap-2.5 leading-relaxed';
+      row.innerHTML = `
+        <span class="text-slate-500 shrink-0">${ts}</span>
+        <span class="font-bold shrink-0 ${colorClass}">${tag}</span>
+        <span class="text-slate-200">${message}</span>
+      `;
+      term.appendChild(row);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function updateKPIs(markedCount, corrCount = 0, recCount = 0) {
+      if (!currentBatch) return;
+      const subs = currentBatch.submissions;
+      const total = subs.length;
+      const avg = total > 0 ? Math.round(subs.reduce((acc, s) => acc + s.moderation.corrected_score, 0) / total) : 0;
+
+      document.getElementById('kpiMarked').textContent = String(total);
+      document.getElementById('kpiAvgScore').textContent = total > 0 ? `Avg: ${avg}%` : 'Avg: --%';
+      document.getElementById('kpiCorrections').textContent = String(corrCount);
+      document.getElementById('kpiRecovery').textContent = String(recCount);
+      document.getElementById('kpiTimeSaved').textContent = `${(total * 0.45).toFixed(1)} hrs`;
+    }
+
+    function renderSpotlights() {
+      if (!currentBatch) return;
+      const container = document.getElementById('spotlightContainer');
+      const flagged = currentBatch.submissions.filter(s => s.moderation.flagged);
+      if (flagged.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 py-6 text-center">No Moderator self-corrections triggered yet for this assignment.</div>`;
+        return;
+      }
+      container.innerHTML = flagged.map(s => {
+        const initScore = s.initial_mark.score;
+        const finalScore = s.moderation.corrected_score;
+        const delta = finalScore - initScore;
+        const sign = delta > 0 ? `+${delta}%` : `${delta}%`;
+        return `
+          <div onclick="openInspectModal('${s.id}')" class="cursor-pointer rounded-xl bg-slate-950/90 border border-amber-500/30 hover:border-amber-400 p-3 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">#${s.number} · ${s.learner_name}</span>
+              <span class="text-xs mono font-bold ${delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                <span class="line-through text-slate-500 mr-1">${initScore}%</span>→ ${finalScore}% (${sign})
+              </span>
+            </div>
+            <p class="text-[11px] text-amber-200/90 mt-1 line-clamp-2">${s.moderation.flag_reason}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterCards(mode) {
+      currentFilter = mode;
+      ['all', 'flagged', 'recovery'].forEach(k => {
+        const btn = document.getElementById(`filter-${k}`);
+        if (k === mode) {
+          btn.className = 'text-xs px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold';
+        } else {
+          btn.className = 'text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800';
+        }
+      });
+      renderSubmissionsGrid();
+    }
+
+    function renderSubmissionsGrid() {
+      if (!currentBatch) return;
+      const grid = document.getElementById('submissionsGrid');
+      const passMark = currentBatch.rubric.pass_mark || 50;
+
+      const filtered = currentBatch.submissions.filter(s => {
+        if (currentFilter === 'flagged') return s.moderation.flagged;
+        if (currentFilter === 'recovery') return s.recovery.needs_recovery;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full rounded-2xl bg-slate-900/60 border border-slate-800 p-10 text-center space-y-2">
+            <div class="text-2xl">📭</div>
+            <h3 class="text-sm font-bold text-white">No Learner Submissions Yet</h3>
+            <p class="text-xs text-slate-400 max-w-md mx-auto">
+              Open the <strong>Learner Portal (`/learner`)</strong> in Tab 1 and submit an assignment answer. Colleague Zero will automatically detect, grade, moderate, and display it here in real time.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(s => {
+        const initScore = s.initial_mark.score;
+        const finalScore = s.moderation.corrected_score;
+        const delta = finalScore - initScore;
+        const passed = finalScore >= passMark;
+
+        return `
+          <div onclick="openInspectModal('${s.id}')"
+            class="cursor-pointer rounded-2xl bg-slate-900/90 border ${s.moderation.flagged ? 'border-amber-500/60 hover:border-amber-400' : 'border-emerald-500/40 hover:border-emerald-400'} p-4 flex flex-col justify-between transition group shadow-lg">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-[11px] mono px-2 py-0.5 rounded bg-slate-950 text-slate-300 border border-slate-800">Submission #${s.number} · ${s.submitted_at}</span>
+                ${s.moderation.flagged
+                  ? `<span class="text-[10px] mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">⚡ RV SELF-CORRECTED</span>`
+                  : `<span class="text-[10px] mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">✓ RV VERIFIED</span>`
+                }
+              </div>
+
+              <h3 class="text-sm font-bold text-white group-hover:text-emerald-300 transition">${s.learner_name}</h3>
+              <p class="text-[11px] text-slate-400 mb-2">${s.school_or_cohort}</p>
+              <p class="text-xs text-slate-300 line-clamp-3 leading-relaxed bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">${s.essay_text}</p>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+              <div>
+                ${s.moderation.flagged
+                  ? `<div class="flex items-baseline gap-1.5 mono">
+                       <span class="text-xs line-through text-slate-500">${initScore}%</span>
+                       <span class="text-base font-extrabold text-amber-400">${finalScore}%</span>
+                       <span class="text-[10px] ${delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}">(${delta >= 0 ? '+' + delta : delta}%)</span>
+                     </div>`
+                  : `<div class="text-base font-extrabold mono ${passed ? 'text-emerald-400' : 'text-rose-400'}">${finalScore}%</div>`
+                }
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                ${s.recovery.needs_recovery
+                  ? `<span class="text-[10px] mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">🛟 3-Step Recovery Sent</span>`
+                  : `<span class="text-[10px] mono px-2 py-0.5 rounded bg-slate-800 text-emerald-300">✓ Passed &amp; Verified</span>`
+                }
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCreateAssignmentModal() {
+      document.getElementById('createAssignmentModal').classList.remove('hidden');
+    }
+
+    function closeCreateAssignmentModal() {
+      document.getElementById('createAssignmentModal').classList.add('hidden');
+    }
+
+    async function submitNewAssignment(e) {
+      e.preventDefault();
+      const title = document.getElementById('caTitle').value.trim();
+      const programme_type = document.getElementById('caProg').value.trim();
+      const question_prompt = document.getElementById('caPrompt').value.trim();
+
+      const criteria = [
+        { id: 'C1', name: document.getElementById('c1Name').value.trim(), weight: parseInt(document.getElementById('c1Weight').value || '30'), description: document.getElementById('c1Desc').value.trim() },
+        { id: 'C2', name: document.getElementById('c2Name').value.trim(), weight: parseInt(document.getElementById('c2Weight').value || '30'), description: document.getElementById('c2Desc').value.trim() },
+        { id: 'C3', name: document.getElementById('c3Name').value.trim(), weight: parseInt(document.getElementById('c3Weight').value || '25'), description: document.getElementById('c3Desc').value.trim() },
+        { id: 'C4', name: document.getElementById('c4Name').value.trim(), weight: parseInt(document.getElementById('c4Weight').value || '15'), description: document.getElementById('c4Desc').value.trim() },
+      ];
+
+      const res = await fetch(`${API_BASE}/api/assignments/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          programme_type,
+          question_prompt,
+          rubric_version: `${programme_type} Rubric v1.0`,
+          pass_mark: 50,
+          criteria
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        closeCreateAssignmentModal();
+        loadBatchData(data.batch_id);
+      }
+    }
+
+    function openInspectModal(subId) {
+      if (!currentBatch) return;
+      const s = currentBatch.submissions.find(item => item.id === subId);
+      if (!s) return;
+
+      document.getElementById('modalScriptNumber').textContent = `Submission #${s.number}`;
+      document.getElementById('modalLearnerName').textContent = s.learner_name;
+      document.getElementById('modalSchool').textContent = `${s.school_or_cohort} · Submitted ${s.submitted_at}`;
+      document.getElementById('modalEssayText').textContent = s.essay_text;
+
+      const flagBadge = document.getElementById('modalFlagBadge');
+      const modBox = document.getElementById('modalModerationBox');
+      const flagReasonEl = document.getElementById('modalFlagReason');
+      const scoreComp = document.getElementById('modalScoreComparison');
+
+      const initScore = s.initial_mark.score;
+      const finalScore = s.moderation.corrected_score;
+
+      if (s.moderation.flagged) {
+        flagBadge.classList.remove('hidden');
+        modBox.className = 'rounded-xl p-4 border bg-amber-950/20 border-amber-500/40';
+        flagReasonEl.classList.remove('hidden');
+        flagReasonEl.textContent = `[RV·FLAG] ${s.moderation.flag_reason}`;
+        scoreComp.innerHTML = `<span class="line-through text-slate-400">MK: ${initScore}%</span> <span class="text-amber-400">→ RV Fixed: ${finalScore}%</span>`;
+      } else {
+        flagBadge.classList.add('hidden');
+        modBox.className = 'rounded-xl p-4 border bg-emerald-950/15 border-emerald-500/30';
+        flagReasonEl.classList.add('hidden');
+        scoreComp.innerHTML = `<span class="text-emerald-400">Final Score: ${finalScore}%</span>`;
+      }
+
+      document.getElementById('modalInitialRationale').textContent = `[MK·INITIAL] (${initScore}%): ${s.initial_mark.rationale}`;
+      document.getElementById('modalCorrectionLog').textContent = `[RV·AUDIT] ${s.moderation.correction_log}`;
+
+      const tbody = document.getElementById('modalCriteriaTable');
+      tbody.innerHTML = currentBatch.rubric.criteria.map(c => {
+        const iVal = s.initial_mark.criteria_scores[c.id] ?? 0;
+        const fVal = s.moderation.corrected_criteria_scores[c.id] ?? iVal;
+        const changed = iVal !== fVal;
+        return `
+          <tr>
+            <td class="py-2.5 px-3">
+              <div class="font-semibold text-white">${c.id} · ${c.name}</div>
+              <div class="text-[11px] text-slate-400">${c.description}</div>
+            </td>
+            <td class="py-2.5 px-3 text-center mono text-slate-400">/${c.weight}</td>
+            <td class="py-2.5 px-3 text-center mono ${changed ? 'line-through text-slate-500' : 'text-slate-200'}">${iVal}</td>
+            <td class="py-2.5 px-3 text-center mono font-bold ${changed ? 'text-amber-400' : 'text-emerald-400'}">${fVal}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('modalFeedbackText').textContent = s.recovery.feedback;
+      document.getElementById('modalRecoveryStatus').textContent = s.recovery.needs_recovery ? '🛟 3-Step Remedial Plan Sent' : '✓ Mastery Plan Sent';
+      document.getElementById('modalCatchupList').innerHTML = s.recovery.catchup_plan.map(step => `<li>${step}</li>`).join('');
+
+      document.getElementById('inspectModal').classList.remove('hidden');
+    }
+
+    function closeInspectModal() {
+      document.getElementById('inspectModal').classList.add('hidden');
+    }
+
+    function openRubricModal() {
+      if (!currentBatch) return;
+      document.getElementById('rubricModalTitle').textContent = `${currentBatch.rubric.version} · Total: ${currentBatch.rubric.total_marks} Marks`;
+      document.getElementById('rubricModalPrompt').textContent = currentBatch.rubric.question_prompt || '';
+      document.getElementById('rubricModalBody').innerHTML = currentBatch.rubric.criteria.map(c => `
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-start justify-between gap-4">
+          <div>
+            <div class="text-xs font-bold text-white">${c.id} · ${c.name}</div>
+            <div class="text-xs text-slate-400 mt-1">${c.description}</div>
+          </div>
+          <span class="text-xs mono font-bold px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+            ${c.weight} Marks
+          </span>
+        </div>
+      `).join('');
+      document.getElementById('rubricModal').classList.remove('hidden');
+    }
+
+    function closeRubricModal() {
+      document.getElementById('rubricModal').classList.add('hidden');
+    }
+
+    function updateTeacherNotifications(allNotifs, showToastIfNew = false) {
+      const tNotifs = allNotifs.filter(n => n.recipient_role === 'teacher');
+      const unread = tNotifs.filter(n => !n.is_read);
+      const badge = document.getElementById('teacherNotifBadge');
+      if (unread.length > 0) {
+        badge.textContent = String(unread.length);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      if (tNotifs.length > 0) {
+        const newest = tNotifs[0];
+        if (showToastIfNew && newest.id > lastTeacherNotifId && lastTeacherNotifId !== 0) {
+          showTeacherToast(newest.title, newest.message);
+        }
+        lastTeacherNotifId = Math.max(lastTeacherNotifId, newest.id);
+      }
+
+      const listEl = document.getElementById('teacherNotifList');
+      if (tNotifs.length === 0) {
+        listEl.innerHTML = `<div class="text-xs text-slate-500 py-3 text-center">No notifications yet.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = tNotifs.map(n => `
+        <div class="p-3 rounded-xl bg-slate-950 border ${n.is_read ? 'border-slate-800/70' : 'border-emerald-500/50'} space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-white">${n.title}</span>
+            <span class="text-[10px] mono text-slate-500">${n.time_label}</span>
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">${n.message}</p>
+        </div>
+      `).join('');
+    }
+
+    function toggleTeacherNotifDrawer() {
+      document.getElementById('teacherNotifDrawer').classList.toggle('hidden');
+    }
+
+    async function markTeacherNotifsRead() {
+      await fetch(`${API_BASE}/api/notifications/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_id: currentBatchId, role: 'teacher' })
+      });
+      pollForLiveLearnerSubmissions();
+    }
+
+    function showTeacherToast(title, message) {
+      document.getElementById('teacherToastTitle').textContent = title;
+      document.getElementById('teacherToastMessage').textContent = message;
+      document.getElementById('teacherToast').classList.remove('hidden');
+      setTimeout(hideTeacherToast, 8000);
+    }
+
+    function hideTeacherToast() {
+      document.getElementById('teacherToast').classList.add('hidden');
+    }
+
+    async function resetDemoData() {
+      await fetch(`${API_BASE}/api/batches/reset`, { method: 'POST' });
+      document.getElementById('liveIncomingBanner').classList.add('hidden');
+      loadBatchData(currentBatchId);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initTeacherIdentity();
+      const params = new URLSearchParams(window.location.search);
+      loadBatchData(params.get('batch_id') || '');
+      setInterval(pollForLiveLearnerSubmissions, 1800);
+    });
+  </script>
+</body>
+</html>
