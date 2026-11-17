@@ -98,6 +98,250 @@ def extract_criterion_keywords(criterion):
     return keywords
 
 
+def _extract_submission_text_for_grading(submission):
+    """Collects text from code, text, and uploaded PDF submissions for grading."""
+    parts = []
+    if getattr(submission, "submission_type", None) == "code" and getattr(submission, "code_submission", None):
+        parts.append(submission.code_submission)
+        if getattr(submission, "execution_output", None):
+            parts.append(f"\n[Execution Output]\n{submission.execution_output[:2000]}")
+        if getattr(submission, "execution_error", None):
+            parts.append(f"\n[Execution Error]\n{submission.execution_error[:1000]}")
+    if getattr(submission, "submission_text", None):
+        parts.append(submission.submission_text)
+
+    file_path = getattr(submission, "file_path", None) or ""
+    if file_path and ".pdf" in file_path.lower():
+        try:
+            import os
+            import urllib.request
+            from pypdf import PdfReader
+            from flask import current_app
+
+            pdf_bytes = None
+            if file_path.startswith("http://") or file_path.startswith("https://"):
+                req = urllib.request.Request(file_path, headers={"User-Agent": "PaceAcademy-ColleagueZero/1.0"})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    pdf_bytes = resp.read()
+            else:
+                rel = file_path.lstrip("/")
+                candidates = [
+                    file_path,
+                    os.path.join(current_app.root_path, "static", rel),
+                    os.path.join(current_app.root_path, rel),
+                ]
+                for cand in candidates:
+                    if os.path.isfile(cand):
+                        with open(cand, "rb") as f:
+                            pdf_bytes = f.read()
+                        break
+
+            if pdf_bytes:
+                reader = PdfReader(io.BytesIO(pdf_bytes))
+                extracted = "\n".join((page.extract_text() or "") for page in reader.pages[:15]).strip()
+                if extracted:
+                    parts.append(f"\n[Extracted PDF Submission]\n{extracted[:12000]}")
+        except Exception:
+            pass
+
+    return "\n\n".join(p for p in parts if p and p.strip()).strip()
+
+
+def _llm_build_rubric_for_assignment(assignment, desc_clean):
+    """Uses Pace Academy's Gemini AIService to build a 4-criterion 100-mark rubric, or returns None on fallback."""
+    try:
+        from app.services.ai_service import AIService
+        if not AIService.get_api_key():
+            return None
+
+        prompt = (
+            "Design a fair, clear 4-criterion grading rubric out of 100 marks for this Pace Academy assignment.\n"
+            f"Assignment Title: {assignment.title}\n"
+            f"Is Coding Assignment: {bool(assignment.is_coding_assignment)} "
+            f"(Language: {assignment.programming_language or 'N/A'})\n"
+            f"Assignment Prompt / Description:\n{desc_clean[:2500]}\n\n"
+            "Return ONLY valid JSON with this exact schema:\n"
+            "{\n"
+            '  "version": "short rubric name",\n'
+            '  "pass_mark": 50,\n'
+            '  "criteria": [\n'
+            '    {"id": "C1", "name": "...", "weight": 30, "description": "..."},\n'
+            '    {"id": "C2", "name": "...", "weight": 30, "description": "..."},\n'
+            '    {"id": "C3", "name": "...", "weight": 25, "description": "..."},\n'
+            '    {"id": "C4", "name": "...", "weight": 15, "description": "..."}\n'
+            "  ]\n"
+            "}\n"
+            "Rules: Exactly 4 criteria (C1..C4). Integer weights MUST sum to exactly 100."
+        )
+        raw = AIService._call_gemini(
+            prompt=prompt,
+            system_instruction="You are an expert South African curriculum & skills assessor. Output strict JSON only.",
+            response_json=True,
+        )
+        parsed = AIService._parse_json_safely(raw)
+        criteria = parsed.get("criteria") or []
+        if len(criteria) != 4:
+            return None
+
+        normalized = []
+        total_w = 0
+        for idx, c in enumerate(criteria, start=1):
+            w = max(5, min(70, int(c.get("weight", 25))))
+            total_w += w
+            normalized.append({
+                "id": f"C{idx}",
+                "name": str(c.get("name") or f"Criterion {idx}")[:80],
+                "weight": w,
+                "description": str(c.get("description") or desc_clean[:160])[:300],
+            })
+        if total_w != 100:
+            normalized[0]["weight"] += (100 - total_w)
+            if normalized[0]["weight"] < 5:
+                return None
+
+        return {
+            "version": str(parsed.get("version") or "Pace Academy AI Rubric v2.5")[:80],
+            "question_prompt": desc_clean,
+            "total_marks": 100,
+            "pass_mark": int(parsed.get("pass_mark", 50)),
+            "criteria": normalized,
+        }
+    except Exception:
+        return None
+
+
+def _llm_grade_with_4_workers(learner_name, school_or_cohort, essay_text, rubric, number=1):
+    """
+    Runs the 4-worker grading & moderation panel via Gemini AIService.
+    Returns (evaluated, worker_events) matching the exact Colleague Zero schema, or None if unavailable.
+    """
+    if not essay_text or not essay_text.strip():
+        return None
+    try:
+        from app.services.ai_service import AIService
+        if not AIService.get_api_key():
+            return None
+
+        criteria = rubric.get("criteria", [])
+        rubric_version = rubric.get("version", "Pace Academy Rubric")
+        pass_mark = int(rubric.get("pass_mark", 50))
+        question_prompt = rubric.get("question_prompt", "")
+
+        crit_lines = "\n".join(
+            f"- {c['id']} ({c['name']}, max {c['weight']} marks): {c.get('description', '')}"
+            for c in criteria
+        )
+        prompt = (
+            f"Evaluate this learner submission for '{school_or_cohort}'.\n"
+            f"Learner: {learner_name}\n"
+            f"Assignment Question/Prompt:\n{str(question_prompt)[:1500]}\n\n"
+            f"Rubric ({rubric_version}, Pass mark {pass_mark}/100):\n{crit_lines}\n\n"
+            f"Learner Submission:\n{essay_text[:10000]}\n\n"
+            "Simulate a 2-pass moderation panel:\n"
+            "1) Assessor [MK] gives initial_scores per criterion based strictly on rubric alignment.\n"
+            "2) Moderator [RV] checks if [MK] missed valid conceptual reasoning, code logic, or informal/plain-language explanations, and outputs corrected_scores.\n"
+            "Return ONLY valid JSON:\n"
+            "{\n"
+            '  "initial_scores": {"C1": 0, "C2": 0, "C3": 0, "C4": 0},\n'
+            '  "corrected_scores": {"C1": 0, "C2": 0, "C3": 0, "C4": 0},\n'
+            '  "mk_rationale": "1-2 sentences explaining Pass-1 mark",\n'
+            '  "rv_note": "1-2 sentences explaining moderation check or adjustment",\n'
+            '  "feedback": "2-3 encouraging, specific sentences directly to the learner",\n'
+            '  "catchup_plan": ["Step 1 ...", "Step 2 ...", "Step 3 ..."]\n'
+            "}"
+        )
+        raw = AIService._call_gemini(
+            prompt=prompt,
+            system_instruction="You are Colleague Zero, a fair, rigorous academic assessor and moderator. Output strict JSON only.",
+            response_json=True,
+        )
+        parsed = AIService._parse_json_safely(raw)
+        raw_init = parsed.get("initial_scores") or {}
+        raw_corr = parsed.get("corrected_scores") or raw_init
+        if not raw_init:
+            return None
+
+        init_scores = {}
+        corr_scores = {}
+        for c in criteria:
+            cid = c["id"]
+            w = int(c["weight"])
+            iv = max(0, min(w, int(round(float(raw_init.get(cid, 0))))))
+            cv = max(0, min(w, int(round(float(raw_corr.get(cid, iv))))))
+            init_scores[cid] = iv
+            corr_scores[cid] = cv
+
+        init_total = sum(init_scores.values())
+        corr_total = sum(corr_scores.values())
+        flagged = abs(corr_total - init_total) >= 5
+        now_lbl = datetime.now().strftime("%H:%M:%S")
+        word_count = len(re.findall(r"\w+", essay_text))
+
+        mk_rationale = str(parsed.get("mk_rationale") or f"Assessor [MK] evaluated submission against {rubric_version}.").strip()
+        rv_note = str(parsed.get("rv_note") or f"Moderator [RV] verified {corr_total}% against {rubric_version}.").strip()
+        feedback = str(parsed.get("feedback") or f"Your submission scored {corr_total}%.").strip()
+        catchup_plan = [str(s).strip() for s in (parsed.get("catchup_plan") or []) if str(s).strip()][:3]
+
+        worker_events = [
+            {
+                "agent_code": "PL",
+                "tag": "[PL·PLAN]",
+                "message": f"Planner Worker [PL] decomposed {rubric_version} into {len(criteria)} criteria for #{number} {learner_name} ({word_count} words). Routing to Assessor Worker [MK].",
+                "time_label": now_lbl,
+            },
+            {
+                "agent_code": "MK",
+                "tag": "[MK·PASS1]",
+                "message": f"Assessor Worker [MK] completed Pass-1 LLM evaluation for #{number} {learner_name}: {init_total}%. {mk_rationale}",
+                "time_label": now_lbl,
+            },
+        ]
+
+        if flagged:
+            flag_reason = f"Moderator Worker [RV] flagged [MK] Pass-1 score ({init_total}%): {rv_note}"
+            correction_log = f"Assessor Worker [MK] executed Pass-2 self-correction per Moderator [RV]: {init_total}% → {corr_total}% ({corr_total - init_total:+d}%)."
+            worker_events.extend([
+                {"agent_code": "RV", "tag": "[RV·FLAG]", "message": flag_reason, "time_label": now_lbl},
+                {"agent_code": "MK", "tag": "[MK·FIX]", "message": correction_log, "time_label": now_lbl},
+                {"agent_code": "RV", "tag": "[RV·VERIFIED]", "message": f"Moderator Worker [RV] verified adjusted mark ({corr_total}%) against {rubric_version}.", "time_label": now_lbl},
+            ])
+        else:
+            flag_reason = None
+            correction_log = f"Moderator Worker [RV] verified {corr_total}% against {rubric_version}. {rv_note}"
+            worker_events.append({"agent_code": "RV", "tag": "[RV·PASS]", "message": correction_log, "time_label": now_lbl})
+
+        worker_events.append({
+            "agent_code": "MS",
+            "tag": "[MS·DISPATCH]",
+            "message": f"Recovery Worker [MS] wrote grade ({corr_total}%) & feedback to Pace Academy and Colleague Zero.",
+            "time_label": now_lbl,
+        })
+
+        evaluated = {
+            "initial_mark": {
+                "worker_status": "completed",
+                "score": init_total,
+                "criteria_scores": init_scores,
+                "rationale": mk_rationale,
+            },
+            "moderation": {
+                "flagged": flagged,
+                "flag_reason": flag_reason,
+                "corrected_score": corr_total,
+                "corrected_criteria_scores": corr_scores,
+                "correction_log": correction_log,
+            },
+            "recovery": {
+                "feedback": feedback,
+                "needs_recovery": corr_total < pass_mark,
+                "catchup_plan": catchup_plan,
+            },
+        }
+        return evaluated, worker_events
+    except Exception:
+        return None
+
+
 def build_rubric_for_pace_assignment(assignment):
     """
     Builds or retrieves a 4-criterion 100-mark rubric for any Pace Academy `Assignment`,
@@ -143,28 +387,30 @@ def build_rubric_for_pace_assignment(assignment):
             ],
         }
     else:
-        words = [w for w in re.findall(r"[a-zA-Z]{5,}", desc_clean) if w.lower() not in STOPWORDS]
-        unique_terms = []
-        for w in words:
-            if w.lower() not in [u.lower() for u in unique_terms]:
-                unique_terms.append(w)
-        chunk = max(1, len(unique_terms) // 3)
-        t1 = ", ".join(unique_terms[:chunk]) or assignment.title
-        t2 = ", ".join(unique_terms[chunk:chunk * 2]) or "core mechanisms and practical examples"
-        t3 = ", ".join(unique_terms[chunk * 2:chunk * 3]) or "application and critical analysis"
+        rubric = _llm_build_rubric_for_assignment(assignment, desc_clean)
+        if not rubric:
+            words = [w for w in re.findall(r"[a-zA-Z]{5,}", desc_clean) if w.lower() not in STOPWORDS]
+            unique_terms = []
+            for w in words:
+                if w.lower() not in [u.lower() for u in unique_terms]:
+                    unique_terms.append(w)
+            chunk = max(1, len(unique_terms) // 3)
+            t1 = ", ".join(unique_terms[:chunk]) or assignment.title
+            t2 = ", ".join(unique_terms[chunk:chunk * 2]) or "core mechanisms and practical examples"
+            t3 = ", ".join(unique_terms[chunk * 2:chunk * 3]) or "application and critical analysis"
 
-        rubric = {
-            "version": "Pace Academy Competency Rubric v2.0",
-            "question_prompt": desc_clean,
-            "total_marks": 100,
-            "pass_mark": 50,
-            "criteria": [
-                {"id": "C1", "name": "Core Concepts & Terminology", "weight": 30, "description": f"Addresses foundational concepts in {assignment.title}: {t1}."},
-                {"id": "C2", "name": "Mechanism & Technical Explanation", "weight": 30, "description": f"Explains how the process works with clear reasoning: {t2}."},
-                {"id": "C3", "name": "Practical Application & Examples", "weight": 25, "description": f"Applies concepts to real scenarios and covers: {t3}."},
-                {"id": "C4", "name": "Synthesis, Structure & Clarity", "weight": 15, "description": f"Logical structure, complete response to '{assignment.title}', and clear communication."},
-            ],
-        }
+            rubric = {
+                "version": "Pace Academy Competency Rubric v2.0",
+                "question_prompt": desc_clean,
+                "total_marks": 100,
+                "pass_mark": 50,
+                "criteria": [
+                    {"id": "C1", "name": "Core Concepts & Terminology", "weight": 30, "description": f"Addresses foundational concepts in {assignment.title}: {t1}."},
+                    {"id": "C2", "name": "Mechanism & Technical Explanation", "weight": 30, "description": f"Explains how the process works with clear reasoning: {t2}."},
+                    {"id": "C3", "name": "Practical Application & Examples", "weight": 25, "description": f"Applies concepts to real scenarios and covers: {t3}."},
+                    {"id": "C4", "name": "Synthesis, Structure & Clarity", "weight": 15, "description": f"Logical structure, complete response to '{assignment.title}', and clear communication."},
+                ],
+            }
 
     try:
         db.session.add(ColleagueZeroRubricRecord(
@@ -183,7 +429,12 @@ def run_pace_4_worker_pipeline(batch_id, learner_name, school_or_cohort, essay_t
     """
     Runs the 4 autonomous Agent Workers (`PlannerWorker [PL]` -> `AssessorWorker [MK]` ->
     `ModeratorWorker [RV]` -> `RecoveryWorker [MS]`) on a Pace Academy submission.
+    Uses Pace Academy's Gemini AIService when configured, with deterministic heuristic fallback.
     """
+    llm_result = _llm_grade_with_4_workers(learner_name, school_or_cohort, essay_text, rubric, number=number)
+    if llm_result is not None:
+        return llm_result
+
     criteria = rubric.get("criteria", [])
     rubric_version = rubric.get("version", "Pace Academy Rubric")
     pass_mark = int(rubric.get("pass_mark", 50))
@@ -430,7 +681,7 @@ def auto_grade_pace_submission_with_colleague_zero(submission, assignment, stude
     school_or_cohort = course.title if course else "Pace Academy Cohort"
     learner_name = student_user.full_name if student_user else "Pace Learner"
 
-    raw_text = submission.code_submission if (submission.submission_type == "code" and submission.code_submission) else (submission.submission_text or "")
+    raw_text = _extract_submission_text_for_grading(submission)
 
     evaluated, worker_events = run_pace_4_worker_pipeline(
         batch_id=batch_id,
@@ -574,7 +825,7 @@ def fetch_pace_batch_dict(batch_id=None):
             meta = json.loads(audit_rec.evaluated_json)
             evs = json.loads(audit_rec.events_json)
         else:
-            raw_text = sub.code_submission if (sub.submission_type == "code" and sub.code_submission) else (sub.submission_text or "")
+            raw_text = _extract_submission_text_for_grading(sub)
             meta, evs = run_pace_4_worker_pipeline(active_bid, lname, course_title, raw_text, rubric, idx)
 
         all_events.extend(evs)
