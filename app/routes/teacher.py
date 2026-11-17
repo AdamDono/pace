@@ -2304,40 +2304,35 @@ def bulk_grade_course(course_id):
                          submissions_by_assignment=submissions_by_assignment,
                          total_ungraded=len(ungraded_submissions))
 
-@teacher_bp.route('/course/<int:course_id>/student/<int:student_id>/grades')
-@teacher_required
-def student_detail_grades(course_id, student_id):
-    """Detailed view of a student's grades in a course"""
+def _build_student_grade_context(course_id, student_id):
+    """Collects assignment submissions, quiz attempts, and summary stats for a student in a course."""
     from app.models import Course, User, Enrollment, AssignmentSubmission, QuizAttempt, Assignment, Quiz, Section
-    
+
     course = Course.query.get_or_404(course_id)
     student = User.query.get_or_404(student_id)
-    
+
     if not current_user.is_teacher_for_course(course.id):
         abort(403)
-    
-    # Get enrollment
+
     enrollment = Enrollment.query.filter_by(course_id=course_id, student_id=student_id).first()
     if not enrollment:
         abort(404)
-    
-    # Get all assignments and quizzes
+
     assignments = Assignment.query.join(Section).filter(Section.course_id == course_id).all()
     quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).all()
-    
-    # Get student's submissions and attempts
+
     assignment_data = []
     for assignment in assignments:
         submissions = AssignmentSubmission.query.filter_by(
             assignment_id=assignment.id,
             student_id=student_id
         ).order_by(AssignmentSubmission.submitted_at.desc()).all()
-        
+
         graded_scores = [s.grade for s in submissions if s.grade is not None]
         best_grade = max(graded_scores) if graded_scores else None
         latest_submission = submissions[0] if submissions else None
         has_pending = any(not s.reviewed for s in submissions)
-        
+
         assignment_data.append({
             'assignment': assignment,
             'submission': latest_submission,
@@ -2346,58 +2341,90 @@ def student_detail_grades(course_id, student_id):
             'status': 'graded' if graded_scores else ('submitted' if submissions else 'not_submitted'),
             'has_pending': has_pending
         })
-    
+
     quiz_data = []
     for quiz in quizzes:
         attempts = QuizAttempt.query.filter_by(
             quiz_id=quiz.id,
             student_id=student_id
         ).order_by(QuizAttempt.attempted_at.desc()).all()
-        
+
         quiz_data.append({
             'quiz': quiz,
             'attempts': attempts,
             'best_score': max([a.score for a in attempts]) if attempts else None
         })
-    
-    # Calculate overall statistics
+
     total_assignments = len(assignments)
     graded_assignments = sum(1 for a in assignment_data if a['status'] == 'graded')
     submitted_assignments = sum(1 for a in assignment_data if a['submission'])
-    
+
     total_quizzes = len(quizzes)
     attempted_quizzes = sum(1 for q in quiz_data if q['attempts'])
-    
-    # Grade averages (uses official best score across attempts)
+
     assignment_grades = [a['best_grade'] for a in assignment_data if a['best_grade'] is not None]
     assignment_avg = sum(assignment_grades) / len(assignment_grades) if assignment_grades else None
-    
+
     quiz_scores = [q['best_score'] for q in quiz_data if q['best_score'] is not None]
     quiz_avg = sum(quiz_scores) / len(quiz_scores) if quiz_scores else None
-    
-    # Overall grade (60% assignments, 40% quizzes)
+
     overall_grade = None
     if assignment_avg is not None or quiz_avg is not None:
         assignment_contrib = (assignment_avg or 0) * 0.6
         quiz_contrib = (quiz_avg or 0) * 0.4
         overall_grade = assignment_contrib + quiz_contrib
-    
+
+    stats = {
+        'total_assignments': total_assignments,
+        'graded_assignments': graded_assignments,
+        'submitted_assignments': submitted_assignments,
+        'total_quizzes': total_quizzes,
+        'attempted_quizzes': attempted_quizzes,
+        'assignment_avg': round(assignment_avg, 1) if assignment_avg else None,
+        'quiz_avg': round(quiz_avg, 1) if quiz_avg else None,
+        'overall_grade': round(overall_grade, 1) if overall_grade else None
+    }
+    return course, student, enrollment, assignment_data, quiz_data, stats
+
+
+@teacher_bp.route('/course/<int:course_id>/student/<int:student_id>/grades')
+@teacher_required
+def student_detail_grades(course_id, student_id):
+    """Detailed view of a student's grades in a course"""
+    course, student, enrollment, assignment_data, quiz_data, stats = _build_student_grade_context(course_id, student_id)
     return render_template('teacher/student_detail_grades.html',
                          course=course,
                          student=student,
                          enrollment=enrollment,
                          assignment_data=assignment_data,
                          quiz_data=quiz_data,
-                         stats={
-                             'total_assignments': total_assignments,
-                             'graded_assignments': graded_assignments,
-                             'submitted_assignments': submitted_assignments,
-                             'total_quizzes': total_quizzes,
-                             'attempted_quizzes': attempted_quizzes,
-                             'assignment_avg': round(assignment_avg, 1) if assignment_avg else None,
-                             'quiz_avg': round(quiz_avg, 1) if quiz_avg else None,
-                             'overall_grade': round(overall_grade, 1) if overall_grade else None
-                         })
+                         stats=stats)
+
+
+@teacher_bp.route('/course/<int:course_id>/student/<int:student_id>/poe.pdf')
+@teacher_required
+def download_student_poe(course_id, student_id):
+    """Generate and download an all-in-one Portfolio of Evidence (PoE) PDF for a student."""
+    from flask import send_file
+    from app.utils.poe_generator import generate_student_poe_pdf
+
+    course, student, enrollment, assignment_data, quiz_data, stats = _build_student_grade_context(course_id, student_id)
+    pdf_buf = generate_student_poe_pdf(
+        course=course,
+        student=student,
+        enrollment=enrollment,
+        assignment_data=assignment_data,
+        quiz_data=quiz_data,
+        stats=stats,
+        upload_folder=current_app.config['UPLOAD_FOLDER'],
+    )
+    safe_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in (student.username or student.email.split('@')[0]))
+    return send_file(
+        pdf_buf,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"PoE_{safe_name}_course_{course.id}.pdf",
+    )
 
 @teacher_bp.route('/serve-upload/<path:filename>')
 @login_required
