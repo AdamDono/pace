@@ -476,13 +476,15 @@ Ensure the output is clean JSON only.
         if not clean_text:
             return {"success": False, "error": "Text is empty."}
 
-        # Truncate to first 1-2 punchy sentences for snappy latency and low token usage
-        import re
-        sentences = re.split(r'(?<=[.!?])\s+', clean_text)
-        speech_snippet = " ".join(sentences[:2]) if sentences else clean_text
-        if len(speech_snippet) > 200:
-            speech_snippet = speech_snippet[:200].rsplit(' ', 1)[0] + '...'
-        clean_text = speech_snippet
+        # Read the full response (cap safely at 1800 chars on a sentence boundary to avoid mid-word cutoffs)
+        if len(clean_text) > 1800:
+            import re
+            truncated = clean_text[:1800]
+            last_end = max(truncated.rfind('.'), truncated.rfind('!'), truncated.rfind('?'))
+            if last_end > 400:
+                clean_text = truncated[:last_end + 1]
+            else:
+                clean_text = truncated.rsplit(' ', 1)[0] + '.'
 
         cache_key = hashlib.md5(f"{clean_text}_{voice}".encode('utf-8')).hexdigest()
         if cache_key in cls._AUDIO_CACHE:
@@ -523,7 +525,7 @@ Ensure the output is clean JSON only.
         last_error = None
         for _attempt in range(2):
             try:
-                res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=12, verify=ssl_verify)
+                res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=25, verify=ssl_verify)
                 if res.status_code == 200:
                     data = res.json()
                     pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
@@ -711,7 +713,7 @@ Ensure the output is clean JSON only.
         for current_model in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={api_key}"
             try:
-                res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=12, verify=ssl_verify)
+                res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=25, verify=ssl_verify)
                 if res.status_code == 200:
                     data = res.json()
                     candidates = data.get("candidates", [])
