@@ -558,7 +558,7 @@
         window.resetCatalogFilters = resetCatalogFilters;
         function openEnterpriseModal() {
             if (typeof window.openPlanModal === 'function') {
-                window.openPlanModal('corporate_workforce', 'Corporate Employee Training', 'enterprise', 'From R1,500 / cohort');
+                window.openPlanModal('corporate_workforce', 'Corporate Employee Training', 'enterprise', 'From R5,000 / month');
             } else {
                 const modal = document.getElementById('planModal') || document.getElementById('enterpriseModal');
                 if (modal) modal.classList.remove('hidden');
@@ -1217,7 +1217,7 @@
                     <div class="flex text-[#0d2a4a] text-[10px]">
                         ★★★★★ <span class="text-gray-900 font-bold ml-1 text-xs">5.0</span>
                     </div>
-                    <span class="text-xs text-gray-500 font-medium">+3000 students worldwide</span>
+                    <span class="text-xs text-gray-500 font-medium">250+ learners &amp; educators</span>
                 </div>
             </div>
 
@@ -1228,7 +1228,7 @@
 
             <!-- Subtitle -->
             <p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
-                Launch your online courses, manage students, and grow your education brand with an intuitive platform trusted by 3,000+ instructors and learners worldwide.
+                Launch your online courses, manage students, and grow your education brand with an intuitive platform trusted by 250+ instructors and learners.
             </p>
 
 
@@ -1271,70 +1271,75 @@
             </div>
 
             <!-- Request Demo Modal -->
-            <div id="demoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
-                <!-- Backdrop -->
-                <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
+            <div id="demoModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-4" style="padding: 12px;" onclick="if(event.target===this)this.classList.add('hidden')">
                 <!-- Modal Card -->
-                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 sm:p-10 text-left">
-                    <!-- Close -->
-                    <button onclick="document.getElementById('demoModal').classList.add('hidden')" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    </button>
-                    <!-- Header -->
-                    <div class="mb-7">
-                        <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight">Request a Demo</h3>
-                        <p class="text-sm text-gray-500 mt-1">We'll reach out within 24 hours to set it up.</p>
-                    </div>
-                    <!-- Form -->
-                    <form id="demoForm" action="{{ url_for('auth.apply_enterprise') }}" method="POST" class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Full Name *</label>
-                                <input type="text" name="full_name" required placeholder="Jane Smith"
-                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Phone *</label>
-                                <input type="tel" name="phone" required placeholder="+27 000 000 000"
-                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Work Email *</label>
-                            <input type="email" name="email" required placeholder="jane@company.com"
-                                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Organisation *</label>
-                            <input type="text" name="organization" required placeholder="Company / School / Institution"
-                                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">What are you looking for? *</label>
-                            <select name="inquiry_type" required
-                                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all bg-white">
-                                <option value="" disabled selected>Select an option</option>
-                                <option value="Platform Demo">Platform Demo</option>
-                                <option value="Enterprise Training">Enterprise Training</option>
-                                <option value="Accredited Programmes">Accredited Programmes</option>
-                                <option value="Custom Curriculum">Custom Curriculum</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Message (optional)</label>
-                            <textarea name="message" rows="3" placeholder="Tell us a bit about your needs..."
-                                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all resize-none"></textarea>
-                        </div>
-                        <!-- Error / Success feedback -->
-                        <div id="demoFeedback" class="hidden text-sm font-medium rounded-xl px-4 py-3"></div>
-                        <!-- Submit -->
-                        <button type="submit" id="demoSubmitBtn"
-                            class="w-full py-3.5 bg-gray-900 hover:bg-black text-white font-bold text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2">
-                            <span id="demoSubmitText">Send Request</span>
-                            <svg id="demoSpinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg my-auto text-left border border-gray-200" style="max-height: 88vh; overflow-y: auto;">
+                    <!-- Sticky Top Bar: Back & Close -->
+                    <div class="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between rounded-t-2xl" style="position: sticky; top: 0; z-index: 20;">
+                        <button type="button" onclick="document.getElementById('demoModal').classList.add('hidden')" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                            Back
                         </button>
-                    </form>
+                        <span class="text-xs font-extrabold text-gray-900 tracking-tight">Request a Demo</span>
+                        <button type="button" onclick="document.getElementById('demoModal').classList.add('hidden')" aria-label="Close modal" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        <p class="text-xs text-gray-500 mb-3.5">We'll reach out within 24 hours to set it up.</p>
+                        <!-- Form -->
+                        <form id="demoForm" action="{{ url_for('auth.apply_enterprise') }}" method="POST" class="space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Full Name *</label>
+                                    <input type="text" name="full_name" required placeholder="Jane Smith"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Phone *</label>
+                                    <input type="tel" name="phone" required placeholder="+27 000 000 000"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Work Email *</label>
+                                    <input type="email" name="email" required placeholder="jane@company.com"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Organisation *</label>
+                                    <input type="text" name="organization" required placeholder="Company / School"
+                                        class="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">What are you looking for? *</label>
+                                <select name="inquiry_type" required
+                                    class="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all bg-white">
+                                    <option value="" disabled selected>Select an option</option>
+                                    <option value="Platform Demo">Platform Demo</option>
+                                    <option value="Enterprise Training">Enterprise Training</option>
+                                    <option value="Accredited Programmes">Accredited Programmes</option>
+                                    <option value="Custom Curriculum">Custom Curriculum</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Message (optional)</label>
+                                <textarea name="message" rows="2" placeholder="Tell us a bit about your needs..."
+                                    class="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0d2a4a]/20 focus:border-[#0d2a4a] transition-all resize-none"></textarea>
+                            </div>
+                            <!-- Error / Success feedback -->
+                            <div id="demoFeedback" class="hidden text-sm font-medium rounded-xl px-4 py-2.5"></div>
+                            <!-- Submit -->
+                            <button type="submit" id="demoSubmitBtn"
+                                class="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2">
+                                <span id="demoSubmitText">Send Request</span>
+                                <svg id="demoSpinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -1770,6 +1775,7 @@
                                onmouseover="this.style.background='#071826';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(13,42,74,0.3)';"
                                onmouseout="this.style.background='#0d2a4a';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 16px rgba(13,42,74,0.2)';">
                                 Get Varsity &amp; Skills Pro
+                            </button>
                         </div>
                     </div>
 
@@ -1841,7 +1847,7 @@
                         <div>
                             <span style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">Career Essentials</span>
                             <h3 style="font-size:24px;font-weight:900;color:#0f172a;margin:0 0 8px 0;letter-spacing:-0.02em;">All-Access Skills Pass</h3>
-                            <p style="color:#4b5563;font-size:13px;line-height:1.6;margin:0 0 28px 0;">Unlimited access to the complete digital &amp; workplace vocational course library. <strong style="color:#dc2626;">Certificate of Completion only</strong> — not a full accredited qualification.</p>
+                            <p style="color:#4b5563;font-size:13px;line-height:1.6;margin:0 0 28px 0;">Unlimited access to the complete digital &amp; workplace vocational course library with verified Certificates of Completion.</p>
 
                             <div style="margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #eff6ff;">
                                 <div style="display:flex;align-items:baseline;gap:6px;">
@@ -1966,7 +1972,7 @@
 
                             <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #f1f5f9;">
                                 <div style="display:flex;align-items:baseline;gap:6px;">
-                                    <span style="font-size:48px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R5,000</span>
+                                    <span style="font-size:42px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">From R5,000</span>
                                     <span style="color:#64748b;font-size:14px;font-weight:600;">/ month</span>
                                 </div>
                                 <p style="color:#047857;font-size:11px;font-weight:700;margin:6px 0 0 0;">Retainer package · B-BBEE Skills Development Scorecard compliant</p>
@@ -1990,6 +1996,12 @@
                                     <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
                                         <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                     </span>
+                                    <span><strong style="color:#0f172a;">Colleague Zero Automatic Grading &amp; Moderation:</strong> Instant rubric-based marking, moderation audit trails &amp; 3-step learner catch-up plans</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
                                     <span><strong>Manager Analytics &amp; Compliance Dashboard:</strong> live tracking of staff progress, quiz scores &amp; completion rates</span>
                                 </li>
                                 <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
@@ -2007,7 +2019,7 @@
                             </ul>
                         </div>
                         <div style="margin-top:36px;">
-                            <button type="button" onclick="openPlanModal('corporate_workforce', 'Corporate Employee Training', 'enterprise', 'From R1,500 / cohort')"
+                            <button type="button" onclick="openPlanModal('corporate_workforce', 'Corporate Employee Training', 'enterprise', 'From R5,000 / month')"
                                style="display:block;width:100%;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:#0d2a4a;color:#fff;border:none;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 16px rgba(13,42,74,0.2);"
                                onmouseover="this.style.background='#071826';this.style.transform='translateY(-2px)';"
                                onmouseout="this.style.background='#0d2a4a';this.style.transform='translateY(0)';">
@@ -2027,11 +2039,11 @@
                             <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 24px 0;">Complete digital delivery LMS for accredited skills providers, TVETs and funded learnership cohorts.</p>
 
                             <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #f1f5f9;">
-                                <div style="display:flex;align-items:baseline;gap:6px;">
-                                    <span style="font-size:48px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">R500</span>
+                                <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
+                                    <span style="font-size:38px;font-weight:900;color:#0f172a;letter-spacing:-0.04em;line-height:1;">From R150 – R250</span>
                                     <span style="color:#2563eb;font-size:14px;font-weight:600;">/ learner / month</span>
                                 </div>
-                                <p style="color:#2563eb;font-size:11px;font-weight:700;margin:6px 0 0 0;">Per active enrolled learner · Full LMS &amp; audit compliance engine</p>
+                                <p style="color:#2563eb;font-size:11px;font-weight:700;margin:6px 0 0 0;">Volume-based per active enrolled learner · Full LMS &amp; audit compliance engine</p>
                             </div>
 
                             <p style="color:#0f172a;font-size:12px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 14px 0;">What's Included:</p>
@@ -2041,6 +2053,12 @@
                                         <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                     </span>
                                     <span><strong style="color:#0f172a;">Accredited LMS Delivery Platform:</strong> White-label learner portal with 24/7 access on web &amp; mobile</span>
+                                </li>
+                                <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
+                                    <span style="width:18px;height:18px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </span>
+                                    <span><strong style="color:#0f172a;">Colleague Zero Automatic Grading &amp; Moderation:</strong> Automated rubric assessment, internal moderation checks &amp; learner recovery plans</span>
                                 </li>
                                 <li style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:#334155;">
                                     <span style="width:18px;height:18px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
@@ -2069,11 +2087,11 @@
                             </ul>
                         </div>
                         <div style="margin-top:36px;">
-                            <button type="button" onclick="openPlanModal('sdp_platform', 'Skills Development Portal (SDP)', 'enterprise', 'R500 / learner / month')"
+                            <button type="button" onclick="openPlanModal('sdp_platform', 'Skills Development Portal (SDP)', 'enterprise', 'From R150 – R250 / learner / month')"
                                style="display:block;width:100%;text-align:center;padding:14px 20px;border-radius:12px;font-weight:800;font-size:14px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;cursor:pointer;transition:all 0.2s ease;box-shadow:0 6px 24px rgba(37,99,235,0.35);"
                                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(37,99,235,0.45)';"
                                onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(37,99,235,0.35)';">
-                                Set Up SDP Platform (R500/learner)
+                                Set Up SDP Platform (From R150/learner)
                             </button>
                         </div>
                     </div>
@@ -2204,7 +2222,6 @@
             document.getElementById('planModal_title').textContent = planName;
             document.getElementById('planModal_price_badge').textContent = priceText;
 
-            const categoryBadge = document.getElementById('planModal_category_badge');
             const schoolFields = document.getElementById('planModal_school_fields');
             const skillsFields = document.getElementById('planModal_skills_fields');
             const enterpriseFields = document.getElementById('planModal_enterprise_fields');
@@ -2219,8 +2236,6 @@
             enterpriseFields.querySelectorAll('input, select').forEach(el => el.disabled = true);
 
             if (planCategory === 'school') {
-                categoryBadge.textContent = '🎒 High School & Matric (Grades 10–12)';
-                categoryBadge.className = 'inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 mb-2';
                 schoolFields.classList.remove('hidden');
                 schoolFields.querySelectorAll('input, select').forEach(el => el.disabled = false);
                 submitBtn.innerHTML = `Complete Registration — ${planName}`;
@@ -2230,14 +2245,10 @@
                     billingSelect.value = lpIsSchoolAnnual ? 'annual' : 'monthly';
                 }
             } else if (planCategory === 'skills') {
-                categoryBadge.textContent = '💻 Digital Career Skills & Qualifications';
-                categoryBadge.className = 'inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 mb-2';
                 skillsFields.classList.remove('hidden');
                 skillsFields.querySelectorAll('input, select').forEach(el => el.disabled = false);
                 submitBtn.innerHTML = `Enroll in Program — ${planName}`;
             } else {
-                categoryBadge.textContent = '🏢 Institutional & Corporate Partnership';
-                categoryBadge.className = 'inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 mb-2';
                 enterpriseFields.classList.remove('hidden');
                 enterpriseFields.querySelectorAll('input, select').forEach(el => el.disabled = false);
                 submitBtn.innerHTML = `Request Proposal — ${planName}`;
@@ -2575,7 +2586,7 @@
             <div>
                 <p class="footer-col-title">Explore</p>
                 <a href="#courses" class="footer-link">Courses</a>
-                <a href="#features" class="footer-link">Learning Paths</a>
+                <a href="#ecosystem" class="footer-link">Learning Paths</a>
                 <a href="#courses" class="footer-link">Popular Classes</a>
                 <a href="#courses" class="footer-link">Categories</a>
             </div>
@@ -2647,36 +2658,43 @@
 
     <!-- Tailored Plan Enrollment & Inquiry Modal -->
     <div id="planModal"
-         class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-        <div class="max-w-xl w-full bg-white rounded-3xl p-6 sm:p-8 relative shadow-2xl border border-gray-200 max-h-[92vh] overflow-y-auto">
-            
-            <!-- Close Button -->
-            <button onclick="closePlanModal()" type="button" aria-label="Close modal"
-                    class="absolute top-5 right-5 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer border-0 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+         onclick="if(event.target===this)closePlanModal()"
+         class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-2.5 sm:p-4" style="padding: 12px;">
+        <div class="max-w-xl w-full bg-white rounded-2xl sm:rounded-3xl relative shadow-2xl border border-gray-200 my-auto" style="max-height: 88vh; overflow-y: auto;">
+
+            <!-- Sticky Top Bar: Back & Close -->
+            <div class="bg-white border-b border-gray-100 px-4 sm:px-6 py-2.5 flex items-center justify-between rounded-t-2xl sm:rounded-t-3xl" style="position: sticky; top: 0; z-index: 20;">
+                <button onclick="closePlanModal()" type="button"
+                        class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition cursor-pointer border-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back
+                </button>
+                <button onclick="closePlanModal()" type="button" aria-label="Close modal"
+                        class="text-gray-500 hover:text-gray-900 focus:outline-none cursor-pointer border-0 bg-gray-100 hover:bg-gray-200 p-1.5 rounded-full transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
 
             <!-- Form Container -->
-            <div id="planModal_form_fields">
+            <div id="planModal_form_fields" class="p-4 sm:p-6">
                 <!-- Header Badges -->
-                <div class="mb-4">
-                    <span id="planModal_category_badge" class="inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 mb-2">
-                        High School &amp; Matric
-                    </span>
-                    <div class="flex flex-wrap items-baseline justify-between gap-2">
-                        <h3 id="planModal_title" class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+                <div class="mb-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 id="planModal_title" class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
                             Matric Core
                         </h3>
-                        <span id="planModal_price_badge" class="text-sm font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-xl border border-blue-200">
+                        <span id="planModal_price_badge" class="text-xs font-black text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
                             Annual Pass — R699 / year
                         </span>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Enter your details below to activate your enrollment. No credit card required upfront.</p>
+                    <p class="text-[11px] text-gray-500 mt-0.5">Enter your details below to activate your enrollment. No credit card required upfront.</p>
                 </div>
 
-                <form id="planEnrollForm" class="space-y-4">
+                <form id="planEnrollForm" class="space-y-2.5">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" id="planModal_plan_id" name="plan_id" value="matric_core">
                     <input type="hidden" id="planModal_plan_name" name="plan_name" value="Matric Core">
@@ -2684,50 +2702,49 @@
                     <input type="hidden" id="planModal_billing_cycle" name="billing_cycle" value="">
 
                     <!-- Common Contact Fields (Always Visible) -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                Applicant / Parent Full Name <span class="text-red-500">*</span>
+                            <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Full Name <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="full_name" required placeholder="e.g. Thabo Mthembu"
-                                   class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
                                 Email Address <span class="text-red-500">*</span>
                             </label>
                             <input type="email" name="email" required placeholder="student@gmail.com"
-                                   class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                        <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
                             WhatsApp / Phone Number <span class="text-red-500">*</span>
                         </label>
                         <input type="tel" name="phone" required placeholder="e.g. 082 123 4567"
-                               class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium">
-                        <p class="text-[10px] text-gray-400 mt-1">Our academic advisor will send your login and timetable activation details via WhatsApp/SMS.</p>
+                               class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium">
                     </div>
 
                     <!-- ==========================================
                          TAILORED SECTION 1: HIGH SCHOOL & MATRIC
                     =========================================== -->
-                    <div id="planModal_school_fields" class="space-y-3.5 pt-2 border-t border-gray-100">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div id="planModal_school_fields" class="space-y-2.5 pt-2 border-t border-gray-100">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                    High School Name &amp; Town <span class="text-red-500">*</span>
+                                <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    High School &amp; Town <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" name="school_name" placeholder="e.g. Soweto High, JHB"
-                                       class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium">
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                    Current Academic Level <span class="text-red-500">*</span>
+                                <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    Academic Level <span class="text-red-500">*</span>
                                 </label>
                                 <select name="grade_level"
-                                        class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium bg-white">
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium bg-white">
                                     <option value="Grade 12 (Matric)">Grade 12 (Matric 2026)</option>
                                     <option value="Grade 11">Grade 11</option>
                                     <option value="Grade 10">Grade 10</option>
@@ -2737,11 +2754,11 @@
                         </div>
 
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
                                 Preferred Payment Option
                             </label>
                             <select id="planModal_school_billing"
-                                    class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium bg-white">
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium bg-white">
                                 <option value="annual">Annual Pass (Best Value — Save ~35%)</option>
                                 <option value="monthly">Monthly Subscription (Cancel Anytime)</option>
                                 <option value="term">Term Pass (Paid per School Term)</option>
@@ -2749,31 +2766,31 @@
                         </div>
 
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                Key Struggle Subjects to Boost with AI Tutor:
+                            <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Key Struggle Subjects:
                             </label>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                <label class="flex items-center gap-1.5 p-1.5 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-[11px] font-semibold text-gray-700">
                                     <input type="checkbox" name="struggle_subject_choice" value="Pure Mathematics" checked class="rounded text-blue-600">
                                     <span>Pure Mathematics</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <label class="flex items-center gap-1.5 p-1.5 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-[11px] font-semibold text-gray-700">
                                     <input type="checkbox" name="struggle_subject_choice" value="Physical Sciences" checked class="rounded text-blue-600">
                                     <span>Physical Sciences</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <label class="flex items-center gap-1.5 p-1.5 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-[11px] font-semibold text-gray-700">
                                     <input type="checkbox" name="struggle_subject_choice" value="Life Sciences" class="rounded text-blue-600">
                                     <span>Life Sciences</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <label class="flex items-center gap-1.5 p-1.5 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-[11px] font-semibold text-gray-700">
                                     <input type="checkbox" name="struggle_subject_choice" value="Accounting" class="rounded text-blue-600">
                                     <span>Accounting</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <label class="flex items-center gap-1.5 p-1.5 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-[11px] font-semibold text-gray-700">
                                     <input type="checkbox" name="struggle_subject_choice" value="Mathematical Literacy" class="rounded text-blue-600">
                                     <span>Maths Literacy</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-xs font-semibold text-gray-700">
+                                <label class="flex items-center gap-1.5 p-1.5 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 cursor-pointer text-[11px] font-semibold text-gray-700">
                                     <input type="checkbox" name="struggle_subject_choice" value="English FAL" class="rounded text-blue-600">
                                     <span>English FAL</span>
                                 </label>
@@ -2784,14 +2801,14 @@
                     <!-- ==========================================
                          TAILORED SECTION 2: DIGITAL CAREER SKILLS
                     =========================================== -->
-                    <div id="planModal_skills_fields" class="space-y-3.5 pt-2 border-t border-gray-100 hidden">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div id="planModal_skills_fields" class="space-y-2.5 pt-2 border-t border-gray-100 hidden">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                    Current Employment Status <span class="text-red-500">*</span>
+                                <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    Employment Status <span class="text-red-500">*</span>
                                 </label>
                                 <select name="employment_status"
-                                        class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium bg-white">
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium bg-white">
                                     <option value="Unemployed Job Seeker">Unemployed Matriculant / Job Seeker</option>
                                     <option value="Employed / Working Professional">Employed Professional (Upskilling)</option>
                                     <option value="University / TVET Student">Tertiary / TVET Student</option>
@@ -2799,11 +2816,11 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                    Primary Career Track Focus <span class="text-red-500">*</span>
+                                <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    Career Track Focus <span class="text-red-500">*</span>
                                 </label>
                                 <select name="career_interest"
-                                        class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium bg-white">
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium bg-white">
                                     <option value="Full Stack Web Development">Full Stack Web Development (HTML/CSS/JS)</option>
                                     <option value="Python & AI Automation">Python &amp; AI Automation</option>
                                     <option value="Data Analysis & Excel">Data Analysis &amp; Advanced Excel</option>
@@ -2814,32 +2831,32 @@
                         </div>
 
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                South African ID / Passport Number <span class="text-gray-400 font-normal">(Optional, for SETA PoE certification)</span>
+                            <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                SA ID / Passport Number <span class="text-gray-400 font-normal">(Optional)</span>
                             </label>
                             <input type="text" name="id_number" placeholder="e.g. 020415..."
-                                   class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium">
                         </div>
                     </div>
 
                     <!-- ==========================================
                          TAILORED SECTION 3: ENTERPRISE & INSTITUTIONS
                     =========================================== -->
-                    <div id="planModal_enterprise_fields" class="space-y-3.5 pt-2 border-t border-gray-100 hidden">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div id="planModal_enterprise_fields" class="space-y-2.5 pt-2 border-t border-gray-100 hidden">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
                                     Company / School Name <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" name="organization" placeholder="e.g. Acme Holdings / Metro High"
-                                       class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium">
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                    Estimated Staff / Learners <span class="text-red-500">*</span>
+                                <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                    Estimated Learners <span class="text-red-500">*</span>
                                 </label>
                                 <select name="estimated_learners"
-                                        class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-medium bg-white">
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs sm:text-sm font-medium bg-white">
                                     <option value="20">1 – 20 learners</option>
                                     <option value="100">21 – 100 learners</option>
                                     <option value="500">101 – 500 learners</option>
@@ -2851,29 +2868,29 @@
 
                     <!-- Notes / Special Instructions -->
                     <div>
-                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                            Any Specific Goals or Questions? <span class="text-gray-400 font-normal">(Optional)</span>
+                        <label class="block text-[10px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            Specific Goals or Questions? <span class="text-gray-400 font-normal">(Optional)</span>
                         </label>
-                        <textarea name="message" rows="2"
-                                  placeholder="Tell us about your target university degree, career goals, or training requirements..."
-                                  class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs font-medium resize-none"></textarea>
+                        <textarea name="message" rows="1"
+                                  placeholder="Target degree, career goals, or training requirements..."
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs font-medium resize-none"></textarea>
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="pt-2">
+                    <div class="pt-1">
                         <button type="submit" id="planModal_submit_btn"
-                                class="w-full py-3.5 px-4 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white transition shadow-lg hover:shadow-xl cursor-pointer border-0">
+                                class="w-full py-3 px-4 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white transition shadow-lg hover:shadow-xl cursor-pointer border-0">
                             Complete Registration
                         </button>
-                        <p class="text-[10px] text-center text-gray-400 mt-2">
-                            🔒 Safe &amp; Secure · POPIA Compliant · Official Pace Academy Admissions
+                        <p class="text-[10px] text-center text-gray-400 mt-1.5">
+                            🔒 Safe &amp; Secure · POPIA Compliant · Official Pace Academy
                         </p>
                     </div>
                 </form>
             </div>
 
             <!-- Success Celebration View -->
-            <div id="planModal_success_view" class="hidden text-center py-8">
+            <div id="planModal_success_view" class="hidden text-center p-6 sm:p-8">
                 <div class="w-16 h-16 bg-blue-50 border border-blue-200 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 animate-bounce">
                     🎉
                 </div>

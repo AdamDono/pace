@@ -16,8 +16,8 @@ def home():
     # Get approved public courses for display on the landing page
     courses = Course.query.filter(Course.status == 'approved', Course.visibility != 'private').limit(6).all()
 
-    # Live stats
-    learner_count = User.query.filter_by(role='student').count()
+    # Live stats (100 baseline + actual DB student count)
+    learner_count = 100 + User.query.filter_by(role='student').count()
     course_count  = Course.query.filter(Course.status == 'approved').count()
 
     # Up to 5 users who have uploaded a profile picture (for avatar stack)
