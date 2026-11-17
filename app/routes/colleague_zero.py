@@ -650,12 +650,17 @@ def fetch_pace_batch_dict(batch_id=None):
 @colleague_zero_bp.route("/teacher")
 def hub_index():
     teacher_name = "Educator"
+    teacher_email = ""
     teacher_school = "Pace Academy Faculty"
     if current_user and getattr(current_user, "is_authenticated", False):
         teacher_name = current_user.full_name
+        teacher_email = current_user.email
+        if getattr(current_user, "specialization", None):
+            teacher_school = current_user.specialization
     return render_template(
         "colleague_zero/index.html",
         teacher_name=teacher_name,
+        teacher_email=teacher_email,
         teacher_school=teacher_school,
     )
 
