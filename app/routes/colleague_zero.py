@@ -98,8 +98,142 @@ def extract_criterion_keywords(criterion):
     return keywords
 
 
+def _fetch_submission_file_bytes(file_path):
+    """Downloads or reads local bytes for an uploaded assignment submission file."""
+    import os
+    from flask import current_app
+
+    if not file_path:
+        return None
+
+    if file_path.startswith("http://") or file_path.startswith("https://"):
+        try:
+            import requests
+            resp = requests.get(
+                file_path,
+                headers={"User-Agent": "PaceAcademy-ColleagueZero/1.0"},
+                timeout=15,
+            )
+            if resp.status_code == 200 and resp.content:
+                return resp.content
+            print(f"[ColleagueZero] HTTP {resp.status_code} fetching submission file: {file_path}")
+        except Exception as req_err:
+            print(f"[ColleagueZero] requests fetch error ({file_path}): {req_err}")
+        try:
+            import urllib.request
+            req = urllib.request.Request(file_path, headers={"User-Agent": "PaceAcademy-ColleagueZero/1.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return resp.read()
+        except Exception as url_err:
+            print(f"[ColleagueZero] urllib fetch error ({file_path}): {url_err}")
+            return None
+
+    rel = file_path.lstrip("/")
+    upload_folder = current_app.config.get("UPLOAD_FOLDER") or ""
+    candidates = [
+        file_path,
+        os.path.join(upload_folder, rel) if upload_folder else "",
+        os.path.join(upload_folder, os.path.basename(rel)) if upload_folder else "",
+        os.path.join(current_app.root_path, "static", rel),
+        os.path.join(current_app.root_path, rel),
+    ]
+    for cand in candidates:
+        if cand and os.path.isfile(cand):
+            with open(cand, "rb") as f:
+                return f.read()
+    return None
+
+
+def _extract_pdf_text_with_gemini_fallback(pdf_bytes):
+    """Extracts text from PDF bytes via pypdf, falling back to Gemini multimodal for scanned/image PDFs."""
+    extracted = ""
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        extracted = "\n".join((page.extract_text() or "") for page in reader.pages[:15]).strip()
+    except Exception as pdf_err:
+        print(f"[ColleagueZero] pypdf extraction error: {pdf_err}")
+
+    if len(extracted) >= 20:
+        return extracted
+
+    # Fallback for scanned/image-based PDFs (or PDFs with non-standard font encodings)
+    try:
+        import base64
+        import requests
+        from app.services.ai_service import AIService
+        api_key = AIService.get_api_key()
+        if not api_key or len(pdf_bytes) > 8 * 1024 * 1024:
+            return extracted
+        b64 = base64.b64encode(pdf_bytes).decode("ascii")
+        url = f"{AIService.BASE_URL}/{AIService.DEFAULT_MODEL}:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": "Extract and transcribe all readable text, headings, lists, and formatting details from this student PDF submission verbatim."},
+                    {"inlineData": {"mimeType": "application/pdf", "data": b64}},
+                ]
+            }],
+            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096},
+        }
+        resp = requests.post(url, json=payload, timeout=25)
+        if resp.status_code == 200:
+            data = resp.json()
+            cands = data.get("candidates") or []
+            if cands:
+                text_parts = [p.get("text", "") for p in cands[0].get("content", {}).get("parts", [])]
+                gem_text = "\n".join(t for t in text_parts if t).strip()
+                if gem_text:
+                    return gem_text
+    except Exception as gem_err:
+        print(f"[ColleagueZero] Gemini PDF fallback error: {gem_err}")
+
+    return extracted
+
+
+def _extract_docx_text(docx_bytes):
+    """Extracts paragraph text and basic font/alignment metadata from a .docx archive without extra dependencies."""
+    try:
+        import zipfile
+        import xml.etree.ElementTree as ET
+        with zipfile.ZipFile(io.BytesIO(docx_bytes)) as zf:
+            if "word/document.xml" not in zf.namelist():
+                return ""
+            xml_bytes = zf.read("word/document.xml")
+        root = ET.fromstring(xml_bytes)
+        ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+        lines = []
+        fonts_seen = set()
+        alignments_seen = set()
+        for p in root.findall(".//w:p", ns):
+            texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
+            line = "".join(texts).strip()
+            if line:
+                lines.append(line)
+            for rFonts in p.findall(".//w:rFonts", ns):
+                for attr in ("ascii", "hAnsi"):
+                    val = rFonts.attrib.get(f"{{{ns['w']}}}{attr}")
+                    if val:
+                        fonts_seen.add(val)
+            jc = p.find(".//w:pPr/w:jc", ns)
+            if jc is not None:
+                val = jc.attrib.get(f"{{{ns['w']}}}val")
+                if val:
+                    alignments_seen.add(val)
+        meta_bits = []
+        if fonts_seen:
+            meta_bits.append(f"Detected Fonts: {', '.join(sorted(fonts_seen))}")
+        if alignments_seen:
+            meta_bits.append(f"Detected Alignments: {', '.join(sorted(alignments_seen))}")
+        header = f"[DOCX Metadata: {'; '.join(meta_bits)}]\n" if meta_bits else ""
+        return header + "\n".join(lines)
+    except Exception as docx_err:
+        print(f"[ColleagueZero] DOCX extraction error: {docx_err}")
+        return ""
+
+
 def _extract_submission_text_for_grading(submission):
-    """Collects text from code, text, and uploaded PDF submissions for grading."""
+    """Collects text from code, text, and uploaded PDF/DOCX/text submissions for grading."""
     parts = []
     if getattr(submission, "submission_type", None) == "code" and getattr(submission, "code_submission", None):
         parts.append(submission.code_submission)
@@ -111,41 +245,25 @@ def _extract_submission_text_for_grading(submission):
         parts.append(submission.submission_text)
 
     file_path = getattr(submission, "file_path", None) or ""
-    if file_path and ".pdf" in file_path.lower():
-        try:
-            import os
-            import urllib.request
-            from pypdf import PdfReader
-            from flask import current_app
-
-            pdf_bytes = None
-            if file_path.startswith("http://") or file_path.startswith("https://"):
-                req = urllib.request.Request(file_path, headers={"User-Agent": "PaceAcademy-ColleagueZero/1.0"})
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    pdf_bytes = resp.read()
-            else:
-                rel = file_path.lstrip("/")
-                upload_folder = current_app.config.get("UPLOAD_FOLDER") or ""
-                candidates = [
-                    file_path,
-                    os.path.join(upload_folder, rel) if upload_folder else "",
-                    os.path.join(upload_folder, os.path.basename(rel)) if upload_folder else "",
-                    os.path.join(current_app.root_path, "static", rel),
-                    os.path.join(current_app.root_path, rel),
-                ]
-                for cand in candidates:
-                    if cand and os.path.isfile(cand):
-                        with open(cand, "rb") as f:
-                            pdf_bytes = f.read()
-                        break
-
-            if pdf_bytes:
-                reader = PdfReader(io.BytesIO(pdf_bytes))
-                extracted = "\n".join((page.extract_text() or "") for page in reader.pages[:15]).strip()
+    if file_path:
+        lower_fp = file_path.lower()
+        file_bytes = _fetch_submission_file_bytes(file_path)
+        if file_bytes:
+            if ".pdf" in lower_fp or file_bytes[:4] == b"%PDF":
+                extracted = _extract_pdf_text_with_gemini_fallback(file_bytes)
                 if extracted:
                     parts.append(f"\n[Extracted PDF Submission]\n{extracted[:12000]}")
-        except Exception:
-            pass
+            elif ".docx" in lower_fp:
+                extracted = _extract_docx_text(file_bytes)
+                if extracted:
+                    parts.append(f"\n[Extracted DOCX Submission]\n{extracted[:12000]}")
+            elif any(lower_fp.endswith(ext) for ext in (".txt", ".md", ".py", ".js", ".html", ".css", ".csv", ".json")):
+                try:
+                    decoded = file_bytes.decode("utf-8", errors="replace").strip()
+                    if decoded:
+                        parts.append(f"\n[Uploaded File Content]\n{decoded[:12000]}")
+                except Exception:
+                    pass
 
     return "\n\n".join(p for p in parts if p and p.strip()).strip()
 
