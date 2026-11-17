@@ -1,4 +1,4 @@
- from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify, session, send_from_directory
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify, session, send_from_directory
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.decorators import teacher_required
