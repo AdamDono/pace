@@ -256,14 +256,14 @@
                             Profile
                         </a>
                     {% endif %}
-                    <a href="{{ url_for('auth.landing', _anchor='pricing') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
+                    <a href="{{ url_for('auth.home', _anchor='pricing') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
                         Pricing & Plans
                     </a>
                     <a href="{{ url_for('auth.logout') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
                         Logout
                     </a>
                 {% else %}
-                    <a href="{{ url_for('auth.landing', _anchor='pricing') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
+                    <a href="{{ url_for('auth.home', _anchor='pricing') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">
                         Pricing & Plans
                     </a>
                     <a href="{{ url_for('auth.login') }}" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-blue-600">

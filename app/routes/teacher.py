@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify, session, send_from_directory
+ from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, jsonify, session, send_from_directory
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.decorators import teacher_required
@@ -2418,12 +2418,14 @@ def download_student_poe(course_id, student_id):
         stats=stats,
         upload_folder=current_app.config['UPLOAD_FOLDER'],
     )
-    safe_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in (student.username or student.email.split('@')[0]))
+    import re
+    safe_name = re.sub(r'[^A-Za-z0-9\-]+', '_', (student.username or student.email.split('@')[0])).strip('_')
+    safe_course = re.sub(r'[^A-Za-z0-9\-]+', '_', (course.title or f'course_{course.id}')).strip('_')
     return send_file(
         pdf_buf,
         mimetype='application/pdf',
         as_attachment=True,
-        download_name=f"PoE_{safe_name}_course_{course.id}.pdf",
+        download_name=f"PoE_{safe_name}_{safe_course}.pdf",
     )
 
 @teacher_bp.route('/serve-upload/<path:filename>')
