@@ -140,8 +140,9 @@
                     {% endif %}
 
                     {% if sub.feedback %}
-                    <div class="p-3 bg-indigo-50/80 rounded-xl border border-indigo-100 text-xs text-indigo-950">
-                        <span class="font-bold text-indigo-700">Teacher Feedback:</span> {{ sub.feedback }}
+                    <div class="p-3.5 bg-indigo-50/80 rounded-xl border border-indigo-100 text-xs text-indigo-950 leading-relaxed">
+                        <div class="font-bold text-indigo-700 mb-1.5">Teacher Feedback:</div>
+                        <div class="whitespace-pre-line">{{ sub.feedback }}</div>
                     </div>
                     {% endif %}
                 </div>

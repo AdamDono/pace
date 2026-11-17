@@ -125,13 +125,16 @@ def _extract_submission_text_for_grading(submission):
                     pdf_bytes = resp.read()
             else:
                 rel = file_path.lstrip("/")
+                upload_folder = current_app.config.get("UPLOAD_FOLDER") or ""
                 candidates = [
                     file_path,
+                    os.path.join(upload_folder, rel) if upload_folder else "",
+                    os.path.join(upload_folder, os.path.basename(rel)) if upload_folder else "",
                     os.path.join(current_app.root_path, "static", rel),
                     os.path.join(current_app.root_path, rel),
                 ]
                 for cand in candidates:
-                    if os.path.isfile(cand):
+                    if cand and os.path.isfile(cand):
                         with open(cand, "rb") as f:
                             pdf_bytes = f.read()
                         break
@@ -240,6 +243,9 @@ def _llm_grade_with_4_workers(learner_name, school_or_cohort, essay_text, rubric
             "Simulate a 2-pass moderation panel:\n"
             "1) Assessor [MK] gives initial_scores per criterion based strictly on rubric alignment.\n"
             "2) Moderator [RV] checks if [MK] missed valid conceptual reasoning, code logic, or informal/plain-language explanations, and outputs corrected_scores.\n"
+            "STRICT GRADING RULES:\n"
+            "- Grade ONLY what is actually inside 'Learner Submission' — NEVER assume or credit content from the Assignment Question/Prompt.\n"
+            "- If the submission is completely off-topic, an unrelated document (e.g. a grade report/PoE/random PDF), or just a filename/placeholder with no actual assignment content, assign 0 (or at most 5 total) across criteria and clearly state in feedback that the submitted file/text does not match the assignment requirements.\n"
             "Return ONLY valid JSON:\n"
             "{\n"
             '  "initial_scores": {"C1": 0, "C2": 0, "C3": 0, "C4": 0},\n'
@@ -647,7 +653,8 @@ def format_feedback_for_pace_ui(evaluated, rubric):
         lines.append(f"✅ COLLEAGUE ZERO VERIFIED GRADE: {final_score}% ({rubric.get('version', 'Official Rubric')})")
 
     lines.append("")
-    lines.append(f"💬 FEEDBACK: {evaluated['recovery']['feedback']}")
+    lines.append("💬 FEEDBACK:")
+    lines.append(evaluated['recovery']['feedback'])
     lines.append("")
     lines.append("📊 RUBRIC CRITERION BREAKDOWN:")
     for c in rubric.get("criteria", []):
@@ -656,13 +663,13 @@ def format_feedback_for_pace_ui(evaluated, rubric):
         iv = evaluated["initial_mark"]["criteria_scores"].get(cid, 0)
         fv = evaluated["moderation"]["corrected_criteria_scores"].get(cid, iv)
         delta_str = f" (Moderated from {iv}/{w})" if fv != iv else ""
-        lines.append(f"  • {cid} · {c['name']}: {fv} / {w} marks{delta_str}")
+        lines.append(f"• {cid} · {c['name']}: {fv} / {w} marks{delta_str}")
 
     if evaluated["recovery"]["catchup_plan"]:
         lines.append("")
         lines.append("🛟 3-STEP REMEDIAL / MASTERY PLAN:")
         for step in evaluated["recovery"]["catchup_plan"]:
-            lines.append(f"  ✓ {step}")
+            lines.append(f"✓ {step}")
 
     return "\n".join(lines)
 
