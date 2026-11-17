@@ -81,8 +81,14 @@ def create_app():
     else:
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
             'pool_pre_ping': True,
-            'pool_recycle': 300,
+            'pool_recycle': 120,
             'pool_timeout': 30,
+            'connect_args': {
+                'keepalives': 1,
+                'keepalives_idle': 20,
+                'keepalives_interval': 10,
+                'keepalives_count': 5,
+            },
         }
 
     # Configure uploads & form payload limits (Prevent 413 Content Too Large on rich text & images)
@@ -262,6 +268,13 @@ def create_app():
         except Exception as e:
             db.session.rollback()
             app.logger.error(f"Startup DB self-healing error: {e}")
+        finally:
+            # Dispose pooled connections before Gunicorn forks workers so workers never share an SSL socket
+            try:
+                db.session.remove()
+                db.engine.dispose()
+            except Exception:
+                pass
 
     # Define login_manager.user_loader here to avoid circular imports
     from app.models import User

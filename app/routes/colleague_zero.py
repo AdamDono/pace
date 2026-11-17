@@ -687,7 +687,16 @@ def login_portal():
 @colleague_zero_bp.route("/api/batches", methods=["GET"])
 def api_get_batches():
     batch_id = request.args.get("batch_id")
-    batch_data = fetch_pace_batch_dict(batch_id)
+    try:
+        batch_data = fetch_pace_batch_dict(batch_id)
+    except Exception:
+        # Recover cleanly from stale SSL/Gunicorn pooled connections (e.g. sslv3 alert bad record mac)
+        try:
+            db.session.remove()
+            db.engine.dispose()
+        except Exception:
+            pass
+        batch_data = fetch_pace_batch_dict(batch_id)
     return jsonify({
         "ok": True,
         "batch": batch_data,
