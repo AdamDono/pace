@@ -13,7 +13,7 @@ import re
 import time
 from datetime import datetime
 from flask import Blueprint, Response, jsonify, render_template, request
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 from app import csrf, db
 from app.models import Assignment, AssignmentSubmission, Course, Notification, Section, User
@@ -1296,3 +1296,94 @@ def api_export_csv(batch_id):
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename=pace_colleague_zero_{batch['id']}.csv"},
     )
+
+
+def _parse_docx_preview(docx_bytes):
+    """Parses paragraphs, fonts, sizes, bold flags, alignments, and list markers from a .docx file."""
+    import zipfile
+    import xml.etree.ElementTree as ET
+
+    with zipfile.ZipFile(io.BytesIO(docx_bytes)) as zf:
+        if "word/document.xml" not in zf.namelist():
+            return {"fonts": [], "alignments": [], "paragraphs": []}
+        xml_bytes = zf.read("word/document.xml")
+
+    root = ET.fromstring(xml_bytes)
+    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    w_ns = f"{{{ns['w']}}}"
+
+    fonts_seen = []
+    alignments_seen = []
+    paragraphs = []
+
+    for p in root.findall(".//w:p", ns):
+        texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
+        text = "".join(texts).strip()
+        if not text:
+            continue
+
+        p_fonts = []
+        for rFonts in p.findall(".//w:rFonts", ns):
+            for attr in ("ascii", "hAnsi"):
+                val = rFonts.attrib.get(f"{w_ns}{attr}")
+                if val and val not in p_fonts:
+                    p_fonts.append(val)
+                if val and val not in fonts_seen:
+                    fonts_seen.append(val)
+
+        size_pt = None
+        sz = p.find(".//w:sz", ns)
+        if sz is not None:
+            raw_sz = sz.attrib.get(f"{w_ns}val")
+            if raw_sz and raw_sz.isdigit():
+                size_pt = round(int(raw_sz) / 2.0, 1)
+
+        is_bold = p.find(".//w:b", ns) is not None
+        is_list = p.find(".//w:pPr/w:numPr", ns) is not None
+
+        jc = p.find(".//w:pPr/w:jc", ns)
+        alignment = "left"
+        if jc is not None:
+            val = (jc.attrib.get(f"{w_ns}val") or "left").lower()
+            alignment = "justify" if val == "both" else val
+        if alignment not in alignments_seen:
+            alignments_seen.append(alignment)
+
+        paragraphs.append({
+            "text": text,
+            "font": p_fonts[0] if p_fonts else None,
+            "size_pt": size_pt,
+            "bold": is_bold,
+            "alignment": alignment,
+            "is_list": is_list,
+        })
+
+    return {
+        "fonts": fonts_seen,
+        "alignments": alignments_seen,
+        "paragraphs": paragraphs[:150],
+    }
+
+
+@colleague_zero_bp.route("/api/docx-preview/<int:submission_id>")
+@login_required
+def api_docx_preview(submission_id):
+    sub = AssignmentSubmission.query.get_or_404(submission_id)
+    user_role = getattr(current_user, "role", None)
+    if user_role not in ("teacher", "admin") and sub.student_id != current_user.id:
+        return jsonify({"ok": False, "error": "Unauthorized"}), 403
+
+    file_path = sub.file_path or ""
+    if ".docx" not in file_path.lower():
+        return jsonify({"ok": False, "error": "Submission is not a .docx file."}), 400
+
+    file_bytes = _fetch_submission_file_bytes(file_path)
+    if not file_bytes:
+        return jsonify({"ok": False, "error": "Could not load .docx file for preview."}), 404
+
+    try:
+        preview = _parse_docx_preview(file_bytes)
+        filename = file_path.split("/")[-1].split("?")[0]
+        return jsonify({"ok": True, "filename": filename, **preview})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Unable to parse .docx preview: {exc}"}), 500

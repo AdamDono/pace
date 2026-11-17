@@ -411,6 +411,20 @@ function renderAttemptTab(selectedId) {
                 `;
             } else if (ext === 'doc' || ext === 'docx') {
                 // Special handling for Word documents
+                if (ext === 'docx' && data.id) {
+                    html += `
+                        <details class="mt-4 rounded-2xl border border-indigo-200 overflow-hidden bg-white shadow-sm"
+                                 ontoggle="if(this.open && !this.dataset.loaded){this.dataset.loaded='1'; loadTeacherDocxPreview(${data.id}, this);}">
+                            <summary class="p-3 bg-slate-800 hover:bg-slate-700 cursor-pointer flex items-center justify-between text-xs text-gray-200 px-4 select-none list-none">
+                                <span class="font-mono font-bold truncate">📝 Document Preview (Extracted Text &amp; Fonts): ${fileName}</span>
+                                <span class="text-indigo-300 font-bold shrink-0 ml-2">Click to Expand ▾</span>
+                            </summary>
+                            <div class="docx-preview-body p-4 text-xs text-gray-700 bg-gray-50 max-h-[420px] overflow-y-auto">
+                                <span class="text-gray-400">Loading document preview...</span>
+                            </div>
+                        </details>
+                    `;
+                }
                 html += `
                     <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
                         <div class="flex items-start gap-3">
@@ -561,6 +575,37 @@ function showToast(message, category = 'success') {
 
 function closeModal() {
     document.getElementById('submissionModal').classList.add('hidden');
+}
+
+async function loadTeacherDocxPreview(submissionId, detailsEl) {
+    const body = detailsEl.querySelector('.docx-preview-body');
+    try {
+        const res = await fetch(`/colleague-zero/api/docx-preview/${submissionId}`);
+        const data = await res.json();
+        if (!data.ok) {
+            body.innerHTML = `<span class="text-red-600 font-semibold">${escapeHtml(data.error || 'Could not load preview.')}</span>`;
+            return;
+        }
+        const fontsBadge = (data.fonts && data.fonts.length)
+            ? `<span class="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 font-semibold">Fonts: ${escapeHtml(data.fonts.join(', '))}</span>`
+            : '';
+        const alignBadge = (data.alignments && data.alignments.length)
+            ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold">Alignments: ${escapeHtml(data.alignments.join(', '))}</span>`
+            : '';
+        const paras = (data.paragraphs || []).map(p => {
+            const alignCls = p.alignment === 'center' ? 'text-center' : (p.alignment === 'right' ? 'text-right' : (p.alignment === 'justify' ? 'text-justify' : 'text-left'));
+            const weightCls = p.bold ? 'font-bold text-gray-900' : 'text-gray-800';
+            const prefix = p.is_list ? '• ' : '';
+            const meta = [p.font, p.size_pt ? p.size_pt + 'pt' : null].filter(Boolean).join(' · ');
+            return `<p class="mb-2 leading-relaxed ${alignCls} ${weightCls}" title="${escapeHtml(meta)}">${prefix}${escapeHtml(p.text)}</p>`;
+        }).join('');
+        body.innerHTML = `
+            <div class="flex flex-wrap gap-2 mb-3 pb-2.5 border-b border-gray-200 text-[11px]">${fontsBadge}${alignBadge}</div>
+            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-inner">${paras || '<span class="text-gray-400">No readable text found in document.</span>'}</div>
+        `;
+    } catch (e) {
+        body.innerHTML = `<span class="text-red-600 font-semibold">Preview unavailable.</span>`;
+    }
 }
 </script>
 
