@@ -4,34 +4,40 @@
 <div class="container mx-auto p-6 bg-gray-100 min-h-screen">
     <!-- Header -->
     <div class="mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <div class="flex items-center mb-2">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="min-w-0">
+                <div class="flex items-center mb-1">
                     <a href="{{ url_for('teacher.course_gradebook', course_id=course.id) }}" class="text-blue-600 hover:text-blue-800 mr-2">
                         <i class="fas fa-arrow-left"></i>
                     </a>
-                    <h1 class="text-3xl font-bold text-gray-900">👤 Student Details</h1>
+                    <h1 class="text-2xl font-bold text-gray-900">👤 Student Details</h1>
                 </div>
-                <p class="text-gray-600">{{ course.title }} - {{ student.email.split('@')[0] }} ({{ student.email }})</p>
+                <p class="text-sm text-gray-600 truncate">{{ course.title }} - {{ student.email.split('@')[0] }} ({{ student.email }})</p>
             </div>
-            <div class="flex space-x-3">
-                <button onclick="sendMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    ✉️ Message Student
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="sendMessage()"
+                        style="white-space:nowrap;"
+                        class="inline-flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 transition shadow-sm">
+                    ✉️ Message
                 </button>
-                <button onclick="exportStudentGrades()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                <button onclick="exportStudentGrades()"
+                        style="white-space:nowrap;"
+                        class="inline-flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700 transition shadow-sm">
                     📥 Export Grades
                 </button>
                 <a href="{{ url_for('teacher.download_student_poe', course_id=course.id, student_id=student.id) }}"
-                   class="inline-flex items-center gap-1.5 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition font-semibold">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                   style="white-space:nowrap;"
+                   class="inline-flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 transition shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
                     POE
                 </a>
                 <button type="button" onclick="openAccommodationsModal()"
-                        class="inline-flex items-center gap-1.5 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition font-semibold">
+                        style="background-color:#1e293b; color:#ffffff; white-space:nowrap;"
+                        class="inline-flex items-center gap-1.5 bg-gray-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-900 transition shadow-sm">
                     <i class="fas fa-universal-access" aria-hidden="true"></i>
-                    Accommodations
+                    <span>Accommodations</span>
                 </button>
             </div>
         </div>
@@ -684,74 +690,83 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <!-- Private POPIA-Compliant Learner Accommodations & Concessions Modal -->
-<div id="accommodationsModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="accModalTitle">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden border border-gray-200">
-        <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
-            <div>
-                <h3 id="accModalTitle" class="text-base font-bold flex items-center gap-2">
+<div id="accommodationsModal"
+     onclick="if(event.target === this) closeAccommodationsModal()"
+     style="background-color:rgba(15,23,42,0.55); z-index:9999;"
+     class="hidden fixed inset-0 flex items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-labelledby="accModalTitle">
+    <div style="width:100%; max-width:560px; max-height:82vh; display:flex; flex-direction:column; overflow:hidden; background:#ffffff;"
+         class="bg-white rounded-2xl shadow-2xl border border-gray-200">
+        <!-- Sticky Top Header with Back & Close -->
+        <div style="background-color:#1e293b; color:#ffffff; flex-shrink:0;"
+             class="px-5 py-3.5 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+                <h3 id="accModalTitle" class="text-sm font-bold flex items-center gap-2 text-white">
                     <i class="fas fa-universal-access text-blue-400" aria-hidden="true"></i>
-                    Learner Accommodations &amp; Concessions
+                    <span>Learner Accommodations &amp; Concessions</span>
                 </h3>
-                <p class="text-xs text-slate-300 mt-0.5">{{ student.full_name or student.username }} ({{ student.email }}) — Private &amp; POPIA-Protected</p>
+                <p style="color:#cbd5e1;" class="text-xs mt-0.5 truncate">{{ student.full_name or student.username }} ({{ student.email }}) — Private &amp; POPIA-Protected</p>
             </div>
-            <button type="button" onclick="closeAccommodationsModal()" aria-label="Close modal" class="text-slate-300 hover:text-white text-xl font-bold px-2">&times;</button>
+            <button type="button" onclick="closeAccommodationsModal()" aria-label="Close modal"
+                    style="background-color:rgba(255,255,255,0.14); color:#ffffff; border-radius:8px; padding:4px 10px; font-weight:700; cursor:pointer;"
+                    class="text-sm hover:opacity-90 flex-shrink-0">✕ Close</button>
         </div>
 
-        <div class="p-6 overflow-y-auto space-y-5 text-sm">
-            <label class="flex items-center justify-between p-3.5 rounded-xl bg-blue-50 border border-blue-200 cursor-pointer">
+        <!-- Scrollable Compact Body -->
+        <div style="overflow-y:auto; flex:1 1 auto;" class="p-4 space-y-3.5 text-sm">
+            <label class="flex items-center justify-between gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200 cursor-pointer">
                 <div>
-                    <span class="font-bold text-blue-900 block">Enable Disability / Inclusive Support Profile</span>
-                    <span class="text-xs text-blue-700">Privately flags approved support &amp; concessions for this learner (never shown to other students).</span>
+                    <span class="font-bold text-blue-900 block text-xs">Enable Disability / Inclusive Support Profile</span>
+                    <span class="text-xs text-blue-700">Privately flags approved support &amp; concessions (never shown to other students).</span>
                 </div>
-                <input type="checkbox" id="acc-has-support" class="h-5 w-5 rounded text-blue-600">
+                <input type="checkbox" id="acc-has-support" class="h-4 w-4 rounded text-blue-600 flex-shrink-0">
             </label>
 
             <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Support Categories</label>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Support Categories</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
                         <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="visual_blind"> Blind / Screen Reader
                     </label>
-                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
                         <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="low_vision"> Low Vision / Colour Blind
                     </label>
-                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
                         <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="hearing"> Deaf / Hard of Hearing
                     </label>
-                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
                         <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="dyslexia_learning"> Dyslexia / Learning Support
                     </label>
-                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
                         <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="physical_mobility"> Physical / Mobility Support
                     </label>
-                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
                         <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="other"> Other Approved Support
                     </label>
                 </div>
             </div>
 
             <div>
-                <label for="acc-quiz-mult" class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Official Quiz &amp; Test Extra Time Concession</label>
-                <select id="acc-quiz-mult" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-sm font-medium focus:ring-2 focus:ring-blue-500">
+                <label for="acc-quiz-mult" class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">Official Quiz &amp; Test Extra Time Concession</label>
+                <select id="acc-quiz-mult" class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs font-medium focus:ring-2 focus:ring-blue-500">
                     <option value="1">Standard Time (1×)</option>
                     <option value="1.25">+25% Extra Time (1.25×)</option>
                     <option value="1.5">+50% Extra Time (1.5×)</option>
                     <option value="2">+100% Extra Time (2×)</option>
                     <option value="0">Untimed (No Countdown Auto-Submit)</option>
                 </select>
-                <p class="text-xs text-gray-500 mt-1">Automatically applied to all timed quizzes for this learner across every course.</p>
             </div>
 
-            <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer">
-                <input type="checkbox" id="acc-voice-dict" class="h-4 w-4 rounded text-blue-600">
+            <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" id="acc-voice-dict" class="h-4 w-4 rounded text-blue-600 flex-shrink-0">
                 <div>
                     <span class="font-semibold text-gray-900 block text-xs">Highlight Voice-to-Text Assignment Dictation</span>
-                    <span class="text-[11px] text-gray-500">Prominently enables mic dictation for written assignments (ideal for physical/mobility, visual, or dyslexic learners).</span>
+                    <span class="text-xs text-gray-500">Prominently enables mic dictation for written assignments.</span>
                 </div>
             </label>
 
             <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Pre-Enable Learner Display Presets</label>
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Pre-Enable Learner Display Presets</label>
                 <div class="flex flex-wrap gap-3 text-xs">
                     <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="acc-preset-large" class="rounded text-blue-600"> Large Text</label>
                     <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="acc-preset-dyslexia" class="rounded text-blue-600"> Dyslexia Font</label>
@@ -762,15 +777,18 @@ document.addEventListener('keydown', function(e) {
             </div>
 
             <div>
-                <label for="acc-notes" class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">SETA / QCTO Concession Notes (Private)</label>
-                <textarea id="acc-notes" rows="3" placeholder="e.g. Approved +50% extra time &amp; voice dictation per SETA PwD learnership concession letter..."
-                          class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:ring-2 focus:ring-blue-500"></textarea>
+                <label for="acc-notes" class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">SETA / QCTO Concession Notes (Private)</label>
+                <textarea id="acc-notes" rows="2" placeholder="e.g. Approved +50% extra time &amp; voice dictation per SETA PwD concession letter..."
+                          class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
         </div>
 
-        <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
-            <button type="button" onclick="closeAccommodationsModal()" class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-100">Cancel</button>
-            <button type="button" onclick="saveStudentAccommodations()" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm">Save Accommodations</button>
+        <!-- Sticky Footer -->
+        <div style="flex-shrink:0;" class="px-5 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
+            <button type="button" onclick="closeAccommodationsModal()" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-100">Cancel</button>
+            <button type="button" onclick="saveStudentAccommodations()"
+                    style="background-color:#2563eb; color:#ffffff;"
+                    class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm">Save Accommodations</button>
         </div>
     </div>
 </div>
