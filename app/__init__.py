@@ -424,6 +424,7 @@ def create_app():
     from app.routes.forum import forum_bp
     from app.routes.analytics import analytics_bp, record_analytics_event
     from app.routes.colleague_zero import colleague_zero_bp
+    from app.routes.accessibility import accessibility_bp, get_user_accessibility_dict, DEFAULT_A11Y
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -436,6 +437,21 @@ def create_app():
     app.register_blueprint(forum_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(colleague_zero_bp)
+    app.register_blueprint(accessibility_bp)
+
+    @app.context_processor
+    def inject_user_accessibility():
+        from flask import g
+        from flask_login import current_user
+        try:
+            if not hasattr(g, '_user_a11y'):
+                if current_user.is_authenticated:
+                    g._user_a11y = get_user_accessibility_dict(current_user.id)
+                else:
+                    g._user_a11y = dict(DEFAULT_A11Y)
+            return {'user_a11y': g._user_a11y}
+        except Exception:
+            return {'user_a11y': dict(DEFAULT_A11Y)}
 
     @app.before_request
     def auto_track_pageviews():

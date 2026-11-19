@@ -194,5 +194,183 @@
             </div>
         </form>
     </div>
+
+    <!-- Accessibility & Learning Support Settings -->
+    <div id="accessibility-settings" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mt-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-200">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-universal-access text-blue-600" aria-hidden="true"></i>
+                    Accessibility &amp; Learning Support
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Personalise how Pace Academy reads, displays, and plays content for you. Changes apply immediately and save to your account.
+                </p>
+            </div>
+            <span id="a11y-save-status" class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full hidden" role="status" aria-live="polite">
+                Saved ✓
+            </span>
+        </div>
+
+        {% if user_a11y and (user_a11y.has_disability_support or user_a11y.quiz_time_multiplier != 1.0 or user_a11y.voice_dictation_enabled) %}
+        <div class="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
+            <p class="text-xs font-bold uppercase tracking-wider text-blue-800 mb-2">Approved Assessment Concessions (Managed by Your Institution)</p>
+            <div class="flex flex-wrap gap-2 text-xs">
+                {% if user_a11y.quiz_time_multiplier != 1.0 %}
+                <span class="px-3 py-1 rounded-full bg-white border border-blue-200 font-semibold text-blue-900">
+                    ⏱️ Quiz Time: {{ user_a11y.quiz_time_label }}
+                </span>
+                {% endif %}
+                {% if user_a11y.voice_dictation_enabled %}
+                <span class="px-3 py-1 rounded-full bg-white border border-blue-200 font-semibold text-blue-900">
+                    🎙️ Voice-to-Text Assignment Dictation Active
+                </span>
+                {% endif %}
+                {% if user_a11y.has_disability_support %}
+                <span class="px-3 py-1 rounded-full bg-white border border-blue-200 font-semibold text-blue-900">
+                    ✓ Inclusive Learning Support Profile Active
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Text Size Selector -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-800 mb-2">Text Size</label>
+            <div class="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Text Size">
+                {% set cur_scale = user_a11y.font_scale if user_a11y else 'normal' %}
+                <button type="button" data-font-scale="normal" onclick="setA11yFontScale('normal')"
+                        class="a11y-scale-btn px-4 py-2.5 rounded-xl border text-sm font-semibold transition {% if cur_scale == 'normal' %}bg-blue-600 text-white border-blue-600{% else %}bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100{% endif %}">
+                    A &nbsp; Normal
+                </button>
+                <button type="button" data-font-scale="large" onclick="setA11yFontScale('large')"
+                        class="a11y-scale-btn px-4 py-2.5 rounded-xl border text-base font-semibold transition {% if cur_scale == 'large' %}bg-blue-600 text-white border-blue-600{% else %}bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100{% endif %}">
+                    A+ &nbsp; Large
+                </button>
+                <button type="button" data-font-scale="xlarge" onclick="setA11yFontScale('xlarge')"
+                        class="a11y-scale-btn px-4 py-2.5 rounded-xl border text-lg font-semibold transition {% if cur_scale == 'xlarge' %}bg-blue-600 text-white border-blue-600{% else %}bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100{% endif %}">
+                    A++ &nbsp; Extra Large
+                </button>
+            </div>
+        </div>
+
+        <!-- Accessibility Toggles -->
+        <div class="space-y-4">
+            <label class="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60 cursor-pointer hover:bg-gray-50 transition">
+                <div>
+                    <span class="block text-sm font-semibold text-gray-900">Dyslexia-Friendly Reading Mode</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">Uses the Lexend font, wider letter/line spacing, and a warm soft background to reduce reading strain.</span>
+                </div>
+                <input type="checkbox" id="a11y-dyslexia" onchange="saveA11ySettings()"
+                       {% if user_a11y and user_a11y.dyslexia_font %}checked{% endif %}
+                       class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0">
+            </label>
+
+            <label class="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60 cursor-pointer hover:bg-gray-50 transition">
+                <div>
+                    <span class="block text-sm font-semibold text-gray-900">High-Contrast Mode</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">Deep dark background with crisp white text and high-visibility yellow accents for low vision or colour blindness.</span>
+                </div>
+                <input type="checkbox" id="a11y-contrast" onchange="saveA11ySettings()"
+                       {% if user_a11y and user_a11y.high_contrast %}checked{% endif %}
+                       class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0">
+            </label>
+
+            <label class="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60 cursor-pointer hover:bg-gray-50 transition">
+                <div>
+                    <span class="block text-sm font-semibold text-gray-900">Reduce Motion &amp; Animations</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">Turns off transitions and animations across the platform for visual comfort.</span>
+                </div>
+                <input type="checkbox" id="a11y-motion" onchange="saveA11ySettings()"
+                       {% if user_a11y and user_a11y.reduce_motion %}checked{% endif %}
+                       class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0">
+            </label>
+
+            <label class="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60 cursor-pointer hover:bg-gray-50 transition">
+                <div>
+                    <span class="block text-sm font-semibold text-gray-900">Read Aloud Audio Assistance</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">Highlights one-click "Read Aloud" buttons on lessons, quiz questions, and assignment instructions using Bookworm Neural Voice.</span>
+                </div>
+                <input type="checkbox" id="a11y-read-aloud" onchange="saveA11ySettings()"
+                       {% if user_a11y and user_a11y.read_aloud_enabled %}checked{% endif %}
+                       class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0">
+            </label>
+
+            <label class="flex items-start justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60 cursor-pointer hover:bg-gray-50 transition">
+                <div>
+                    <span class="block text-sm font-semibold text-gray-900">Auto-Captions &amp; Video Transcripts</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">Automatically enables closed captions on supported video lessons and keeps lesson transcripts expanded for deaf and hard-of-hearing learners.</span>
+                </div>
+                <input type="checkbox" id="a11y-captions" onchange="saveA11ySettings()"
+                       {% if user_a11y and user_a11y.captions_preferred %}checked{% endif %}
+                       class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0">
+            </label>
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+            <button type="button" onclick="resetA11ySettings()" class="text-xs font-semibold text-gray-500 hover:text-gray-800 underline">
+                Reset to Default Display
+            </button>
+            <button type="button" onclick="window.paceReadAloud('Welcome to Pace Academy Accessibility Settings. Audio reading is active and ready to help you learn.', this)"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 transition">
+                🔊 Test Read Aloud
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentA11yScale = "{{ user_a11y.font_scale if user_a11y else 'normal' }}";
+
+        function setA11yFontScale(scale) {
+            currentA11yScale = scale;
+            document.querySelectorAll('.a11y-scale-btn').forEach(btn => {
+                const active = btn.dataset.fontScale === scale;
+                btn.classList.toggle('bg-blue-600', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('border-blue-600', active);
+                btn.classList.toggle('bg-gray-50', !active);
+                btn.classList.toggle('text-gray-700', !active);
+                btn.classList.toggle('border-gray-200', !active);
+            });
+            saveA11ySettings();
+        }
+
+        async function saveA11ySettings() {
+            const payload = {
+                font_scale: currentA11yScale,
+                dyslexia_font: document.getElementById('a11y-dyslexia').checked,
+                high_contrast: document.getElementById('a11y-contrast').checked,
+                reduce_motion: document.getElementById('a11y-motion').checked,
+                read_aloud_enabled: document.getElementById('a11y-read-aloud').checked,
+                captions_preferred: document.getElementById('a11y-captions').checked
+            };
+            if (window.applyPaceAccessibility) window.applyPaceAccessibility(payload);
+            const badge = document.getElementById('a11y-save-status');
+            try {
+                const res = await fetch('/accessibility/api/me', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.ok && badge) {
+                    badge.textContent = 'Saved ✓';
+                    badge.classList.remove('hidden');
+                    clearTimeout(window._a11yBadgeTimer);
+                    window._a11yBadgeTimer = setTimeout(() => badge.classList.add('hidden'), 2500);
+                }
+            } catch (e) {}
+        }
+
+        function resetA11ySettings() {
+            document.getElementById('a11y-dyslexia').checked = false;
+            document.getElementById('a11y-contrast').checked = false;
+            document.getElementById('a11y-motion').checked = false;
+            document.getElementById('a11y-read-aloud').checked = false;
+            document.getElementById('a11y-captions').checked = false;
+            setA11yFontScale('normal');
+        }
+    </script>
 </div>
 {% endblock %}

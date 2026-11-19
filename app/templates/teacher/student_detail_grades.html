@@ -28,6 +28,11 @@
                     </svg>
                     POE
                 </a>
+                <button type="button" onclick="openAccommodationsModal()"
+                        class="inline-flex items-center gap-1.5 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition font-semibold">
+                    <i class="fas fa-universal-access" aria-hidden="true"></i>
+                    Accommodations
+                </button>
             </div>
         </div>
     </div>
@@ -607,6 +612,167 @@ async function loadTeacherDocxPreview(submissionId, detailsEl) {
         body.innerHTML = `<span class="text-red-600 font-semibold">Preview unavailable.</span>`;
     }
 }
+
+async function openAccommodationsModal() {
+    const modal = document.getElementById('accommodationsModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    try {
+        const res = await fetch('/accessibility/api/student/{{ student.id }}');
+        const data = await res.json();
+        if (data.ok && data.settings) {
+            const s = data.settings;
+            document.getElementById('acc-has-support').checked = !!s.has_disability_support;
+            document.getElementById('acc-quiz-mult').value = String(s.quiz_time_multiplier);
+            document.getElementById('acc-voice-dict').checked = !!s.voice_dictation_enabled;
+            document.getElementById('acc-notes').value = s.concession_notes || '';
+            document.getElementById('acc-preset-dyslexia').checked = !!s.dyslexia_font;
+            document.getElementById('acc-preset-contrast').checked = !!s.high_contrast;
+            document.getElementById('acc-preset-large').checked = (s.font_scale === 'large' || s.font_scale === 'xlarge');
+            document.getElementById('acc-preset-read').checked = !!s.read_aloud_enabled;
+            document.getElementById('acc-preset-captions').checked = !!s.captions_preferred;
+            const cats = s.support_categories || [];
+            document.querySelectorAll('.acc-cat-cb').forEach(cb => {
+                cb.checked = cats.includes(cb.value);
+            });
+        }
+    } catch (e) {
+        showToast('Could not load learner accommodations.', 'danger');
+    }
+}
+
+function closeAccommodationsModal() {
+    const modal = document.getElementById('accommodationsModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function saveStudentAccommodations() {
+    const cats = Array.from(document.querySelectorAll('.acc-cat-cb:checked')).map(cb => cb.value);
+    const payload = {
+        has_disability_support: document.getElementById('acc-has-support').checked || cats.length > 0,
+        support_categories: cats,
+        quiz_time_multiplier: parseFloat(document.getElementById('acc-quiz-mult').value),
+        voice_dictation_enabled: document.getElementById('acc-voice-dict').checked,
+        concession_notes: document.getElementById('acc-notes').value,
+        dyslexia_font: document.getElementById('acc-preset-dyslexia').checked,
+        high_contrast: document.getElementById('acc-preset-contrast').checked,
+        font_scale: document.getElementById('acc-preset-large').checked ? 'large' : 'normal',
+        read_aloud_enabled: document.getElementById('acc-preset-read').checked,
+        captions_preferred: document.getElementById('acc-preset-captions').checked
+    };
+    try {
+        const res = await fetch('/accessibility/api/student/{{ student.id }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.ok) {
+            closeAccommodationsModal();
+            showToast('Learner accommodations & concessions saved!', 'success');
+        } else {
+            showToast(data.error || 'Failed to save accommodations.', 'danger');
+        }
+    } catch (e) {
+        showToast('Network error saving accommodations.', 'danger');
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAccommodationsModal();
+});
 </script>
+
+<!-- Private POPIA-Compliant Learner Accommodations & Concessions Modal -->
+<div id="accommodationsModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="accModalTitle">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden border border-gray-200">
+        <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+            <div>
+                <h3 id="accModalTitle" class="text-base font-bold flex items-center gap-2">
+                    <i class="fas fa-universal-access text-blue-400" aria-hidden="true"></i>
+                    Learner Accommodations &amp; Concessions
+                </h3>
+                <p class="text-xs text-slate-300 mt-0.5">{{ student.full_name or student.username }} ({{ student.email }}) — Private &amp; POPIA-Protected</p>
+            </div>
+            <button type="button" onclick="closeAccommodationsModal()" aria-label="Close modal" class="text-slate-300 hover:text-white text-xl font-bold px-2">&times;</button>
+        </div>
+
+        <div class="p-6 overflow-y-auto space-y-5 text-sm">
+            <label class="flex items-center justify-between p-3.5 rounded-xl bg-blue-50 border border-blue-200 cursor-pointer">
+                <div>
+                    <span class="font-bold text-blue-900 block">Enable Disability / Inclusive Support Profile</span>
+                    <span class="text-xs text-blue-700">Privately flags approved support &amp; concessions for this learner (never shown to other students).</span>
+                </div>
+                <input type="checkbox" id="acc-has-support" class="h-5 w-5 rounded text-blue-600">
+            </label>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Support Categories</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="visual_blind"> Blind / Screen Reader
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="low_vision"> Low Vision / Colour Blind
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="hearing"> Deaf / Hard of Hearing
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="dyslexia_learning"> Dyslexia / Learning Support
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="physical_mobility"> Physical / Mobility Support
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="acc-cat-cb rounded text-blue-600" value="other"> Other Approved Support
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label for="acc-quiz-mult" class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Official Quiz &amp; Test Extra Time Concession</label>
+                <select id="acc-quiz-mult" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-sm font-medium focus:ring-2 focus:ring-blue-500">
+                    <option value="1">Standard Time (1×)</option>
+                    <option value="1.25">+25% Extra Time (1.25×)</option>
+                    <option value="1.5">+50% Extra Time (1.5×)</option>
+                    <option value="2">+100% Extra Time (2×)</option>
+                    <option value="0">Untimed (No Countdown Auto-Submit)</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Automatically applied to all timed quizzes for this learner across every course.</p>
+            </div>
+
+            <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" id="acc-voice-dict" class="h-4 w-4 rounded text-blue-600">
+                <div>
+                    <span class="font-semibold text-gray-900 block text-xs">Highlight Voice-to-Text Assignment Dictation</span>
+                    <span class="text-[11px] text-gray-500">Prominently enables mic dictation for written assignments (ideal for physical/mobility, visual, or dyslexic learners).</span>
+                </div>
+            </label>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Pre-Enable Learner Display Presets</label>
+                <div class="flex flex-wrap gap-3 text-xs">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="acc-preset-large" class="rounded text-blue-600"> Large Text</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="acc-preset-dyslexia" class="rounded text-blue-600"> Dyslexia Font</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="acc-preset-contrast" class="rounded text-blue-600"> High Contrast</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="acc-preset-read" class="rounded text-blue-600"> Read Aloud</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="acc-preset-captions" class="rounded text-blue-600"> Auto-Captions</label>
+                </div>
+            </div>
+
+            <div>
+                <label for="acc-notes" class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">SETA / QCTO Concession Notes (Private)</label>
+                <textarea id="acc-notes" rows="3" placeholder="e.g. Approved +50% extra time &amp; voice dictation per SETA PwD learnership concession letter..."
+                          class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+        </div>
+
+        <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+            <button type="button" onclick="closeAccommodationsModal()" class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-100">Cancel</button>
+            <button type="button" onclick="saveStudentAccommodations()" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm">Save Accommodations</button>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

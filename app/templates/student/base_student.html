@@ -446,7 +446,114 @@
             color: #0366d6;
             font-weight: 500;
         }
+
+        /* ===== ACCESSIBILITY MODES (100% Opt-in — zero effect when OFF) ===== */
+        .pace-skip-link {
+            position: absolute;
+            top: -100px;
+            left: 16px;
+            z-index: 99999;
+            background: #1d4ed8;
+            color: #ffffff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+        .pace-skip-link:focus {
+            top: 12px;
+            outline: 3px solid #facc15;
+            outline-offset: 2px;
+        }
+        /* Visible focus ring ONLY for keyboard navigation (never mouse clicks) */
+        :focus-visible {
+            outline: 3px solid #2563eb;
+            outline-offset: 2px;
+        }
+        /* Text Scaling */
+        html.a11y-large-text { font-size: 112.5%; }
+        html.a11y-xlarge-text { font-size: 125%; }
+        /* Dyslexia-Friendly Reading Mode */
+        body.a11y-dyslexia,
+        body.a11y-dyslexia p,
+        body.a11y-dyslexia li,
+        body.a11y-dyslexia span,
+        body.a11y-dyslexia label,
+        body.a11y-dyslexia input,
+        body.a11y-dyslexia textarea,
+        body.a11y-dyslexia button,
+        body.a11y-dyslexia h1,
+        body.a11y-dyslexia h2,
+        body.a11y-dyslexia h3,
+        body.a11y-dyslexia h4 {
+            font-family: 'Lexend', 'Verdana', 'Arial', sans-serif !important;
+            letter-spacing: 0.03em;
+            word-spacing: 0.08em;
+            line-height: 1.75 !important;
+        }
+        body.a11y-dyslexia,
+        body.a11y-dyslexia main {
+            background-color: #fdfbf2 !important;
+        }
+        /* High-Contrast Mode (Explicitly excludes images, videos, PDFs, and code editors) */
+        body.a11y-high-contrast,
+        body.a11y-high-contrast main,
+        body.a11y-high-contrast header,
+        body.a11y-high-contrast aside,
+        body.a11y-high-contrast .bg-white,
+        body.a11y-high-contrast .bg-gray-50,
+        body.a11y-high-contrast .bg-gray-100 {
+            background-color: #0b0f19 !important;
+            color: #ffffff !important;
+            border-color: #facc15 !important;
+        }
+        body.a11y-high-contrast h1,
+        body.a11y-high-contrast h2,
+        body.a11y-high-contrast h3,
+        body.a11y-high-contrast h4,
+        body.a11y-high-contrast p,
+        body.a11y-high-contrast li,
+        body.a11y-high-contrast label,
+        body.a11y-high-contrast span,
+        body.a11y-high-contrast td,
+        body.a11y-high-contrast th {
+            color: #ffffff !important;
+        }
+        body.a11y-high-contrast a {
+            color: #fde047 !important;
+            text-decoration: underline;
+        }
+        body.a11y-high-contrast input,
+        body.a11y-high-contrast textarea,
+        body.a11y-high-contrast select {
+            background-color: #111827 !important;
+            color: #ffffff !important;
+            border: 2px solid #facc15 !important;
+        }
+        body.a11y-high-contrast iframe,
+        body.a11y-high-contrast img,
+        body.a11y-high-contrast video,
+        body.a11y-high-contrast .CodeMirror,
+        body.a11y-high-contrast .monaco-editor {
+            filter: none !important;
+        }
+        /* Reduce Motion */
+        body.a11y-reduce-motion *,
+        body.a11y-reduce-motion *::before,
+        body.a11y-reduce-motion *::after {
+            animation-duration: 0.001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.001ms !important;
+            scroll-behavior: auto !important;
+        }
     </style>
+
+    <!-- Lexend Font for Optional Dyslexia-Friendly Reading Mode -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Three.js for 3D Model Viewer -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -458,7 +565,15 @@
     {% block head %}{% endblock %}
 </head>
 
-<body class="bg-gray-50">
+<body class="bg-gray-50{% if user_a11y and user_a11y.dyslexia_font %} a11y-dyslexia{% endif %}{% if user_a11y and user_a11y.high_contrast %} a11y-high-contrast{% endif %}{% if user_a11y and user_a11y.reduce_motion %} a11y-reduce-motion{% endif %}">
+    <a href="#main-content" class="pace-skip-link">Skip to main content</a>
+    <script>
+        (function() {
+            var scale = "{{ user_a11y.font_scale if user_a11y else 'normal' }}";
+            if (scale === 'large') document.documentElement.classList.add('a11y-large-text');
+            if (scale === 'xlarge') document.documentElement.classList.add('a11y-xlarge-text');
+        })();
+    </script>
     <div class="flex h-screen overflow-hidden relative">
         <!-- Mobile Sidebar Overlay -->
         <div id="studentSidebarOverlay" onclick="toggleStudentSidebar()" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden"></div>
@@ -649,17 +764,30 @@
                         </h1>
                     </div>
 
-                    <!-- Right Actions: Notifications + Avatar + Hamburger Badge -->
+                    <!-- Right Actions: Accessibility + Notifications + Avatar + Hamburger Badge -->
                     <div class="flex items-center space-x-3">
-                        <a href="{{ url_for('student.notifications_list') }}" class="p-2 text-gray-500 hover:text-blue-600 rounded-xl hover:bg-gray-100 transition relative">
-                            <i class="fas fa-bell text-lg"></i>
+                        <a href="{{ url_for('student.profile') }}#accessibility-settings"
+                           title="Accessibility &amp; Learning Support Settings"
+                           aria-label="Accessibility Settings"
+                           class="p-2 text-gray-500 hover:text-blue-600 rounded-xl hover:bg-gray-100 transition relative">
+                            <i class="fas fa-universal-access text-lg" aria-hidden="true"></i>
+                        </a>
+
+                        <a href="{{ url_for('student.notifications_list') }}"
+                           title="Notifications"
+                           aria-label="Notifications"
+                           class="p-2 text-gray-500 hover:text-blue-600 rounded-xl hover:bg-gray-100 transition relative">
+                            <i class="fas fa-bell text-lg" aria-hidden="true"></i>
                             {% set unread_notifications = sidebar_counts.unread_notifications if sidebar_counts else 0 %}
                             {% if unread_notifications > 0 %}
                             <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-blue-600 rounded-full ring-2 ring-white"></span>
                             {% endif %}
                         </a>
 
-                        <a href="{{ url_for('student.profile') }}" class="flex items-center space-x-2 p-1.5 rounded-xl hover:bg-gray-100 transition">
+                        <a href="{{ url_for('student.profile') }}"
+                           title="My Profile &amp; Settings"
+                           aria-label="My Profile and Settings"
+                           class="flex items-center space-x-2 p-1.5 rounded-xl hover:bg-gray-100 transition">
                             <div class="w-8 h-8 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-blue-100">
                                 {% if current_user.profile_image %}
                                 <img src="{{ current_user.profile_image|avatar_url }}" alt="Avatar" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
@@ -681,7 +809,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto">
+            <main id="main-content" tabindex="-1" class="flex-1 overflow-y-auto focus:outline-none">
                 {% block content %}{% endblock %}
             </main>
         </div>
@@ -927,6 +1055,98 @@
                 toggleGlobalNavSidebar();
             }
         });
+
+        // ===== GLOBAL ACCESSIBILITY RUNTIME & READ-ALOUD HELPER =====
+        window.applyPaceAccessibility = function(s) {
+            if (!s) return;
+            document.documentElement.classList.remove('a11y-large-text', 'a11y-xlarge-text');
+            if (s.font_scale === 'large') document.documentElement.classList.add('a11y-large-text');
+            if (s.font_scale === 'xlarge') document.documentElement.classList.add('a11y-xlarge-text');
+            document.body.classList.toggle('a11y-dyslexia', !!s.dyslexia_font);
+            document.body.classList.toggle('a11y-high-contrast', !!s.high_contrast);
+            document.body.classList.toggle('a11y-reduce-motion', !!s.reduce_motion);
+        };
+
+        window._paceReadAudio = null;
+        window._paceReadBtn = null;
+
+        window.paceStopReadAloud = function() {
+            if (window._paceReadAudio) {
+                try { window._paceReadAudio.pause(); window._paceReadAudio.currentTime = 0; } catch (e) {}
+                window._paceReadAudio = null;
+            }
+            if ('speechSynthesis' in window) {
+                try { window.speechSynthesis.cancel(); } catch (e) {}
+            }
+            if (window._paceReadBtn) {
+                window._paceReadBtn.innerHTML = window._paceReadBtn.dataset.origLabel || '🔊 Read Aloud';
+                window._paceReadBtn.setAttribute('aria-pressed', 'false');
+                window._paceReadBtn = null;
+            }
+        };
+
+        window.paceReadAloud = async function(textOrSelector, btnEl) {
+            if (btnEl && window._paceReadBtn === btnEl) {
+                window.paceStopReadAloud();
+                return;
+            }
+            window.paceStopReadAloud();
+
+            let rawText = '';
+            if (typeof textOrSelector === 'string' && textOrSelector.startsWith('#')) {
+                const target = document.querySelector(textOrSelector);
+                rawText = target ? (target.innerText || target.textContent || '') : '';
+            } else if (textOrSelector instanceof Element) {
+                rawText = textOrSelector.innerText || textOrSelector.textContent || '';
+            } else {
+                rawText = String(textOrSelector || '');
+            }
+            rawText = rawText.replace(/\s+/g, ' ').trim();
+            if (!rawText) return;
+
+            if (btnEl) {
+                if (!btnEl.dataset.origLabel) btnEl.dataset.origLabel = btnEl.innerHTML;
+                btnEl.innerHTML = '⏳ Loading Audio...';
+                btnEl.setAttribute('aria-pressed', 'true');
+                window._paceReadBtn = btnEl;
+            }
+
+            // Try Bookworm Neural Voice first (capped at 1600 chars for fast neural playback)
+            try {
+                const res = await fetch('/student/api/ai-tutor/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: rawText.slice(0, 1600), voice: 'Puck' })
+                });
+                const data = await res.json();
+                if (res.ok && data.success && data.audio_url) {
+                    if (window._paceReadBtn !== btnEl) return; // cancelled while loading
+                    const audio = new Audio(data.audio_url);
+                    window._paceReadAudio = audio;
+                    if (btnEl) btnEl.innerHTML = '⏹ Stop Reading';
+                    audio.onended = () => window.paceStopReadAloud();
+                    audio.onerror = () => window.paceStopReadAloud();
+                    await audio.play();
+                    return;
+                }
+            } catch (e) {}
+
+            // Fallback to browser SpeechSynthesis
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const u = new SpeechSynthesisUtterance(rawText.slice(0, 4000));
+                    u.lang = 'en-ZA';
+                    u.rate = 0.96;
+                    if (btnEl) btnEl.innerHTML = '⏹ Stop Reading';
+                    u.onend = () => window.paceStopReadAloud();
+                    u.onerror = () => window.paceStopReadAloud();
+                    window.speechSynthesis.speak(u);
+                    return;
+                } catch (e) {}
+            }
+            window.paceStopReadAloud();
+        };
     </script>
     {% include 'components/inactivity_timer.html' %}
 </body>
