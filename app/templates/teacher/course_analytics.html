@@ -24,14 +24,14 @@
                 </div>
             </div>
             <div class="flex flex-col md:items-end gap-2">
-                <a href="{{ url_for('teacher.export_compliance_csv', course_id=course.id) }}" 
+                <a href="{{ url_for('teacher.export_compliance_pdf', course_id=course.id) }}" 
                    class="inline-flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-4 py-2.5 rounded-xl shadow-md transition-all text-sm">
                     <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    📥 Export SETA / QCTO Compliance Report (CSV)
+                    Export Compliance Report (PDF)
                 </a>
-                <p class="text-xs text-white/80 mt-1">Includes SA ID, Attendance Logbook Hours, Quiz Scores & Completion Status</p>
+                <p class="text-xs text-white/80 mt-1">Includes Charts, SA ID, Attendance Logbook Hours, Quiz Scores &amp; Completion Status</p>
             </div>
         </div>
     </div>
@@ -558,18 +558,19 @@
     {% endif %}
 
     <!-- Export & Actions -->
-    <div class="bg-white rounded-xl shadow-lg p-6 flex justify-between items-center">
+    <div class="bg-white rounded-xl shadow-lg p-6 flex flex-wrap justify-between items-center gap-4">
         <div>
-            <h3 class="font-semibold text-gray-800">Export Analytics</h3>
-            <p class="text-sm text-gray-500">Download detailed reports</p>
+            <h3 class="font-semibold text-gray-800">Export Compliance &amp; Analytics Report</h3>
+            <p class="text-sm text-gray-500">Download the full visual PDF report with charts, attendance logbook hours, and learner compliance records</p>
         </div>
-        <div class="space-x-3">
-            <button class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                📊 Export CSV
-            </button>
-            <button class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                📄 Generate PDF Report
-            </button>
+        <div>
+            <a href="{{ url_for('teacher.export_compliance_pdf', course_id=course.id) }}"
+               class="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Download Compliance Report (PDF)
+            </a>
         </div>
     </div>
 </div>

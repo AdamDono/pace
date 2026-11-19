@@ -633,6 +633,156 @@ def export_compliance_csv(course_id):
         headers={"Content-Disposition": f"attachment;filename={filename}"}
     )
 
+
+@teacher_bp.route('/course/<int:course_id>/export-compliance-pdf')
+@teacher_required
+def export_compliance_pdf(course_id):
+    """
+    Exports a visual SETA / QCTO / Funder Compliance & Course Analytics PDF report
+    with KPI cards, Student Progress Distribution donut chart, Syllabus Dropoff bar chart,
+    Quiz Performance summary, and full Learner Compliance & Attendance Logbook table.
+    """
+    import re
+    from datetime import timedelta
+    from flask import Response
+    from sqlalchemy import func
+    from app.models import (
+        Course, Enrollment, EnrollmentSection, Section,
+        Quiz, QuizAttempt, Assignment, AssignmentSubmission
+    )
+    from app.utils.compliance_pdf_generator import generate_course_compliance_pdf
+
+    course = Course.query.get_or_404(course_id)
+    if not current_user.is_teacher_for_course(course.id):
+        abort(403)
+
+    enrollments = Enrollment.query.filter_by(course_id=course_id).all()
+    total_enrollments = len(enrollments)
+    completed_enrollments = sum(1 for e in enrollments if e.completed)
+    completion_rate = round((completed_enrollments / total_enrollments * 100), 1) if total_enrollments > 0 else 0.0
+
+    all_sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
+    total_sections = len(all_sections)
+    course_section_ids = [s.id for s in all_sections]
+    total_assignments = Assignment.query.join(Section).filter(Section.course_id == course_id).count()
+
+    # Engagement metrics (same logic as course_analytics)
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
+        Enrollment
+    ).filter(
+        Enrollment.course_id == course.id,
+        EnrollmentSection.last_accessed >= seven_days_ago
+    ).scalar() or 0
+    avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
+        Enrollment
+    ).filter(Enrollment.course_id == course.id).scalar() or 0
+    engagement_metrics = {
+        'active_students_7days': active_students,
+        'avg_session_minutes': round(avg_session_duration / 60, 1),
+        'engagement_rate': round((active_students / total_enrollments * 100), 1) if total_enrollments > 0 else 0.0,
+    }
+
+    # Section completion rates for Syllabus Dropoff bar chart
+    section_analytics = []
+    for section in all_sections:
+        sec_done = EnrollmentSection.query.filter_by(section_id=section.id, completed=True).count()
+        sec_rate = round((sec_done / total_enrollments * 100), 1) if total_enrollments > 0 else 0.0
+        section_analytics.append({
+            'title': section.title,
+            'completion_rate': sec_rate,
+        })
+
+    # Quiz analytics summary
+    quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).all()
+    quiz_analytics = []
+    for quiz in quizzes:
+        attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
+        if attempts:
+            avg_s = round(sum(a.score for a in attempts) / len(attempts), 1)
+            max_s = round(max(a.score for a in attempts), 1)
+            min_s = round(min(a.score for a in attempts), 1)
+        else:
+            avg_s, max_s, min_s = 0.0, 0.0, 0.0
+        quiz_analytics.append({
+            'title': quiz.title,
+            'attempts': len(attempts),
+            'avg_score': avg_s,
+            'max_score': max_s,
+            'min_score': min_s,
+        })
+
+    # Learner compliance rows
+    learner_rows = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        if not student:
+            continue
+        student_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.username or student.email
+        completed_sections = EnrollmentSection.query.filter_by(enrollment_id=enrollment.id, completed=True).count()
+        progress_pct = round((completed_sections / total_sections * 100), 1) if total_sections > 0 else 0.0
+
+        total_time_secs = db.session.query(func.sum(EnrollmentSection.time_spent)).filter_by(
+            enrollment_id=enrollment.id
+        ).scalar() or 0
+        total_hours = round(total_time_secs / 3600, 2)
+        total_mins = round(total_time_secs / 60, 1)
+
+        last_activity = db.session.query(func.max(EnrollmentSection.last_accessed)).filter_by(
+            enrollment_id=enrollment.id
+        ).scalar()
+        last_active_str = last_activity.strftime('%Y-%m-%d %H:%M') if last_activity else (
+            enrollment.enrolled_at.strftime('%Y-%m-%d %H:%M') if enrollment.enrolled_at else "N/A"
+        )
+
+        quiz_attempts = QuizAttempt.query.filter_by(student_id=student.id).join(Quiz).filter(
+            Quiz.section_id.in_(course_section_ids)
+        ).all() if course_section_ids else []
+        avg_quiz_score = round(sum(a.score for a in quiz_attempts) / len(quiz_attempts), 1) if quiz_attempts else "N/A"
+
+        assignments_submitted = AssignmentSubmission.query.filter_by(student_id=student.id).join(
+            Assignment
+        ).join(Section).filter(Section.course_id == course_id).count()
+
+        status_str = "Completed" if enrollment.completed else ("Blocked" if enrollment.is_blocked else "In Progress")
+        enrolled_date_str = enrollment.enrolled_at.strftime('%Y-%m-%d') if enrollment.enrolled_at else "N/A"
+
+        learner_rows.append({
+            'student_name': student_name,
+            'email': student.email,
+            'id_number': getattr(student, 'id_number', None) or "Not Provided",
+            'enrolled_date': enrolled_date_str,
+            'status': status_str,
+            'completed_sections': completed_sections,
+            'total_sections': total_sections,
+            'progress_pct': progress_pct,
+            'total_hours': total_hours,
+            'total_mins': total_mins,
+            'avg_quiz_score': avg_quiz_score,
+            'assignments_submitted': assignments_submitted,
+            'total_assignments': total_assignments,
+            'last_active': last_active_str,
+        })
+
+    pdf_bytes = generate_course_compliance_pdf(
+        course=course,
+        total_enrollments=total_enrollments,
+        completed_enrollments=completed_enrollments,
+        completion_rate=completion_rate,
+        engagement_metrics=engagement_metrics,
+        section_analytics=section_analytics,
+        quiz_analytics=quiz_analytics,
+        learner_rows=learner_rows,
+    )
+
+    safe_course = re.sub(r'[^A-Za-z0-9_-]+', '_', (course.title or f'course_{course.id}').strip()).strip('_') or f'course_{course.id}'
+    filename = f"SETA_Compliance_Report_{safe_course}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @teacher_bp.route('/create-course-wizard', methods=['GET', 'POST'])
 @teacher_required
 def create_course_wizard():
