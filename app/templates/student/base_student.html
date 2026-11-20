@@ -1109,17 +1109,21 @@
 
         window._paceReadAudio = null;
         window._paceReadBtn = null;
-        window._paceReadAbort = null;
-        window._paceReadActive = false;
+        window._paceReadControllers = [];
+        window._paceReadRunId = 0;
+        window._paceNeuralCache = window._paceNeuralCache || {};
 
         window.paceStopReadAloud = function() {
-            window._paceReadActive = false;
-            if (window._paceReadAbort) {
-                try { window._paceReadAbort.abort(); } catch (e) {}
-                window._paceReadAbort = null;
-            }
+            window._paceReadRunId++;
+            (window._paceReadControllers || []).forEach(c => { try { c.abort(); } catch (e) {} });
+            window._paceReadControllers = [];
             if (window._paceReadAudio) {
-                try { window._paceReadAudio.pause(); window._paceReadAudio.currentTime = 0; } catch (e) {}
+                try {
+                    window._paceReadAudio.onended = null;
+                    window._paceReadAudio.onerror = null;
+                    window._paceReadAudio.pause();
+                    window._paceReadAudio.currentTime = 0;
+                } catch (e) {}
                 window._paceReadAudio = null;
             }
             if ('speechSynthesis' in window) {
@@ -1132,26 +1136,24 @@
             }
         };
 
-        window._paceSpeakChunked = function(fullText, btnEl) {
-            if (!('speechSynthesis' in window)) {
-                window.paceStopReadAloud();
-                return;
-            }
-            window.speechSynthesis.cancel();
-            // Pick cleanest available natural English voice
-            const voices = window.speechSynthesis.getVoices() || [];
-            const preferred = voices.find(v => /en-(ZA|GB|US)/i.test(v.lang) && /(natural|samantha|google|daniel|karen|serena|moira|aria|jenny)/i.test(v.name))
-                || voices.find(v => /^en/i.test(v.lang))
-                || null;
-
-            // Split into short 1-2 sentence chunks so Chrome/Safari never cut off long speech
+        window._paceSplitIntoChunks = function(fullText, maxLen) {
+            const limit = maxLen || 280;
             const rawSentences = fullText.match(/[^.!?]+[.!?]*/g) || [fullText];
             const chunks = [];
             let buf = '';
             for (const s of rawSentences) {
-                const clean = s.trim();
+                let clean = s.trim();
                 if (!clean) continue;
-                if ((buf + ' ' + clean).length > 220 && buf) {
+                // Break ultra-long run-on sentences cleanly on commas/spaces
+                while (clean.length > limit) {
+                    let cut = clean.lastIndexOf(',', limit);
+                    if (cut < limit * 0.5) cut = clean.lastIndexOf(' ', limit);
+                    if (cut < 40) cut = limit;
+                    if (buf) { chunks.push(buf.trim()); buf = ''; }
+                    chunks.push(clean.slice(0, cut + 1).trim());
+                    clean = clean.slice(cut + 1).trim();
+                }
+                if ((buf + ' ' + clean).length > limit && buf) {
                     chunks.push(buf.trim());
                     buf = clean;
                 } else {
@@ -1159,25 +1161,77 @@
                 }
             }
             if (buf.trim()) chunks.push(buf.trim());
-            if (!chunks.length) { window.paceStopReadAloud(); return; }
+            return chunks;
+        };
 
-            if (btnEl) btnEl.innerHTML = '⏹ Stop Reading';
-            let idx = 0;
-            function speakNext() {
-                if (!window._paceReadActive || idx >= chunks.length) {
-                    window.paceStopReadAloud();
+        window._paceFetchBookwormChunk = async function(chunkText, runId) {
+            if (window._paceNeuralCache[chunkText]) {
+                return window._paceNeuralCache[chunkText];
+            }
+            const controller = new AbortController();
+            window._paceReadControllers.push(controller);
+            const timer = setTimeout(() => controller.abort(), 14000);
+            try {
+                const res = await fetch('/student/api/ai-tutor/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: chunkText, voice: 'Puck' }),
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                if (window._paceReadRunId !== runId) return null;
+                const data = await res.json();
+                if (res.ok && data.success && data.audio_url) {
+                    // Keep client cache bounded
+                    const keys = Object.keys(window._paceNeuralCache);
+                    if (keys.length > 60) delete window._paceNeuralCache[keys[0]];
+                    window._paceNeuralCache[chunkText] = data.audio_url;
+                    return data.audio_url;
+                }
+            } catch (e) {
+                clearTimeout(timer);
+            }
+            return null;
+        };
+
+        window._pacePlayBrowserFallbackChunk = function(chunkText, runId) {
+            return new Promise((resolve) => {
+                if (!('speechSynthesis' in window) || window._paceReadRunId !== runId) {
+                    resolve();
                     return;
                 }
-                const u = new SpeechSynthesisUtterance(chunks[idx++]);
-                if (preferred) u.voice = preferred;
-                u.lang = preferred ? preferred.lang : 'en-ZA';
-                u.rate = 0.96;
-                u.onend = () => { if (window._paceReadActive) speakNext(); };
-                u.onerror = () => { window.paceStopReadAloud(); };
-                window.speechSynthesis.speak(u);
-                try { window.speechSynthesis.resume(); } catch (e) {}
-            }
-            speakNext();
+                try {
+                    window.speechSynthesis.cancel();
+                    const voices = window.speechSynthesis.getVoices() || [];
+                    const preferred = voices.find(v => /en-(ZA|GB|US)/i.test(v.lang) && /(natural|samantha|google|daniel|karen|serena|aria|jenny)/i.test(v.name))
+                        || voices.find(v => /^en/i.test(v.lang))
+                        || null;
+                    const u = new SpeechSynthesisUtterance(chunkText);
+                    if (preferred) u.voice = preferred;
+                    u.lang = preferred ? preferred.lang : 'en-ZA';
+                    u.rate = 0.96;
+                    u.onend = () => resolve();
+                    u.onerror = () => resolve();
+                    window.speechSynthesis.speak(u);
+                    try { window.speechSynthesis.resume(); } catch (e) {}
+                } catch (e) {
+                    resolve();
+                }
+            });
+        };
+
+        window._pacePlayAudioUrl = function(audioUrl, runId) {
+            return new Promise((resolve) => {
+                if (window._paceReadRunId !== runId) { resolve(false); return; }
+                const audio = new Audio(audioUrl);
+                window._paceReadAudio = audio;
+                audio.onended = () => resolve(true);
+                audio.onerror = () => resolve(false);
+                const p = audio.play();
+                if (p && typeof p.catch === 'function') {
+                    p.catch(() => resolve(false));
+                }
+            });
         };
 
         window.paceReadAloud = async function(textOrSelector, btnEl) {
@@ -1203,46 +1257,41 @@
             rawText = rawText.replace(/\s+/g, ' ').trim();
             if (!rawText) return;
 
-            window._paceReadActive = true;
+            const runId = ++window._paceReadRunId;
             if (btnEl) {
                 if (!btnEl.dataset.origLabel) btnEl.dataset.origLabel = btnEl.innerHTML;
+                btnEl.innerHTML = '⏳ Starting Bookworm Voice...';
                 btnEl.setAttribute('aria-pressed', 'true');
                 window._paceReadBtn = btnEl;
             }
 
-            // For long full lessons (> 450 chars), start instant chunked reading immediately so there is zero wait and no cutoffs
-            if (rawText.length > 450) {
-                window._paceSpeakChunked(rawText, btnEl);
-                return;
+            // Stream the entire lesson seamlessly using Bookworm's exact neural voice (Puck)
+            // in snappy ~280-char sentence chunks with background prefetching of the next chunk!
+            const chunks = window._paceSplitIntoChunks(rawText, 280);
+            let nextFetchPromise = window._paceFetchBookwormChunk(chunks[0], runId);
+
+            for (let i = 0; i < chunks.length; i++) {
+                if (window._paceReadRunId !== runId) return;
+                const audioUrl = await nextFetchPromise;
+                if (window._paceReadRunId !== runId) return;
+
+                // Immediately prefetch the next chunk while this chunk plays (zero pause between sentences!)
+                if (i + 1 < chunks.length) {
+                    nextFetchPromise = window._paceFetchBookwormChunk(chunks[i + 1], runId);
+                }
+
+                if (btnEl) btnEl.innerHTML = '⏹ Stop Reading';
+                let played = false;
+                if (audioUrl) {
+                    played = await window._pacePlayAudioUrl(audioUrl, runId);
+                }
+                if (!played && window._paceReadRunId === runId) {
+                    await window._pacePlayBrowserFallbackChunk(chunks[i], runId);
+                }
             }
 
-            // For shorter prompts/questions (<= 450 chars), try Bookworm Neural Voice with a strict 7s timeout
-            if (btnEl) btnEl.innerHTML = '⏳ Loading Audio...';
-            try {
-                const controller = new AbortController();
-                window._paceReadAbort = controller;
-                const timer = setTimeout(() => controller.abort(), 7000);
-                const res = await fetch('/student/api/ai-tutor/speak', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: rawText, voice: 'Puck' }),
-                    signal: controller.signal
-                });
-                clearTimeout(timer);
-                const data = await res.json();
-                if (window._paceReadActive && res.ok && data.success && data.audio_url) {
-                    const audio = new Audio(data.audio_url);
-                    window._paceReadAudio = audio;
-                    if (btnEl) btnEl.innerHTML = '⏹ Stop Reading';
-                    audio.onended = () => window.paceStopReadAloud();
-                    audio.onerror = () => window._paceSpeakChunked(rawText, btnEl);
-                    await audio.play();
-                    return;
-                }
-            } catch (e) {}
-
-            if (window._paceReadActive) {
-                window._paceSpeakChunked(rawText, btnEl);
+            if (window._paceReadRunId === runId) {
+                window.paceStopReadAloud();
             }
         };
     </script>
