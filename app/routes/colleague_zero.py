@@ -12,7 +12,7 @@ import json
 import re
 import time
 from datetime import datetime
-from flask import Blueprint, Response, jsonify, render_template, request
+from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 from app import csrf, db
@@ -1099,15 +1099,13 @@ def fetch_pace_batch_dict(batch_id=None):
 
 @colleague_zero_bp.route("/")
 @colleague_zero_bp.route("/teacher")
+@login_required
 def hub_index():
-    teacher_name = "Educator"
-    teacher_email = ""
-    teacher_school = "Pace Academy Faculty"
-    if current_user and getattr(current_user, "is_authenticated", False):
-        teacher_name = current_user.full_name
-        teacher_email = current_user.email
-        if getattr(current_user, "specialization", None):
-            teacher_school = current_user.specialization
+    if getattr(current_user, "role", None) not in ("teacher", "admin"):
+        abort(403)
+    teacher_name = current_user.full_name
+    teacher_email = current_user.email
+    teacher_school = getattr(current_user, "specialization", None) or "Pace Academy Faculty"
     return render_template(
         "colleague_zero/index.html",
         teacher_name=teacher_name,
@@ -1117,12 +1115,10 @@ def hub_index():
 
 
 @colleague_zero_bp.route("/learner")
+@login_required
 def learner_portal():
-    learner_name = ""
-    learner_email = ""
-    if current_user and getattr(current_user, "is_authenticated", False):
-        learner_name = current_user.full_name
-        learner_email = current_user.email
+    learner_name = current_user.full_name
+    learner_email = current_user.email
     return render_template(
         "colleague_zero/learner.html",
         learner_name=learner_name,
@@ -1136,6 +1132,7 @@ def login_portal():
 
 
 @colleague_zero_bp.route("/api/batches", methods=["GET"])
+@login_required
 def api_get_batches():
     batch_id = request.args.get("batch_id")
     try:
@@ -1148,6 +1145,22 @@ def api_get_batches():
         except Exception:
             pass
         batch_data = fetch_pace_batch_dict(batch_id)
+
+    # POPIA privacy guard: learners only see their own submissions/notifications (never other students' PII)
+    if getattr(current_user, "role", None) not in ("teacher", "admin"):
+        my_email = (getattr(current_user, "email", "") or "").lower()
+        my_name = (getattr(current_user, "full_name", "") or "").lower()
+        batch_data["submissions"] = [
+            s for s in batch_data.get("submissions", [])
+            if (s.get("learner_email") or "").lower() == my_email
+            or (my_name and (s.get("learner_name") or "").lower() == my_name)
+        ]
+        batch_data["notifications"] = [
+            n for n in batch_data.get("notifications", [])
+            if (n.get("learner_name") or "").lower() == my_name
+        ]
+        batch_data["agent_events"] = []
+
     return jsonify({
         "ok": True,
         "batch": batch_data,
@@ -1159,6 +1172,7 @@ def api_get_batches():
 
 @colleague_zero_bp.route("/api/submissions/add", methods=["POST"])
 @csrf.exempt
+@login_required
 def api_add_submission():
     data = request.get_json(silent=True) or {}
     batch_id = data.get("batch_id") or ""
@@ -1264,7 +1278,10 @@ def api_add_submission():
 
 @colleague_zero_bp.route("/api/assignments/create", methods=["POST"])
 @csrf.exempt
+@login_required
 def api_create_assignment():
+    if getattr(current_user, "role", None) not in ("teacher", "admin"):
+        return jsonify({"ok": False, "error": "Unauthorized"}), 403
     _ensure_cz_tables()
     data = request.get_json(silent=True) or {}
     title = (data.get("title") or "").strip()
@@ -1334,12 +1351,16 @@ def api_create_assignment():
 
 @colleague_zero_bp.route("/api/notifications/read", methods=["POST"])
 @csrf.exempt
+@login_required
 def api_notifications_read():
     return jsonify({"ok": True})
 
 
 @colleague_zero_bp.route("/api/export/<batch_id>.csv", methods=["GET"])
+@login_required
 def api_export_csv(batch_id):
+    if getattr(current_user, "role", None) not in ("teacher", "admin"):
+        abort(403)
     batch = fetch_pace_batch_dict(batch_id)
     output = io.StringIO()
     writer = csv.writer(output)
