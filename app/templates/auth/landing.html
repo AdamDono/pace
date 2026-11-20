@@ -2537,6 +2537,30 @@
                     </div>
                 </div>
 
+                <!-- Q6 -->
+                <div class="faq-item" id="faq-item-6">
+                    <button class="faq-btn" onclick="toggleFaq(6)" aria-expanded="false">
+                        <span class="font-semibold text-gray-900 text-base">Does Pace Academy support learners with
+                            disabilities (PwD) and accessibility accommodations?</span>
+                        <span class="faq-icon closed" id="faq-icon-6">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer" id="faq-answer-6">
+                        <p class="text-gray-500 text-sm leading-relaxed">Yes — inclusive learning is built into every
+                            plan at no extra cost. Learners can enable Dyslexia-friendly reading mode, High-Contrast
+                            mode, adjustable text sizes, Reduce Motion, video auto-captions, full-lesson Audio Read
+                            Aloud, Voice-to-Text assignment dictation, and keyboard/screen-reader navigation directly in
+                            their Profile Settings. For schools, corporates, and SETA/QCTO Skills Development Providers
+                            running PwD learnerships, educators can also manage private, POPIA-compliant learner
+                            accommodation profiles — including automatic Quiz Extra Time concessions (+25%, +50%, +100%,
+                            or Untimed) and anonymized Inclusive Support summaries inside Compliance PDF reports.</p>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -2544,7 +2568,7 @@
 
     <script>
         function toggleFaq(id) {
-            const totalFaqs = 5;
+            const totalFaqs = 6;
             for (let i = 1; i <= totalFaqs; i++) {
                 const answer = document.getElementById('faq-answer-' + i);
                 const icon = document.getElementById('faq-icon-' + i);
