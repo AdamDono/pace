@@ -221,13 +221,31 @@ def course_analytics(identifier=None, course_id=None):
         if not current_user.is_teacher_for_course(course.id):
             abort(403)
         
+        from app.routes.cohorts import (
+            get_course_cohorts,
+            get_cohort_by_id,
+            get_cohort_student_ids,
+            compute_anonymized_inclusive_summary,
+        )
+        cohorts = get_course_cohorts(course.id)
+        cohort_id = request.args.get('cohort_id', type=int)
+        selected_cohort = get_cohort_by_id(cohort_id, course.id) if cohort_id else None
+
         # === BASIC STATS ===
-        total_enrollments = Enrollment.query.filter_by(course_id=course.id).count()
-        completed_enrollments = Enrollment.query.filter_by(course_id=course.id, completed=True).count()
+        enrollments = Enrollment.query.filter_by(course_id=course.id).all()
+        if selected_cohort:
+            c_student_ids = get_cohort_student_ids(selected_cohort.id)
+            enrollments = [e for e in enrollments if e.student_id in c_student_ids]
+        else:
+            c_student_ids = None
+
+        filtered_enrollment_ids = [e.id for e in enrollments]
+        total_enrollments = len(enrollments)
+        completed_enrollments = sum(1 for e in enrollments if e.completed)
         completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
+        inclusive_summary = compute_anonymized_inclusive_summary([e.student_id for e in enrollments])
         
         # === STUDENT PROGRESS DETAILS ===
-        enrollments = Enrollment.query.filter_by(course_id=course.id).all()
         total_sections = Section.query.filter_by(course_id=course.id).count()
         
         student_progress = []
@@ -289,26 +307,39 @@ def course_analytics(identifier=None, course_id=None):
         section_analytics = []
         
         for section in sections:
-            # Completion rate for this section
-            section_completions = EnrollmentSection.query.filter_by(
-                section_id=section.id,
-                completed=True
-            ).count()
-            
+            # Completion rate for this section (scoped to cohort if selected)
+            if selected_cohort:
+                section_completions = EnrollmentSection.query.filter(
+                    EnrollmentSection.section_id == section.id,
+                    EnrollmentSection.completed == True,
+                    EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids)
+                ).count() if filtered_enrollment_ids else 0
+                avg_time = db.session.query(func.avg(EnrollmentSection.time_spent)).filter(
+                    EnrollmentSection.section_id == section.id,
+                    EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids)
+                ).scalar() or 0 if filtered_enrollment_ids else 0
+                total_views = db.session.query(func.sum(EnrollmentSection.view_count)).filter(
+                    EnrollmentSection.section_id == section.id,
+                    EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids)
+                ).scalar() or 0 if filtered_enrollment_ids else 0
+                section_starts = EnrollmentSection.query.filter(
+                    EnrollmentSection.section_id == section.id,
+                    EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids)
+                ).count() if filtered_enrollment_ids else 0
+            else:
+                section_completions = EnrollmentSection.query.filter_by(
+                    section_id=section.id,
+                    completed=True
+                ).count()
+                avg_time = db.session.query(func.avg(EnrollmentSection.time_spent)).filter_by(
+                    section_id=section.id
+                ).scalar() or 0
+                total_views = db.session.query(func.sum(EnrollmentSection.view_count)).filter_by(
+                    section_id=section.id
+                ).scalar() or 0
+                section_starts = EnrollmentSection.query.filter_by(section_id=section.id).count()
+
             section_completion_rate = (section_completions / total_enrollments * 100) if total_enrollments > 0 else 0
-            
-            # Average time spent on this section
-            avg_time = db.session.query(func.avg(EnrollmentSection.time_spent)).filter_by(
-                section_id=section.id
-            ).scalar() or 0
-            
-            # View count
-            total_views = db.session.query(func.sum(EnrollmentSection.view_count)).filter_by(
-                section_id=section.id
-            ).scalar() or 0
-            
-            # Dropout point detection (sections with low completion but high starts)
-            section_starts = EnrollmentSection.query.filter_by(section_id=section.id).count()
             dropout_rate = ((section_starts - section_completions) / section_starts * 100) if section_starts > 0 else 0
             
             section_analytics.append({
@@ -383,17 +414,26 @@ def course_analytics(identifier=None, course_id=None):
         from datetime import datetime, timedelta
         seven_days_ago = datetime.utcnow() - timedelta(days=7)
         
-        active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
-            Enrollment
-        ).filter(
-            Enrollment.course_id == course.id,
-            EnrollmentSection.last_accessed >= seven_days_ago
-        ).scalar() or 0
-        
-        # Average session duration
-        avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
-            Enrollment
-        ).filter(Enrollment.course_id == course.id).scalar() or 0
+        if selected_cohort:
+            active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).filter(
+                EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids),
+                EnrollmentSection.last_accessed >= seven_days_ago
+            ).scalar() or 0 if filtered_enrollment_ids else 0
+            avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).filter(
+                EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids)
+            ).scalar() or 0 if filtered_enrollment_ids else 0
+        else:
+            active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
+                Enrollment
+            ).filter(
+                Enrollment.course_id == course.id,
+                EnrollmentSection.last_accessed >= seven_days_ago
+            ).scalar() or 0
+            
+            # Average session duration
+            avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
+                Enrollment
+            ).filter(Enrollment.course_id == course.id).scalar() or 0
         
         engagement_metrics = {
             'active_students_7days': active_students,
@@ -500,7 +540,10 @@ def course_analytics(identifier=None, course_id=None):
                              section_analytics=section_analytics,
                              quiz_analytics=quiz_analytics,
                              engagement_metrics=engagement_metrics,
-                             video_analytics=video_analytics)
+                             video_analytics=video_analytics,
+                             cohorts=cohorts,
+                             selected_cohort=selected_cohort,
+                             inclusive_summary=inclusive_summary)
     
     except Exception as e:
         import traceback
@@ -652,31 +695,57 @@ def export_compliance_pdf(course_id):
     )
     from app.utils.compliance_pdf_generator import generate_course_compliance_pdf
 
+    from app.routes.cohorts import (
+        get_cohort_by_id,
+        get_cohort_student_ids,
+        compute_anonymized_inclusive_summary,
+    )
+
     course = Course.query.get_or_404(course_id)
     if not current_user.is_teacher_for_course(course.id):
         abort(403)
 
+    cohort_id = request.args.get('cohort_id', type=int)
+    selected_cohort = get_cohort_by_id(cohort_id, course.id) if cohort_id else None
+
     enrollments = Enrollment.query.filter_by(course_id=course_id).all()
+    if selected_cohort:
+        c_student_ids = get_cohort_student_ids(selected_cohort.id)
+        enrollments = [e for e in enrollments if e.student_id in c_student_ids]
+    else:
+        c_student_ids = None
+
+    filtered_enrollment_ids = [e.id for e in enrollments]
     total_enrollments = len(enrollments)
     completed_enrollments = sum(1 for e in enrollments if e.completed)
     completion_rate = round((completed_enrollments / total_enrollments * 100), 1) if total_enrollments > 0 else 0.0
+    inclusive_summary = compute_anonymized_inclusive_summary([e.student_id for e in enrollments])
 
     all_sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
     total_sections = len(all_sections)
     course_section_ids = [s.id for s in all_sections]
     total_assignments = Assignment.query.join(Section).filter(Section.course_id == course_id).count()
 
-    # Engagement metrics (same logic as course_analytics)
+    # Engagement metrics (same logic as course_analytics, scoped to cohort if selected)
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
-    active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
-        Enrollment
-    ).filter(
-        Enrollment.course_id == course.id,
-        EnrollmentSection.last_accessed >= seven_days_ago
-    ).scalar() or 0
-    avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
-        Enrollment
-    ).filter(Enrollment.course_id == course.id).scalar() or 0
+    if selected_cohort:
+        active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).filter(
+            EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids),
+            EnrollmentSection.last_accessed >= seven_days_ago
+        ).scalar() or 0 if filtered_enrollment_ids else 0
+        avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).filter(
+            EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids)
+        ).scalar() or 0 if filtered_enrollment_ids else 0
+    else:
+        active_students = db.session.query(func.count(func.distinct(EnrollmentSection.enrollment_id))).join(
+            Enrollment
+        ).filter(
+            Enrollment.course_id == course.id,
+            EnrollmentSection.last_accessed >= seven_days_ago
+        ).scalar() or 0
+        avg_session_duration = db.session.query(func.avg(EnrollmentSection.time_spent)).join(
+            Enrollment
+        ).filter(Enrollment.course_id == course.id).scalar() or 0
     engagement_metrics = {
         'active_students_7days': active_students,
         'avg_session_minutes': round(avg_session_duration / 60, 1),
@@ -686,7 +755,14 @@ def export_compliance_pdf(course_id):
     # Section completion rates for Syllabus Dropoff bar chart
     section_analytics = []
     for section in all_sections:
-        sec_done = EnrollmentSection.query.filter_by(section_id=section.id, completed=True).count()
+        if selected_cohort:
+            sec_done = EnrollmentSection.query.filter(
+                EnrollmentSection.section_id == section.id,
+                EnrollmentSection.completed == True,
+                EnrollmentSection.enrollment_id.in_(filtered_enrollment_ids)
+            ).count() if filtered_enrollment_ids else 0
+        else:
+            sec_done = EnrollmentSection.query.filter_by(section_id=section.id, completed=True).count()
         sec_rate = round((sec_done / total_enrollments * 100), 1) if total_enrollments > 0 else 0.0
         section_analytics.append({
             'title': section.title,
@@ -697,7 +773,13 @@ def export_compliance_pdf(course_id):
     quizzes = Quiz.query.join(Section).filter(Section.course_id == course_id).all()
     quiz_analytics = []
     for quiz in quizzes:
-        attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
+        if selected_cohort:
+            attempts = QuizAttempt.query.filter(
+                QuizAttempt.quiz_id == quiz.id,
+                QuizAttempt.student_id.in_(c_student_ids)
+            ).all() if c_student_ids else []
+        else:
+            attempts = QuizAttempt.query.filter_by(quiz_id=quiz.id).all()
         if attempts:
             avg_s = round(sum(a.score for a in attempts) / len(attempts), 1)
             max_s = round(max(a.score for a in attempts), 1)
@@ -773,10 +855,17 @@ def export_compliance_pdf(course_id):
         section_analytics=section_analytics,
         quiz_analytics=quiz_analytics,
         learner_rows=learner_rows,
+        cohort=selected_cohort,
+        inclusive_summary=inclusive_summary,
     )
 
     safe_course = re.sub(r'[^A-Za-z0-9_-]+', '_', (course.title or f'course_{course.id}').strip()).strip('_') or f'course_{course.id}'
-    filename = f"SETA_Compliance_Report_{safe_course}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+    cohort_suffix = ""
+    if selected_cohort:
+        safe_cohort = re.sub(r'[^A-Za-z0-9_-]+', '_', (selected_cohort.name or '').strip()).strip('_')
+        if safe_cohort:
+            cohort_suffix = f"_{safe_cohort}"
+    filename = f"SETA_Compliance_Report_{safe_course}{cohort_suffix}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
@@ -1340,8 +1429,16 @@ def enroll_students(identifier=None, course_id=None):
     if str(ident).isdigit() and course.slug:
         return redirect(url_for('teacher.enroll_students', identifier=course.slug), code=301)
 
+    from app.routes.cohorts import (
+        get_course_cohorts,
+        get_cohort_member_counts,
+        get_course_student_cohort_map,
+        assign_student_to_cohort,
+    )
+
     if request.method == 'POST':
-        student_email = request.form.get('student_email')
+        student_email = (request.form.get('student_email') or '').strip()
+        cohort_id = request.form.get('cohort_id', type=int)
         student = User.query.filter_by(email=student_email, role='student').first()
 
         if not student:
@@ -1350,12 +1447,19 @@ def enroll_students(identifier=None, course_id=None):
 
         existing_enrollment = Enrollment.query.filter_by(student_id=student.id, course_id=course.id).first()
         if existing_enrollment:
-            flash('Student is already enrolled in this course.', 'warning')
+            if cohort_id:
+                assign_student_to_cohort(course.id, student.id, cohort_id)
+                flash(f'Student {student.email} is already enrolled and has been assigned to the selected cohort.', 'success')
+            else:
+                flash('Student is already enrolled in this course.', 'warning')
             return redirect(url_for('teacher.enroll_students', identifier=course.slug_or_id))
 
         enrollment = Enrollment(student_id=student.id, course_id=course.id)
         db.session.add(enrollment)
         db.session.commit()
+
+        if cohort_id:
+            assign_student_to_cohort(course.id, student.id, cohort_id)
         
         # Send enrollment notification email
         try:
@@ -1367,7 +1471,17 @@ def enroll_students(identifier=None, course_id=None):
         return redirect(url_for('teacher.enroll_students', identifier=course.slug_or_id))
 
     enrolled_students = User.query.join(Enrollment).filter(Enrollment.course_id == course.id).all()
-    return render_template('teacher/enroll_students.html', course=course, enrolled_students=enrolled_students)
+    cohorts = get_course_cohorts(course.id)
+    cohort_counts = get_cohort_member_counts(course.id)
+    student_cohort_map = get_course_student_cohort_map(course.id)
+    return render_template(
+        'teacher/enroll_students.html',
+        course=course,
+        enrolled_students=enrolled_students,
+        cohorts=cohorts,
+        cohort_counts=cohort_counts,
+        student_cohort_map=student_cohort_map,
+    )
 
 @teacher_bp.route('/course/<int:course_id>/add-section', methods=['GET', 'POST'])
 @teacher_required
@@ -2337,8 +2451,17 @@ def course_gradebook(identifier=None, course_id=None):
     if not current_user.is_teacher_for_course(course.id):
         abort(403)
     
-    # Get all enrollments for this course
+    from app.routes.cohorts import get_course_cohorts, get_cohort_by_id, get_cohort_student_ids, get_course_student_cohort_map
+    cohorts = get_course_cohorts(course.id)
+    cohort_id = request.args.get('cohort_id', type=int)
+    selected_cohort = get_cohort_by_id(cohort_id, course.id) if cohort_id else None
+    student_cohort_map = get_course_student_cohort_map(course.id)
+
+    # Get all enrollments for this course (optionally filtered by cohort)
     enrollments = Enrollment.query.filter_by(course_id=course.id).all()
+    if selected_cohort:
+        c_sids = get_cohort_student_ids(selected_cohort.id)
+        enrollments = [e for e in enrollments if e.student_id in c_sids]
     
     # Get all assignments and quizzes in this course
     assignments = Assignment.query.join(Section).filter(Section.course_id == course.id).order_by(Assignment.due_date).all()
@@ -2420,7 +2543,10 @@ def course_gradebook(identifier=None, course_id=None):
                          course=course,
                          assignments=assignments,
                          quizzes=quizzes,
-                         student_grades=student_grades)
+                         student_grades=student_grades,
+                         cohorts=cohorts,
+                         selected_cohort=selected_cohort,
+                         student_cohort_map=student_cohort_map)
 
 @teacher_bp.route('/course/<int:course_id>/bulk-grade')
 @teacher_required
@@ -3086,11 +3212,15 @@ def live_classrooms():
     live_sessions_list = [s for s in sessions if s.status == 'live']
     past_sessions = [s for s in sessions if s.status in ('ended', 'cancelled')]
     
+    from app.routes.cohorts import get_live_session_cohort_map
+    session_cohort_map = get_live_session_cohort_map([s.id for s in sessions])
+
     return render_template('teacher/live_sessions.html', 
                            courses=my_courses,
                            upcoming_sessions=upcoming_sessions,
                            live_sessions=live_sessions_list,
-                           past_sessions=past_sessions)
+                           past_sessions=past_sessions,
+                           session_cohort_map=session_cohort_map)
 
 
 @teacher_bp.route('/live-classroom/create', methods=['POST'])
@@ -3134,14 +3264,25 @@ def create_live_session():
         custom_meeting_url=custom_url if custom_url else None,
         status='scheduled'
     )
+    from app.routes.cohorts import get_cohort_by_id, get_cohort_student_ids, set_live_session_cohort
+
+    cohort_id = request.form.get('cohort_id', type=int)
+    target_cohort = get_cohort_by_id(cohort_id, course_id) if cohort_id else None
+
     db.session.add(new_session)
     db.session.commit()
+
+    if target_cohort:
+        set_live_session_cohort(new_session.id, target_cohort.id)
     
-    # Notify enrolled students via In-App Notification and Email
+    # Notify enrolled students (scoped to target cohort if selected) via In-App Notification and Email
     from app.utils.email import send_email
     meeting_link = url_for('student.live_classrooms', _external=True)
     
     enrollments = Enrollment.query.filter_by(course_id=course_id).all()
+    if target_cohort:
+        c_sids = get_cohort_student_ids(target_cohort.id)
+        enrollments = [e for e in enrollments if e.student_id in c_sids]
     for e in enrollments:
         notif = Notification(
             user_id=e.student_id,

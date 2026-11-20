@@ -533,6 +533,13 @@
                     Back to Dashboard
                 </a>
                 <h2 class="text-base font-bold text-gray-900 leading-tight mb-1">{{ course.title }}</h2>
+                {% if student_cohort %}
+                <div class="mb-2">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                        🏷️ Cohort: {{ student_cohort.name }}
+                    </span>
+                </div>
+                {% endif %}
                 {% if course.estimated_duration %}
                 <p class="text-xs text-gray-500 mb-2 flex items-center gap-1">
                     <span class="text-gray-400">⏳</span>

@@ -41,7 +41,44 @@ def course_forum(course_id):
     page = request.args.get('page', 1, type=int)
     per_page = 12
 
+    from app.routes.cohorts import (
+        ForumThreadCohortScope,
+        ensure_cohort_tables,
+        get_course_cohorts,
+        get_cohort_by_id,
+        get_student_cohort_for_course,
+        get_forum_thread_cohort_map,
+    )
+    ensure_cohort_tables()
+
     query = ForumThread.query.filter_by(course_id=course_id)
+    cohorts = get_course_cohorts(course_id)
+    is_staff = current_user.role in ('teacher', 'admin')
+    selected_cohort = None
+
+    # Cohort-private Q&A scoping (protects corporate/SDP client privacy)
+    all_course_thread_ids = [t.id for t in ForumThread.query.with_entities(ForumThread.id).filter_by(course_id=course_id).all()]
+    scoped_rows = ForumThreadCohortScope.query.filter(
+        ForumThreadCohortScope.thread_id.in_(all_course_thread_ids)
+    ).all() if all_course_thread_ids else []
+    scoped_all_ids = {r.thread_id for r in scoped_rows}
+
+    if is_staff:
+        req_cohort_id = request.args.get('cohort_id', type=int)
+        selected_cohort = get_cohort_by_id(req_cohort_id, course_id) if req_cohort_id else None
+        if selected_cohort:
+            allowed_ids = [r.thread_id for r in scoped_rows if r.cohort_id == selected_cohort.id]
+            query = query.filter(ForumThread.id.in_(allowed_ids)) if allowed_ids else query.filter(ForumThread.id == -1)
+    else:
+        student_cohort = get_student_cohort_for_course(current_user.id, course_id)
+        if student_cohort:
+            selected_cohort = student_cohort
+            other_cohort_tids = [r.thread_id for r in scoped_rows if r.cohort_id != student_cohort.id]
+            if other_cohort_tids:
+                query = query.filter(~ForumThread.id.in_(other_cohort_tids))
+        else:
+            if scoped_all_ids:
+                query = query.filter(~ForumThread.id.in_(list(scoped_all_ids)))
 
     # Search keyword filter
     if search_query:
@@ -76,6 +113,7 @@ def course_forum(course_id):
 
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     threads = pagination.items
+    thread_cohort_map = get_forum_thread_cohort_map([t.id for t in threads])
 
     active_section = Section.query.get(section_id) if section_id else None
     sections = Section.query.filter_by(course_id=course_id).order_by(Section.order).all()
@@ -90,7 +128,10 @@ def course_forum(course_id):
             filter_mode=filter_mode,
             section_id=section_id,
             active_section=active_section,
-            search_query=search_query
+            search_query=search_query,
+            cohorts=cohorts,
+            selected_cohort=selected_cohort,
+            thread_cohort_map=thread_cohort_map,
         )
 
     return render_template(
@@ -102,7 +143,10 @@ def course_forum(course_id):
         section_id=section_id,
         active_section=active_section,
         sections=sections,
-        search_query=search_query
+        search_query=search_query,
+        cohorts=cohorts,
+        selected_cohort=selected_cohort,
+        thread_cohort_map=thread_cohort_map,
     )
 
 
@@ -138,6 +182,17 @@ def create_thread(course_id):
     db.session.add(thread)
     db.session.commit()
 
+    # Tag thread with learner's cohort (or teacher-selected cohort) for cohort-private Q&A
+    from app.routes.cohorts import get_student_cohort_for_course, get_cohort_by_id, set_forum_thread_cohort
+    if current_user.role == 'student':
+        st_cohort = get_student_cohort_for_course(current_user.id, course_id)
+        if st_cohort:
+            set_forum_thread_cohort(thread.id, st_cohort.id)
+    else:
+        form_cohort_id = request.form.get('cohort_id', type=int)
+        if form_cohort_id and get_cohort_by_id(form_cohort_id, course_id):
+            set_forum_thread_cohort(thread.id, form_cohort_id)
+
     # Notify instructor about student's new question
     if current_user.role == 'student' and course.teacher_id:
         try:
@@ -167,6 +222,16 @@ def view_thread(course_id, thread_id):
         abort(403)
 
     thread = ForumThread.query.filter_by(id=thread_id, course_id=course_id).first_or_404()
+
+    # Enforce cohort-private Q&A access on direct thread URLs
+    if current_user.role == 'student':
+        from app.routes.cohorts import ForumThreadCohortScope, ensure_cohort_tables, get_student_cohort_for_course
+        ensure_cohort_tables()
+        t_scope = ForumThreadCohortScope.query.filter_by(thread_id=thread.id).first()
+        if t_scope:
+            st_cohort = get_student_cohort_for_course(current_user.id, course_id)
+            if not st_cohort or st_cohort.id != t_scope.cohort_id:
+                abort(403)
 
     # Increment view count
     thread.views_count = (thread.views_count or 0) + 1
@@ -205,6 +270,16 @@ def add_reply(course_id, thread_id):
         abort(403)
 
     thread = ForumThread.query.filter_by(id=thread_id, course_id=course_id).first_or_404()
+
+    # Enforce cohort-private Q&A access on direct thread URLs
+    if current_user.role == 'student':
+        from app.routes.cohorts import ForumThreadCohortScope, ensure_cohort_tables, get_student_cohort_for_course
+        ensure_cohort_tables()
+        t_scope = ForumThreadCohortScope.query.filter_by(thread_id=thread.id).first()
+        if t_scope:
+            st_cohort = get_student_cohort_for_course(current_user.id, course_id)
+            if not st_cohort or st_cohort.id != t_scope.cohort_id:
+                abort(403)
 
     if thread.is_locked and current_user.role not in ('teacher', 'admin'):
         flash('This discussion thread has been locked by an instructor.', 'warning')
@@ -295,6 +370,16 @@ def toggle_thread_upvote(course_id, thread_id):
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
     thread = ForumThread.query.filter_by(id=thread_id, course_id=course_id).first_or_404()
+
+    # Enforce cohort-private Q&A access on direct thread URLs
+    if current_user.role == 'student':
+        from app.routes.cohorts import ForumThreadCohortScope, ensure_cohort_tables, get_student_cohort_for_course
+        ensure_cohort_tables()
+        t_scope = ForumThreadCohortScope.query.filter_by(thread_id=thread.id).first()
+        if t_scope:
+            st_cohort = get_student_cohort_for_course(current_user.id, course_id)
+            if not st_cohort or st_cohort.id != t_scope.cohort_id:
+                abort(403)
     existing = ForumUpvote.query.filter_by(user_id=current_user.id, thread_id=thread_id, reply_id=None).first()
 
     if existing:
@@ -384,6 +469,16 @@ def toggle_pin_thread(course_id, thread_id):
         abort(403)
 
     thread = ForumThread.query.filter_by(id=thread_id, course_id=course_id).first_or_404()
+
+    # Enforce cohort-private Q&A access on direct thread URLs
+    if current_user.role == 'student':
+        from app.routes.cohorts import ForumThreadCohortScope, ensure_cohort_tables, get_student_cohort_for_course
+        ensure_cohort_tables()
+        t_scope = ForumThreadCohortScope.query.filter_by(thread_id=thread.id).first()
+        if t_scope:
+            st_cohort = get_student_cohort_for_course(current_user.id, course_id)
+            if not st_cohort or st_cohort.id != t_scope.cohort_id:
+                abort(403)
     thread.is_pinned = not thread.is_pinned
     db.session.commit()
 
@@ -400,6 +495,16 @@ def toggle_lock_thread(course_id, thread_id):
         abort(403)
 
     thread = ForumThread.query.filter_by(id=thread_id, course_id=course_id).first_or_404()
+
+    # Enforce cohort-private Q&A access on direct thread URLs
+    if current_user.role == 'student':
+        from app.routes.cohorts import ForumThreadCohortScope, ensure_cohort_tables, get_student_cohort_for_course
+        ensure_cohort_tables()
+        t_scope = ForumThreadCohortScope.query.filter_by(thread_id=thread.id).first()
+        if t_scope:
+            st_cohort = get_student_cohort_for_course(current_user.id, course_id)
+            if not st_cohort or st_cohort.id != t_scope.cohort_id:
+                abort(403)
     thread.is_locked = not thread.is_locked
     db.session.commit()
 
@@ -413,6 +518,16 @@ def delete_thread(course_id, thread_id):
     """Delete thread (Author or Instructor/Admin)"""
     course = Course.query.get_or_404(course_id)
     thread = ForumThread.query.filter_by(id=thread_id, course_id=course_id).first_or_404()
+
+    # Enforce cohort-private Q&A access on direct thread URLs
+    if current_user.role == 'student':
+        from app.routes.cohorts import ForumThreadCohortScope, ensure_cohort_tables, get_student_cohort_for_course
+        ensure_cohort_tables()
+        t_scope = ForumThreadCohortScope.query.filter_by(thread_id=thread.id).first()
+        if t_scope:
+            st_cohort = get_student_cohort_for_course(current_user.id, course_id)
+            if not st_cohort or st_cohort.id != t_scope.cohort_id:
+                abort(403)
 
     is_teacher_admin = (current_user.role in ('teacher', 'admin') and current_user.is_teacher_for_course(course.id))
     if thread.user_id != current_user.id and not is_teacher_admin:

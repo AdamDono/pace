@@ -4,7 +4,7 @@
 <div class="container mx-auto p-6 bg-gray-100 min-h-screen">
     <!-- Header -->
     <div class="mb-8">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
                 <div class="flex items-center mb-2">
                     <a href="{{ url_for('teacher.gradebook') }}" class="text-blue-600 hover:text-blue-800 mr-2">
@@ -12,13 +12,32 @@
                     </a>
                     <h1 class="text-3xl font-bold text-gray-900">📊 {{ course.title }}</h1>
                 </div>
-                <p class="text-gray-600">Detailed gradebook for all enrolled students</p>
+                <p class="text-gray-600">
+                    {% if selected_cohort %}Showing Cohort: <strong>{{ selected_cohort.name }}</strong>{% else %}Detailed gradebook for all enrolled students{% endif %}
+                </p>
             </div>
-            <div class="flex space-x-3">
-                <button onclick="exportCourseGrades()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            <div class="flex flex-wrap items-center gap-2">
+                {% if cohorts %}
+                <form method="GET" class="inline-flex items-center">
+                    <select name="cohort_id" onchange="this.form.submit()"
+                            aria-label="Filter gradebook by cohort"
+                            class="text-xs font-semibold px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500">
+                        <option value="">All Learners (Entire Course)</option>
+                        {% for c in cohorts %}
+                        <option value="{{ c.id }}" {% if selected_cohort and selected_cohort.id == c.id %}selected{% endif %}>Cohort: {{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('teacher.enroll_students', identifier=course.slug_or_id) }}"
+                   class="bg-gray-800 text-white px-3.5 py-2 rounded-lg text-xs font-semibold hover:bg-gray-900 transition"
+                   style="background-color:#1e293b; color:#ffffff;">
+                    🏷️ Manage Cohorts
+                </a>
+                <button onclick="exportCourseGrades()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition">
                     📥 Export Grades
                 </button>
-                <button onclick="quickGrade()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                <button onclick="quickGrade()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-green-700 transition">
                     ⚡ Quick Grade
                 </button>
             </div>

@@ -154,6 +154,8 @@ def generate_course_compliance_pdf(
     section_analytics,
     quiz_analytics,
     learner_rows,
+    cohort=None,
+    inclusive_summary=None,
 ):
     """Generates the full SETA / QCTO Compliance & Course Analytics PDF and returns raw PDF bytes."""
     buf = io.BytesIO()
@@ -254,6 +256,10 @@ def generate_course_compliance_pdf(
         (getattr(course.teacher, "full_name", None) or getattr(course.teacher, "username", None))
         if getattr(course, "teacher", None) else "Pace Academy Educator"
     )
+    cohort_line = ""
+    if cohort is not None:
+        org_bit = f" ({_safe(cohort.organization_name)})" if getattr(cohort, "organization_name", None) else ""
+        cohort_line = f"<br/><b>Cohort / Intake:</b> {_safe(cohort.name)}{org_bit}"
     banner_table = Table(
         [[
             Paragraph("PACE ACADEMY — SETA / QCTO COMPLIANCE &amp; COURSE ANALYTICS", banner_title),
@@ -263,7 +269,8 @@ def generate_course_compliance_pdf(
                 f"<b>Provider:</b> {_safe(partner_name)} &nbsp;|&nbsp; "
                 f"<b>Accreditation:</b> {_safe(accred_id)}<br/>"
                 f"<b>Lead Instructor:</b> {_safe(instructor_name)} &nbsp;|&nbsp; "
-                f"<b>Generated:</b> {generated_str}",
+                f"<b>Generated:</b> {generated_str}"
+                f"{cohort_line}",
                 banner_sub,
             )
         ]],
@@ -344,7 +351,64 @@ def generate_course_compliance_pdf(
         ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
     ]))
     story.append(charts_tbl)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 7))
+
+    # 3b. POPIA-Safe Anonymized Inclusive Learning Support Summary
+    if inclusive_summary is not None:
+        tot_inc = inclusive_summary.get("total_learners", total_enrollments)
+        with_sup = inclusive_summary.get("with_support", 0)
+        extra_t = inclusive_summary.get("extra_quiz_time", 0)
+        voice_d = inclusive_summary.get("voice_dictation", 0)
+        disp_a = inclusive_summary.get("assistive_display", 0)
+        cap_a = inclusive_summary.get("captions_enabled", 0)
+        inc_title_style = ParagraphStyle(
+            "IncTitle",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=8.5,
+            leading=11,
+            textColor=colors.HexColor("#1E3A8A"),
+        )
+        inc_body_style = ParagraphStyle(
+            "IncBody",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=7.4,
+            leading=10,
+            textColor=colors.HexColor("#1E40AF"),
+        )
+        scope_label = f"cohort ({_safe(cohort.name)})" if cohort is not None else "course"
+        inc_tbl = Table(
+            [[
+                Paragraph(
+                    f"INCLUSIVE LEARNING SUPPORT SUMMARY (POPIA-ANONYMIZED) — {with_sup} of {tot_inc} learners in this {scope_label} have active accessibility support/concessions",
+                    inc_title_style,
+                )
+            ], [
+                Paragraph(
+                    f"<b>Quiz Extra Time Concessions:</b> {extra_t} &nbsp;&nbsp;|&nbsp;&nbsp; "
+                    f"<b>Voice-to-Text Dictation:</b> {voice_d} &nbsp;&nbsp;|&nbsp;&nbsp; "
+                    f"<b>Assistive Display / Read Aloud:</b> {disp_a} &nbsp;&nbsp;|&nbsp;&nbsp; "
+                    f"<b>Captions / Transcripts:</b> {cap_a}<br/>"
+                    f"<font color='#475569' size='6.7'><i>Aggregate counts only for B-BBEE PwD &amp; SETA/QCTO compliance auditing — zero individual learner identities or medical details disclosed.</i></font>",
+                    inc_body_style,
+                )
+            ]],
+            colWidths=[182 * mm],
+        )
+        inc_tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EFF6FF")),
+            ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor("#BFDBFE")),
+            ("LINEBEFORE", (0, 0), (0, -1), 3, colors.HexColor("#2563EB")),
+            ("LEFTPADDING", (0, 0), (-1, -1), 9),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+            ("TOPPADDING", (0, 0), (-1, 0), 6),
+            ("BOTTOMPADDING", (0, -1), (-1, -1), 6),
+            ("TOPPADDING", (0, 1), (-1, 1), 2),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 1),
+        ]))
+        story.append(inc_tbl)
+        story.append(Spacer(1, 7))
 
     # 4. Quiz Performance Summary (if course has quizzes)
     if quiz_analytics:

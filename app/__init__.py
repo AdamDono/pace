@@ -425,6 +425,7 @@ def create_app():
     from app.routes.analytics import analytics_bp, record_analytics_event
     from app.routes.colleague_zero import colleague_zero_bp
     from app.routes.accessibility import accessibility_bp, get_user_accessibility_dict, DEFAULT_A11Y
+    from app.routes.cohorts import cohorts_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -438,6 +439,7 @@ def create_app():
     app.register_blueprint(analytics_bp)
     app.register_blueprint(colleague_zero_bp)
     app.register_blueprint(accessibility_bp)
+    app.register_blueprint(cohorts_bp)
 
     @app.context_processor
     def inject_user_accessibility():

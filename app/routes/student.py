@@ -274,6 +274,9 @@ def course_detail(identifier=None, course_id=None):
     if not first_section and ordered_sections:
         first_section = ordered_sections[0]
 
+    from app.routes.cohorts import get_student_cohort_for_course
+    student_cohort = get_student_cohort_for_course(current_user.id, course.id) if current_user.role == 'student' else None
+
     return render_template('student/course_detail.html', 
                           course=course, 
                           sections=sections,
@@ -282,7 +285,8 @@ def course_detail(identifier=None, course_id=None):
                           locked_sections=locked_sections,
                           completion_percentage=completion_percentage,
                           enrollment=enrollment,
-                          first_section=first_section)
+                          first_section=first_section,
+                          student_cohort=student_cohort)
 
 @student_bp.route('/section/<int:section_id>/content', methods=['GET', 'POST'])
 @login_required
@@ -1825,7 +1829,9 @@ def live_classrooms():
                                live_sessions=[], 
                                past_sessions=[])
         
+    from app.routes.cohorts import filter_live_sessions_for_student
     sessions = LiveSession.query.filter(LiveSession.course_id.in_(enrolled_course_ids)).order_by(LiveSession.scheduled_at.asc()).all()
+    sessions = filter_live_sessions_for_student(sessions, current_user.id)
     
     upcoming_sessions = [s for s in sessions if s.status == 'scheduled']
     live_sessions_list = [s for s in sessions if s.status == 'live']
