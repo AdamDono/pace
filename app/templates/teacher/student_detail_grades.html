@@ -481,11 +481,19 @@ function renderAttemptTab(selectedId) {
                                   class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 shadow-sm">${data.feedback || ''}</textarea>
                     </div>
                 </div>
-                <div class="flex items-center justify-end space-x-3">
-                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-300 transition-all">Cancel</button>
-                    <button type="submit" id="saveGradeBtn" class="px-6 py-3 bg-green-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-green-700 transition-all flex items-center space-x-2 cursor-pointer">
-                        <span>Save Grade + Feedback ✓</span>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <button type="button" id="regradeAiBtn"
+                            onclick="regradeWithColleagueZero(${data.id}, this)"
+                            style="background-color:#4f46e5; color:#ffffff;"
+                            class="px-4 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-indigo-700 transition-all flex items-center gap-1.5 cursor-pointer">
+                        <span>🤖 Re-Grade with Colleague Zero</span>
                     </button>
+                    <div class="flex items-center space-x-3">
+                        <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-300 transition-all">Cancel</button>
+                        <button type="submit" id="saveGradeBtn" class="px-6 py-3 bg-green-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-green-700 transition-all flex items-center space-x-2 cursor-pointer">
+                            <span>Save Grade + Feedback ✓</span>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -493,6 +501,38 @@ function renderAttemptTab(selectedId) {
 
     html += '</div>';
     content.innerHTML = html;
+}
+
+async function regradeWithColleagueZero(submissionId, btnEl) {
+    if (!submissionId) return;
+    const origHtml = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<span>⏳ Re-Grading with AI...</span>';
+    }
+    try {
+        const res = await fetch(`/colleague-zero/api/regrade/${submissionId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            const gradeInp = document.getElementById('modalGradeInput');
+            const fbInp = document.getElementById('modalFeedbackInput');
+            if (gradeInp) gradeInp.value = data.grade;
+            if (fbInp) fbInp.value = data.feedback || '';
+            showToast(`Colleague Zero re-graded this attempt: ${data.grade}%`, 'success');
+        } else {
+            showToast(data.error || 'Could not re-grade submission.', 'danger');
+        }
+    } catch (err) {
+        showToast('Network error while re-grading.', 'danger');
+    } finally {
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origHtml || '<span>🤖 Re-Grade with Colleague Zero</span>';
+        }
+    }
 }
 
 function submitInlineGrade(event, submissionId) {

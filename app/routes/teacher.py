@@ -1585,6 +1585,8 @@ def add_assignment(course_id, section_id):
         assignment.allow_file_upload = (request.form.get('allow_file_upload') == 'on') if is_coding else True
 
         db.session.commit()
+        from app.routes.colleague_zero import save_assignment_marking_memo
+        save_assignment_marking_memo(assignment.id, request.form.get('marking_memo', ''))
         flash('Assignment saved successfully.', 'success')
         return redirect(url_for('teacher.course_builder', course_id=course_id))
 
@@ -1635,10 +1637,14 @@ def edit_assignment(course_id, section_id, assignment_id):
             assignment.enable_code_execution = (request.form.get('enable_code_execution') == 'on') if is_coding else False
 
         db.session.commit()
+        from app.routes.colleague_zero import save_assignment_marking_memo
+        save_assignment_marking_memo(assignment.id, request.form.get('marking_memo', ''))
         flash('Assignment updated successfully.', 'success')
         return redirect(url_for('teacher.course_builder', course_id=course_id))
 
-    return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment)
+    from app.routes.colleague_zero import get_assignment_marking_memo
+    marking_memo = get_assignment_marking_memo(assignment.id)
+    return render_template('teacher/edit_assignment.html', form=form, course=course, section=section, assignment=assignment, marking_memo=marking_memo)
 
 def _parse_quiz_questions_from_form(form_data):
     questions_data = {}

@@ -52,6 +52,19 @@
                     </div>
                 </div>
 
+                <!-- Official Marking Memo (Private to Educators & Colleague Zero AI Grader) -->
+                <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <label for="marking_memo" class="block text-sm font-bold text-blue-900 mb-1">
+                        Official Marking Memo / Expected Answer Key <span class="text-xs font-normal text-blue-700">(Optional — Private, never shown to learners)</span>
+                    </label>
+                    <p class="text-xs text-blue-800 mb-2">
+                        Paste or update your official CAPS / SETA marking memo or answer key. Colleague Zero uses this automatically when grading or re-grading learner submissions.
+                    </p>
+                    <textarea name="marking_memo" id="marking_memo" rows="4"
+                        placeholder="e.g. Key points, mark allocation, formatting checks, or model answer..."
+                        class="w-full px-3.5 py-2.5 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">{{ marking_memo or '' }}</textarea>
+                </div>
+
                 <div class="pt-6 border-t border-gray-200 flex justify-end space-x-3">
                     <a href="{{ url_for('teacher.course_builder', course_id=course.id) }}"
                         class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">

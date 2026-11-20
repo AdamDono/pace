@@ -42,6 +42,55 @@ class ColleagueZeroAuditRecord(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class AssignmentMarkingMemo(db.Model):
+    """Stores an optional educator-provided official marking memo / answer key per assignment (zero alterations to `assignments`)."""
+    __tablename__ = "assignment_marking_memos"
+
+    assignment_id = db.Column(db.Integer, db.ForeignKey("assignments.id"), primary_key=True)
+    marking_memo = db.Column(db.Text, nullable=True, default="")
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+def get_assignment_marking_memo(assignment_id):
+    if not assignment_id:
+        return ""
+    try:
+        _ensure_cz_tables()
+        rec = AssignmentMarkingMemo.query.filter_by(assignment_id=assignment_id).first()
+        return (rec.marking_memo or "").strip() if rec else ""
+    except Exception:
+        db.session.rollback()
+        return ""
+
+
+def save_assignment_marking_memo(assignment_id, memo_text):
+    if not assignment_id:
+        return
+    try:
+        _ensure_cz_tables()
+        cleaned = (memo_text or "").strip()
+        rec = AssignmentMarkingMemo.query.filter_by(assignment_id=assignment_id).first()
+        if rec:
+            rec.marking_memo = cleaned
+            rec.updated_at = datetime.utcnow()
+        elif cleaned:
+            db.session.add(AssignmentMarkingMemo(assignment_id=assignment_id, marking_memo=cleaned))
+        # Also sync into any cached rubric JSON so re-grading immediately uses the updated memo
+        batch_id = f"pace_assign_{assignment_id}"
+        rub_rec = ColleagueZeroRubricRecord.query.filter_by(batch_id=batch_id).first()
+        if rub_rec:
+            try:
+                rj = json.loads(rub_rec.rubric_json)
+                rj["marking_memo"] = cleaned
+                rub_rec.rubric_json = json.dumps(rj)
+                rub_rec.updated_at = datetime.utcnow()
+            except Exception:
+                pass
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
 STOPWORDS = {
     "the", "and", "for", "with", "that", "this", "from", "into", "during", "through",
     "between", "leads", "leading", "explains", "explain", "how", "why", "what", "when",
@@ -275,12 +324,16 @@ def _llm_build_rubric_for_assignment(assignment, desc_clean):
         if not AIService.get_api_key():
             return None
 
+        memo_text = get_assignment_marking_memo(assignment.id)
+        memo_block = f"\nOfficial Educator Marking Memo / Expected Answer Key:\n{memo_text[:3000]}\n" if memo_text else ""
+
         prompt = (
             "Design a fair, clear 4-criterion grading rubric out of 100 marks for this Pace Academy assignment.\n"
             f"Assignment Title: {assignment.title}\n"
             f"Is Coding Assignment: {bool(assignment.is_coding_assignment)} "
             f"(Language: {assignment.programming_language or 'N/A'})\n"
-            f"Assignment Prompt / Description:\n{desc_clean[:2500]}\n\n"
+            f"Assignment Prompt / Description:\n{desc_clean[:2500]}\n"
+            f"{memo_block}\n"
             "Return ONLY valid JSON with this exact schema:\n"
             "{\n"
             '  "version": "short rubric name",\n'
@@ -347,6 +400,8 @@ def _llm_grade_with_4_workers(learner_name, school_or_cohort, essay_text, rubric
         rubric_version = rubric.get("version", "Pace Academy Rubric")
         pass_mark = int(rubric.get("pass_mark", 50))
         question_prompt = rubric.get("question_prompt", "")
+        marking_memo = (rubric.get("marking_memo") or "").strip()
+        memo_section = f"Official Educator Marking Memo / Answer Key (USE THIS AS AUTHORITATIVE REFERENCE):\n{marking_memo[:3500]}\n\n" if marking_memo else ""
 
         crit_lines = "\n".join(
             f"- {c['id']} ({c['name']}, max {c['weight']} marks): {c.get('description', '')}"
@@ -356,6 +411,7 @@ def _llm_grade_with_4_workers(learner_name, school_or_cohort, essay_text, rubric
             f"Evaluate this learner submission for '{school_or_cohort}'.\n"
             f"Learner: {learner_name}\n"
             f"Assignment Question/Prompt:\n{str(question_prompt)[:1500]}\n\n"
+            f"{memo_section}"
             f"Rubric ({rubric_version}, Pass mark {pass_mark}/100):\n{crit_lines}\n\n"
             f"Learner Submission:\n{essay_text[:10000]}\n\n"
             "Simulate a 2-pass moderation panel:\n"
@@ -758,36 +814,51 @@ def run_pace_4_worker_pipeline(batch_id, learner_name, school_or_cohort, essay_t
     return evaluated, worker_events
 
 
+def _clean_student_jargon(text):
+    """Strips internal multi-agent codes ([PL], [MK], [RV], [MS], Pass-1/Pass-2) from learner-facing feedback."""
+    if not text:
+        return ""
+    cleaned = str(text)
+    cleaned = re.sub(r"Moderator Worker\s*\[RV\]\s*flagged\s*\[MK\]\s*Pass-1\s*score\s*\(\d+%\)\s*:\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"Assessor Worker\s*\[MK\]\s*", "Assessor ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"Moderator Worker\s*\[RV\]\s*", "Moderator ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*\[(PL|MK|RV|MS)\]\s*", " ", cleaned)
+    cleaned = re.sub(r"Triggering\s+Pass-2\s+re-evaluation\.?", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+    return cleaned
+
+
 def format_feedback_for_pace_ui(evaluated, rubric):
-    init_score = evaluated["initial_mark"]["score"]
+    """Formats clean, encouraging, jargon-free feedback for the student view (while full multi-agent logs stay in educator audits)."""
     final_score = evaluated["moderation"]["corrected_score"]
     flagged = evaluated["moderation"]["flagged"]
     lines = []
 
     if flagged:
-        lines.append(f"⚡ COLLEAGUE ZERO MODERATION AUDIT: Assessor [MK] Pass-1: {init_score}% → Moderator [RV] Adjusted: {final_score}%")
-        lines.append(f"• Audit Finding: {evaluated['moderation']['flag_reason']}")
+        lines.append(f"✅ Assessed & Moderated Grade: {final_score}%")
+        clean_note = _clean_student_jargon(evaluated["moderation"].get("flag_reason", ""))
+        if clean_note:
+            lines.append(f"• Review Note: {clean_note}")
     else:
-        lines.append(f"✅ COLLEAGUE ZERO VERIFIED GRADE: {final_score}% ({rubric.get('version', 'Official Rubric')})")
+        lines.append(f"✅ Verified Grade: {final_score}%")
 
     lines.append("")
-    lines.append("💬 FEEDBACK:")
-    lines.append(evaluated['recovery']['feedback'])
+    lines.append("💬 Feedback:")
+    lines.append(_clean_student_jargon(evaluated["recovery"]["feedback"]))
     lines.append("")
-    lines.append("📊 RUBRIC CRITERION BREAKDOWN:")
+    lines.append("📊 Rubric Breakdown:")
     for c in rubric.get("criteria", []):
         cid = c["id"]
         w = c["weight"]
         iv = evaluated["initial_mark"]["criteria_scores"].get(cid, 0)
         fv = evaluated["moderation"]["corrected_criteria_scores"].get(cid, iv)
-        delta_str = f" (Moderated from {iv}/{w})" if fv != iv else ""
-        lines.append(f"• {cid} · {c['name']}: {fv} / {w} marks{delta_str}")
+        lines.append(f"• {c['name']}: {fv} / {w} marks")
 
     if evaluated["recovery"]["catchup_plan"]:
         lines.append("")
-        lines.append("🛟 3-STEP REMEDIAL / MASTERY PLAN:")
+        lines.append("🎯 Next Steps to Improve:")
         for step in evaluated["recovery"]["catchup_plan"]:
-            lines.append(f"✓ {step}")
+            lines.append(f"✓ {_clean_student_jargon(step)}")
 
     return "\n".join(lines)
 
@@ -802,6 +873,10 @@ def auto_grade_pace_submission_with_colleague_zero(submission, assignment, stude
     _ensure_cz_tables()
     batch_id = f"pace_assign_{assignment.id}"
     rubric = build_rubric_for_pace_assignment(assignment)
+    latest_memo = get_assignment_marking_memo(assignment.id)
+    if latest_memo:
+        rubric = dict(rubric)
+        rubric["marking_memo"] = latest_memo
     course = assignment.section.course if assignment.section else None
     school_or_cohort = course.title if course else "Pace Academy Cohort"
     learner_name = student_user.full_name if student_user else "Pace Learner"
@@ -1387,3 +1462,33 @@ def api_docx_preview(submission_id):
         return jsonify({"ok": True, "filename": filename, **preview})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Unable to parse .docx preview: {exc}"}), 500
+
+
+@colleague_zero_bp.route("/api/regrade/<int:submission_id>", methods=["POST"])
+@csrf.exempt
+@login_required
+def api_regrade_submission(submission_id):
+    """1-click AI Re-Grade endpoint for Educators/Admins using the latest PDF/DOCX extractor & Official Marking Memo."""
+    if getattr(current_user, "role", None) not in ("teacher", "admin"):
+        return jsonify({"ok": False, "error": "Unauthorized"}), 403
+
+    sub = AssignmentSubmission.query.get_or_404(submission_id)
+    assignment = Assignment.query.get_or_404(sub.assignment_id)
+    course = assignment.section.course if assignment.section else None
+    if current_user.role == "teacher" and course and not current_user.is_teacher_for_course(course.id):
+        return jsonify({"ok": False, "error": "Unauthorized for this course"}), 403
+
+    student = User.query.get(sub.student_id)
+    try:
+        evaluated = auto_grade_pace_submission_with_colleague_zero(sub, assignment, student)
+        db.session.commit()
+        return jsonify({
+            "ok": True,
+            "submission_id": sub.id,
+            "grade": sub.grade,
+            "feedback": sub.feedback or "",
+            "flagged": bool(evaluated.get("moderation", {}).get("flagged")),
+        })
+    except Exception as exc:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": f"Re-grade failed: {exc}"}), 500
