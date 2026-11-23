@@ -547,7 +547,7 @@ def submit_assignment(section_id, assignment_id):
 
             db.session.commit()
             if submission.grade is not None:
-                flash(f'⚡ Attempt {new_attempt_number} of {max_attempts} submitted & auto-graded by Colleague Zero: {int(submission.grade)}%!', 'success')
+                flash(f'🖊️ Attempt {new_attempt_number} of {max_attempts} submitted & auto-graded by RedPen: {int(submission.grade)}%!', 'success')
             else:
                 flash(f'Assignment Attempt {new_attempt_number} of {max_attempts} submitted successfully!', 'success')
             return redirect(url_for('student.submit_assignment', section_id=section_id, assignment_id=assignment_id))

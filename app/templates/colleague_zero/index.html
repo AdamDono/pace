@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Colleague Zero · Pace Academy Autonomous Assessor &amp; Moderator</title>
+  <title>RedPen · Pace Academy Autonomous Assessor &amp; Moderator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -39,7 +39,7 @@
             </svg>
           </div>
           <div>
-            <div class="text-[10px] mono uppercase tracking-wider text-blue-600 font-bold">Colleague Zero · Auto-Graded</div>
+            <div class="text-[10px] mono uppercase tracking-wider text-blue-600 font-bold">RedPen · Auto-Graded</div>
             <h4 id="teacherToastTitle" class="text-xs font-bold text-gray-900 mt-0.5">New Learner Submission Graded</h4>
             <p id="teacherToastMessage" class="text-xs text-gray-600 mt-1 leading-relaxed"></p>
           </div>
@@ -53,13 +53,13 @@
   <header class="border-b border-gray-200 bg-white/95 backdrop-blur sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 font-extrabold mono text-sm">
-          C0
+        <div class="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 font-extrabold mono text-sm">
+          RP
         </div>
         <div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <span class="font-bold text-base tracking-tight text-gray-900">
-              <span class="text-blue-600">Pace</span> Academy · Colleague Zero
+              <span class="text-blue-600">Pace</span> Academy · <span class="text-red-600">RedPen</span>
             </span>
             <span class="text-[11px] mono uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
               Autonomous Mode: ON
@@ -122,7 +122,7 @@
         <span class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
         <div>
           <div class="text-xs font-bold text-emerald-800 mono uppercase">Live Learner Submission Detected (0 Human Intervention)</div>
-          <p id="liveIncomingText" class="text-xs text-emerald-900 mt-0.5">Colleague Zero automatically woke up and is running PL → MK → RV → MS...</p>
+          <p id="liveIncomingText" class="text-xs text-emerald-900 mt-0.5">RedPen automatically woke up and is running PL → MK → RV → MS...</p>
         </div>
       </div>
       <span class="text-xs mono px-2.5 py-1 rounded-lg bg-white text-emerald-700 border border-emerald-200 font-bold">
@@ -581,7 +581,7 @@
       const banner = document.getElementById('liveIncomingBanner');
       const bannerText = document.getElementById('liveIncomingText');
       banner.classList.remove('hidden');
-      bannerText.textContent = `New submission received from ${sub.learner_name} (${sub.school_or_cohort}) — Colleague Zero running PL → MK → RV → MS...`;
+      bannerText.textContent = `New submission received from ${sub.learner_name} (${sub.school_or_cohort}) — RedPen running PL → MK → RV → MS...`;
 
       const term = document.getElementById('agentTerminal');
       term.innerHTML = '';
@@ -756,7 +756,7 @@
           <div class="col-span-full rounded-2xl bg-white border border-gray-200 p-10 text-center space-y-2 shadow-sm">
             <h3 class="text-sm font-bold text-gray-900">No Learner Submissions Yet</h3>
             <p class="text-xs text-gray-500 max-w-md mx-auto">
-              When a learner submits an assignment inside Pace Academy, Colleague Zero will automatically detect, grade, moderate, and display it here in real time.
+              When a learner submits an assignment inside Pace Academy, RedPen will automatically detect, grade, moderate, and display it here in real time.
             </p>
           </div>
         `;

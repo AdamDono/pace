@@ -432,7 +432,7 @@ def _llm_grade_with_4_workers(learner_name, school_or_cohort, essay_text, rubric
         )
         raw = AIService._call_gemini(
             prompt=prompt,
-            system_instruction="You are Colleague Zero, a fair, rigorous academic assessor and moderator. Output strict JSON only.",
+            system_instruction="You are RedPen, a fair, rigorous academic assessor and moderator. Output strict JSON only.",
             response_json=True,
         )
         parsed = AIService._parse_json_safely(raw)
@@ -493,7 +493,7 @@ def _llm_grade_with_4_workers(learner_name, school_or_cohort, essay_text, rubric
         worker_events.append({
             "agent_code": "MS",
             "tag": "[MS·DISPATCH]",
-            "message": f"Recovery Worker [MS] wrote grade ({corr_total}%) & feedback to Pace Academy and Colleague Zero.",
+            "message": f"Recovery Worker [MS] wrote grade ({corr_total}%) & feedback to Pace Academy and RedPen.",
             "time_label": now_lbl,
         })
 
@@ -787,7 +787,7 @@ def run_pace_4_worker_pipeline(batch_id, learner_name, school_or_cohort, essay_t
     worker_events.append({
         "agent_code": "MS",
         "tag": "[MS·DISPATCH]",
-        "message": f"Recovery Worker [MS] wrote grade ({corr_total}%) & 3-step recovery plan to Pace Academy and Colleague Zero.",
+        "message": f"Recovery Worker [MS] wrote grade ({corr_total}%) & 3-step recovery plan to Pace Academy and RedPen.",
         "time_label": datetime.now().strftime("%H:%M:%S"),
     })
 
@@ -917,7 +917,7 @@ def auto_grade_pace_submission_with_colleague_zero(submission, assignment, stude
             student_notif = Notification(
                 user_id=student_user.id,
                 notification_type="assignment_feedback",
-                title=f"⚡ Colleague Zero Graded: {assignment.title} ({int(final_score)}%)",
+                title=f"🖊️ RedPen Graded: {assignment.title} ({int(final_score)}%)",
                 message=evaluated["recovery"]["feedback"],
                 link_url=f"/student/section/{assignment.section_id}/assignment/{assignment.id}/submit",
                 priority="high" if needs_rec else "normal",
@@ -930,7 +930,7 @@ def auto_grade_pace_submission_with_colleague_zero(submission, assignment, stude
             teacher_notif = Notification(
                 user_id=course.teacher_id,
                 notification_type="assignment_feedback",
-                title=f"🤖 Colleague Zero Auto-Graded {learner_name} ({int(final_score)}%)",
+                title=f"🖊️ RedPen Auto-Graded {learner_name} ({int(final_score)}%)",
                 message=f"{assignment.title}: {evaluated['moderation']['correction_log']}",
                 link_url=f"/colleague-zero?batch_id={batch_id}",
                 priority="normal",
@@ -1043,7 +1043,7 @@ def fetch_pace_batch_dict(batch_id=None):
             "title": (
                 f"⚡ [RV→MK Self-Corrected] {lname}: {init_score}% → {final_score}%"
                 if flagged
-                else f"✅ [Colleague Zero Graded] {lname}: {final_score}%"
+                else f"✅ [RedPen Graded] {lname}: {final_score}%"
             ),
             "message": meta["moderation"]["correction_log"],
             "badge_type": "warning" if flagged else "success",

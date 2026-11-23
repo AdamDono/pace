@@ -281,7 +281,7 @@ def generate_student_poe_pdf(course, student, enrollment, assignment_data, quiz_
             a_story.append(Paragraph("<i>File attachment submitted (see attached pages below).</i>", small_style))
 
         if sub.feedback:
-            a_story.append(Paragraph("<b>Assessor / Colleague Zero Feedback:</b>", h3_style))
+            a_story.append(Paragraph("<b>Assessor / RedPen Feedback:</b>", h3_style))
             a_story.append(Paragraph(_esc(sub.feedback[:3000]), body_style))
 
         # Handle uploaded file (PDF or Image)
